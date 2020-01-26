@@ -1,0 +1,41 @@
+# Build OpenRCT2
+FROM ubuntu:19.04 AS build-env
+RUN apt-get update \
+ && apt-get install --no-install-recommends -y cmake pkg-config ninja-build clang-6.0 libsdl2-dev libspeexdsp-dev libjansson-dev libcurl4-openssl-dev libcrypto++-dev libfontconfig1-dev libfreetype6-dev libpng-dev libzip-dev libssl-dev libicu-dev \
+ && ln -s /usr/bin/clang-6.0 /usr/bin/clang \
+ && ln -s /usr/bin/clang++-6.0 /usr/bin/clang++
+
+ENV OPENRCT2_REF develop
+WORKDIR /openrct2
+COPY . .
+RUN mkdir build \
+ && cd build \
+ && cmake .. -G Ninja -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib \
+ && ninja -k0 install \
+ # copy data folder because something's not right with the install process
+ && cp -r ../data/ /openrct2-install/usr/bin/data
+
+# Build runtime image
+FROM ubuntu:19.04
+RUN apt-get update
+RUN apt-get -y upgrade
+RUN apt-get install --no-install-recommends -y rsync ca-certificates libjansson4 libpng16-16 libzip5 libcurl4 libfreetype6 libfontconfig1 libicu63
+
+# Install OpenRCT2
+COPY --from=build-env /openrct2-install /openrct2-install
+RUN rsync -a /openrct2-install/* / \
+ && rm -rf /openrct2-install \
+ && openrct2-cli --version
+
+# Set up ordinary user
+RUN useradd -m openrct2
+USER openrct2
+WORKDIR /home/openrct2
+EXPOSE 11753
+
+# Test run and scan
+RUN openrct2-cli --version \
+ && openrct2-cli scan-objects
+
+# Done
+ENTRYPOINT ["openrct2-cli"]
