@@ -1,5 +1,5 @@
 # Build OpenRCT2 using build environment image
-FROM openrct2/openrct2:ubuntu_amd64 AS build-env
+FROM corysanin/openrct2-ffa:ubuntu_amd64 AS build-env
 WORKDIR /openrct2
 COPY . ./
 RUN mkdir build \
