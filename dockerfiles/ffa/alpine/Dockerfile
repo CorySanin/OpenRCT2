@@ -1,13 +1,14 @@
 # Build OpenRCT2
 FROM alpine:edge AS build-env
 RUN apk update \
- && apk add gcc g++ make cmake jansson-dev libzip-dev curl-dev libressl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers \
+ && apk add git gcc g++ make cmake jansson-dev libzip-dev curl-dev libressl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers \
  && apk add crypto++-dev --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted
 
-ENV OPENRCT2_REF develop
 WORKDIR /openrct2
 COPY . .
-RUN mkdir build \
+RUN git -c http.sslVerify=false clone --depth 1 https://github.com/OpenRCT2/objects objects-repo \
+ && cp -r ./objects-repo/objects ./data/objects \
+ && mkdir build \
  && cd build \
  && cmake .. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib -DDISABLE_OPENGL=ON \
  && make -j4 install \
