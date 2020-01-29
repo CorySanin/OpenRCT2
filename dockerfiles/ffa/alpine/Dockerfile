@@ -6,14 +6,10 @@ RUN apk update \
 
 WORKDIR /openrct2
 COPY . .
-RUN git -c http.sslVerify=false clone --depth 1 https://github.com/OpenRCT2/objects objects-repo \
- && cp -r ./objects-repo/objects ./data/objects \
- && mkdir build \
+RUN mkdir build \
  && cd build \
  && cmake .. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib -DDISABLE_OPENGL=ON \
- && make -j4 install \
- # copy data folder because something's not right with the install process
- && cp -r ../data/ /openrct2-install/usr/bin/data
+ && make -j4 install
 
 # Build runtime image
 FROM alpine:latest
