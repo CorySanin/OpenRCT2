@@ -3241,6 +3241,28 @@ const char* network_get_player_name(uint32_t index)
     return (const char*)gNetwork.player_list[index]->Name.c_str();
 }
 
+const char* network_get_player_hash(uint32_t index)
+{
+    try{
+        return (const char*)(gNetwork.player_list.at(index)->KeyHash.c_str());
+    }
+    catch(const std::out_of_range& oor){
+        return "";
+    }
+}
+
+bool network_player_is_admin(uint32_t index)
+{
+    try{
+        gNetwork.player_list.at(index);
+        auto group = gNetwork.GetGroupByID(network_get_player_group(index));
+        return group != nullptr && group->CanPerformAction(NetworkActions::FindCommandByPermissionName("PERMISSION_MODIFY_GROUPS"));
+    }
+    catch(const std::out_of_range& oor){
+        return true;
+    }
+}
+
 uint32_t network_get_player_flags(uint32_t index)
 {
     return gNetwork.player_list[index]->Flags;

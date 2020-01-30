@@ -139,6 +139,7 @@ public:
         ride->SetColourPreset(_colour1);
         ride->overall_view.xy = RCT_XY8_UNDEFINED;
         ride->SetNameToDefault();
+        ride->author = network_get_player_hash(network_get_player_index(GetPlayer().id));
 
         for (int32_t i = 0; i < MAX_STATIONS; i++)
         {

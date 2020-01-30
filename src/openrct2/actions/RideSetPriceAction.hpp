@@ -85,6 +85,11 @@ public:
             log_warning("Invalid game command, ride_id = %u", uint32_t(_rideIndex));
             return MakeResult(GA_ERROR::INVALID_PARAMETERS, STR_NONE);
         }
+        auto player_index = network_get_player_index(GetPlayer().id);
+        if(strcmp(ride->author.c_str(), network_get_player_hash(player_index)) && !network_player_is_admin(player_index)){
+            log_warning("Can't set ride price: Ride doesn't belong to user.");
+            return MakeResult(GA_ERROR::DISALLOWED, STR_RIDE_CONSTRUCTION_CANT_REMOVE_THIS);
+        }
 
         rct_ride_entry* rideEntry = get_ride_entry(ride->subtype);
         if (rideEntry == nullptr)
