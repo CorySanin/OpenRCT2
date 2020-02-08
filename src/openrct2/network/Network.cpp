@@ -3251,13 +3251,6 @@ const char* network_get_player_name(uint32_t index)
 const char* network_get_player_hash(uint32_t index)
 {
     try{
-        // gNetwork.player_list.at(index);
-        // //auto player = &(gNetwork.player_list.at(index));
-        // auto group = gNetwork.GetGroupByID(network_get_player_group(index));
-        // if (group != nullptr && group->CanPerformAction(NetworkActions::FindCommandByPermissionName("PERMISSION_MODIFY_GROUPS"))){
-        //     return "";
-        // }
-        //return (const char*)((*player)->KeyHash.c_str());
         return (const char*)(gNetwork.player_list.at(index)->KeyHash.c_str());
     }
     catch(const std::out_of_range& oor){
