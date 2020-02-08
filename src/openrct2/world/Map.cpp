@@ -168,7 +168,7 @@ TileElement* map_get_first_element_at(const CoordsXY& elementPos)
 {
     if (!map_is_location_valid(elementPos))
     {
-        log_error("Trying to access element outside of range");
+        log_verbose("Trying to access element outside of range");
         return nullptr;
     }
     auto tileElementPos = TileCoordsXY{ elementPos };
@@ -416,14 +416,14 @@ int16_t tile_element_height(const CoordsXY& loc)
 {
     // Off the map
     if (!map_is_location_valid(loc))
-        return 16;
+        return 2 * COORDS_Z_STEP;
 
     // Get the surface element for the tile
     auto surfaceElement = map_get_surface_element_at(loc);
 
     if (surfaceElement == nullptr)
     {
-        return 16;
+        return 2 * COORDS_Z_STEP;
     }
 
     uint16_t height = surfaceElement->GetBaseZ();
@@ -525,7 +525,7 @@ int16_t tile_element_height(const CoordsXY& loc)
             return height;
         }
         // This tile is essentially at the next height level
-        height += 0x10;
+        height += LAND_HEIGHT_STEP;
         // so we move *down* the slope
         if (quad < 0)
         {
@@ -1460,7 +1460,7 @@ bool map_can_construct_with_clear_at(
     std::copy(res->ErrorMessageArgs.begin(), res->ErrorMessageArgs.end(), gCommonFormatArgs);
     if (price != nullptr)
     {
-        *price = res->Cost;
+        *price += res->Cost;
     }
     gMapGroundFlags = dynamic_cast<ConstructClearResult*>(res.get())->GroundFlags;
     return res->Error == GA_ERROR::OK;

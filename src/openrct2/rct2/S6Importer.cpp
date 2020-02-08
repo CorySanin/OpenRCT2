@@ -262,11 +262,17 @@ public:
 
         gResearchPriorities = _s6.active_research_types;
         gResearchProgressStage = _s6.research_progress_stage;
-        gResearchLastItem.rawValue = _s6.last_researched_item_subject;
+        if (_s6.last_researched_item_subject != RCT12_RESEARCHED_ITEMS_SEPARATOR)
+            gResearchLastItem = ResearchItem(_s6.last_researched_item_subject, RESEARCH_CATEGORY_TRANSPORT);
+        else
+            gResearchLastItem = std::nullopt;
         // pad_01357CF8
-        gResearchNextItem.rawValue = _s6.next_research_item;
+        if (_s6.next_research_item != RCT12_RESEARCHED_ITEMS_SEPARATOR)
+            gResearchNextItem = ResearchItem(_s6.next_research_item, _s6.next_research_category);
+        else
+            gResearchNextItem = std::nullopt;
+
         gResearchProgress = _s6.research_progress;
-        gResearchNextItem.category = _s6.next_research_category;
         gResearchExpectedDay = _s6.next_research_expected_day;
         gResearchExpectedMonth = _s6.next_research_expected_month;
         gGuestInitialHappiness = _s6.guest_initial_happiness;
@@ -523,7 +529,8 @@ public:
         }
         else
         {
-            dst->overall_view = { src->overall_view.x, src->overall_view.y };
+            auto tileLoc = TileCoordsXY(src->overall_view.x, src->overall_view.y);
+            dst->overall_view = tileLoc.ToCoordsXY();
         }
 
         for (int32_t i = 0; i < RCT12_MAX_STATIONS_PER_RIDE; i++)

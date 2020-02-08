@@ -50,6 +50,7 @@
 #include <cstring>
 #include <functional>
 #include <iterator>
+#include <optional>
 
 S6Exporter::S6Exporter()
 {
@@ -241,11 +242,24 @@ void S6Exporter::Export()
 
     _s6.active_research_types = gResearchPriorities;
     _s6.research_progress_stage = gResearchProgressStage;
-    _s6.last_researched_item_subject = gResearchLastItem.rawValue;
+    if (gResearchLastItem.has_value())
+        _s6.last_researched_item_subject = gResearchLastItem->rawValue;
+    else
+        _s6.last_researched_item_subject = RCT12_RESEARCHED_ITEMS_SEPARATOR;
     // pad_01357CF8
-    _s6.next_research_item = gResearchNextItem.rawValue;
     _s6.research_progress = gResearchProgress;
-    _s6.next_research_category = gResearchNextItem.category;
+
+    if (gResearchNextItem.has_value())
+    {
+        _s6.next_research_item = gResearchNextItem->rawValue;
+        _s6.next_research_category = gResearchNextItem->category;
+    }
+    else
+    {
+        _s6.next_research_item = RCT12_RESEARCHED_ITEMS_SEPARATOR;
+        _s6.next_research_category = 0;
+    }
+
     _s6.next_research_expected_day = gResearchExpectedDay;
     _s6.next_research_expected_month = gResearchExpectedMonth;
     _s6.guest_initial_happiness = gGuestInitialHappiness;
@@ -444,7 +458,7 @@ void S6Exporter::ExportParkName()
 {
     auto& park = OpenRCT2::GetContext()->GetGameState()->GetPark();
     auto stringId = AllocateUserString(park.Name);
-    if (stringId != opt::nullopt)
+    if (stringId != std::nullopt)
     {
         _s6.park_name = *stringId;
         _s6.park_name_args = 0;
@@ -504,7 +518,7 @@ void S6Exporter::ExportRide(rct2_ride* dst, const Ride* src)
     {
         // Custom name, allocate user string for ride
         auto stringId = AllocateUserString(src->custom_name);
-        if (stringId != opt::nullopt)
+        if (stringId != std::nullopt)
         {
             dst->name = *stringId;
             dst->name_arguments = 0;
@@ -528,7 +542,8 @@ void S6Exporter::ExportRide(rct2_ride* dst, const Ride* src)
     }
     else
     {
-        dst->overall_view = { static_cast<uint8_t>(src->overall_view.x), static_cast<uint8_t>(src->overall_view.y) };
+        auto tileLoc = TileCoordsXY(src->overall_view);
+        dst->overall_view = { static_cast<uint8_t>(tileLoc.x), static_cast<uint8_t>(tileLoc.y) };
     }
 
     for (int32_t i = 0; i < RCT12_MAX_STATIONS_PER_RIDE; i++)
@@ -1054,7 +1069,7 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
     if (src->name != nullptr)
     {
         auto stringId = AllocateUserString(src->name);
-        if (stringId != opt::nullopt)
+        if (stringId != std::nullopt)
         {
             dst->name_string_idx = *stringId;
             generateName = false;
@@ -1325,7 +1340,7 @@ void S6Exporter::ExportBanner(RCT12Banner& dst, const Banner& src)
         }
 
         auto stringId = AllocateUserString(bannerText);
-        if (stringId != opt::nullopt)
+        if (stringId != std::nullopt)
         {
             dst.string_idx = *stringId;
         }
@@ -1538,7 +1553,7 @@ void S6Exporter::ExportTileElement(RCT12TileElement* dst, TileElement* src)
     }
 }
 
-opt::optional<uint16_t> S6Exporter::AllocateUserString(const std::string_view& value)
+std::optional<uint16_t> S6Exporter::AllocateUserString(const std::string_view& value)
 {
     auto nextId = _userStrings.size();
     if (nextId < RCT12_MAX_USER_STRINGS)
