@@ -108,6 +108,16 @@ struct CoordsXY
         return *this;
     }
 
+    bool operator>=(const CoordsXY& rhs) const
+    {
+        return x >= rhs.x && y >= rhs.y;
+    }
+
+    bool operator<=(const CoordsXY& rhs) const
+    {
+        return x <= rhs.x && y <= rhs.y;
+    }
+
     const CoordsXY operator+(const CoordsXY& rhs) const
     {
         return { x + rhs.x, y + rhs.y };
@@ -398,7 +408,7 @@ struct TileCoordsXYZ : public TileCoordsXY
  * 3 is Y-decreasing
  * Direction is not used to model up/down, or diagonal directions.
  */
-typedef uint8_t Direction;
+using Direction = uint8_t;
 
 const Direction INVALID_DIRECTION = 0xFF;
 
