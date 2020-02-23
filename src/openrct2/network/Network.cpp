@@ -3248,8 +3248,11 @@ const char* network_get_player_name(uint32_t index)
     return (const char*)gNetwork.player_list[index]->Name.c_str();
 }
 
-const char* network_get_player_hash(uint32_t index)
+const char* network_get_player_hash(int32_t index)
 {
+    if(index == -1){
+        return "-1";
+    }
     try{
         return (const char*)(gNetwork.player_list.at(index)->KeyHash.c_str());
     }
@@ -3258,7 +3261,7 @@ const char* network_get_player_hash(uint32_t index)
     }
 }
 
-bool network_player_is_admin(uint32_t index)
+bool network_player_is_admin(int32_t index)
 {
     try{
         gNetwork.player_list.at(index);
