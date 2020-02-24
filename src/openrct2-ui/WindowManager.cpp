@@ -101,6 +101,8 @@ public:
                 return window_save_prompt_open();
             case WC_SCENERY:
                 return window_scenery_open();
+            case WC_SCENERY_SCATTER:
+                return window_scenery_scatter_open();
 #ifndef DISABLE_NETWORK
             case WC_SERVER_LIST:
                 return window_server_list_open();
@@ -486,7 +488,7 @@ public:
         return std::string(buffer);
     }
 
-    void SetMainView(int32_t x, int32_t y, int32_t zoom, int32_t rotation) override
+    void SetMainView(const ScreenCoordsXY& viewPos, int32_t zoom, int32_t rotation) override
     {
         auto mainWindow = window_get_main();
         if (mainWindow != nullptr)
@@ -495,8 +497,8 @@ public:
             auto zoomDifference = zoom - viewport->zoom;
 
             mainWindow->viewport_target_sprite = SPRITE_INDEX_NULL;
-            mainWindow->saved_view_x = x;
-            mainWindow->saved_view_y = y;
+            mainWindow->saved_view_x = viewPos.x;
+            mainWindow->saved_view_y = viewPos.y;
             viewport->zoom = zoom;
             gCurrentRotation = rotation;
 
