@@ -66,8 +66,8 @@ static rct_widget window_track_place_widgets[] = {
 static void window_track_place_close(rct_window *w);
 static void window_track_place_mouseup(rct_window *w, rct_widgetindex widgetIndex);
 static void window_track_place_update(rct_window *w);
-static void window_track_place_toolupdate(rct_window* w, rct_widgetindex widgetIndex, ScreenCoordsXY screenCoords);
-static void window_track_place_tooldown(rct_window* w, rct_widgetindex widgetIndex, ScreenCoordsXY screenCoords);
+static void window_track_place_toolupdate(rct_window* w, rct_widgetindex widgetIndex, const ScreenCoordsXY& screenCoords);
+static void window_track_place_tooldown(rct_window* w, rct_widgetindex widgetIndex, const ScreenCoordsXY& screenCoords);
 static void window_track_place_toolabort(rct_window *w, rct_widgetindex widgetIndex);
 static void window_track_place_unknown14(rct_window *w);
 static void window_track_place_invalidate(rct_window *w);
@@ -124,12 +124,12 @@ static int32_t window_track_place_get_base_z(int32_t x, int32_t y);
 static void window_track_place_clear_mini_preview();
 static void window_track_place_draw_mini_preview(TrackDesign* td6);
 static void window_track_place_draw_mini_preview_track(
-    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY& min, CoordsXY& max);
+    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY min, CoordsXY max);
 static void window_track_place_draw_mini_preview_maze(
-    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY& min, CoordsXY& max);
-static LocationXY16 draw_mini_preview_get_pixel_position(int16_t x, int16_t y);
-static bool draw_mini_preview_is_pixel_in_bounds(LocationXY16 pixel);
-static uint8_t* draw_mini_preview_get_pixel_ptr(LocationXY16 pixel);
+    TrackDesign* td6, int32_t pass, const CoordsXY& origin, CoordsXY min, CoordsXY max);
+static ScreenCoordsXY draw_mini_preview_get_pixel_position(const CoordsXY& location);
+static bool draw_mini_preview_is_pixel_in_bounds(const ScreenCoordsXY& pixel);
+static uint8_t* draw_mini_preview_get_pixel_ptr(const ScreenCoordsXY& pixel);
 
 /**
  *
@@ -262,7 +262,7 @@ static GameActionResult::Ptr FindValidTrackDesignPlaceHeight(CoordsXYZ& loc, uin
  *
  *  rct2: 0x006CFF2D
  */
-static void window_track_place_toolupdate(rct_window* w, rct_widgetindex widgetIndex, ScreenCoordsXY screenCoords)
+static void window_track_place_toolupdate(rct_window* w, rct_widgetindex widgetIndex, const ScreenCoordsXY& screenCoords)
 {
     int16_t mapZ;
 
@@ -334,7 +334,7 @@ static void window_track_place_toolupdate(rct_window* w, rct_widgetindex widgetI
  *
  *  rct2: 0x006CFF34
  */
-static void window_track_place_tooldown(rct_window* w, rct_widgetindex widgetIndex, ScreenCoordsXY screenCoords)
+static void window_track_place_tooldown(rct_window* w, rct_widgetindex widgetIndex, const ScreenCoordsXY& screenCoords)
 {
     window_track_place_clear_provisional();
     map_invalidate_map_selection_tiles();
@@ -508,7 +508,7 @@ static void window_track_place_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
     // Draw mini tile preview
     rct_drawpixelinfo clippedDpi;
-    if (clip_drawpixelinfo(&clippedDpi, dpi, w->x + 4, w->y + 18, 168, 78))
+    if (clip_drawpixelinfo(&clippedDpi, dpi, w->windowPos.x + 4, w->windowPos.y + 18, 168, 78))
     {
         rct_g1_element g1temp = {};
         g1temp.offset = _window_track_place_mini_preview.data();
@@ -521,7 +521,8 @@ static void window_track_place_paint(rct_window* w, rct_drawpixelinfo* dpi)
     // Price
     if (_window_track_place_last_cost != MONEY32_UNDEFINED && !(gParkFlags & PARK_FLAGS_NO_MONEY))
     {
-        gfx_draw_string_centred(dpi, STR_COST_LABEL, w->x + 88, w->y + 94, COLOUR_BLACK, &_window_track_place_last_cost);
+        gfx_draw_string_centred(
+            dpi, STR_COST_LABEL, w->windowPos.x + 88, w->windowPos.y + 94, COLOUR_BLACK, &_window_track_place_last_cost);
     }
 }
 
@@ -557,7 +558,7 @@ static void window_track_place_draw_mini_preview(TrackDesign* td6)
 }
 
 static void window_track_place_draw_mini_preview_track(
-    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY& min, CoordsXY& max)
+    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY min, CoordsXY max)
 {
     uint8_t rotation = (_currentTrackPieceDirection + get_current_rotation()) & 3;
 
@@ -586,8 +587,7 @@ static void window_track_place_draw_mini_preview_track(
             }
             else
             {
-                LocationXY16 pixelPosition = draw_mini_preview_get_pixel_position(
-                    rotatedAndOffsetTrackBlock.x, rotatedAndOffsetTrackBlock.y);
+                auto pixelPosition = draw_mini_preview_get_pixel_position(rotatedAndOffsetTrackBlock);
                 if (draw_mini_preview_is_pixel_in_bounds(pixelPosition))
                 {
                     uint8_t* pixel = draw_mini_preview_get_pixel_ptr(pixelPosition);
@@ -647,8 +647,7 @@ static void window_track_place_draw_mini_preview_track(
         }
         else
         {
-            LocationXY16 pixelPosition = draw_mini_preview_get_pixel_position(
-                rotatedAndOffsetEntrance.x, rotatedAndOffsetEntrance.y);
+            auto pixelPosition = draw_mini_preview_get_pixel_position(rotatedAndOffsetEntrance);
             if (draw_mini_preview_is_pixel_in_bounds(pixelPosition))
             {
                 uint8_t* pixel = draw_mini_preview_get_pixel_ptr(pixelPosition);
@@ -666,7 +665,7 @@ static void window_track_place_draw_mini_preview_track(
 }
 
 static void window_track_place_draw_mini_preview_maze(
-    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY& min, CoordsXY& max)
+    TrackDesign* td6, int32_t pass, const CoordsXY& origin, CoordsXY min, CoordsXY max)
 {
     uint8_t rotation = (_currentTrackPieceDirection + get_current_rotation()) & 3;
     for (const auto& mazeElement : td6->maze_elements)
@@ -682,7 +681,7 @@ static void window_track_place_draw_mini_preview_maze(
         }
         else
         {
-            LocationXY16 pixelPosition = draw_mini_preview_get_pixel_position(rotatedMazeCoords.x, rotatedMazeCoords.y);
+            auto pixelPosition = draw_mini_preview_get_pixel_position(rotatedMazeCoords);
             if (draw_mini_preview_is_pixel_in_bounds(pixelPosition))
             {
                 uint8_t* pixel = draw_mini_preview_get_pixel_ptr(pixelPosition);
@@ -707,17 +706,18 @@ static void window_track_place_draw_mini_preview_maze(
     }
 }
 
-static LocationXY16 draw_mini_preview_get_pixel_position(int16_t x, int16_t y)
+static ScreenCoordsXY draw_mini_preview_get_pixel_position(const CoordsXY& location)
 {
-    return { (int16_t)(80 + ((y / 32) - (x / 32)) * 4), (int16_t)(38 + ((y / 32) + (x / 32)) * 2) };
+    auto tilePos = TileCoordsXY(location);
+    return { (80 + (tilePos.y - tilePos.x) * 4), (38 + (tilePos.y + tilePos.x) * 2) };
 }
 
-static bool draw_mini_preview_is_pixel_in_bounds(LocationXY16 pixel)
+static bool draw_mini_preview_is_pixel_in_bounds(const ScreenCoordsXY& pixel)
 {
     return pixel.x >= 0 && pixel.y >= 0 && pixel.x <= 160 && pixel.y <= 75;
 }
 
-static uint8_t* draw_mini_preview_get_pixel_ptr(LocationXY16 pixel)
+static uint8_t* draw_mini_preview_get_pixel_ptr(const ScreenCoordsXY& pixel)
 {
     return &_window_track_place_mini_preview[pixel.y * TRACK_MINI_PREVIEW_WIDTH + pixel.x];
 }

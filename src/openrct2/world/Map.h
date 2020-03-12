@@ -29,12 +29,13 @@
 constexpr const int32_t MAXIMUM_MAP_SIZE_BIG = COORDS_XY_STEP * MAXIMUM_MAP_SIZE_TECHNICAL;
 constexpr const int32_t MAXIMUM_TILE_START_XY = MAXIMUM_MAP_SIZE_BIG - COORDS_XY_STEP;
 constexpr const int32_t LAND_HEIGHT_STEP = 2 * COORDS_Z_STEP;
+constexpr const int32_t MINIMUM_LAND_HEIGHT_BIG = MINIMUM_LAND_HEIGHT * COORDS_Z_STEP;
 
 #define MAP_MINIMUM_X_Y (-MAXIMUM_MAP_SIZE_TECHNICAL)
 
 #define MAX_TILE_ELEMENTS 196096 // 0x30000
 #define MAX_TILE_TILE_ELEMENT_POINTERS (MAXIMUM_MAP_SIZE_TECHNICAL * MAXIMUM_MAP_SIZE_TECHNICAL)
-#define MAX_PEEP_SPAWNS 8
+#define MAX_PEEP_SPAWNS 2
 #define PEEP_SPAWN_UNDEFINED 0xFFFF
 
 #define TILE_ELEMENT_LARGE_TYPE_MASK 0x3FF
@@ -52,7 +53,7 @@ struct CoordsXYE : public CoordsXY
     {
     }
 
-    constexpr CoordsXYE(CoordsXY c, TileElement* _e)
+    constexpr CoordsXYE(const CoordsXY& c, TileElement* _e)
         : CoordsXY(c)
         , element(_e)
     {
@@ -153,7 +154,7 @@ void map_update_tile_pointers();
 TileElement* map_get_first_element_at(const CoordsXY& elementPos);
 TileElement* map_get_nth_element_at(const CoordsXY& coords, int32_t n);
 void map_set_tile_element(const TileCoordsXY& tilePos, TileElement* elements);
-int32_t map_height_from_slope(const CoordsXY& coords, int32_t slope, bool isSloped);
+int32_t map_height_from_slope(const CoordsXY& coords, int32_t slopeDirection, bool isSloped);
 BannerElement* map_get_banner_element_at(const CoordsXYZ& bannerPos, uint8_t direction);
 SurfaceElement* map_get_surface_element_at(const CoordsXY& coords);
 PathElement* map_get_path_element_at(const TileCoordsXYZ& loc);
@@ -211,7 +212,7 @@ void tile_element_iterator_restart_for_tile(tile_element_iterator* it);
 void map_update_tiles();
 int32_t map_get_highest_z(const CoordsXY& loc);
 
-bool tile_element_wants_path_connection_towards(TileCoordsXYZD coords, const TileElement* const elementToBeRemoved);
+bool tile_element_wants_path_connection_towards(const TileCoordsXYZD& coords, const TileElement* const elementToBeRemoved);
 
 void map_remove_out_of_range_elements();
 void map_extend_boundary_surface();

@@ -35,6 +35,7 @@
 #include "../peep/Staff.h"
 #include "../rct12/SawyerChunkReader.h"
 #include "../rct12/SawyerEncoding.h"
+#include "../rct2/RCT2.h"
 #include "../ride/Ride.h"
 #include "../ride/RideRatings.h"
 #include "../ride/ShopItem.h"
@@ -170,7 +171,7 @@ public:
 
         _s6Path = path;
 
-        return ParkLoadResult(std::vector<rct_object_entry>(std::begin(_s6.objects), std::end(_s6.objects)));
+        return ParkLoadResult(GetRequiredObjects());
     }
 
     bool GetDetails(scenario_index_entry* dst) override
@@ -540,7 +541,8 @@ public:
             }
             else
             {
-                dst->stations[i].Start = { src->station_starts[i].x, src->station_starts[i].y };
+                auto tileStartLoc = TileCoordsXY(src->station_starts[i].x, src->station_starts[i].y);
+                dst->stations[i].Start = tileStartLoc.ToCoordsXY();
             }
             dst->stations[i].Height = src->station_heights[i];
             dst->stations[i].Length = src->station_length[i];
@@ -1025,9 +1027,13 @@ public:
         uint8_t tileElementType = src->GetType();
         dst->ClearAs(tileElementType);
         dst->SetDirection(src->GetDirection());
-        dst->flags = src->flags;
         dst->base_height = src->base_height;
         dst->clearance_height = src->clearance_height;
+
+        // All saved in "flags"
+        dst->SetOccupiedQuadrants(src->GetOccupiedQuadrants());
+        dst->SetGhost(src->IsGhost());
+        dst->SetLastForTile(src->IsLastForTile());
 
         switch (tileElementType)
         {
@@ -1052,7 +1058,7 @@ public:
                 auto dst2 = dst->AsPath();
                 auto src2 = src->AsPath();
 
-                dst2->SetPathEntryIndex(src2->GetEntryIndex());
+                dst2->SetSurfaceEntryIndex(src2->GetEntryIndex());
                 dst2->SetQueueBannerDirection(src2->GetQueueBannerDirection());
                 dst2->SetSloped(src2->IsSloped());
                 dst2->SetSlopeDirection(src2->GetSlopeDirection());
@@ -1066,6 +1072,8 @@ public:
                 dst2->SetAddition(src2->GetAddition());
                 dst2->SetAdditionIsGhost(src2->AdditionIsGhost());
                 dst2->SetAdditionStatus(src2->GetAdditionStatus());
+                dst2->SetIsBroken(src2->IsBroken());
+                dst2->SetIsBlockedByVehicle(src2->IsBlockedByVehicle());
 
                 break;
             }
@@ -1083,6 +1091,8 @@ public:
                 dst2->SetInverted(src2->IsInverted());
                 dst2->SetStationIndex(src2->GetStationIndex());
                 dst2->SetHasGreenLight(src2->HasGreenLight());
+                dst2->SetBlockBrakeClosed(src2->BlockBrakeClosed());
+                dst2->SetIsIndestructible(src2->IsIndestructible());
 
                 auto trackType = dst2->GetTrackType();
                 if (track_element_has_speed_setting(trackType))
@@ -1297,6 +1307,8 @@ public:
 
     void ImportSpriteVehicle(Vehicle* dst, const RCT2SpriteVehicle* src)
     {
+        const auto& ride = _s6.rides[src->ride];
+
         ImportSpriteCommonProperties((SpriteBase*)dst, src);
         dst->vehicle_sprite_type = src->vehicle_sprite_type;
         dst->bank_rotation = src->bank_rotation;
@@ -1308,10 +1320,16 @@ public:
         dst->colours = src->colours;
         dst->track_progress = src->track_progress;
         dst->track_direction = src->track_direction;
+        if (src->boat_location.isNull() || ride.mode != RIDE_MODE_BOAT_HIRE)
+        {
+            dst->BoatLocation.setNull();
+        }
+        else
+        {
+            dst->BoatLocation = TileCoordsXY{ src->boat_location.x, src->boat_location.y }.ToCoordsXY();
+        }
         dst->track_type = src->track_type;
-        dst->track_x = src->track_x;
-        dst->track_y = src->track_y;
-        dst->track_z = src->track_z;
+        dst->TrackLocation = { src->track_x, src->track_y, src->track_z };
         dst->next_vehicle_on_train = src->next_vehicle_on_train;
         dst->prev_vehicle_on_ride = src->prev_vehicle_on_ride;
         dst->next_vehicle_on_ride = src->next_vehicle_on_ride;
@@ -1611,6 +1629,28 @@ public:
         std::string_view originalStringView(originalString, USER_STRING_MAX_LENGTH);
         auto withoutFormatCodes = RCT12::RemoveFormatCodes(originalStringView);
         return rct2_to_utf8(withoutFormatCodes, RCT2_LANGUAGE_ID_ENGLISH_UK);
+    }
+
+    std::vector<rct_object_entry> GetRequiredObjects()
+    {
+        std::vector<rct_object_entry> result;
+        rct_object_entry nullEntry = {};
+        std::memset(&nullEntry, 0xFF, sizeof(nullEntry));
+
+        int objectIt = 0;
+        for (int16_t objectType = OBJECT_TYPE_RIDE; objectType <= OBJECT_TYPE_WATER; objectType++)
+        {
+            for (int16_t i = 0; i < rct2_object_entry_group_counts[objectType]; i++, objectIt++)
+            {
+                result.push_back(_s6.objects[objectIt]);
+            }
+            for (int16_t i = rct2_object_entry_group_counts[objectType]; i < object_entry_group_counts[objectType]; i++)
+            {
+                result.push_back(nullEntry);
+            }
+        }
+
+        return result;
     }
 };
 

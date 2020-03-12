@@ -58,8 +58,8 @@ static void window_track_list_close(rct_window *w);
 static void window_track_list_mouseup(rct_window *w, rct_widgetindex widgetIndex);
 static void window_track_list_update(rct_window *w);
 static void window_track_list_scrollgetsize(rct_window *w, int32_t scrollIndex, int32_t *width, int32_t *height);
-static void window_track_list_scrollmousedown(rct_window *w, int32_t scrollIndex, ScreenCoordsXY screenCoords);
-static void window_track_list_scrollmouseover(rct_window *w, int32_t scrollIndex, ScreenCoordsXY screenCoords);
+static void window_track_list_scrollmousedown(rct_window *w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords);
+static void window_track_list_scrollmouseover(rct_window *w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords);
 static void window_track_list_textinput(rct_window *w, rct_widgetindex widgetIndex, char *text);
 static void window_track_list_invalidate(rct_window *w);
 static void window_track_list_paint(rct_window *w, rct_drawpixelinfo *dpi);
@@ -239,7 +239,7 @@ static void window_track_list_close(rct_window* w)
  */
 static void window_track_list_select(rct_window* w, int32_t listIndex)
 {
-    audio_play_sound(SoundId::Click1, 0, w->x + (w->width / 2));
+    audio_play_sound(SoundId::Click1, 0, w->windowPos.x + (w->width / 2));
     if (!(gScreenFlags & SCREEN_FLAGS_TRACK_MANAGER))
     {
         if (listIndex == 0)
@@ -285,7 +285,7 @@ static void window_track_list_select(rct_window* w, int32_t listIndex)
     }
 }
 
-static int32_t window_track_list_get_list_item_index_from_position(ScreenCoordsXY screenCoords)
+static int32_t window_track_list_get_list_item_index_from_position(const ScreenCoordsXY& screenCoords)
 {
     size_t maxItems = _filteredTrackIds.size();
     if (!(gScreenFlags & SCREEN_FLAGS_TRACK_MANAGER))
@@ -372,7 +372,7 @@ static void window_track_list_scrollgetsize(rct_window* w, int32_t scrollIndex, 
  *
  *  rct2: 0x006CFB39
  */
-static void window_track_list_scrollmousedown(rct_window* w, int32_t scrollIndex, ScreenCoordsXY screenCoords)
+static void window_track_list_scrollmousedown(rct_window* w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords)
 {
     if (!w->track_list.track_list_being_updated)
     {
@@ -388,7 +388,7 @@ static void window_track_list_scrollmousedown(rct_window* w, int32_t scrollIndex
  *
  *  rct2: 0x006CFAD7
  */
-static void window_track_list_scrollmouseover(rct_window* w, int32_t scrollIndex, ScreenCoordsXY screenCoords)
+static void window_track_list_scrollmouseover(rct_window* w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords)
 {
     if (!w->track_list.track_list_being_updated)
     {
@@ -514,8 +514,8 @@ static void window_track_list_paint(rct_window* w, rct_drawpixelinfo* dpi)
     // Track preview
     int32_t x, y, colour;
     rct_widget* widget = &window_track_list_widgets[WIDX_TRACK_PREVIEW];
-    x = w->x + widget->left + 1;
-    y = w->y + widget->top + 1;
+    x = w->windowPos.x + widget->left + 1;
+    y = w->windowPos.y + widget->top + 1;
     colour = ColourMapA[w->colours[0]].darkest;
     gfx_fill_rect(dpi, x, y, x + 369, y + 216, colour);
 
@@ -538,8 +538,8 @@ static void window_track_list_paint(rct_window* w, rct_drawpixelinfo* dpi)
     }
 
     int32_t trackPreviewX = x, trackPreviewY = y;
-    x = w->x + (widget->left + widget->right) / 2;
-    y = w->y + (widget->top + widget->bottom) / 2;
+    x = w->windowPos.x + (widget->left + widget->right) / 2;
+    y = w->windowPos.y + (widget->top + widget->bottom) / 2;
 
     rct_g1_element g1temp = {};
     g1temp.offset = _trackDesignPreviewPixels.data() + (_currentTrackPieceDirection * TRACK_PREVIEW_IMAGE_SIZE);
@@ -550,7 +550,7 @@ static void window_track_list_paint(rct_window* w, rct_drawpixelinfo* dpi)
     drawing_engine_invalidate_image(SPR_TEMP);
     gfx_draw_sprite(dpi, SPR_TEMP, trackPreviewX, trackPreviewY, 0);
 
-    y = w->y + widget->bottom - 12;
+    y = w->windowPos.y + widget->bottom - 12;
 
     // Warnings
     if ((_loadedTrackDesign->track_flags & TRACK_DESIGN_FLAG_VEHICLE_UNAVAILABLE)
@@ -577,8 +577,8 @@ static void window_track_list_paint(rct_window* w, rct_drawpixelinfo* dpi)
     gfx_draw_string_centred_clipped(dpi, STR_TRACK_PREVIEW_NAME_FORMAT, &trackName, COLOUR_BLACK, x, y, 368);
 
     // Information
-    x = w->x + widget->left + 1;
-    y = w->y + widget->bottom + 2;
+    x = w->windowPos.x + widget->left + 1;
+    y = w->windowPos.y + widget->bottom + 2;
 
     // Stats
     fixed32_2dp rating = _loadedTrackDesign->excitement * 10;

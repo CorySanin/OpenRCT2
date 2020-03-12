@@ -416,14 +416,14 @@ int16_t tile_element_height(const CoordsXY& loc)
 {
     // Off the map
     if (!map_is_location_valid(loc))
-        return 2 * COORDS_Z_STEP;
+        return MINIMUM_LAND_HEIGHT_BIG;
 
     // Get the surface element for the tile
     auto surfaceElement = map_get_surface_element_at(loc);
 
     if (surfaceElement == nullptr)
     {
-        return 2 * COORDS_Z_STEP;
+        return MINIMUM_LAND_HEIGHT_BIG;
     }
 
     uint16_t height = surfaceElement->GetBaseZ();
@@ -655,12 +655,12 @@ void map_update_path_wide_flags()
  *
  *  rct2: 0x006A7B84
  */
-int32_t map_height_from_slope(const CoordsXY& coords, int32_t slope, bool isSloped)
+int32_t map_height_from_slope(const CoordsXY& coords, int32_t slopeDirection, bool isSloped)
 {
     if (!isSloped)
         return 0;
 
-    switch (slope & FOOTPATH_PROPERTIES_SLOPE_DIRECTION_MASK)
+    switch (slopeDirection % NumOrthogonalDirections)
     {
         case TILE_ELEMENT_DIRECTION_WEST:
             return (31 - (coords.x & 31)) / 2;
@@ -1174,7 +1174,7 @@ TileElement* tile_element_insert(const TileCoordsXYZ& loc, int32_t occupiedQuadr
     insertedElement = newTileElement;
     newTileElement->type = 0;
     newTileElement->base_height = loc.z;
-    newTileElement->flags = 0;
+    newTileElement->Flags = 0;
     newTileElement->SetLastForTile(isLastForTile);
     newTileElement->SetOccupiedQuadrants(occupiedQuadrants);
     newTileElement->clearance_height = loc.z;
@@ -1679,8 +1679,8 @@ static void clear_element_at(const CoordsXY& loc, TileElement** elementPtr)
     switch (element->GetType())
     {
         case TILE_ELEMENT_TYPE_SURFACE:
-            element->base_height = 2;
-            element->clearance_height = 2;
+            element->base_height = MINIMUM_LAND_HEIGHT;
+            element->clearance_height = MINIMUM_LAND_HEIGHT;
             element->AsSurface()->SetSlope(TILE_ELEMENT_SLOPE_FLAT);
             element->AsSurface()->SetSurfaceStyle(TERRAIN_GRASS);
             element->AsSurface()->SetEdgeStyle(TERRAIN_EDGE_ROCK);

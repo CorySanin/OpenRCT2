@@ -38,7 +38,7 @@ struct rct_preview_track
     int16_t z;     // 0x05
     uint8_t var_07;
     QuarterTile var_08;
-    uint8_t var_09;
+    uint8_t flags;
 };
 
 /* size 0x0A */
@@ -50,6 +50,13 @@ struct rct_track_coordinates
     int16_t z_end;         // 0x04
     int16_t x;             // 0x06
     int16_t y;             // 0x08
+};
+
+enum
+{
+    RCT_PREVIEW_TRACK_FLAG_0 = (1 << 0),
+    RCT_PREVIEW_TRACK_FLAG_1 = (1 << 1),
+    RCT_PREVIEW_TRACK_FLAG_IS_VERTICAL = (1 << 2),
 };
 
 enum
@@ -66,6 +73,8 @@ enum
     TRACK_ELEMENT_FLAGS2_CABLE_LIFT = 1 << 2,
     TRACK_ELEMENT_FLAGS2_HIGHLIGHT = 1 << 3,
     TRACK_ELEMENT_FLAGS2_HAS_GREEN_LIGHT = 1 << 4,
+    TRACK_ELEMENT_FLAGS2_BLOCK_BRAKE_CLOSED = 1 << 5,
+    TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE = 1 << 6,
 };
 
 enum
@@ -78,7 +87,7 @@ enum
 };
 
 #define MAX_STATION_PLATFORM_LENGTH 32
-constexpr uint16_t const MAX_TRACK_HEIGHT = 254;
+constexpr uint16_t const MAX_TRACK_HEIGHT = 254 * COORDS_Z_STEP;
 
 enum
 {

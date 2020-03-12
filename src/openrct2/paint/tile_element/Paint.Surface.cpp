@@ -315,7 +315,7 @@ static uint32_t get_surface_image(
             { session->MapPosition.x >> 5, session->MapPosition.y >> 5 }, grassLength, rotation, offset, grid, underground);
         if (obj->Colour != 255)
         {
-            image |= obj->Colour << 19 | IMAGE_TYPE_REMAP;
+            image |= SPRITE_ID_PALETTE_COLOUR_1(obj->Colour);
         }
     }
     return image;
@@ -330,7 +330,7 @@ static uint32_t get_surface_pattern(uint8_t index, int32_t offset)
         image = obj->PatternBaseImageId + offset;
         if (obj->Colour != 255)
         {
-            image |= obj->Colour << 19 | IMAGE_TYPE_REMAP;
+            image |= SPRITE_ID_PALETTE_COLOUR_1(obj->Colour);
         }
     }
     return image;
@@ -520,9 +520,11 @@ static bool tile_is_inside_clip_view(const tile_descriptor& tile)
 
     if (tile.tile_element->base_height > gClipHeight)
         return false;
-    if (tile.tile_coords.x < gClipSelectionA.x || tile.tile_coords.x > gClipSelectionB.x)
+
+    auto coords = tile.tile_coords.ToCoordsXY();
+    if (coords.x < gClipSelectionA.x || coords.x > gClipSelectionB.x)
         return false;
-    if (tile.tile_coords.y < gClipSelectionA.y || tile.tile_coords.y > gClipSelectionB.y)
+    if (coords.y < gClipSelectionA.y || coords.y > gClipSelectionB.y)
         return false;
 
     return true;
@@ -905,31 +907,29 @@ static void viewport_surface_draw_water_side_top(
 static std::pair<int32_t, int32_t> surface_get_height_above_water(
     const SurfaceElement& surfaceElement, const int32_t height, const int32_t surfaceShape)
 {
-    int32_t local_surfaceShape = surfaceShape;
-    int32_t local_height = height;
+    int32_t localSurfaceShape = surfaceShape;
+    int32_t localHeight = height;
 
     if (surfaceElement.GetWaterHeight() > 0)
     {
         int32_t waterHeight = surfaceElement.GetWaterHeight();
         if (waterHeight > height)
         {
-            local_height += (2 * COORDS_Z_STEP);
+            localHeight += LAND_HEIGHT_STEP;
 
-            if (waterHeight != local_height || !(local_surfaceShape & TILE_ELEMENT_SURFACE_DIAGONAL_FLAG))
+            if (waterHeight != localHeight || !(localSurfaceShape & TILE_ELEMENT_SURFACE_DIAGONAL_FLAG))
             {
-                local_height = waterHeight;
-                local_surfaceShape = 0;
+                localHeight = waterHeight;
+                localSurfaceShape = TILE_ELEMENT_SLOPE_FLAT;
             }
             else
             {
-                int32_t bl = (surfaceShape ^ 0xF) << 2;
-                int32_t bh = bl >> 4;
-                local_surfaceShape = (bh & 0x3) | (bl & 0xC);
+                localSurfaceShape = ror4(surfaceShape ^ TILE_ELEMENT_SURFACE_RAISED_CORNERS_MASK, 2);
             }
         }
     }
 
-    return { local_height, local_surfaceShape };
+    return { localHeight, localSurfaceShape };
 }
 
 /**

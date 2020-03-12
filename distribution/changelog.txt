@@ -26,11 +26,17 @@
 - Fix: [#10543] Secondary shop item prices are not imported correctly from RCT1 saves.
 - Fix: [#10547] RCT1 parks have too many rides available.
 - Fix: [#10587] Update last action coordinates on correct player.
+- Fix: [#10662] Duck cheat tooltips look odd and do not explain anything.
 - Fix: [#10694] The lift hill speed of the flying roller coaster cannot be changed (original bug).
 - Fix: [#10705] Apply multithreaded rendering to all viewports.
 - Fix: [#10739] Mountain tool overlay for even-numbered selections.
 - Fix: [#10752] Mute button state not correctly set at startup.
+- Fix: [#10822] Can place too many peep spawns.
+- Fix: [#10898] Banner text has an offset in tile inspector window.
+- Fix: [#10904] RCT1/LL-scenarios with red water won't open.
 - Improved: [#682] The staff patrol area is now drawn on the water, instead of on the surface under water.
+- Improved: [#10858] Added horizontal grid lines to finance charts.
+- Improved: [#10884] Added y-axes and labels to park window charts.
 - Removed: [#6898] LOADMM and LOADRCT1 title sequence commands (use LOADSC instead).
 
 0.2.4 (2019-10-28)

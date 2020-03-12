@@ -207,8 +207,8 @@ static void window_new_ride_mouseup(rct_window *w, rct_widgetindex widgetIndex);
 static void window_new_ride_mousedown(rct_window *w, rct_widgetindex widgetIndex, rct_widget *widget);
 static void window_new_ride_update(rct_window *w);
 static void window_new_ride_scrollgetsize(rct_window *w, int32_t scrollIndex, int32_t *width, int32_t *height);
-static void window_new_ride_scrollmousedown(rct_window *w, int32_t scrollIndex, ScreenCoordsXY screenCoords);
-static void window_new_ride_scrollmouseover(rct_window *w, int32_t scrollIndex, ScreenCoordsXY screenCoords);
+static void window_new_ride_scrollmousedown(rct_window *w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords);
+static void window_new_ride_scrollmouseover(rct_window *w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords);
 static void window_new_ride_invalidate(rct_window *w);
 static void window_new_ride_paint(rct_window *w, rct_drawpixelinfo *dpi);
 static void window_new_ride_scrollpaint(rct_window *w, rct_drawpixelinfo *dpi, int32_t scrollIndex);
@@ -264,7 +264,7 @@ static constexpr const int32_t window_new_ride_tab_animation_divisor[] = { 4, 8,
 
 static void window_new_ride_set_page(rct_window* w, int32_t page);
 static void window_new_ride_refresh_widget_sizing(rct_window* w);
-static ride_list_item window_new_ride_scroll_get_ride_list_item_at(rct_window* w, ScreenCoordsXY screenCoords);
+static ride_list_item window_new_ride_scroll_get_ride_list_item_at(rct_window* w, const ScreenCoordsXY& screenCoords);
 static void window_new_ride_paint_ride_information(
     rct_window* w, rct_drawpixelinfo* dpi, ride_list_item item, int32_t x, int32_t y, int32_t width);
 static void window_new_ride_select(rct_window* w);
@@ -677,7 +677,8 @@ static void window_new_ride_draw_tab_image(rct_drawpixelinfo* dpi, rct_window* w
 
         spriteIndex |= w->colours[1] << 19;
 
-        gfx_draw_sprite(dpi, spriteIndex, w->x + w->widgets[widgetIndex].left, w->y + w->widgets[widgetIndex].top, 0);
+        gfx_draw_sprite(
+            dpi, spriteIndex, w->windowPos.x + w->widgets[widgetIndex].left, w->windowPos.y + w->widgets[widgetIndex].top, 0);
     }
 }
 
@@ -763,7 +764,7 @@ static void window_new_ride_scrollgetsize(rct_window* w, int32_t scrollIndex, in
  *
  *  rct2: 0x006B6C89
  */
-static void window_new_ride_scrollmousedown(rct_window* w, int32_t scrollIndex, ScreenCoordsXY screenCoords)
+static void window_new_ride_scrollmousedown(rct_window* w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords)
 {
     ride_list_item item;
 
@@ -774,7 +775,7 @@ static void window_new_ride_scrollmousedown(rct_window* w, int32_t scrollIndex, 
     _windowNewRideHighlightedItem[_windowNewRideCurrentTab] = item;
     w->new_ride.selected_ride_id = item.ride_type_and_entry;
 
-    audio_play_sound(SoundId::Click1, 0, w->x + (w->width / 2));
+    audio_play_sound(SoundId::Click1, 0, w->windowPos.x + (w->width / 2));
     w->new_ride.selected_ride_countdown = 8;
     w->Invalidate();
 }
@@ -783,7 +784,7 @@ static void window_new_ride_scrollmousedown(rct_window* w, int32_t scrollIndex, 
  *
  *  rct2: 0x006B6C51
  */
-static void window_new_ride_scrollmouseover(rct_window* w, int32_t scrollIndex, ScreenCoordsXY screenCoords)
+static void window_new_ride_scrollmouseover(rct_window* w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords)
 {
     ride_list_item item;
 
@@ -840,7 +841,8 @@ static void window_new_ride_paint(rct_window* w, rct_drawpixelinfo* dpi)
         ride_list_item item;
         item.ride_type_and_entry = static_cast<uint16_t>(w->new_ride.highlighted_ride_id);
         if (item.type != RIDE_TYPE_NULL || item.entry_index != RIDE_ENTRY_INDEX_NULL)
-            window_new_ride_paint_ride_information(w, dpi, item, w->x + 3, w->y + w->height - 64, w->width - 6);
+            window_new_ride_paint_ride_information(
+                w, dpi, item, w->windowPos.x + 3, w->windowPos.y + w->height - 64, w->width - 6);
     }
     else
     {
@@ -903,13 +905,13 @@ static void window_new_ride_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, i
  *
  *  rct2: 0x006B6D3C
  */
-static ride_list_item window_new_ride_scroll_get_ride_list_item_at(rct_window* w, ScreenCoordsXY screenCoords)
+static ride_list_item window_new_ride_scroll_get_ride_list_item_at(rct_window* w, const ScreenCoordsXY& screenCoords)
 {
     ride_list_item result;
     result.type = RIDE_TYPE_NULL;
     result.entry_index = RIDE_ENTRY_INDEX_NULL;
 
-    if (--screenCoords.x < 0 || --screenCoords.y < 0)
+    if (screenCoords.x <= 0 || screenCoords.y <= 0)
         return result;
 
     int32_t column = screenCoords.x / 116;

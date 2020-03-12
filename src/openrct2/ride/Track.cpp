@@ -661,8 +661,8 @@ bool track_add_station_element(int32_t x, int32_t y, int32_t z, int32_t directio
             int8_t stationIndex = ride_get_first_empty_station_start(ride);
             assert(stationIndex != -1);
 
-            ride->stations[stationIndex].Start.x = (x >> 5);
-            ride->stations[stationIndex].Start.y = (y >> 5);
+            ride->stations[stationIndex].Start.x = x;
+            ride->stations[stationIndex].Start.y = y;
             ride->stations[stationIndex].Height = z;
             ride->stations[stationIndex].Depart = 1;
             ride->stations[stationIndex].Length = 0;
@@ -754,8 +754,8 @@ bool track_add_station_element(int32_t x, int32_t y, int32_t z, int32_t directio
                     int8_t stationIndex = ride_get_first_empty_station_start(ride);
                     assert(stationIndex != -1);
 
-                    ride->stations[stationIndex].Start.x = (x >> 5);
-                    ride->stations[stationIndex].Start.y = (y >> 5);
+                    ride->stations[stationIndex].Start.x = x;
+                    ride->stations[stationIndex].Start.y = y;
                     ride->stations[stationIndex].Height = z;
                     ride->stations[stationIndex].Depart = 1;
                     ride->stations[stationIndex].Length = stationLength;
@@ -901,8 +901,8 @@ bool track_remove_station_element(int32_t x, int32_t y, int32_t z, int32_t direc
                     int8_t stationIndex = ride_get_first_empty_station_start(ride);
                     assert(stationIndex != -1);
 
-                    ride->stations[stationIndex].Start.x = (x >> 5);
-                    ride->stations[stationIndex].Start.y = (y >> 5);
+                    ride->stations[stationIndex].Start.x = x;
+                    ride->stations[stationIndex].Start.y = y;
                     ride->stations[stationIndex].Height = z;
                     ride->stations[stationIndex].Depart = 1;
                     ride->stations[stationIndex].Length = stationLength != 0 ? stationLength : byte_F441D1;
@@ -1377,35 +1377,35 @@ void TrackElement::SetInverted(bool inverted)
 
 bool TrackElement::BlockBrakeClosed() const
 {
-    return (flags & TILE_ELEMENT_FLAG_BLOCK_BRAKE_CLOSED) != 0;
+    return (Flags2 & TRACK_ELEMENT_FLAGS2_BLOCK_BRAKE_CLOSED) != 0;
 }
 
 void TrackElement::SetBlockBrakeClosed(bool isClosed)
 {
     if (isClosed)
     {
-        flags |= TILE_ELEMENT_FLAG_BLOCK_BRAKE_CLOSED;
+        Flags2 |= TRACK_ELEMENT_FLAGS2_BLOCK_BRAKE_CLOSED;
     }
     else
     {
-        flags &= ~TILE_ELEMENT_FLAG_BLOCK_BRAKE_CLOSED;
+        Flags2 &= ~TRACK_ELEMENT_FLAGS2_BLOCK_BRAKE_CLOSED;
     }
 }
 
 bool TrackElement::IsIndestructible() const
 {
-    return (flags & TILE_ELEMENT_FLAG_INDESTRUCTIBLE_TRACK_PIECE) != 0;
+    return (Flags2 & TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE) != 0;
 }
 
 void TrackElement::SetIsIndestructible(bool isIndestructible)
 {
     if (isIndestructible)
     {
-        flags |= TILE_ELEMENT_FLAG_INDESTRUCTIBLE_TRACK_PIECE;
+        Flags2 |= TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE;
     }
     else
     {
-        flags &= ~TILE_ELEMENT_FLAG_INDESTRUCTIBLE_TRACK_PIECE;
+        Flags2 &= ~TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE;
     }
 }
 

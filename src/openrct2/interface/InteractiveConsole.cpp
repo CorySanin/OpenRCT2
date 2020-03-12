@@ -654,13 +654,9 @@ static int32_t cc_get(InteractiveConsole& console, const arguments_t& argv)
                 get_map_coordinates_from_pos(
                     { viewport->view_width / 2, viewport->view_height / 2 }, VIEWPORT_INTERACTION_MASK_TERRAIN, mapCoord,
                     &interactionType, &tileElement, nullptr);
-                mapCoord.x -= 16;
-                mapCoord.x /= 32;
-                mapCoord.y -= 16;
-                mapCoord.y /= 32;
-                mapCoord.x++;
-                mapCoord.y++;
-                console.WriteFormatLine("location %d %d", mapCoord.x, mapCoord.y);
+
+                auto tileMapCoord = TileCoordsXY(mapCoord);
+                console.WriteFormatLine("location %d %d", tileMapCoord.x, tileMapCoord.y);
             }
         }
         else if (argv[0] == "window_scale")
@@ -905,10 +901,9 @@ static int32_t cc_set(InteractiveConsole& console, const arguments_t& argv)
             rct_window* w = window_get_main();
             if (w != nullptr)
             {
-                int32_t x = (int16_t)(int_val[0] * 32 + 16);
-                int32_t y = (int16_t)(int_val[1] * 32 + 16);
-                int32_t z = tile_element_height({ x, y });
-                w->SetLocation(x, y, z);
+                auto location = TileCoordsXYZ(int_val[0], int_val[1], 0).ToCoordsXYZ().ToTileCentre();
+                location.z = tile_element_height(location);
+                w->SetLocation(location.x, location.y, location.z);
                 viewport_update_position(w);
                 console.Execute("get location");
             }

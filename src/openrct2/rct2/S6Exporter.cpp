@@ -173,7 +173,7 @@ void S6Exporter::Export()
     uint32_t researchedTrackPiecesA[128] = {};
     uint32_t researchedTrackPiecesB[128] = {};
 
-    for (int32_t i = 0; i < OBJECT_ENTRY_COUNT; i++)
+    for (int32_t i = 0; i < RCT2_OBJECT_ENTRY_COUNT; i++)
     {
         const rct_object_entry* entry = get_loaded_object_entry(i);
         void* entryData = get_loaded_object_chunk(i);
@@ -555,8 +555,8 @@ void S6Exporter::ExportRide(rct2_ride* dst, const Ride* src)
         }
         else
         {
-            dst->station_starts[i] = { static_cast<uint8_t>(src->stations[i].Start.x),
-                                       static_cast<uint8_t>(src->stations[i].Start.y) };
+            auto tileStartLoc = TileCoordsXY(src->stations[i].Start);
+            dst->station_starts[i] = { static_cast<uint8_t>(tileStartLoc.x), static_cast<uint8_t>(tileStartLoc.y) };
         }
         dst->station_heights[i] = src->stations[i].Height;
         dst->station_length[i] = src->stations[i].Length;
@@ -996,6 +996,8 @@ void S6Exporter::ExportSpriteCommonProperties(RCT12SpriteBase* dst, const Sprite
 
 void S6Exporter::ExportSpriteVehicle(RCT2SpriteVehicle* dst, const Vehicle* src)
 {
+    const auto* ride = get_ride(src->ride);
+
     ExportSpriteCommonProperties(dst, (const SpriteBase*)src);
     dst->vehicle_sprite_type = src->vehicle_sprite_type;
     dst->bank_rotation = src->bank_rotation;
@@ -1006,11 +1008,26 @@ void S6Exporter::ExportSpriteVehicle(RCT2SpriteVehicle* dst, const Vehicle* src)
     dst->vehicle_type = src->vehicle_type;
     dst->colours = src->colours;
     dst->track_progress = src->track_progress;
-    dst->track_direction = src->track_direction;
+    if (ride != nullptr && ride->mode == RIDE_MODE_BOAT_HIRE)
+    {
+        if (src->BoatLocation.isNull())
+        {
+            dst->boat_location.setNull();
+        }
+        else
+        {
+            dst->boat_location = { static_cast<uint8_t>(src->BoatLocation.x / COORDS_XY_STEP),
+                                   static_cast<uint8_t>(src->BoatLocation.y / COORDS_XY_STEP) };
+        }
+    }
+    else
+    {
+        dst->track_direction = src->track_direction;
+    }
     dst->track_type = src->track_type;
-    dst->track_x = src->track_x;
-    dst->track_y = src->track_y;
-    dst->track_z = src->track_z;
+    dst->track_x = src->TrackLocation.x;
+    dst->track_y = src->TrackLocation.y;
+    dst->track_z = src->TrackLocation.z;
     dst->next_vehicle_on_train = src->next_vehicle_on_train;
     dst->prev_vehicle_on_ride = src->prev_vehicle_on_ride;
     dst->next_vehicle_on_ride = src->next_vehicle_on_ride;
@@ -1406,9 +1423,13 @@ void S6Exporter::ExportTileElement(RCT12TileElement* dst, TileElement* src)
     uint8_t tileElementType = src->GetType();
     dst->ClearAs(tileElementType);
     dst->SetDirection(src->GetDirection());
-    dst->flags = src->flags;
     dst->base_height = src->base_height;
     dst->clearance_height = src->clearance_height;
+
+    // All saved in "flags"
+    dst->SetOccupiedQuadrants(src->GetOccupiedQuadrants());
+    dst->SetGhost(src->IsGhost());
+    dst->SetLastForTile(src->IsLastForTile());
 
     switch (tileElementType)
     {
@@ -1433,7 +1454,7 @@ void S6Exporter::ExportTileElement(RCT12TileElement* dst, TileElement* src)
             auto dst2 = dst->AsPath();
             auto src2 = src->AsPath();
 
-            dst2->SetPathEntryIndex(src2->GetPathEntryIndex());
+            dst2->SetPathEntryIndex(src2->GetSurfaceEntryIndex());
             dst2->SetQueueBannerDirection(src2->GetQueueBannerDirection());
             dst2->SetSloped(src2->IsSloped());
             dst2->SetSlopeDirection(src2->GetSlopeDirection());
@@ -1447,6 +1468,8 @@ void S6Exporter::ExportTileElement(RCT12TileElement* dst, TileElement* src)
             dst2->SetAddition(src2->GetAddition());
             dst2->SetAdditionIsGhost(src2->AdditionIsGhost());
             dst2->SetAdditionStatus(src2->GetAdditionStatus());
+            dst2->SetIsBroken(src2->IsBroken());
+            dst2->SetIsBlockedByVehicle(src2->IsBlockedByVehicle());
 
             break;
         }
@@ -1466,6 +1489,8 @@ void S6Exporter::ExportTileElement(RCT12TileElement* dst, TileElement* src)
             dst2->SetInverted(src2->IsInverted());
             dst2->SetBrakeBoosterSpeed(src2->GetBrakeBoosterSpeed());
             dst2->SetPhotoTimeout(src2->GetPhotoTimeout());
+            dst2->SetBlockBrakeClosed(src2->BlockBrakeClosed());
+            dst2->SetIsIndestructible(src2->IsIndestructible());
 
             auto ride = get_ride(dst2->GetRideIndex());
             if (ride)

@@ -441,8 +441,8 @@ void lightfx_update_viewport_settings()
     if (mainWindow)
     {
         rct_viewport* viewport = window_get_viewport(mainWindow);
-        _current_view_x_back = viewport->view_x;
-        _current_view_y_back = viewport->view_y;
+        _current_view_x_back = viewport->viewPos.x;
+        _current_view_y_back = viewport->viewPos.y;
         _current_view_rotation_back = get_current_rotation();
         _current_view_zoom_back = viewport->zoom;
     }
@@ -672,7 +672,7 @@ void lightfx_add_3d_light(uint32_t lightID, uint16_t lightIDqualifier, int16_t x
 }
 
 void lightfx_add_3d_light_magic_from_drawing_tile(
-    CoordsXY mapPosition, int16_t offsetX, int16_t offsetY, int16_t offsetZ, uint8_t lightType)
+    const CoordsXY& mapPosition, int16_t offsetX, int16_t offsetY, int16_t offsetZ, uint8_t lightType)
 {
     int16_t x = mapPosition.x + offsetX;
     int16_t y = mapPosition.y + offsetY;

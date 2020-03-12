@@ -171,6 +171,7 @@ public:
         _s4 = *ReadAndDecodeS4(stream, isScenario);
         _s4Path = path;
         _isScenario = isScenario;
+        _gameVersion = sawyercoding_detect_rct1_version(_s4.game_version) & FILE_VERSION_MASK;
 
         // Only determine what objects we required to import this saved game
         InitialiseEntryMaps();
@@ -321,11 +322,9 @@ private:
 
     void Initialise()
     {
-        _gameVersion = sawyercoding_detect_rct1_version(_s4.game_version) & FILE_VERSION_MASK;
         // Avoid reusing the value used for last import
         _parkValueConversionFactor = 0;
 
-        InitialiseEntryMaps();
         uint16_t mapSize = _s4.map_size == 0 ? 128 : _s4.map_size;
 
         String::Set(gScenarioFileName, sizeof(gScenarioFileName), GetRCT1ScenarioName().c_str());
@@ -757,9 +756,10 @@ private:
             }
             else
             {
-                dst->stations[i].Start = { src->station_starts[i].x, src->station_starts[i].y };
+                auto tileStartLoc = TileCoordsXY{ src->station_starts[i].x, src->station_starts[i].y };
+                dst->stations[i].Start = tileStartLoc.ToCoordsXY();
             }
-            dst->stations[i].SetBaseZ(src->station_height[i] * 4);
+            dst->stations[i].SetBaseZ(src->station_height[i] * RCT1_COORDS_Z_STEP);
             dst->stations[i].Length = src->station_length[i];
             dst->stations[i].Depart = src->station_light[i];
 
@@ -1135,7 +1135,7 @@ private:
 
     void ImportVehicle(Vehicle* dst, rct1_vehicle* src)
     {
-        auto ride = get_ride(src->ride);
+        const auto* ride = get_ride(src->ride);
         if (ride == nullptr)
             return;
 
@@ -1217,11 +1217,17 @@ private:
         }
         dst->status = statusSrc;
         dst->TrackSubposition = src->TrackSubposition;
-        dst->track_x = src->track_x;
-        dst->track_y = src->track_y;
-        dst->track_z = src->track_z;
+        dst->TrackLocation = { src->track_x, src->track_y, src->track_z };
         dst->current_station = src->current_station;
         dst->track_type = src->track_type;
+        if (src->boat_location.isNull() || ride->mode != RIDE_MODE_BOAT_HIRE)
+        {
+            dst->BoatLocation.setNull();
+        }
+        else
+        {
+            dst->BoatLocation = TileCoordsXY{ src->boat_location.x, src->boat_location.y }.ToCoordsXY();
+        }
         dst->track_progress = src->track_progress;
         dst->vertical_drop_countdown = src->vertical_drop_countdown;
         dst->sub_state = src->sub_state;
@@ -1523,7 +1529,7 @@ private:
         dst->pathfind_goal.x = 0xFF;
         dst->pathfind_goal.y = 0xFF;
         dst->pathfind_goal.z = 0xFF;
-        dst->pathfind_goal.direction = 0xFF;
+        dst->pathfind_goal.direction = INVALID_DIRECTION;
 
         // Guests' favourite ride was only saved in LL.
         // Set it to N/A if the save comes from the original or AA.
@@ -1982,9 +1988,14 @@ private:
         uint8_t tileElementType = src->GetType();
         dst->ClearAs(tileElementType);
         dst->SetDirection(src->GetDirection());
-        dst->flags = src->flags;
-        dst->SetBaseZ(src->base_height * 4);
-        dst->SetClearanceZ(src->clearance_height * 4);
+
+        // All saved in "flags"
+        dst->SetOccupiedQuadrants(src->GetOccupiedQuadrants());
+        dst->SetGhost(src->IsGhost());
+        dst->SetLastForTile(src->IsLastForTile());
+
+        dst->SetBaseZ(src->base_height * RCT1_COORDS_Z_STEP);
+        dst->SetClearanceZ(src->clearance_height * RCT1_COORDS_Z_STEP);
 
         switch (tileElementType)
         {
@@ -2030,7 +2041,7 @@ private:
                 dst2->SetIsBroken(false);
                 dst2->SetIsBlockedByVehicle(false);
 
-                dst2->SetPathEntryIndex(entryIndex);
+                dst2->SetSurfaceEntryIndex(entryIndex);
                 dst2->SetShouldDrawPathOverSupports(true);
                 if (RCT1::PathIsQueue(pathType))
                 {
@@ -2091,6 +2102,7 @@ private:
                 dst2->SetDoorBState(src2->GetDoorBState());
                 dst2->SetStationIndex(src2->GetStationIndex());
                 dst2->SetHasGreenLight(src2->HasGreenLight());
+                dst2->SetIsIndestructible(src2->IsIndestructible());
 
                 auto trackType = dst2->GetTrackType();
                 if (track_element_has_speed_setting(trackType))
