@@ -771,7 +771,7 @@ bool Peep::Place(const TileCoordsXYZ& location, bool apply)
 
     // Set the coordinate of destination to be exactly
     // in the middle of a tile.
-    CoordsXYZ destination = { location.x * 32 + 16, location.y * 32 + 16, tileElement->GetBaseZ() + 16 };
+    CoordsXYZ destination = { location.ToCoordsXY().ToTileCentre(), tileElement->GetBaseZ() + 16 };
 
     if (!map_is_location_owned(destination))
     {
@@ -3059,7 +3059,7 @@ void Peep::PerformNextAction(uint8_t& pathing_result, TileElement*& tile_result)
         else
         {
             auto staff = AsStaff();
-            result = staff_path_finding(staff);
+            result = staff->DoPathFinding();
         }
 
         if (result != 0)

@@ -471,8 +471,8 @@ bool ride_try_get_origin_element(const Ride* ride, CoordsXYE* output)
             if (output != nullptr)
             {
                 output->element = resultTileElement;
-                output->x = it.x * 32;
-                output->y = it.y * 32;
+                output->x = it.x * COORDS_XY_STEP;
+                output->y = it.y * COORDS_XY_STEP;
             }
         }
 
@@ -2754,8 +2754,9 @@ Peep* find_closest_mechanic(int32_t x, int32_t y, int32_t forInspection)
                 continue;
         }
 
-        if (map_is_location_in_park({ x, y }))
-            if (!staff_is_location_in_patrol(peep, x & 0xFFE0, y & 0xFFE0))
+        auto location = CoordsXY(x, y).ToTileStart();
+        if (map_is_location_in_park(location))
+            if (!peep->AsStaff()->IsLocationInPatrol(location))
                 continue;
 
         if (peep->x == LOCATION_NULL)
@@ -5223,7 +5224,7 @@ int32_t ride_is_valid_for_test(Ride* ride, int32_t status, bool isApplying)
         }
     }
 
-    if (ride->subtype != RIDE_ENTRY_INDEX_NULL)
+    if (ride->subtype != RIDE_ENTRY_INDEX_NULL && !gCheatsEnableAllDrawableTrackPieces)
     {
         rct_ride_entry* rideType = get_ride_entry(ride->subtype);
         if (rideType->flags & RIDE_ENTRY_FLAG_NO_INVERSIONS)
@@ -6858,7 +6859,6 @@ void sub_6CB945(Ride* ride)
                 continue;
 
             CoordsXYZ location = ride->stations[stationId].GetStart();
-            auto tileHeight = TileCoordsXYZ(location).z;
             uint8_t direction = INVALID_DIRECTION;
 
             bool specialTrack = false;
@@ -6878,7 +6878,7 @@ void sub_6CB945(Ride* ride)
                 bool trackFound = false;
                 do
                 {
-                    if (tileElement->base_height != tileHeight)
+                    if (tileElement->GetBaseZ() != location.z)
                         continue;
                     if (tileElement->GetType() != TILE_ELEMENT_TYPE_TRACK)
                         continue;
@@ -6984,7 +6984,7 @@ void sub_6CB945(Ride* ride)
             continue;
         }
 
-        CoordsXY location = { locationCoords.x * 32, locationCoords.y * 32 };
+        CoordsXY location = locationCoords.ToCoordsXY();
 
         TileElement* tileElement = map_get_first_element_at(location);
         if (tileElement == nullptr)
