@@ -7,9 +7,11 @@
 - Feature: [#10305] Add two shortcuts for increasing and decreasing the scaling factor.
 - Feature: [#10189] Make Track Designs work in multiplayer.
 - Feature: [#10357] Added window for scenery scatter tool, allowing for area and density selection.
+- Feature: [#10637] Console command to remove all floating objects.
 - Change: [#1164] Use available translations for shortcut key bindings.
 - Fix: [#2485] Hide Vertical Faces not applied to the edges of water.
 - Fix: [#5249] No collision detection when building ride entrance at heights > 85.5m.
+- Fix: [#6766] Changelog window doesn't open on some platforms.
 - Fix: [#7784] Vehicle tab takes 1st car colour instead of tab_vehicle's colour.
 - Fix: [#7854] Cannot build a custom spiral roller coaster design.
 - Fix: [#7854] Empty entries in spiral roller coaster designs list.
@@ -34,6 +36,7 @@
 - Fix: [#10822] Can place too many peep spawns.
 - Fix: [#10898] Banner text has an offset in tile inspector window.
 - Fix: [#10904] RCT1/LL-scenarios with red water won't open.
+- Fix: [#10941] The Clear Scenery tool gives refunds for ghost elements.
 - Improved: [#682] The staff patrol area is now drawn on the water, instead of on the surface under water.
 - Improved: [#10858] Added horizontal grid lines to finance charts.
 - Improved: [#10884] Added y-axes and labels to park window charts.
