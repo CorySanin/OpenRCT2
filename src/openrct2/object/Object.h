@@ -13,8 +13,11 @@
 #include "ImageTable.h"
 #include "StringTable.h"
 
+#include <optional>
 #include <string_view>
 #include <vector>
+
+constexpr const uint16_t OBJECT_ENTRY_INDEX_NULL = 255;
 
 // First 0xF of rct_object_entry->flags
 enum OBJECT_TYPE
@@ -110,6 +113,8 @@ struct rct_object_entry
     {
         return flags & 0x0F;
     }
+
+    std::optional<uint8_t> GetSceneryType() const;
 };
 assert_struct_size(rct_object_entry, 0x10);
 
