@@ -15,6 +15,7 @@
 - Fix: [#7784] Vehicle tab takes 1st car colour instead of tab_vehicle's colour.
 - Fix: [#7854] Cannot build a custom spiral roller coaster design.
 - Fix: [#7854] Empty entries in spiral roller coaster designs list.
+- Fix: [#8151] Game freezes upon demolishing mazes at odd heights.
 - Fix: [#8875] RCT1 competition scenarios are classified incorrectly.
 - Fix: [#10176] Mistake in the sprite for the land tool's 6x6 grid.
 - Fix: [#10196] Doors unable to be placed at end of track corners.
@@ -28,6 +29,7 @@
 - Fix: [#10543] Secondary shop item prices are not imported correctly from RCT1 saves.
 - Fix: [#10547] RCT1 parks have too many rides available.
 - Fix: [#10587] Update last action coordinates on correct player.
+- Fix: [#10631] Game bugs out and crashes if you get too many stations via copying stations with the tile inspector.
 - Fix: [#10662] Duck cheat tooltips look odd and do not explain anything.
 - Fix: [#10694] The lift hill speed of the flying roller coaster cannot be changed (original bug).
 - Fix: [#10705] Apply multithreaded rendering to all viewports.
@@ -41,6 +43,7 @@
 - Improved: [#682] The staff patrol area is now drawn on the water, instead of on the surface under water.
 - Improved: [#10858] Added horizontal grid lines to finance charts.
 - Improved: [#10884] Added y-axes and labels to park window charts.
+- Improved: [#10970] Introduced optional light effects for vehicles at night.
 - Removed: [#6898] LOADMM and LOADRCT1 title sequence commands (use LOADSC instead).
 
 0.2.4 (2019-10-28)

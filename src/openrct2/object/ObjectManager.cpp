@@ -19,6 +19,7 @@
 #include "Object.h"
 #include "ObjectList.h"
 #include "ObjectRepository.h"
+#include "RideObject.h"
 #include "SceneryGroupObject.h"
 #include "SmallSceneryObject.h"
 #include "WallObject.h"
@@ -35,6 +36,10 @@ class ObjectManager final : public IObjectManager
 private:
     IObjectRepository& _objectRepository;
     std::vector<Object*> _loadedObjects;
+    std::array<std::vector<ObjectEntryIndex>, RIDE_TYPE_COUNT> _rideTypeToObjectMap;
+
+    // Used to return a safe empty vector back from GetAllRideEntries, can be removed when std::span is available
+    std::vector<ObjectEntryIndex> _nullRideTypeEntries;
 
 public:
     explicit ObjectManager(IObjectRepository& objectRepository)
@@ -85,9 +90,9 @@ public:
         return loadedObject;
     }
 
-    uint16_t GetLoadedObjectEntryIndex(const Object* object) override
+    ObjectEntryIndex GetLoadedObjectEntryIndex(const Object* object) override
     {
-        uint16_t result = OBJECT_ENTRY_INDEX_NULL;
+        ObjectEntryIndex result = OBJECT_ENTRY_INDEX_NULL;
         size_t index = GetLoadedObjectIndex(object);
         if (index != SIZE_MAX)
         {
@@ -287,6 +292,16 @@ public:
         }
     }
 
+    const std::vector<ObjectEntryIndex>& GetAllRideEntries(uint8_t rideType) override
+    {
+        if (rideType >= RIDE_TYPE_COUNT)
+        {
+            // Return an empty vector
+            return _nullRideTypeEntries;
+        }
+        return _rideTypeToObjectMap[rideType];
+    }
+
 private:
     Object* LoadObject(const std::string& name)
     {
@@ -439,7 +454,7 @@ private:
         window_close_by_class(WC_SCENERY);
     }
 
-    uint16_t GetPrimarySceneryGroupEntryIndex(Object* loadedObject)
+    ObjectEntryIndex GetPrimarySceneryGroupEntryIndex(Object* loadedObject)
     {
         auto sceneryObject = dynamic_cast<SceneryObject*>(loadedObject);
         const rct_object_entry* primarySGEntry = sceneryObject->GetPrimarySceneryGroup();
@@ -642,7 +657,33 @@ private:
 
     void ResetTypeToRideEntryIndexMap()
     {
-        reset_type_to_ride_entry_index_map(*this);
+        // Clear all ride objects
+        for (auto& v : _rideTypeToObjectMap)
+        {
+            v.clear();
+        }
+
+        // Build object lists
+        auto maxRideObjects = static_cast<size_t>(object_entry_group_counts[OBJECT_TYPE_RIDE]);
+        for (size_t i = 0; i < maxRideObjects; i++)
+        {
+            auto rideObject = static_cast<RideObject*>(GetLoadedObject(OBJECT_TYPE_RIDE, i));
+            if (rideObject != nullptr)
+            {
+                const auto entry = static_cast<rct_ride_entry*>(rideObject->GetLegacyData());
+                if (entry != nullptr)
+                {
+                    for (auto rideType : entry->ride_type)
+                    {
+                        if (rideType < _rideTypeToObjectMap.size())
+                        {
+                            auto& v = _rideTypeToObjectMap[rideType];
+                            v.push_back(static_cast<ObjectEntryIndex>(i));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     static void ReportMissingObject(const rct_object_entry* entry)
@@ -690,7 +731,7 @@ void* object_manager_get_loaded_object(const rct_object_entry* entry)
     return (void*)loadedObject;
 }
 
-uint16_t object_manager_get_loaded_object_entry_index(const void* loadedObject)
+ObjectEntryIndex object_manager_get_loaded_object_entry_index(const void* loadedObject)
 {
     auto& objectManager = OpenRCT2::GetContext()->GetObjectManager();
     const Object* object = static_cast<const Object*>(loadedObject);
