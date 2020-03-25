@@ -1,4 +1,4 @@
-0.2.4+ (in development)
+0.2.5 (2020-03-24)
 ------------------------------------------------------------------------
 - Feature: [#3154] Use a random title sequence each time it is shown.
 - Feature: [#6553] Android version now runs in full screen.
@@ -9,6 +9,7 @@
 - Feature: [#10357] Added window for scenery scatter tool, allowing for area and density selection.
 - Feature: [#10637] Console command to remove all floating objects.
 - Change: [#1164] Use available translations for shortcut key bindings.
+- Change: [#10997] Speed is automatically reset to normal upon scenario completion.
 - Fix: [#2485] Hide Vertical Faces not applied to the edges of water.
 - Fix: [#5249] No collision detection when building ride entrance at heights > 85.5m.
 - Fix: [#6766] Changelog window doesn't open on some platforms.
@@ -40,6 +41,10 @@
 - Fix: [#10904] RCT1/LL-scenarios with red water won't open.
 - Fix: [#10941] The Clear Scenery tool gives refunds for ghost elements.
 - Fix: [#10963] Light effects are drawn off-centre in some rotations.
+- Fix: [#10993] Bottom toolbar not refreshing when a guest leaves the park.
+- Fix: [#11001] Rides list does not use natural sorting.
+- Fix: [objects#54] Stage Coach cars are not considered covered by the game.
+- Fix: [objects#56] Handymen cut grass incorrectly.
 - Improved: [#682] The staff patrol area is now drawn on the water, instead of on the surface under water.
 - Improved: [#10858] Added horizontal grid lines to finance charts.
 - Improved: [#10884] Added y-axes and labels to park window charts.

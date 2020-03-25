@@ -31,13 +31,13 @@ It will then host a new server and load the saved game `mypark.sv6` located in t
 
 ## Tags
 
-There are tags for the latest "stable" snapshot as well as the latest* develop build. Each comes in [Alpine](https://github.com/CorySanin/OpenRCT2-FFA/blob/develop/dockerfiles/ffa/alpine/Dockerfile) and [Ubuntu](https://github.com/CorySanin/OpenRCT2-FFA/blob/develop/dockerfiles/ffa/ubuntu/Dockerfile) flavors. I recommend Alpine due to it's small size.
+There are tags for the latest release snapshot as well as the latest* develop build. Each comes in [Alpine](https://github.com/CorySanin/OpenRCT2-FFA/blob/develop/dockerfiles/ffa/alpine/Dockerfile) and [Ubuntu](https://github.com/CorySanin/OpenRCT2-FFA/blob/develop/dockerfiles/ffa/ubuntu/Dockerfile) flavors. I recommend Alpine due to it's small size.
 
-| Tag             | Description              |
-| --------------- | ------------------------ |
-| `latest`        | Develop build on Alpine  |
-| `ubuntu`        | Develop build on Ubuntu  |
-| `stable`        | "stable" build on Alpine |
-| `ubuntu-stable` | "stable" build on Ubuntu |
+| Tag              | Description                    |
+| ---------------- | ------------------------------ |
+| `latest`         | Develop build on Alpine        |
+| `ubuntu`         | Develop build on Ubuntu        |
+| `release`        | latest release build on Alpine |
+| `ubuntu-release` | latest release build on Ubuntu |
 
-\*The develop build gets updated periodically when changes are pulled from upstream.
+\*The develop build gets updated periodically when changes are pulled from upstream. These changes tend to get pulled in faster when the network version changes.
