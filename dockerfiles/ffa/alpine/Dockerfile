@@ -1,8 +1,7 @@
 # Build OpenRCT2
-FROM alpine:edge AS build-env
+FROM alpine:latest AS build-env
 RUN apk update \
- && apk add git gcc g++ make cmake jansson-dev libzip-dev curl-dev libressl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers \
- && apk add crypto++-dev --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted
+ && apk add git gcc g++ make cmake jansson-dev libzip-dev curl-dev libressl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers
 
 WORKDIR /openrct2
 COPY . .
