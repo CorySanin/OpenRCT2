@@ -143,6 +143,11 @@ public:
                     return MakeResult(GA_ERROR::UNKNOWN, STR_NONE);
                 }
 
+                if(!network_player_is_admin(network_get_player_index(GetPlayer().id))){
+                    log_error("No 'no entry' signs");
+                    return MakeResult(GA_ERROR::INVALID_PARAMETERS, STR_NONE);
+                }
+
                 banner->flags &= ~BANNER_FLAG_NO_ENTRY;
                 banner->flags |= (_parameter != 0) ? BANNER_FLAG_NO_ENTRY : 0;
                 uint8_t allowedEdges = 0xF;
