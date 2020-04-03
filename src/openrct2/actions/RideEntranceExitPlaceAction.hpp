@@ -142,6 +142,14 @@ public:
             log_warning("Invalid game command for ride %d", (int32_t)_rideIndex);
             return MakeResult(GA_ERROR::INVALID_PARAMETERS, errorTitle);
         }
+        auto player_index = network_get_player_index(GetPlayer().id);
+        if(ride->author == "-1"){
+            ride->author = network_get_player_hash(player_index);
+        }
+        if(strcmp(ride->author.c_str(), network_get_player_hash(player_index)) && !network_player_is_admin(player_index)){
+            log_warning("Can't place entrance/exit: Ride doesn't belong to user.");
+            return MakeResult(GA_ERROR::DISALLOWED, STR_RIDE_CONSTRUCTION_CANT_REMOVE_THIS);
+        }
 
         if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST))
         {

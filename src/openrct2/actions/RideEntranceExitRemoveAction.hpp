@@ -116,6 +116,14 @@ public:
             log_warning("Invalid ride id %d for entrance/exit removal", (int32_t)_rideIndex);
             return std::make_unique<GameActionResult>(GA_ERROR::INVALID_PARAMETERS, STR_NONE);
         }
+        auto player_index = network_get_player_index(GetPlayer().id);
+        if(ride->author == "-1"){
+            ride->author = network_get_player_hash(player_index);
+        }
+        if(strcmp(ride->author.c_str(), network_get_player_hash(player_index)) && !network_player_is_admin(player_index)){
+            log_warning("Can't remove entrance/exit: Ride doesn't belong to user.");
+            return MakeResult(GA_ERROR::DISALLOWED, STR_RIDE_CONSTRUCTION_CANT_REMOVE_THIS);
+        }
 
         if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST))
         {

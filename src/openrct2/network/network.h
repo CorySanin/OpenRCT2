@@ -60,6 +60,8 @@ const char* network_get_player_name(uint32_t index);
 uint32_t network_get_player_flags(uint32_t index);
 int32_t network_get_player_ping(uint32_t index);
 int32_t network_get_player_id(uint32_t index);
+const char* network_get_player_hash(int32_t index);
+bool network_player_is_admin(int32_t index);
 money32 network_get_player_money_spent(uint32_t index);
 void network_add_player_money_spent(uint32_t index, money32 cost);
 int32_t network_get_player_last_action(uint32_t index, int32_t time);

@@ -323,6 +323,14 @@ public:
             log_warning("Ride not found. ride index = %d.", rideIndex);
             return MakeResult(GA_ERROR::INVALID_PARAMETERS, STR_RIDE_CONSTRUCTION_CANT_REMOVE_THIS);
         }
+        auto player_index = network_get_player_index(GetPlayer().id);
+        if(ride->author == "-1"){
+            ride->author = network_get_player_hash(player_index);
+        }
+        if(strcmp(ride->author.c_str(), network_get_player_hash(player_index)) && !network_player_is_admin(player_index)){
+            log_warning("Can't remove track: Ride doesn't belong to user.");
+            return MakeResult(GA_ERROR::DISALLOWED, STR_RIDE_CONSTRUCTION_CANT_REMOVE_THIS);
+        }
         const rct_preview_track* trackBlock = get_track_def_from_ride(ride, trackType);
         trackBlock += tileElement->AsTrack()->GetSequenceIndex();
 

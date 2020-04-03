@@ -138,6 +138,14 @@ public:
             log_warning("Invalid game command, ride_id = %u", uint32_t(_rideIndex));
             return std::make_unique<GameActionResult>(GA_ERROR::INVALID_PARAMETERS, errTitle);
         }
+        auto player_index = network_get_player_index(GetPlayer().id);
+        if(ride->author == "-1"){
+            ride->author = network_get_player_hash(player_index);
+        }
+        if(strcmp(ride->author.c_str(), network_get_player_hash(player_index)) && !network_player_is_admin(player_index)){
+            log_warning("Can't set ride vehicles: Ride doesn't belong to user.");
+            return MakeResult(GA_ERROR::DISALLOWED, STR_RIDE_CONSTRUCTION_CANT_REMOVE_THIS);
+        }
 
         switch (static_cast<RideSetVehicleType>(_type))
         {

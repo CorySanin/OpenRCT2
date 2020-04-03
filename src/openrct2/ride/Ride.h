@@ -217,6 +217,7 @@ struct TrackDesign;
  */
 struct Ride
 {
+    std::string author;
     ride_id_t id = RIDE_ID_NULL;
     uint8_t type = RIDE_TYPE_NULL;
     // pointer to static info. for example, wild mouse type is 0x36, subtype is
