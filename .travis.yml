@@ -3,6 +3,12 @@ services:
 matrix:
     include:
         - os: linux
+          dist: bionic
+          addons:
+            apt:
+                sources:
+                    - docker-bionic
+
 env:
     - BASE=alpine
     - BASE=ubuntu
