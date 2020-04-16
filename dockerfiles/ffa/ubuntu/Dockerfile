@@ -1,5 +1,5 @@
 # Build OpenRCT2
-FROM ubuntu:19.04 AS build-env
+FROM ubuntu:18.04 AS build-env
 RUN apt-get update \
  && apt-get install --no-install-recommends -y git cmake pkg-config ninja-build clang-6.0 libsdl2-dev libspeexdsp-dev libjansson-dev libcurl4-openssl-dev libcrypto++-dev libfontconfig1-dev libfreetype6-dev libpng-dev libzip-dev libssl-dev libicu-dev \
  && ln -s /usr/bin/clang-6.0 /usr/bin/clang \
@@ -13,10 +13,10 @@ RUN mkdir build \
  && ninja -k0 install
 
 # Build runtime image
-FROM ubuntu:19.04
+FROM ubuntu:18.04
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get install --no-install-recommends -y rsync ca-certificates libjansson4 libpng16-16 libzip5 libcurl4 libfreetype6 libfontconfig1 libicu63
+RUN apt-get install --no-install-recommends -y rsync ca-certificates libjansson4 libpng16-16 libzip4 libcurl4 libfreetype6 libfontconfig1 libicu60
 
 # Install OpenRCT2
 COPY --from=build-env /openrct2-install /openrct2-install
