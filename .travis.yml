@@ -1,13 +1,12 @@
+language: minimal
+os: linux
+dist: bionic
+addons:
+    apt:
+        sources:
+            - docker-bionic
 services:
     - docker
-matrix:
-    include:
-        - os: linux
-          dist: bionic
-          addons:
-            apt:
-                sources:
-                    - docker-bionic
 
 env:
     - BASE=alpine
