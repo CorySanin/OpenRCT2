@@ -15,4 +15,5 @@ script:
     - docker build -t "corysanin/openrct2-ffa:$TRAVIS_BRANCH-$BASE" -f ./dockerfiles/ffa/$BASE/Dockerfile .
 after_success:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - if [ "$TRAVIS_PULL_REQUEST" = false ]; then docker push "corysanin/openrct2-ffa:$TRAVIS_BRANCH-$BASE"; fi
+    - if [ "$TRAVIS_PULL_REQUEST" == false ]; then docker push "corysanin/openrct2-ffa:$TRAVIS_BRANCH-$BASE"; fi
+    - if [ "$TRAVIS_PULL_REQUEST" == false ] && [ "$BASE" == "alpine" ] && [ "$TRAVIS_BRANCH" == "develop" ]; then docker push "corysanin/openrct2-ffa:latest"; fi
