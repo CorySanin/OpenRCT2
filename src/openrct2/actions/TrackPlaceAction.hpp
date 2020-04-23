@@ -74,7 +74,7 @@ public:
         _origin.direction &= 3;
     }
 
-    uint16_t GetActionFlags() const override
+    uint16_t GetActionFlags() const override final
     {
         return GameAction::GetActionFlags();
     }
@@ -159,7 +159,7 @@ public:
             }
             // Backwards steep lift hills are allowed, even on roller coasters that do not support forwards steep lift hills.
             if ((_trackPlaceFlags & CONSTRUCTION_LIFT_HILL_SELECTED)
-                && !track_piece_is_available_for_ride_type(ride->type, TRACK_LIFT_HILL_STEEP)
+                && !RideTypeDescriptors[ride->type].SupportsTrackPiece(TRACK_LIFT_HILL_STEEP)
                 && !gCheatsEnableChainLiftOnAllTrack)
             {
                 if (TrackFlags[_trackType] & TRACK_ELEM_FLAG_IS_STEEP_UP)
@@ -239,7 +239,8 @@ public:
                 return std::make_unique<TrackPlaceActionResult>(GA_ERROR::INVALID_PARAMETERS, STR_TOO_HIGH);
             }
 
-            uint8_t crossingMode = (ride->type == RIDE_TYPE_MINIATURE_RAILWAY && _trackType == TRACK_ELEM_FLAT)
+            uint8_t crossingMode = (RideTypeDescriptors[ride->type].HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS)
+                                    && _trackType == TRACK_ELEM_FLAT)
                 ? CREATE_CROSSING_MODE_TRACK_OVER_PATH
                 : CREATE_CROSSING_MODE_NONE;
             if (!map_can_construct_with_clear_at(
@@ -381,7 +382,7 @@ public:
                     {
                         maxHeight = rideEntry->max_height;
                     }
-                    else if (RideGroupManager::RideTypeHasRideGroups(ride->type))
+                    else if (RideTypeDescriptors[ride->type].HasFlag(RIDE_TYPE_FLAG_HAS_RIDE_GROUPS))
                     {
                         const RideGroup* rideGroup = RideGroupManager::GetRideGroup(ride->type, rideEntry);
                         maxHeight = rideGroup->MaximumHeight;
@@ -482,7 +483,8 @@ public:
             clearanceZ = floor2(clearanceZ, COORDS_Z_STEP) + baseZ;
             const auto mapLocWithClearance = CoordsXYRangedZ(mapLoc, baseZ, clearanceZ);
 
-            uint8_t crossingMode = (ride->type == RIDE_TYPE_MINIATURE_RAILWAY && _trackType == TRACK_ELEM_FLAT)
+            uint8_t crossingMode = (RideTypeDescriptors[ride->type].HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS)
+                                    && _trackType == TRACK_ELEM_FLAT)
                 ? CREATE_CROSSING_MODE_TRACK_OVER_PATH
                 : CREATE_CROSSING_MODE_NONE;
             if (!map_can_construct_with_clear_at(

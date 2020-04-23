@@ -1076,8 +1076,8 @@ void map_reorganise_elements()
 {
     context_setcurrentcursor(CURSOR_ZZZ);
 
-    TileElement* new_tile_elements = (TileElement*)malloc(
-        3 * (MAXIMUM_MAP_SIZE_TECHNICAL * MAXIMUM_MAP_SIZE_TECHNICAL) * sizeof(TileElement));
+    TileElement* new_tile_elements = static_cast<TileElement*>(
+        malloc(3 * (MAXIMUM_MAP_SIZE_TECHNICAL * MAXIMUM_MAP_SIZE_TECHNICAL) * sizeof(TileElement)));
     TileElement* new_elements_pointer = new_tile_elements;
 
     if (new_tile_elements == nullptr)
@@ -1436,7 +1436,7 @@ static GameActionResult::Ptr map_can_construct_with_clear_at(
                     && tileElement->GetBaseZ() == pos.baseZ && tileElement->AsTrack()->GetTrackType() == TRACK_ELEM_FLAT)
                 {
                     auto ride = get_ride(tileElement->AsTrack()->GetRideIndex());
-                    if (ride != nullptr && ride->type == RIDE_TYPE_MINIATURE_RAILWAY)
+                    if (ride != nullptr && RideTypeDescriptors[ride->type].HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS))
                     {
                         continue;
                     }
@@ -1480,7 +1480,12 @@ bool map_can_construct_with_clear_at(
     {
         *price += res->Cost;
     }
-    gMapGroundFlags = dynamic_cast<ConstructClearResult*>(res.get())->GroundFlags;
+    auto ccr = dynamic_cast<ConstructClearResult*>(res.get());
+    if (ccr == nullptr)
+    {
+        return false;
+    }
+    gMapGroundFlags = ccr->GroundFlags;
     return res->Error == GA_ERROR::OK;
 }
 

@@ -15,6 +15,7 @@
 
 #include <string>
 
+class Formatter;
 struct TileElement;
 struct WallElement;
 
@@ -22,7 +23,7 @@ using BannerIndex = uint16_t;
 
 constexpr uint8_t BANNER_NULL = 255;
 constexpr size_t MAX_BANNERS = 250;
-constexpr BannerIndex BANNER_INDEX_NULL = (BannerIndex)-1;
+constexpr BannerIndex BANNER_INDEX_NULL = static_cast<BannerIndex>(-1);
 
 constexpr uint8_t SCROLLING_MODE_NONE = 255;
 
@@ -34,7 +35,6 @@ struct Banner
     uint8_t colour{};
     ride_id_t ride_index{};
     uint8_t text_colour{};
-    mutable std::string textColourUtf8;
     TileCoordsXY position;
 
     bool IsNull() const
@@ -43,6 +43,8 @@ struct Banner
     }
 
     std::string GetText() const;
+    void FormatTextTo(Formatter&, bool addColour) const;
+    void FormatTextTo(Formatter&) const;
     size_t FormatTextTo(void* args, bool addColour) const;
     size_t FormatTextTo(void* args) const;
 };

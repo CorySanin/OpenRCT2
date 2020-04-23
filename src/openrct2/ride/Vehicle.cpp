@@ -3460,7 +3460,8 @@ void Vehicle::CheckIfMissing()
 
     if (gConfigNotifications.ride_stalled_vehicles)
     {
-        set_format_arg(0, rct_string_id, RideComponentNames[RideTypeDescriptors[curRide->type].NameConvention.vehicle].number);
+        auto ft = Formatter::Common();
+        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[curRide->type].NameConvention.vehicle].number);
 
         uint8_t vehicleIndex = 0;
         for (; vehicleIndex < curRide->num_vehicles; ++vehicleIndex)
@@ -3468,11 +3469,9 @@ void Vehicle::CheckIfMissing()
                 break;
 
         vehicleIndex++;
-        set_format_arg(2, uint16_t, vehicleIndex);
-        auto nameArgLen = curRide->FormatNameTo(gCommonFormatArgs + 4);
-        set_format_arg(
-            4 + nameArgLen, rct_string_id,
-            RideComponentNames[RideTypeDescriptors[curRide->type].NameConvention.station].singular);
+        ft.Add<uint16_t>(vehicleIndex);
+        curRide->FormatNameTo(ft);
+        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[curRide->type].NameConvention.station].singular);
 
         news_item_add_to_queue(NEWS_ITEM_RIDE, STR_NEWS_VEHICLE_HAS_STALLED, ride);
     }
@@ -5172,7 +5171,8 @@ static void vehicle_kill_all_passengers(Vehicle* vehicle)
         numFatalities += curVehicle->num_peeps;
     }
 
-    set_format_arg(0, uint16_t, numFatalities);
+    auto ft = Formatter::Common();
+    ft.Add<uint16_t>(numFatalities);
 
     uint8_t crashType = numFatalities == 0 ? RIDE_CRASH_TYPE_NO_FATALITIES : RIDE_CRASH_TYPE_FATALITIES;
 
@@ -5181,13 +5181,11 @@ static void vehicle_kill_all_passengers(Vehicle* vehicle)
 
     if (numFatalities != 0)
     {
-        ride->FormatNameTo(gCommonFormatArgs + 2);
-        news_item_add_to_queue(
-            NEWS_ITEM_RIDE, numFatalities == 1 ? STR_X_PERSON_DIED_ON_X : STR_X_PEOPLE_DIED_ON_X, vehicle->ride);
         if (gConfigNotifications.ride_casualties)
         {
-            ride->FormatNameTo(gCommonFormatArgs + 2);
-            news_item_add_to_queue(NEWS_ITEM_RIDE, STR_X_PEOPLE_DIED_ON_X, vehicle->ride);
+            ride->FormatNameTo(ft);
+            news_item_add_to_queue(
+                NEWS_ITEM_RIDE, numFatalities == 1 ? STR_X_PERSON_DIED_ON_X : STR_X_PEOPLE_DIED_ON_X, vehicle->ride);
         }
 
         if (gParkRatingCasualtyPenalty < 500)
@@ -5525,10 +5523,10 @@ void Vehicle::UpdateSound()
 
         loc_6D7A97:
             scream_sound_id = SoundId::Null;
-            if (curRide->type < std::size(RideLiftData))
+            if (curRide->type < std::size(RideTypeDescriptors))
             {
                 // Get lift hill sound
-                screamId = RideLiftData[curRide->type].sound_id;
+                screamId = RideTypeDescriptors[curRide->type].LiftData.sound_id;
                 screamVolume = 243;
                 if (!(sound2_flags & VEHICLE_SOUND2_FLAGS_LIFT_HILL))
                     screamId = SoundId::Null;
@@ -6178,18 +6176,13 @@ void vehicle_set_map_toolbar(const Vehicle* vehicle)
             if (ride->vehicles[vehicleIndex] == vehicle->sprite_index)
                 break;
 
-        size_t argPos = 0;
-        set_map_tooltip_format_arg(argPos, rct_string_id, STR_RIDE_MAP_TIP);
-        argPos += sizeof(rct_string_id);
-        set_map_tooltip_format_arg(argPos, rct_string_id, STR_MAP_TOOLTIP_STRINGID_STRINGID);
-        argPos += sizeof(rct_string_id);
-        argPos += ride->FormatNameTo(gMapTooltipFormatArgs + argPos);
-        set_map_tooltip_format_arg(
-            argPos, rct_string_id, RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.vehicle].capitalised);
-        argPos += sizeof(rct_string_id);
-        set_map_tooltip_format_arg(argPos, uint16_t, vehicleIndex + 1);
-        argPos += sizeof(uint16_t);
-        ride->FormatStatusTo(gMapTooltipFormatArgs + argPos);
+        auto ft = Formatter::MapTooltip();
+        ft.Add<rct_string_id>(STR_RIDE_MAP_TIP);
+        ft.Add<rct_string_id>(STR_MAP_TOOLTIP_STRINGID_STRINGID);
+        ride->FormatNameTo(ft);
+        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.vehicle].capitalised);
+        ft.Add<uint16_t>(vehicleIndex + 1);
+        ride->FormatStatusTo(ft);
     }
 }
 
@@ -8282,7 +8275,7 @@ loc_6DAEB9:
             if (_vehicleVelocityF64E08 >= 0)
             {
                 regs.bp = prev_vehicle_on_ride;
-                if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, (uint16_t*)&regs.bp))
+                if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, reinterpret_cast<uint16_t*>(&regs.bp)))
                 {
                     goto loc_6DB967;
                 }
@@ -8544,7 +8537,8 @@ loc_6DBA33:;
     {
         UpdateCrossings();
 
-        if (!vehicle_update_track_motion_backwards_get_new_track(this, trackType, curRide, (uint16_t*)&regs.ax))
+        if (!vehicle_update_track_motion_backwards_get_new_track(
+                this, trackType, curRide, reinterpret_cast<uint16_t*>(&regs.ax)))
         {
             goto loc_6DBE5E;
         }
@@ -8593,7 +8587,7 @@ loc_6DBA33:;
             if (_vehicleVelocityF64E08 < 0)
             {
                 regs.bp = next_vehicle_on_ride;
-                if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, (uint16_t*)&regs.bp))
+                if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, reinterpret_cast<uint16_t*>(&regs.bp)))
                 {
                     goto loc_6DBE7F;
                 }
@@ -8927,7 +8921,7 @@ loc_6DC743:
                         }
                     }
                 }
-                vehicle->mini_golf_current_animation = (uint8_t)z;
+                vehicle->mini_golf_current_animation = static_cast<uint8_t>(z);
                 vehicle->animation_frame = 0;
                 vehicle->track_progress++;
                 break;
@@ -9855,8 +9849,9 @@ void Vehicle::UpdateCrossings() const
             auto curRide = get_ride(ride);
 
             // Many New Element parks have invisible rides hacked into the path.
-            // Limit path blocking to Miniature Railway to prevent peeps getting stuck everywhere.
-            if (pathElement && curRide != nullptr && curRide->type == RIDE_TYPE_MINIATURE_RAILWAY)
+            // Limit path blocking to rides actually supporting level crossings to prevent peeps getting stuck everywhere.
+            if (pathElement && curRide != nullptr
+                && RideTypeDescriptors[curRide->type].HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS))
             {
                 if (!playedClaxon && !pathElement->IsBlockedByVehicle())
                 {

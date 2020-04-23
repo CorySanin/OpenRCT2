@@ -15,9 +15,11 @@
 // clang-format off
 constexpr const RideTypeDescriptor CrookedHouseRTD =
 {
+    SET_FIELD(AlternateType, RIDE_TYPE_NULL),
     SET_FIELD(Category, RIDE_CATEGORY_GENTLE),
     SET_FIELD(EnabledTrackPieces, 0),
     SET_FIELD(ExtraTrackPieces, 0),
+    SET_FIELD(StartTrackPiece, FLAT_TRACK_ELEM_3_X_3),
     SET_FIELD(TrackPaintFunction, get_track_paint_function_crooked_house),
     SET_FIELD(Flags, RIDE_TYPE_FLAG_HAS_SINGLE_PIECE_STATION | RIDE_TYPE_FLAG_CANNOT_HAVE_GAPS | RIDE_TYPE_FLAG_HAS_LOAD_OPTIONS |
                      RIDE_TYPE_FLAG_HAS_NO_TRACK | RIDE_TYPE_FLAG_VEHICLE_IS_INTEGRAL | RIDE_TYPE_FLAG_TRACK_NO_WALLS | RIDE_TYPE_FLAG_FLAT_RIDE |
@@ -25,5 +27,7 @@ constexpr const RideTypeDescriptor CrookedHouseRTD =
                      RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_BUILDING, RIDE_COMPONENT_TYPE_STRUCTURE, RIDE_COMPONENT_TYPE_STATION }),
     SET_FIELD(AvailableBreakdowns, 0),
+    SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(UpkeepCosts, { 30, 1, 0, 0, 0, 0 }),
 };
 // clang-format on

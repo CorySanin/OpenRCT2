@@ -272,7 +272,7 @@ namespace GameActions
             {
                 result->Error = GA_ERROR::INSUFFICIENT_FUNDS;
                 result->ErrorMessage = STR_NOT_ENOUGH_CASH_REQUIRES;
-                set_format_arg_on(result->ErrorMessageArgs.data(), 0, uint32_t, result->Cost);
+                Formatter(result->ErrorMessageArgs.data()).Add<uint32_t>(result->Cost);
             }
         }
         return result;
@@ -327,7 +327,7 @@ namespace GameActions
 
         if (result->Error != GA_ERROR::OK)
         {
-            snprintf(temp, sizeof(temp), ") Failed, %u", (uint32_t)result->Error);
+            snprintf(temp, sizeof(temp), ") Failed, %u", static_cast<uint32_t>(result->Error));
         }
         else
         {
@@ -336,7 +336,7 @@ namespace GameActions
 
         output.Write(temp, strlen(temp) + 1);
 
-        const char* text = (const char*)output.GetData();
+        const char* text = static_cast<const char*>(output.GetData());
         log_verbose("%s", text);
 
         network_append_server_log(text);
