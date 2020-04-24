@@ -208,7 +208,7 @@ Ride* get_ride(ride_id_t index)
     return nullptr;
 }
 
-rct_ride_entry* get_ride_entry(int32_t index)
+rct_ride_entry* get_ride_entry(ObjectEntryIndex index)
 {
     rct_ride_entry* result = nullptr;
     auto& objMgr = OpenRCT2::GetContext()->GetObjectManager();
@@ -222,9 +222,9 @@ rct_ride_entry* get_ride_entry(int32_t index)
     return result;
 }
 
-std::string_view get_ride_entry_name(size_t index)
+std::string_view get_ride_entry_name(ObjectEntryIndex index)
 {
-    if (index >= static_cast<size_t>(object_entry_group_counts[OBJECT_TYPE_RIDE]))
+    if (index >= object_entry_group_counts[OBJECT_TYPE_RIDE])
     {
         log_error("invalid index %d for ride type", index);
         return {};
@@ -361,7 +361,8 @@ money32 Ride::CalculateIncomePerHour() const
         priceMinusCost -= ShopItems[currentShopItem].Cost;
     }
 
-    currentShopItem = (lifecycle_flags & RIDE_LIFECYCLE_ON_RIDE_PHOTO) ? RidePhotoItems[type] : entry->shop_item_secondary;
+    currentShopItem = (lifecycle_flags & RIDE_LIFECYCLE_ON_RIDE_PHOTO) ? RideTypeDescriptors[type].PhotoItem
+                                                                       : entry->shop_item_secondary;
 
     if (currentShopItem != SHOP_ITEM_NONE)
     {

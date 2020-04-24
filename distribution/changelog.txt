@@ -1,15 +1,20 @@
 0.2.6+ (in development)
 ------------------------------------------------------------------------
 - Feature: [#9029] Open doors with the tile inspector.
+- Feature: [#10572] Cheat to allow building at invalid heights.
 - Feature: [#11231] Change shortcut window list order to be more intuitive, and split it into logical sections.
 - Feature: [#11306] Path additions are now kept when replacing the path.
+- Change: [#11209] Warn when user is running OpenRCT2 through Wine.
 - Change: [#11358] Switch copy and paste button positions in tile inspector.
 - Fix: [#1148] Research funding dropdown not shown in finances window.
 - Fix: [#6119] Advertising campaign for ride window not updated properly (original bug).
 - Fix: [#11072] Land and water tools working out of bounds (original bug).
 - Fix: [#11259] Custom JSON object breaks saves.
 - Fix: [#11315] Ride that has never opened is shown as favorite ride of many guests.
+- Fix: [#11405] Building a path through walls does not always remove the walls.
+- Fix: RCT1 scenarios have more items in the object list than are present in the park or the research list.
 - Improved: [#6530] Allow water and land height changes on park borders.
+- Improved: [#11390] Build hash written to screenshot metadata.
 
 0.2.6 (2020-04-17)
 ------------------------------------------------------------------------
@@ -39,6 +44,7 @@
 - Fix: [#11258] Properly remove format codes from imported strings.
 - Fix: [#11286] Fix banner tooltip colour.
 - Fix: Small red gardens in RCT1 saves are imported in the wrong colour.
+- Improved: [#6024] The close button in the object selection now advances to the next step.
 - Improved: [#11157] Slimmer virtual floor lines.
 
 0.2.5 (2020-03-24)
