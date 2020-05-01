@@ -26,6 +26,7 @@ class Formatter;
 class StationObject;
 struct Peep;
 struct Ride;
+struct RideTypeDescriptor;
 struct Staff;
 
 #define MAX_RIDE_TYPES_PER_RIDE_ENTRY 3
@@ -52,24 +53,6 @@ constexpr uint16_t const MAZE_CLEARANCE_HEIGHT = 4 * COORDS_Z_STEP;
 constexpr const ObjectEntryIndex RIDE_ENTRY_INDEX_NULL = OBJECT_ENTRY_INDEX_NULL;
 
 #pragma pack(push, 1)
-
-/**
- * Couples a ride type and subtype together.
- */
-struct ride_list_item
-{
-    union
-    {
-        struct
-        {
-            uint8_t type;
-            uint8_t entry_index;
-        };
-        uint16_t ride_type_and_entry;
-    };
-};
-assert_struct_size(ride_list_item, 2);
-
 struct TrackColour
 {
     uint8_t main;
@@ -111,40 +94,36 @@ assert_struct_size(rct_ride_name, 4);
 
 /**
  * Ride type structure.
- * size: unknown
  */
 struct rct_ride_entry
 {
     rct_ride_name naming;
-    uint32_t images_offset; // 0x004. The first three images are previews. They correspond to the ride_type[] array.
-    uint32_t flags;         // 0x008
-    uint8_t ride_type[RCT2_MAX_RIDE_TYPES_PER_RIDE_ENTRY]; // 0x00C
-    uint8_t min_cars_in_train;                             // 0x00F
-    uint8_t max_cars_in_train;                             // 0x010
-    uint8_t cars_per_flat_ride;                            // 0x011
+    // The first three images are previews. They correspond to the ride_type[] array.
+    uint32_t images_offset;
+    uint32_t flags;
+    uint8_t ride_type[RCT2_MAX_RIDE_TYPES_PER_RIDE_ENTRY];
+    uint8_t min_cars_in_train;
+    uint8_t max_cars_in_train;
+    uint8_t cars_per_flat_ride;
     // Number of cars that can't hold passengers
-    uint8_t zero_cars; // 0x012
-    // The index to the vehicle type displayed in
-    // the vehicle tab.
-    uint8_t tab_vehicle;     // 0x013
-    uint8_t default_vehicle; // 0x014
-    // Convert from first - fourth vehicle to
-    // vehicle structure
-    uint8_t front_vehicle;                                             // 0x015
-    uint8_t second_vehicle;                                            // 0x016
-    uint8_t rear_vehicle;                                              // 0x017
-    uint8_t third_vehicle;                                             // 0x018
-    uint8_t pad_019;                                                   // 0x019
-    rct_ride_entry_vehicle vehicles[RCT2_MAX_VEHICLES_PER_RIDE_ENTRY]; // 0x01A
-    vehicle_colour_preset_list* vehicle_preset_list;                   // 0x1AE
-    int8_t excitement_multiplier;                                      // 0x1B2
-    int8_t intensity_multiplier;                                       // 0x1B3
-    int8_t nausea_multiplier;                                          // 0x1B4
-    uint8_t max_height;                                                // 0x1B5
-    uint64_t enabledTrackPieces;                                       // 0x1B6
-    uint8_t category[RCT2_MAX_CATEGORIES_PER_RIDE];                    // 0x1BE
-    uint8_t shop_item;                                                 // 0x1C0
-    uint8_t shop_item_secondary;                                       // 0x1C1
+    uint8_t zero_cars;
+    // The index to the vehicle type displayed in the vehicle tab.
+    uint8_t tab_vehicle;
+    uint8_t default_vehicle;
+    // Convert from first - fourth vehicle to vehicle structure
+    uint8_t front_vehicle;
+    uint8_t second_vehicle;
+    uint8_t rear_vehicle;
+    uint8_t third_vehicle;
+    uint8_t pad_019;
+    rct_ride_entry_vehicle vehicles[RCT2_MAX_VEHICLES_PER_RIDE_ENTRY];
+    vehicle_colour_preset_list* vehicle_preset_list;
+    int8_t excitement_multiplier;
+    int8_t intensity_multiplier;
+    int8_t nausea_multiplier;
+    uint8_t max_height;
+    uint8_t shop_item;
+    uint8_t shop_item_secondary;
     rct_string_id capacity;
     void* obj;
 
@@ -450,6 +429,9 @@ public:
     static bool NameExists(const std::string_view& name, ride_id_t excludeRideId = RIDE_ID_NULL);
 
     std::unique_ptr<TrackDesign> SaveToTrackDesign() const;
+
+    uint64_t GetAvailableModes() const;
+    const RideTypeDescriptor& GetRideTypeDescriptor() const;
 };
 
 #pragma pack(push, 1)
@@ -524,9 +506,9 @@ enum
     RIDE_ENTRY_FLAG_SEPARATE_RIDE_NAME_DEPRECATED = 1 << 12, // Always set with SEPARATE_RIDE, and deprecated in favour of it.
     RIDE_ENTRY_FLAG_SEPARATE_RIDE_DEPRECATED = 1 << 13,      // Made redundant by ride groups
     RIDE_ENTRY_FLAG_CANNOT_BREAK_DOWN = 1 << 14,
-    RIDE_ENTRY_DISABLE_LAST_OPERATING_MODE = 1 << 15,
+    RIDE_ENTRY_DISABLE_LAST_OPERATING_MODE_DEPRECATED = 1 << 15,
     RIDE_ENTRY_FLAG_DISABLE_DOOR_CONSTRUCTION_DEPRECATED = 1 << 16,
-    RIDE_ENTRY_DISABLE_FIRST_TWO_OPERATING_MODES = 1 << 17,
+    RIDE_ENTRY_DISABLE_FIRST_TWO_OPERATING_MODES_DEPRECATED = 1 << 17,
     RIDE_ENTRY_FLAG_DISABLE_COLLISION_CRASHES = 1 << 18,
     RIDE_ENTRY_FLAG_DISABLE_COLOUR_TAB = 1 << 19,
     // Must be set with swing mode 1 as well.
@@ -650,7 +632,7 @@ enum
     RIDE_STATUS_SIMULATING,
 };
 
-enum
+enum : uint8_t
 {
     RIDE_MODE_NORMAL,
     RIDE_MODE_CONTINUOUS_CIRCUIT,
@@ -665,7 +647,7 @@ enum
     RIDE_MODE_UNLIMITED_RIDES_PER_ADMISSION = 10,
     RIDE_MODE_MAZE,
     RIDE_MODE_RACE,
-    RIDE_MODE_BUMPERCAR,
+    RIDE_MODE_DODGEMS,
     RIDE_MODE_SWING,
     RIDE_MODE_SHOP_STALL,
     RIDE_MODE_ROTATION,
@@ -690,7 +672,7 @@ enum
     RIDE_MODE_POWERED_LAUNCH, // RCT1 style, don't pass through station
     RIDE_MODE_POWERED_LAUNCH_BLOCK_SECTIONED,
 
-    RIDE_MOUNT_COUNT,
+    RIDE_MODE_COUNT,
     RIDE_MODE_NULL = 255,
 };
 
@@ -942,8 +924,6 @@ struct rct_ride_properties
     int8_t booster_speed_factor; // The factor to shift the raw booster speed with
 };
 
-#define RIDE_MODE_COUNT 37
-
 #define MAX_RIDE_MEASUREMENTS 8
 #define RIDE_VALUE_UNDEFINED 0xFFFF
 #define RIDE_INITIAL_RELIABILITY ((100 << 8) | 0xFF) // Upper byte is percentage, lower byte is "decimal".
@@ -1108,7 +1088,7 @@ void ride_update_satisfaction(Ride* ride, uint8_t happiness);
 void ride_update_popularity(Ride* ride, uint8_t pop_amount);
 bool ride_try_get_origin_element(const Ride* ride, CoordsXYE* output);
 int32_t ride_find_track_gap(const Ride* ride, CoordsXYE* input, CoordsXYE* output);
-void ride_construct_new(ride_list_item listItem);
+void ride_construct_new(RideSelection listItem);
 void ride_construct(Ride* ride);
 bool ride_modify(CoordsXYE* input);
 void ride_remove_peeps(Ride* ride);
@@ -1210,7 +1190,6 @@ void sub_6CB945(Ride* ride);
 void sub_6C94D8();
 
 void ride_reset_all_names();
-const uint8_t* ride_seek_available_modes(Ride* ride);
 
 void window_ride_construction_mouseup_demolish_next_piece(int32_t x, int32_t y, int32_t z, int32_t direction, int32_t type);
 

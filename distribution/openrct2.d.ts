@@ -91,6 +91,16 @@ declare global {
     interface Console {
         clear(): void;
         log(message?: any, ...optionalParams: any[]): void;
+
+        /**
+         * Executes a command using the legacy console REPL. This should not be used
+         * by plugins, and exists only for servers to continue using old commands until
+         * all functionality can be accomplished with this scripting API.
+         * 
+         * @deprecated
+         * @param command The command and arguments to execute.
+         */
+        executeLegacy(command: string): void;
     }
 
     /**
@@ -119,6 +129,7 @@ declare global {
          */
         getObject(type: ObjectType, index: number): Object;
         getObject(type: "ride", index: number): RideObject;
+        getObject(type: "small_scenery", index: number): SmallSceneryObject;
 
         getAllObjects(type: ObjectType): Object[];
         getAllObjects(type: "ride"): RideObject[];
@@ -174,6 +185,7 @@ declare global {
         subscribe(hook: "interval.tick", callback: () => void): IDisposable;
         subscribe(hook: "interval.day", callback: () => void): IDisposable;
         subscribe(hook: "network.chat", callback: (e: NetworkChatEventArgs) => void): IDisposable;
+        subscribe(hook: "network.authenticate", callback: (e: NetworkAuthenticateEventArgs) => void): IDisposable;
         subscribe(hook: "network.join", callback: (e: NetworkEventArgs) => void): IDisposable;
         subscribe(hook: "network.leave", callback: (e: NetworkEventArgs) => void): IDisposable;
     }
@@ -248,12 +260,35 @@ declare global {
         result: RideCreateGameActionResult;
     }
 
+    interface SmallSceneryPlaceEventArgs extends GameActionEventArgs {
+        readonly x: number;
+        readonly y: number;
+        readonly z: number;
+        readonly direction: number;
+        readonly quadrant: number;
+        readonly object: number;
+        readonly primaryColour: number;
+        readonly secondaryColour: number;
+    }
+
+    interface GuestSetNameActionEventArgs extends GameActionEventArgs {
+        readonly id: number;
+        readonly name: number;
+    }
+
     interface NetworkEventArgs {
         readonly player: number;
     }
 
     interface NetworkChatEventArgs extends NetworkEventArgs {
         message: string;
+    }
+
+    interface NetworkAuthenticateEventArgs {
+        readonly name: number;
+        readonly ipAddress: string;
+        readonly publicKeyHash: string;
+        cancel: boolean;
     }
 
     /**
@@ -451,6 +486,31 @@ declare global {
     }
 
     /**
+     * Represents the object definition of a small scenery item such a tree.
+     */
+    interface SmallSceneryObject extends Object {
+        /**
+         * Raw bit flags that describe characteristics of the scenery item.
+         */
+        readonly flags: number;
+
+        /**
+         * The default clearance height of the scenery item.
+         */
+        readonly height: number;
+
+        /**
+         * How much the scenery item costs to build.
+         */
+        readonly price: number;
+
+        /**
+         * How much the scenery item costs to remove.
+         */
+        readonly removalPrice: number;
+    }
+
+    /**
      * Represents a ride or stall within the park.
      */
     interface Ride {
@@ -523,11 +583,11 @@ declare global {
         /**
          * Colour of the peep's t-shirt.
          */
-        tshirt: number;
+        tshirtColour: number;
         /**
          * Colour of the peep's trousers.
          */
-        trousers: number;
+        trousersColour: number;
     }
 
     /**
@@ -536,13 +596,16 @@ declare global {
      */
     interface Network {
         readonly mode: NetworkMode;
-        readonly groups: number;
-        readonly players: number;
+        readonly numGroups: number;
+        readonly numPlayers: number;
+        readonly groups: PlayerGroup[];
+        readonly players: Player[];
         defaultGroup: number;
 
         getServerInfo(): ServerInfo;
+        addGroup(): void;
         getGroup(index: number): PlayerGroup;
-        setGroups(groups: PlayerGroup[]): void;
+        removeGroup(index: number): void;
         getPlayer(index: number): Player;
         kickPlayer(index: number): void;
         sendMessage(message: string): void;
@@ -561,6 +624,8 @@ declare global {
         readonly ping: number;
         readonly commandsRan: number;
         readonly moneySpent: number;
+        readonly ipAddress: string;
+        readonly publicKeyHash: string;
     }
 
     interface PlayerGroup {
@@ -607,15 +672,22 @@ declare global {
      * Park APIs
      */
 
-     /**
-      * The type of park message, including icon and behaviour.
-      */
-     type ParkMessageType =
+    /**
+     * The type of park message, including icon and behaviour.
+     */
+    type ParkMessageType =
         "attraction" | "peep_on_attraction" | "peep" | "money" | "blank" | "research" | "guests" | "award" | "chart";
 
     interface ParkMessage {
         type: ParkMessageType;
         text: string;
+
+        /**
+         * Ride ID for attraction.
+         * Entity ID for peep_on_attraction or peep.
+         * Researched item for research.
+         */
+        subject?: number;
     }
 
     interface Park {

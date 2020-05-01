@@ -10,6 +10,7 @@
 - Change: [#11449] Remove complete circuit requirement from Air Powered Vertical Coaster (for RCT1 parity).
 - Fix: [#1148] Research funding dropdown not shown in finances window.
 - Fix: [#6119] Advertising campaign for ride window not updated properly (original bug).
+- Fix: [#7006] Submarine Ride is in the wrong research group.
 - Fix: [#11072] Land and water tools working out of bounds (original bug).
 - Fix: [#11259] Custom JSON object breaks saves.
 - Fix: [#11290] Perform funds checking for all peeps entering a ride. 
@@ -18,6 +19,9 @@
 - Fix: RCT1 scenarios have more items in the object list than are present in the park or the research list.
 - Improved: [#6530] Allow water and land height changes on park borders.
 - Improved: [#11390] Build hash written to screenshot metadata.
+- Technical: [#8110] OpenRCT2 now uses a single directory name for title sequences instead of three.
+- Technical: [#11517] Windows Vista is supported again (libzip regression in the previous release).
+- Technical: The required version of macOS has been increased to 10.14 (Mojave) for plugin support.
 
 0.2.6 (2020-04-17)
 ------------------------------------------------------------------------

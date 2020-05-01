@@ -1122,17 +1122,14 @@ private:
                 rct1_vehicle* srcVehicle = &_s4.sprites[i].vehicle;
                 if (srcVehicle->x != LOCATION_NULL)
                 {
-                    Vehicle* vehicle = reinterpret_cast<Vehicle*>(create_sprite(SPRITE_IDENTIFIER_VEHICLE));
+                    // If vehicle is the first car on a train add to train list
+                    auto llt = srcVehicle->type == VEHICLE_TYPE_HEAD ? SPRITE_LIST_TRAIN_HEAD : SPRITE_LIST_VEHICLE;
+
+                    Vehicle* vehicle = reinterpret_cast<Vehicle*>(create_sprite(SPRITE_IDENTIFIER_VEHICLE, llt));
                     spriteIndexMap[i] = vehicle->sprite_index;
                     vehicles.push_back(vehicle);
 
                     ImportVehicle(vehicle, srcVehicle);
-
-                    // If vehicle is the first car on a train add to train list
-                    if (vehicle->IsHead())
-                    {
-                        move_sprite_to_list(vehicle, SPRITE_LIST_TRAIN_HEAD);
-                    }
                 }
             }
         }
@@ -2551,7 +2548,7 @@ private:
 
                 ResearchItem tmpResearchItem = {};
                 ConvertResearchEntry(&tmpResearchItem, researchItem, researchType);
-                dst->Assoc = static_cast<uint32_t>(tmpResearchItem.rawValue);
+                dst->Assoc = tmpResearchItem.rawValue;
             }
             else
             {
@@ -2595,7 +2592,7 @@ private:
 
     void ConvertResearchEntry(ResearchItem* dst, uint8_t srcItem, uint8_t srcType)
     {
-        dst->rawValue = RESEARCH_ITEM_NULL;
+        dst->SetNull();
         if (srcType == RCT1_RESEARCH_TYPE_RIDE)
         {
             auto entryIndex = _rideTypeToRideEntryMap[srcItem];
@@ -2606,11 +2603,12 @@ private:
 
                 if (rideEntry != nullptr)
                 {
+                    auto rideType = ride_entry_get_first_non_null_ride_type(rideEntry);
                     dst->entryIndex = entryIndex;
-                    dst->baseRideType = ride_entry_get_first_non_null_ride_type(rideEntry);
+                    dst->baseRideType = rideType;
                     dst->type = RESEARCH_ENTRY_TYPE_RIDE;
                     dst->flags = 0;
-                    dst->category = rideEntry->category[0];
+                    dst->category = RideTypeDescriptors[rideType].Category;
                 }
             }
         }
@@ -2624,11 +2622,12 @@ private:
 
                 if (rideEntry != nullptr)
                 {
+                    auto rideType = ride_entry_get_first_non_null_ride_type(rideEntry);
                     dst->entryIndex = entryIndex;
-                    dst->baseRideType = ride_entry_get_first_non_null_ride_type(rideEntry);
+                    dst->baseRideType = rideType;
                     dst->type = RESEARCH_ENTRY_TYPE_RIDE;
                     dst->flags = 0;
-                    dst->category = rideEntry->category[0];
+                    dst->category = RideTypeDescriptors[rideType].Category;
                 }
             }
         }
