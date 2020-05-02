@@ -512,7 +512,7 @@ namespace OpenRCT2::Ui::Windows
                     std::memcpy(&gDropdownItemsArgs[i], &sz, sizeof(const char*));
                 }
                 window_dropdown_show_text_custom_width(
-                    w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1,
+                    { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1,
                     w->colours[widget->colour], 0, DROPDOWN_FLAG_STAY_OPEN, numItems, widget->right - widget->left - 3);
             }
             else if (widgetDesc->Type == "spinner")
@@ -650,7 +650,7 @@ namespace OpenRCT2::Ui::Windows
             }
             widgetIndex++;
         }
-        return 0;
+        return std::nullopt;
     }
 
     static void window_custom_update_viewport(rct_window* w)
@@ -978,7 +978,7 @@ namespace OpenRCT2::Ui::Windows
                 }
             }
         }
-        return {};
+        return std::nullopt;
     }
 
 } // namespace OpenRCT2::Ui::Windows

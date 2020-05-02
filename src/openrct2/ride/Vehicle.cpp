@@ -45,14 +45,11 @@
 #include <algorithm>
 #include <iterator>
 
-static void vehicle_claxon(const Vehicle* vehicle);
-
 static bool vehicle_boat_is_location_accessible(const CoordsXYZ& location);
 static bool vehicle_update_motion_collision_detection(
     Vehicle* vehicle, int16_t x, int16_t y, int16_t z, uint16_t* otherVehicleIndex);
 
 static void vehicle_kill_all_passengers(Vehicle* vehicle);
-static bool vehicle_can_depart_synchronised(Vehicle* vehicle);
 
 constexpr int16_t VEHICLE_MAX_SPIN_SPEED = 1536;
 constexpr int16_t VEHICLE_MIN_SPIN_SPEED = -VEHICLE_MAX_SPIN_SPEED;
@@ -1348,37 +1345,37 @@ void vehicle_update_all()
  *  rct2: 0x006D6956
  * @returns true when all closed
  */
-static bool vehicle_close_restraints(Vehicle* vehicle)
+bool Vehicle::CloseRestraints()
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride == nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide == nullptr)
         return true;
 
     bool restraintsClosed = true;
-    uint16_t vehicle_id = vehicle->sprite_index;
-
+    uint16_t vehicle_id = sprite_index;
+    Vehicle* vehicle = this;
     do
     {
         vehicle = GET_VEHICLE(vehicle_id);
         if (vehicle->update_flags & VEHICLE_UPDATE_FLAG_BROKEN_CAR && vehicle->restraints_position != 0
-            && (ride->breakdown_reason_pending == BREAKDOWN_RESTRAINTS_STUCK_OPEN
-                || ride->breakdown_reason_pending == BREAKDOWN_DOORS_STUCK_OPEN))
+            && (curRide->breakdown_reason_pending == BREAKDOWN_RESTRAINTS_STUCK_OPEN
+                || curRide->breakdown_reason_pending == BREAKDOWN_DOORS_STUCK_OPEN))
         {
-            if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN))
+            if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN))
             {
-                ride->lifecycle_flags |= RIDE_LIFECYCLE_BROKEN_DOWN;
+                curRide->lifecycle_flags |= RIDE_LIFECYCLE_BROKEN_DOWN;
 
-                ride_breakdown_add_news_item(ride);
+                ride_breakdown_add_news_item(curRide);
 
-                ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST
+                curRide->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST
                     | RIDE_INVALIDATE_RIDE_MAINTENANCE;
 
-                ride->mechanic_status = RIDE_MECHANIC_STATUS_CALLING;
+                curRide->mechanic_status = RIDE_MECHANIC_STATUS_CALLING;
 
-                Vehicle* broken_vehicle = GET_VEHICLE(ride->vehicles[ride->broken_vehicle]);
-                ride->inspection_station = broken_vehicle->current_station;
+                Vehicle* broken_vehicle = GET_VEHICLE(curRide->vehicles[curRide->broken_vehicle]);
+                curRide->inspection_station = broken_vehicle->current_station;
 
-                ride->breakdown_reason = ride->breakdown_reason_pending;
+                curRide->breakdown_reason = curRide->breakdown_reason_pending;
             }
         }
         else
@@ -1401,11 +1398,11 @@ static bool vehicle_close_restraints(Vehicle* vehicle)
  *  rct2: 0x006D6A2C
  * @returns true when all open
  */
-static bool vehicle_open_restraints(Vehicle* vehicle)
+bool Vehicle::OpenRestraints()
 {
     int32_t restraintsOpen = true;
-    uint16_t vehicle_id = vehicle->sprite_index;
-
+    uint16_t vehicle_id = sprite_index;
+    Vehicle* vehicle = this;
     do
     {
         vehicle = GET_VEHICLE(vehicle_id);
@@ -1414,8 +1411,8 @@ static bool vehicle_open_restraints(Vehicle* vehicle)
         vehicle->var_4E = 0;
         vehicle->swing_sprite = 0;
 
-        auto ride = get_ride(vehicle->ride);
-        if (ride == nullptr)
+        auto curRide = get_ride(vehicle->ride);
+        if (curRide == nullptr)
             continue;
 
         auto rideEntry = get_ride_entry(vehicle->ride_subtype);
@@ -1471,24 +1468,24 @@ static bool vehicle_open_restraints(Vehicle* vehicle)
         }
 
         if (vehicle->update_flags & VEHICLE_UPDATE_FLAG_BROKEN_CAR && vehicle->restraints_position != 0xFF
-            && (ride->breakdown_reason_pending == BREAKDOWN_RESTRAINTS_STUCK_CLOSED
-                || ride->breakdown_reason_pending == BREAKDOWN_DOORS_STUCK_CLOSED))
+            && (curRide->breakdown_reason_pending == BREAKDOWN_RESTRAINTS_STUCK_CLOSED
+                || curRide->breakdown_reason_pending == BREAKDOWN_DOORS_STUCK_CLOSED))
         {
-            if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN))
+            if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN))
             {
-                ride->lifecycle_flags |= RIDE_LIFECYCLE_BROKEN_DOWN;
+                curRide->lifecycle_flags |= RIDE_LIFECYCLE_BROKEN_DOWN;
 
-                ride_breakdown_add_news_item(ride);
+                ride_breakdown_add_news_item(curRide);
 
-                ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST
+                curRide->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST
                     | RIDE_INVALIDATE_RIDE_MAINTENANCE;
 
-                ride->mechanic_status = RIDE_MECHANIC_STATUS_CALLING;
+                curRide->mechanic_status = RIDE_MECHANIC_STATUS_CALLING;
 
-                Vehicle* broken_vehicle = GET_VEHICLE(ride->vehicles[ride->broken_vehicle]);
-                ride->inspection_station = broken_vehicle->current_station;
+                Vehicle* broken_vehicle = GET_VEHICLE(curRide->vehicles[curRide->broken_vehicle]);
+                curRide->inspection_station = broken_vehicle->current_station;
 
-                ride->breakdown_reason = ride->breakdown_reason_pending;
+                curRide->breakdown_reason = curRide->breakdown_reason_pending;
             }
         }
         else
@@ -1559,7 +1556,7 @@ void Vehicle::UpdateMeasurements()
 
         if (ride_type_has_flag(curRide->type, RIDE_TYPE_FLAG_HAS_G_FORCES))
         {
-            auto gForces = vehicle_get_g_forces(this);
+            auto gForces = GetGForces();
             gForces.VerticalG += curRide->previous_vertical_g;
             gForces.LateralG += curRide->previous_lateral_g;
             gForces.VerticalG /= 2;
@@ -2146,56 +2143,56 @@ void Vehicle::UpdateMovingToEndOfStation()
  *
  *  rct2: 0x006D7FB4
  */
-static void train_ready_to_depart(Vehicle* vehicle, uint8_t num_peeps_on_train, uint8_t num_used_seats)
+void Vehicle::TrainReadToDepart(uint8_t num_peeps_on_train, uint8_t num_used_seats)
 {
     if (num_peeps_on_train != num_used_seats)
         return;
 
-    auto ride = get_ride(vehicle->ride);
-    if (ride == nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide == nullptr)
         return;
 
-    if (ride->status == RIDE_STATUS_OPEN && !(ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN)
-        && !(vehicle->update_flags & VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART))
+    if (curRide->status == RIDE_STATUS_OPEN && !(curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN)
+        && !(update_flags & VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART))
     {
         return;
     }
 
-    if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN))
+    if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN))
     {
         // Original code did not check if the ride was a boat hire, causing empty boats to leave the platform when closing a
         // Boat Hire with passengers on it.
-        if (ride->status != RIDE_STATUS_CLOSED || (ride->num_riders != 0 && ride->type != RIDE_TYPE_BOAT_HIRE))
+        if (curRide->status != RIDE_STATUS_CLOSED || (curRide->num_riders != 0 && curRide->type != RIDE_TYPE_BOAT_HIRE))
         {
-            ride->stations[vehicle->current_station].TrainAtStation = RideStation::NO_TRAIN;
-            vehicle->sub_state = 2;
+            curRide->stations[current_station].TrainAtStation = RideStation::NO_TRAIN;
+            sub_state = 2;
             return;
         }
     }
 
-    if (ride->mode == RIDE_MODE_FORWARD_ROTATION || ride->mode == RIDE_MODE_BACKWARD_ROTATION)
+    if (curRide->mode == RIDE_MODE_FORWARD_ROTATION || curRide->mode == RIDE_MODE_BACKWARD_ROTATION)
     {
-        uint8_t peep = ((-vehicle->vehicle_sprite_type) / 8) & 0xF;
-        if (vehicle->peep[peep] != SPRITE_INDEX_NULL)
+        uint8_t seat = ((-vehicle_sprite_type) / 8) & 0xF;
+        if (peep[seat] != SPRITE_INDEX_NULL)
         {
-            ride->stations[vehicle->current_station].TrainAtStation = RideStation::NO_TRAIN;
-            vehicle->SetState(VEHICLE_STATUS_UNLOADING_PASSENGERS);
+            curRide->stations[current_station].TrainAtStation = RideStation::NO_TRAIN;
+            SetState(VEHICLE_STATUS_UNLOADING_PASSENGERS);
             return;
         }
 
-        if (vehicle->num_peeps == 0)
+        if (num_peeps == 0)
             return;
 
-        ride->stations[vehicle->current_station].TrainAtStation = RideStation::NO_TRAIN;
-        vehicle->sub_state = 2;
+        curRide->stations[current_station].TrainAtStation = RideStation::NO_TRAIN;
+        sub_state = 2;
         return;
     }
 
     if (num_peeps_on_train == 0)
         return;
 
-    ride->stations[vehicle->current_station].TrainAtStation = RideStation::NO_TRAIN;
-    vehicle->SetState(VEHICLE_STATUS_WAITING_FOR_PASSENGERS);
+    curRide->stations[current_station].TrainAtStation = RideStation::NO_TRAIN;
+    SetState(VEHICLE_STATUS_WAITING_FOR_PASSENGERS);
 }
 
 static std::optional<uint32_t> ride_get_train_index_from_vehicle(Ride* ride, uint16_t spriteIndex)
@@ -2213,7 +2210,7 @@ static std::optional<uint32_t> ride_get_train_index_from_vehicle(Ride* ride, uin
         }
         else if (trainIndex >= std::size(ride->vehicles))
         {
-            return {};
+            return std::nullopt;
         }
     }
     return { trainIndex };
@@ -2233,7 +2230,7 @@ void Vehicle::UpdateWaitingForPassengers()
 
     if (sub_state == 0)
     {
-        if (!vehicle_open_restraints(this))
+        if (!OpenRestraints())
             return;
 
         if (ride_get_entrance_location(curRide, current_station).isNull())
@@ -2286,7 +2283,7 @@ void Vehicle::UpdateWaitingForPassengers()
         {
             if (time_waiting < 20)
             {
-                train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+                TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
                 return;
             }
         }
@@ -2294,7 +2291,7 @@ void Vehicle::UpdateWaitingForPassengers()
         {
             if (num_peeps_on_train == 0)
             {
-                train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+                TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
                 return;
             }
         }
@@ -2305,7 +2302,7 @@ void Vehicle::UpdateWaitingForPassengers()
             {
                 if (curRide->min_waiting_time * 32 > time_waiting)
                 {
-                    train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+                    TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
                     return;
                 }
             }
@@ -2314,7 +2311,7 @@ void Vehicle::UpdateWaitingForPassengers()
                 if (curRide->max_waiting_time * 32 < time_waiting)
                 {
                     update_flags |= VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART;
-                    train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+                    TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
                     return;
                 }
             }
@@ -2338,7 +2335,7 @@ void Vehicle::UpdateWaitingForPassengers()
                     if (train->current_station == current_station)
                     {
                         update_flags |= VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART;
-                        train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+                        TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
                         return;
                     }
                 }
@@ -2351,7 +2348,7 @@ void Vehicle::UpdateWaitingForPassengers()
             if (num_peeps_on_train == num_seats_on_train)
             {
                 update_flags |= VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART;
-                train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+                TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
                 return;
             }
 
@@ -2369,16 +2366,16 @@ void Vehicle::UpdateWaitingForPassengers()
             if (num_peeps_on_train >= peepTarget)
                 update_flags |= VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART;
 
-            train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+            TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
             return;
         }
 
         update_flags |= VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART;
-        train_ready_to_depart(this, num_peeps_on_train, num_used_seats_on_train);
+        TrainReadToDepart(num_peeps_on_train, num_used_seats_on_train);
         return;
     }
 
-    if (!vehicle_close_restraints(this))
+    if (!CloseRestraints())
         return;
 
     velocity = 0;
@@ -2515,7 +2512,7 @@ void Vehicle::UpdateWaitingToDepart()
         {
             if (update_flags & VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT)
             {
-                if (!vehicle_can_depart_synchronised(this))
+                if (!CanDepartSynchronised())
                 {
                     return;
                 }
@@ -2771,13 +2768,12 @@ static bool try_add_synchronised_station(int32_t x, int32_t y, int32_t z)
  *  The vehicle flag VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT is cleared for those
  *  vehicles that depart in sync with the vehicle in the param.
  */
-static bool vehicle_can_depart_synchronised(Vehicle* vehicle)
+static bool ride_station_can_depart_synchronised(ride_id_t curRideId, StationIndex station)
 {
-    auto ride = get_ride(vehicle->ride);
+    auto ride = get_ride(curRideId);
     if (ride == nullptr)
         return false;
 
-    StationIndex station = vehicle->current_station;
     auto location = ride->stations[station].GetStart();
     int32_t x = location.x;
     int32_t y = location.y;
@@ -2902,7 +2898,7 @@ static bool vehicle_can_depart_synchronised(Vehicle* vehicle)
                     }
                     ride_id_t someRideIndex = _synchronisedVehicles[0].ride_id;
                     // uint8_t currentStation = _synchronisedVehicles[0].station_id
-                    if (someRideIndex != vehicle->ride)
+                    if (someRideIndex != curRideId)
                     {
                         // Sync condition: the first station to sync is a different ride
                         return false;
@@ -2970,6 +2966,11 @@ static bool vehicle_can_depart_synchronised(Vehicle* vehicle)
     return true;
 }
 
+bool Vehicle::CanDepartSynchronised() const
+{
+    return ride_station_can_depart_synchronised(ride, current_station);
+}
+
 /**
  *
  *  rct2: 0x006D9EB0
@@ -2996,14 +2997,13 @@ void Vehicle::PeepEasterEggHereWeAre() const
  * Performed when vehicle has completed a full circuit
  *  rct2: 0x006D7338
  */
-void vehicle_update_test_finish(Vehicle* vehicle)
+static bool test_finish(ride_id_t rideId)
 {
-    auto ride = get_ride(vehicle->ride);
+    auto ride = get_ride(rideId);
     if (ride == nullptr)
-        return;
+        return false;
 
     ride->lifecycle_flags &= ~RIDE_LIFECYCLE_TEST_IN_PROGRESS;
-    vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_TESTING;
     ride->lifecycle_flags |= RIDE_LIFECYCLE_TESTED;
 
     for (int32_t i = ride->num_stations - 1; i >= 1; i--)
@@ -3028,19 +3028,25 @@ void vehicle_update_test_finish(Vehicle* vehicle)
 
     totalTime = std::max(totalTime, 1u);
     ride->average_speed = ride->average_speed / totalTime;
+    window_invalidate_by_number(WC_RIDE, rideId);
+    return true;
+}
 
-    window_invalidate_by_number(WC_RIDE, vehicle->ride);
+void Vehicle::UpdateTestFinish()
+{
+    if (!test_finish(ride))
+        return;
+
+    update_flags &= ~VEHICLE_UPDATE_FLAG_TESTING;
 }
 
 /**
  *
  *  rct2: 0x006D6BE7
  */
-void vehicle_test_reset(Vehicle* vehicle)
+static void test_reset(ride_id_t rideId, StationIndex curStation)
 {
-    vehicle->update_flags |= VEHICLE_UPDATE_FLAG_TESTING;
-
-    auto ride = get_ride(vehicle->ride);
+    auto ride = get_ride(rideId);
     if (ride == nullptr)
         return;
 
@@ -3075,8 +3081,14 @@ void vehicle_test_reset(Vehicle* vehicle)
         station.SegmentTime = 0;
     }
     ride->total_air_time = 0;
-    ride->current_test_station = vehicle->current_station;
-    window_invalidate_by_number(WC_RIDE, vehicle->ride);
+    ride->current_test_station = curStation;
+    window_invalidate_by_number(WC_RIDE, rideId);
+}
+
+void Vehicle::TestReset()
+{
+    update_flags |= VEHICLE_UPDATE_FLAG_TESTING;
+    test_reset(ride, current_station);
 }
 
 bool Vehicle::CurrentTowerElementIsTop()
@@ -3198,12 +3210,12 @@ void Vehicle::UpdateDeparting()
                 }
                 else
                 {
-                    vehicle_update_test_finish(this);
+                    UpdateTestFinish();
                 }
             }
             else if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TEST_IN_PROGRESS) && !IsGhost())
             {
-                vehicle_test_reset(this);
+                TestReset();
             }
         }
     }
@@ -3472,12 +3484,12 @@ void Vehicle::CheckIfMissing()
     }
 }
 
-static void vehicle_simulate_crash(Vehicle* vehicle)
+void Vehicle::SimulateCrash() const
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride != nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide != nullptr)
     {
-        ride->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
+        curRide->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
     }
 }
 
@@ -3495,7 +3507,7 @@ void Vehicle::UpdateCollisionSetup()
 
     if (curRide->status == RIDE_STATUS_SIMULATING)
     {
-        vehicle_simulate_crash(this);
+        SimulateCrash();
         return;
     }
 
@@ -3577,12 +3589,12 @@ void Vehicle::UpdateCrashSetup()
     auto curRide = get_ride(ride);
     if (curRide != nullptr && curRide->status == RIDE_STATUS_SIMULATING)
     {
-        vehicle_simulate_crash(this);
+        SimulateCrash();
         return;
     }
     SetState(VEHICLE_STATUS_CRASHING, sub_state);
 
-    if (vehicle_get_total_num_peeps(this) != 0)
+    if (NumPeepsUntilTrainTail() != 0)
     {
         audio_play_sound_at_location(SoundId::HauntedHouseScream2, { x, y, z });
     }
@@ -4023,7 +4035,7 @@ void Vehicle::UpdateUnloadingPassengers()
 {
     if (sub_state == 0)
     {
-        if (vehicle_open_restraints(this))
+        if (OpenRestraints())
         {
             sub_state = 1;
         }
@@ -4063,7 +4075,7 @@ void Vehicle::UpdateUnloadingPassengers()
             if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && update_flags & VEHICLE_UPDATE_FLAG_TESTING
                 && curRide->current_test_segment + 1 >= curRide->num_stations)
             {
-                vehicle_update_test_finish(this);
+                UpdateTestFinish();
             }
             SetState(VEHICLE_STATUS_MOVING_TO_END_OF_STATION);
             return;
@@ -4103,7 +4115,7 @@ void Vehicle::UpdateUnloadingPassengers()
     if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && update_flags & VEHICLE_UPDATE_FLAG_TESTING
         && curRide->current_test_segment + 1 >= curRide->num_stations)
     {
-        vehicle_update_test_finish(this);
+        UpdateTestFinish();
     }
     SetState(VEHICLE_STATUS_MOVING_TO_END_OF_STATION);
 }
@@ -4169,12 +4181,12 @@ void Vehicle::UpdateTravellingCableLift()
                 }
                 else
                 {
-                    vehicle_update_test_finish(this);
+                    UpdateTestFinish();
                 }
             }
             else if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TEST_IN_PROGRESS) && !IsGhost())
             {
-                vehicle_test_reset(this);
+                TestReset();
             }
         }
     }
@@ -5218,131 +5230,131 @@ static void vehicle_kill_all_passengers(Vehicle* vehicle)
     }
 }
 
-static void vehicle_crash_on_land(Vehicle* vehicle)
+void Vehicle::CrashOnLand()
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride == nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide == nullptr)
         return;
 
-    if (ride->status == RIDE_STATUS_SIMULATING)
+    if (curRide->status == RIDE_STATUS_SIMULATING)
     {
-        vehicle_simulate_crash(vehicle);
+        SimulateCrash();
         return;
     }
-    vehicle->SetState(VEHICLE_STATUS_CRASHED, vehicle->sub_state);
+    SetState(VEHICLE_STATUS_CRASHED, sub_state);
 
-    if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_CRASHED))
+    if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_CRASHED))
     {
-        auto frontVehicle = vehicle->GetHead();
-        auto trainIndex = ride_get_train_index_from_vehicle(ride, frontVehicle->sprite_index);
+        auto frontVehicle = GetHead();
+        auto trainIndex = ride_get_train_index_from_vehicle(curRide, frontVehicle->sprite_index);
         if (!trainIndex)
         {
             return;
         }
 
-        ride->Crash(*trainIndex);
+        curRide->Crash(*trainIndex);
 
-        if (ride->status != RIDE_STATUS_CLOSED)
+        if (curRide->status != RIDE_STATUS_CLOSED)
         {
             // We require this to execute right away during the simulation, always ignore network and queue.
-            auto gameAction = RideSetStatusAction(ride->id, RIDE_STATUS_CLOSED);
+            auto gameAction = RideSetStatusAction(curRide->id, RIDE_STATUS_CLOSED);
             GameActions::ExecuteNested(&gameAction);
         }
     }
-    ride->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
-    ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+    curRide->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
+    curRide->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
 
-    if (vehicle->IsHead())
+    if (IsHead())
     {
-        vehicle_kill_all_passengers(vehicle);
+        vehicle_kill_all_passengers(this);
     }
 
-    vehicle->sub_state = 2;
-    audio_play_sound_at_location(SoundId::Crash, { vehicle->x, vehicle->y, vehicle->z });
+    sub_state = 2;
+    audio_play_sound_at_location(SoundId::Crash, { x, y, z });
 
-    sprite_misc_explosion_cloud_create(vehicle->x, vehicle->y, vehicle->z);
-    sprite_misc_explosion_flare_create(vehicle->x, vehicle->y, vehicle->z);
+    sprite_misc_explosion_cloud_create(x, y, z);
+    sprite_misc_explosion_flare_create(x, y, z);
 
-    uint8_t numParticles = std::min(vehicle->sprite_width, static_cast<uint8_t>(7));
+    uint8_t numParticles = std::min(sprite_width, static_cast<uint8_t>(7));
 
     while (numParticles-- != 0)
-        crashed_vehicle_particle_create(vehicle->colours, vehicle->x, vehicle->y, vehicle->z);
+        crashed_vehicle_particle_create(colours, x, y, z);
 
-    vehicle->flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
-    vehicle->animation_frame = 0;
-    vehicle->var_C8 = 0;
-    vehicle->sprite_width = 13;
-    vehicle->sprite_height_negative = 45;
-    vehicle->sprite_height_positive = 5;
+    flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
+    animation_frame = 0;
+    var_C8 = 0;
+    sprite_width = 13;
+    sprite_height_negative = 45;
+    sprite_height_positive = 5;
 
-    sprite_move(vehicle->x, vehicle->y, vehicle->z, vehicle);
-    vehicle->Invalidate();
+    sprite_move(x, y, z, this);
+    Invalidate();
 
-    vehicle->crash_z = 0;
+    crash_z = 0;
 }
 
-static void vehicle_crash_on_water(Vehicle* vehicle)
+void Vehicle::CrashOnWater()
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride == nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide == nullptr)
         return;
 
-    if (ride->status == RIDE_STATUS_SIMULATING)
+    if (curRide->status == RIDE_STATUS_SIMULATING)
     {
-        vehicle_simulate_crash(vehicle);
+        SimulateCrash();
         return;
     }
-    vehicle->SetState(VEHICLE_STATUS_CRASHED, vehicle->sub_state);
+    SetState(VEHICLE_STATUS_CRASHED, sub_state);
 
-    if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_CRASHED))
+    if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_CRASHED))
     {
-        auto frontVehicle = vehicle->GetHead();
-        auto trainIndex = ride_get_train_index_from_vehicle(ride, frontVehicle->sprite_index);
+        auto frontVehicle = GetHead();
+        auto trainIndex = ride_get_train_index_from_vehicle(curRide, frontVehicle->sprite_index);
         if (!trainIndex)
         {
             return;
         }
 
-        ride->Crash(*trainIndex);
+        curRide->Crash(*trainIndex);
 
-        if (ride->status != RIDE_STATUS_CLOSED)
+        if (curRide->status != RIDE_STATUS_CLOSED)
         {
             // We require this to execute right away during the simulation, always ignore network and queue.
-            auto gameAction = RideSetStatusAction(ride->id, RIDE_STATUS_CLOSED);
+            auto gameAction = RideSetStatusAction(curRide->id, RIDE_STATUS_CLOSED);
             GameActions::ExecuteNested(&gameAction);
         }
     }
-    ride->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
-    ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+    curRide->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
+    curRide->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
 
-    if (vehicle->IsHead())
+    if (IsHead())
     {
-        vehicle_kill_all_passengers(vehicle);
+        vehicle_kill_all_passengers(this);
     }
 
-    vehicle->sub_state = 2;
-    audio_play_sound_at_location(SoundId::Water1, { vehicle->x, vehicle->y, vehicle->z });
+    sub_state = 2;
+    audio_play_sound_at_location(SoundId::Water1, { x, y, z });
 
-    crash_splash_create(vehicle->x, vehicle->y, vehicle->z);
-    crash_splash_create(vehicle->x - 8, vehicle->y - 9, vehicle->z);
-    crash_splash_create(vehicle->x + 11, vehicle->y - 9, vehicle->z);
-    crash_splash_create(vehicle->x + 11, vehicle->y + 8, vehicle->z);
-    crash_splash_create(vehicle->x - 4, vehicle->y + 8, vehicle->z);
+    crash_splash_create(x, y, z);
+    crash_splash_create(x - 8, y - 9, z);
+    crash_splash_create(x + 11, y - 9, z);
+    crash_splash_create(x + 11, y + 8, z);
+    crash_splash_create(x - 4, y + 8, z);
 
     for (int32_t i = 0; i < 10; ++i)
-        crashed_vehicle_particle_create(vehicle->colours, vehicle->x - 4, vehicle->y + 8, vehicle->z);
+        crashed_vehicle_particle_create(colours, x - 4, y + 8, z);
 
-    vehicle->flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
-    vehicle->animation_frame = 0;
-    vehicle->var_C8 = 0;
-    vehicle->sprite_width = 13;
-    vehicle->sprite_height_negative = 45;
-    vehicle->sprite_height_positive = 5;
+    flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
+    animation_frame = 0;
+    var_C8 = 0;
+    sprite_width = 13;
+    sprite_height_negative = 45;
+    sprite_height_positive = 5;
 
-    sprite_move(vehicle->x, vehicle->y, vehicle->z, vehicle);
-    vehicle->Invalidate();
+    sprite_move(x, y, z, this);
+    Invalidate();
 
-    vehicle->crash_z = -1;
+    crash_z = -1;
 }
 
 /**
@@ -5386,7 +5398,7 @@ void Vehicle::UpdateCrash()
         }
         else if (curVehicle->sub_state == 1)
         {
-            vehicle_crash_on_land(curVehicle);
+            curVehicle->CrashOnLand();
             continue;
         }
 
@@ -5398,7 +5410,7 @@ void Vehicle::UpdateCrash()
             zDiff = curVehicle->z - waterHeight;
             if (zDiff <= 0 && zDiff >= -20)
             {
-                vehicle_crash_on_water(curVehicle);
+                curVehicle->CrashOnWater();
                 continue;
             }
         }
@@ -5406,7 +5418,7 @@ void Vehicle::UpdateCrash()
         zDiff = curVehicle->z - height;
         if ((zDiff <= 0 && zDiff >= -20) || curVehicle->z < 16)
         {
-            vehicle_crash_on_land(curVehicle);
+            curVehicle->CrashOnLand();
             continue;
         }
 
@@ -5421,7 +5433,7 @@ void Vehicle::UpdateCrash()
 
         if (!map_is_location_valid(curPosition))
         {
-            vehicle_crash_on_land(curVehicle);
+            curVehicle->CrashOnLand();
             continue;
         }
 
@@ -5561,7 +5573,7 @@ SoundId Vehicle::UpdateScreamSound()
 
     rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
 
-    int32_t totalNumPeeps = vehicle_get_total_num_peeps(this);
+    int32_t totalNumPeeps = NumPeepsUntilTrainTail();
     if (totalNumPeeps == 0)
         return SoundId::Null;
 
@@ -5641,15 +5653,15 @@ produceScream:
  * dx: lateralG
  * esi: vehicle
  */
-GForces vehicle_get_g_forces(const Vehicle* vehicle)
+GForces Vehicle::GetGForces() const
 {
-    int32_t gForceVert = ((static_cast<int64_t>(0x280000)) * Unk9A37E4[vehicle->vehicle_sprite_type]) >> 32;
-    gForceVert = ((static_cast<int64_t>(gForceVert)) * Unk9A39C4[vehicle->bank_rotation]) >> 32;
+    int32_t gForceVert = ((static_cast<int64_t>(0x280000)) * Unk9A37E4[vehicle_sprite_type]) >> 32;
+    gForceVert = ((static_cast<int64_t>(gForceVert)) * Unk9A39C4[bank_rotation]) >> 32;
     int32_t lateralFactor = 0, vertFactor = 0;
 
     // Note shr has meant some of the below functions cast a known negative number to
     // unsigned. Possibly an original bug but will be left implemented.
-    switch (vehicle->track_type >> 2)
+    switch (track_type >> 2)
     {
         case TRACK_ELEM_FLAT:
         case TRACK_ELEM_END_STATION:
@@ -5825,17 +5837,17 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
             break;
         case TRACK_ELEM_S_BEND_LEFT:
         case TRACK_ELEM_S_BEND_LEFT_COVERED:
-            lateralFactor = (vehicle->track_progress < 48) ? 98 : -98;
+            lateralFactor = (track_progress < 48) ? 98 : -98;
             // 6d75FF
             break;
         case TRACK_ELEM_S_BEND_RIGHT:
         case TRACK_ELEM_S_BEND_RIGHT_COVERED:
-            lateralFactor = (vehicle->track_progress < 48) ? -98 : 98;
+            lateralFactor = (track_progress < 48) ? -98 : 98;
             // 6d7608
             break;
         case TRACK_ELEM_LEFT_VERTICAL_LOOP:
         case TRACK_ELEM_RIGHT_VERTICAL_LOOP:
-            vertFactor = (abs(vehicle->track_progress - 155) / 2) + 28;
+            vertFactor = (abs(track_progress - 155) / 2) + 28;
             // 6d7690
             break;
         case TRACK_ELEM_LEFT_QUARTER_TURN_3_TILES:
@@ -5878,12 +5890,12 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
             break;
         case TRACK_ELEM_HALF_LOOP_UP:
         case TRACK_ELEM_FLYER_HALF_LOOP_UP:
-            vertFactor = ((static_cast<uint16_t>(-(vehicle->track_progress - 155))) / 2) + 28;
+            vertFactor = ((static_cast<uint16_t>(-(track_progress - 155))) / 2) + 28;
             // 6d763E
             break;
         case TRACK_ELEM_HALF_LOOP_DOWN:
         case TRACK_ELEM_FLYER_HALF_LOOP_DOWN:
-            vertFactor = (vehicle->track_progress / 2) + 28;
+            vertFactor = (track_progress / 2) + 28;
             // 6d7656
             break;
         case TRACK_ELEM_LEFT_CORKSCREW_UP:
@@ -5925,16 +5937,16 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
             break;
         case TRACK_ELEM_WATER_SPLASH:
             vertFactor = -150;
-            if (vehicle->track_progress < 32)
+            if (track_progress < 32)
                 break;
             vertFactor = 150;
-            if (vehicle->track_progress < 64)
+            if (track_progress < 64)
                 break;
             vertFactor = 0;
-            if (vehicle->track_progress < 96)
+            if (track_progress < 96)
                 break;
             vertFactor = 150;
-            if (vehicle->track_progress < 128)
+            if (track_progress < 128)
                 break;
             vertFactor = -150;
             // 6d7408
@@ -6037,63 +6049,63 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
             // 6d75A8
             break;
         case TRACK_ELEM_LEFT_BANK_TO_LEFT_QUARTER_TURN_3_TILES_25_DEG_UP:
-            vertFactor = -(vehicle->track_progress / 2) + 134;
+            vertFactor = -(track_progress / 2) + 134;
             lateralFactor = 90;
             // 6d771C
             break;
         case TRACK_ELEM_RIGHT_BANK_TO_RIGHT_QUARTER_TURN_3_TILES_25_DEG_UP:
-            vertFactor = -(vehicle->track_progress / 2) + 134;
+            vertFactor = -(track_progress / 2) + 134;
             lateralFactor = -90;
             // 6D7746
             break;
         case TRACK_ELEM_LEFT_QUARTER_TURN_3_TILES_25_DEG_DOWN_TO_LEFT_BANK:
-            vertFactor = -(vehicle->track_progress / 2) + 134;
+            vertFactor = -(track_progress / 2) + 134;
             lateralFactor = 90;
             // 6D7731 identical to 6d771c
             break;
         case TRACK_ELEM_RIGHT_QUARTER_TURN_3_TILES_25_DEG_DOWN_TO_RIGHT_BANK:
-            vertFactor = -(vehicle->track_progress / 2) + 134;
+            vertFactor = -(track_progress / 2) + 134;
             lateralFactor = -90;
             // 6D775B identical to 6d7746
             break;
         case TRACK_ELEM_LEFT_LARGE_HALF_LOOP_UP:
         case TRACK_ELEM_RIGHT_LARGE_HALF_LOOP_UP:
-            vertFactor = ((static_cast<uint16_t>(-(vehicle->track_progress - 311))) / 4) + 46;
+            vertFactor = ((static_cast<uint16_t>(-(track_progress - 311))) / 4) + 46;
             // 6d7666
             break;
         case TRACK_ELEM_RIGHT_LARGE_HALF_LOOP_DOWN:
         case TRACK_ELEM_LEFT_LARGE_HALF_LOOP_DOWN:
-            vertFactor = (vehicle->track_progress / 4) + 46;
+            vertFactor = (track_progress / 4) + 46;
             // 6d767F
             break;
         case TRACK_ELEM_HEARTLINE_TRANSFER_UP:
             vertFactor = 103;
-            if (vehicle->track_progress < 32)
+            if (track_progress < 32)
                 break;
             vertFactor = -103;
-            if (vehicle->track_progress < 64)
+            if (track_progress < 64)
                 break;
             vertFactor = 0;
-            if (vehicle->track_progress < 96)
+            if (track_progress < 96)
                 break;
             vertFactor = 103;
-            if (vehicle->track_progress < 128)
+            if (track_progress < 128)
                 break;
             vertFactor = -103;
             // 6d74A0
             break;
         case TRACK_ELEM_HEARTLINE_TRANSFER_DOWN:
             vertFactor = -103;
-            if (vehicle->track_progress < 32)
+            if (track_progress < 32)
                 break;
             vertFactor = 103;
-            if (vehicle->track_progress < 64)
+            if (track_progress < 64)
                 break;
             vertFactor = 0;
-            if (vehicle->track_progress < 96)
+            if (track_progress < 96)
                 break;
             vertFactor = -103;
-            if (vehicle->track_progress < 128)
+            if (track_progress < 128)
                 break;
             vertFactor = 103;
             // 6D74CA
@@ -6101,13 +6113,13 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
         case TRACK_ELEM_MULTIDIM_INVERTED_FLAT_TO_90_DEG_QUARTER_LOOP_DOWN:
         case TRACK_ELEM_INVERTED_FLAT_TO_90_DEG_QUARTER_LOOP_DOWN:
         case TRACK_ELEM_MULTIDIM_FLAT_TO_90_DEG_DOWN_QUARTER_LOOP:
-            vertFactor = (vehicle->track_progress / 4) + 55;
+            vertFactor = (track_progress / 4) + 55;
             // 6d762D
             break;
         case TRACK_ELEM_90_DEG_TO_INVERTED_FLAT_QUARTER_LOOP_UP:
         case TRACK_ELEM_MULTIDIM_90_DEG_UP_TO_INVERTED_FLAT_QUARTER_LOOP:
         case TRACK_ELEM_MULTIDIM_INVERTED_90_DEG_UP_TO_FLAT_QUARTER_LOOP:
-            vertFactor = ((static_cast<uint16_t>(-(vehicle->track_progress - 137))) / 4) + 55;
+            vertFactor = ((static_cast<uint16_t>(-(track_progress - 137))) / 4) + 55;
             // 6D7614
             break;
         case TRACK_ELEM_AIR_THRUST_TOP_CAP:
@@ -6144,12 +6156,12 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
 
     if (vertFactor != 0)
     {
-        gForceVert += abs(vehicle->velocity) * 98 / vertFactor;
+        gForceVert += abs(velocity) * 98 / vertFactor;
     }
 
     if (lateralFactor != 0)
     {
-        gForceLateral += abs(vehicle->velocity) * 98 / lateralFactor;
+        gForceLateral += abs(velocity) * 98 / lateralFactor;
     }
 
     gForceVert *= 10;
@@ -6159,25 +6171,25 @@ GForces vehicle_get_g_forces(const Vehicle* vehicle)
     return { static_cast<int16_t>(gForceVert & 0xFFFF), static_cast<int16_t>(gForceLateral & 0xFFFF) };
 }
 
-void vehicle_set_map_toolbar(const Vehicle* vehicle)
+void Vehicle::SetMapToolbar() const
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride != nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide != nullptr)
     {
-        vehicle = vehicle->GetHead();
+        const Vehicle* vehicle = GetHead();
 
         int32_t vehicleIndex;
         for (vehicleIndex = 0; vehicleIndex < 32; vehicleIndex++)
-            if (ride->vehicles[vehicleIndex] == vehicle->sprite_index)
+            if (curRide->vehicles[vehicleIndex] == vehicle->sprite_index)
                 break;
 
         auto ft = Formatter::MapTooltip();
         ft.Add<rct_string_id>(STR_RIDE_MAP_TIP);
         ft.Add<rct_string_id>(STR_MAP_TOOLTIP_STRINGID_STRINGID);
-        ride->FormatNameTo(ft);
-        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.vehicle].capitalised);
+        curRide->FormatNameTo(ft);
+        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[curRide->type].NameConvention.vehicle].capitalised);
         ft.Add<uint16_t>(vehicleIndex + 1);
-        ride->FormatStatusTo(ft);
+        curRide->FormatStatusTo(ft);
     }
 }
 
@@ -6213,9 +6225,9 @@ Vehicle* Vehicle::TrainTail() const
     return const_cast<Vehicle*>(vehicle);
 }
 
-int32_t vehicle_is_used_in_pairs(const Vehicle* vehicle)
+int32_t Vehicle::IsUsedInPairs() const
 {
-    return vehicle->num_seats & VEHICLE_SEAT_PAIR_FLAG;
+    return num_seats & VEHICLE_SEAT_PAIR_FLAG;
 }
 
 /**
@@ -6468,9 +6480,9 @@ bool Vehicle::DodgemsCarWouldCollideAt(const CoordsXY& coords, uint16_t* collide
  *
  *  rct2: 0x006DAB90
  */
-static void vehicle_update_track_motion_up_stop_check(Vehicle* vehicle)
+void Vehicle::UpdateTrackMotionUpStopCheck() const
 {
-    auto vehicleEntry = vehicle->Entry();
+    auto vehicleEntry = Entry();
     if (vehicleEntry == nullptr)
     {
         return;
@@ -6479,14 +6491,14 @@ static void vehicle_update_track_motion_up_stop_check(Vehicle* vehicle)
     // No up stops (coaster types)
     if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_NO_UPSTOP_WHEELS)
     {
-        int32_t trackType = vehicle->track_type >> 2;
+        int32_t trackType = track_type >> 2;
         if (!track_element_is_covered(trackType))
         {
-            auto gForces = vehicle_get_g_forces(vehicle);
+            auto gForces = GetGForces();
             gForces.LateralG = std::abs(gForces.LateralG);
             if (gForces.LateralG <= 150)
             {
-                if (dword_9A2970[vehicle->vehicle_sprite_type] < 0)
+                if (dword_9A2970[vehicle_sprite_type] < 0)
                 {
                     if (gForces.VerticalG > -40)
                     {
@@ -6499,7 +6511,7 @@ static void vehicle_update_track_motion_up_stop_check(Vehicle* vehicle)
                 }
             }
 
-            if (vehicle->vehicle_sprite_type != 8)
+            if (vehicle_sprite_type != 8)
             {
                 _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_DERAILED;
             }
@@ -6508,12 +6520,12 @@ static void vehicle_update_track_motion_up_stop_check(Vehicle* vehicle)
     else if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_NO_UPSTOP_BOBSLEIGH)
     {
         // No up stops bobsleigh type
-        int32_t trackType = vehicle->track_type >> 2;
+        int32_t trackType = track_type >> 2;
         if (!track_element_is_covered(trackType))
         {
-            auto gForces = vehicle_get_g_forces(vehicle);
+            auto gForces = GetGForces();
 
-            if (dword_9A2970[vehicle->vehicle_sprite_type] < 0)
+            if (dword_9A2970[vehicle_sprite_type] < 0)
             {
                 if (gForces.VerticalG > -45)
                 {
@@ -6528,7 +6540,7 @@ static void vehicle_update_track_motion_up_stop_check(Vehicle* vehicle)
                 }
             }
 
-            if (vehicle->vehicle_sprite_type != 8 && vehicle->vehicle_sprite_type != 55)
+            if (vehicle_sprite_type != 8 && vehicle_sprite_type != 55)
             {
                 _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_DERAILED;
             }
@@ -6599,31 +6611,26 @@ static void apply_block_brakes(Vehicle* vehicle, bool is_block_brake_closed)
  *
  *  rct2: 0x006DAC43
  */
-static void check_and_apply_block_section_stop_site(Vehicle* vehicle)
+void Vehicle::CheckAndApplyBlockSectionStopSite()
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride == nullptr)
+    auto curRide = get_ride(ride);
+    if (curRide == nullptr)
         return;
 
-    auto vehicleEntry = vehicle->Entry();
+    auto vehicleEntry = Entry();
     if (vehicleEntry == nullptr)
         return;
 
     // Is chair lift type
     if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_CHAIRLIFT)
     {
-        int32_t velocity = ride->speed << 16;
-        if (_vehicleBreakdown == 0)
-        {
-            velocity = 0;
-        }
-        vehicle->velocity = velocity;
-        vehicle->acceleration = 0;
+        velocity = _vehicleBreakdown == 0 ? 0 : curRide->speed << 16;
+        acceleration = 0;
     }
 
-    int32_t trackType = vehicle->track_type >> 2;
+    int32_t trackType = track_type >> 2;
 
-    TileElement* trackElement = map_get_track_element_at_of_type(vehicle->TrackLocation, trackType);
+    TileElement* trackElement = map_get_track_element_at_of_type(TrackLocation, trackType);
 
     if (trackElement == nullptr)
     {
@@ -6633,10 +6640,10 @@ static void check_and_apply_block_section_stop_site(Vehicle* vehicle)
     switch (trackType)
     {
         case TRACK_ELEM_BLOCK_BRAKES:
-            if (ride->IsBlockSectioned())
-                apply_block_brakes(vehicle, trackElement->AsTrack()->BlockBrakeClosed());
+            if (curRide->IsBlockSectioned())
+                apply_block_brakes(this, trackElement->AsTrack()->BlockBrakeClosed());
             else
-                apply_non_stop_block_brake(vehicle, true);
+                apply_non_stop_block_brake(this, true);
 
             break;
         case TRACK_ELEM_END_STATION:
@@ -6649,13 +6656,13 @@ static void check_and_apply_block_section_stop_site(Vehicle* vehicle)
         case TRACK_ELEM_CABLE_LIFT_HILL:
         case TRACK_ELEM_DIAG_25_DEG_UP_TO_FLAT:
         case TRACK_ELEM_DIAG_60_DEG_UP_TO_FLAT:
-            if (ride->IsBlockSectioned())
+            if (curRide->IsBlockSectioned())
             {
                 if (trackType == TRACK_ELEM_CABLE_LIFT_HILL || trackElement->AsTrack()->HasChain())
                 {
                     if (trackElement->AsTrack()->BlockBrakeClosed())
                     {
-                        apply_block_brakes(vehicle, true);
+                        apply_block_brakes(this, true);
                     }
                 }
             }
@@ -6667,27 +6674,27 @@ static void check_and_apply_block_section_stop_site(Vehicle* vehicle)
  *
  *  rct2: 0x006DADAE
  */
-static void update_velocity(Vehicle* vehicle)
+void Vehicle::UpdateVelocity()
 {
-    int32_t nextVelocity = vehicle->acceleration + vehicle->velocity;
-    if (vehicle->update_flags & VEHICLE_UPDATE_FLAG_ZERO_VELOCITY)
+    int32_t nextVelocity = acceleration + velocity;
+    if (update_flags & VEHICLE_UPDATE_FLAG_ZERO_VELOCITY)
     {
         nextVelocity = 0;
     }
-    if (vehicle->update_flags & VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP)
+    if (update_flags & VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP)
     {
-        vehicle->vertical_drop_countdown--;
-        if (vehicle->vertical_drop_countdown == -70)
+        vertical_drop_countdown--;
+        if (vertical_drop_countdown == -70)
         {
-            vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP;
+            update_flags &= ~VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP;
         }
-        if (vehicle->vertical_drop_countdown >= 0)
+        if (vertical_drop_countdown >= 0)
         {
             nextVelocity = 0;
-            vehicle->acceleration = 0;
+            acceleration = 0;
         }
     }
-    vehicle->velocity = nextVelocity;
+    velocity = nextVelocity;
 
     _vehicleVelocityF64E08 = nextVelocity;
     _vehicleVelocityF64E0C = (nextVelocity >> 10) * 42;
@@ -7526,24 +7533,24 @@ static void vehicle_update_play_water_splash_sound()
  *
  *  rct2: 0x006DB59E
  */
-static void vehicle_update_handle_water_splash(Vehicle* vehicle)
+void Vehicle::UpdateHandleWaterSplash() const
 {
-    rct_ride_entry* rideEntry = get_ride_entry(vehicle->ride_subtype);
-    int32_t trackType = vehicle->track_type >> 2;
+    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    int32_t trackType = track_type >> 2;
 
     if (!(rideEntry->flags & RIDE_ENTRY_FLAG_PLAY_SPLASH_SOUND))
     {
         if (rideEntry->flags & RIDE_ENTRY_FLAG_PLAY_SPLASH_SOUND_SLIDE)
         {
-            if (vehicle->IsHead())
+            if (IsHead())
             {
                 if (track_element_is_covered(trackType))
                 {
-                    Vehicle* nextVehicle = GET_VEHICLE(vehicle->next_vehicle_on_ride);
+                    Vehicle* nextVehicle = GET_VEHICLE(next_vehicle_on_ride);
                     Vehicle* nextNextVehicle = GET_VEHICLE(nextVehicle->next_vehicle_on_ride);
                     if (!track_element_is_covered(nextNextVehicle->track_type >> 2))
                     {
-                        if (vehicle->track_progress == 4)
+                        if (track_progress == 4)
                         {
                             vehicle_update_play_water_splash_sound();
                         }
@@ -7556,17 +7563,17 @@ static void vehicle_update_handle_water_splash(Vehicle* vehicle)
     {
         if (trackType == TRACK_ELEM_25_DEG_DOWN_TO_FLAT)
         {
-            if (vehicle->track_progress == 12)
+            if (track_progress == 12)
             {
                 vehicle_update_play_water_splash_sound();
             }
         }
     }
-    if (vehicle->IsHead())
+    if (IsHead())
     {
         if (trackType == TRACK_ELEM_WATER_SPLASH)
         {
-            if (vehicle->track_progress == 48)
+            if (track_progress == 48)
             {
                 vehicle_update_play_water_splash_sound();
             }
@@ -7578,14 +7585,10 @@ static void vehicle_update_handle_water_splash(Vehicle* vehicle)
  *
  *  rct2: 0x006DB807
  */
-static void vehicle_update_reverser_car_bogies(Vehicle* vehicle)
+void Vehicle::UpdateReverserCarBogies()
 {
-    const rct_vehicle_info* moveInfo = vehicle_get_move_info(
-        vehicle->TrackSubposition, vehicle->track_type, vehicle->track_progress);
-    int32_t x = vehicle->TrackLocation.x + moveInfo->x;
-    int32_t y = vehicle->TrackLocation.y + moveInfo->y;
-    int32_t z = vehicle->z;
-    sprite_move(x, y, z, vehicle);
+    const auto moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
+    sprite_move(TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y, z, this);
 }
 
 /**
@@ -7793,19 +7796,19 @@ static bool vehicle_update_motion_collision_detection(
  *
  *  rct2: 0x006DB7D6
  */
-static void vehicle_reverse_reverser_car(Vehicle* vehicle)
+void Vehicle::ReverseReverserCar()
 {
-    Vehicle* previousVehicle = GET_VEHICLE(vehicle->prev_vehicle_on_ride);
-    Vehicle* nextVehicle = GET_VEHICLE(vehicle->next_vehicle_on_ride);
+    Vehicle* previousVehicle = GET_VEHICLE(prev_vehicle_on_ride);
+    Vehicle* nextVehicle = GET_VEHICLE(next_vehicle_on_ride);
 
-    vehicle->track_progress = 168;
-    vehicle->vehicle_type ^= 1;
+    track_progress = 168;
+    vehicle_type ^= 1;
 
     previousVehicle->track_progress = 86;
     nextVehicle->track_progress = 158;
 
-    vehicle_update_reverser_car_bogies(nextVehicle);
-    vehicle_update_reverser_car_bogies(previousVehicle);
+    nextVehicle->UpdateReverserCarBogies();
+    previousVehicle->UpdateReverserCarBogies();
 }
 
 /**
@@ -8212,7 +8215,7 @@ loc_6DAEB9:
     }
 
     track_progress = regs.ax;
-    vehicle_update_handle_water_splash(this);
+    UpdateHandleWaterSplash();
 
     // loc_6DB706
     moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
@@ -8246,7 +8249,7 @@ loc_6DAEB9:
         if (TrackSubposition == VEHICLE_TRACK_SUBPOSITION_REVERSER_RC_REAR_BOGIE
             && (trackType == TRACK_ELEM_LEFT_REVERSER || trackType == TRACK_ELEM_RIGHT_REVERSER) && track_progress == 96)
         {
-            vehicle_reverse_reverser_car(this);
+            ReverseReverserCar();
 
             const rct_vehicle_info* moveInfo2 = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
             curX = x + moveInfo2->x;
@@ -9532,9 +9535,9 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
     _vehicleMotionTrackFlags = 0;
     _vehicleStationIndex = STATION_INDEX_NULL;
 
-    vehicle_update_track_motion_up_stop_check(this);
-    check_and_apply_block_section_stop_site(this);
-    update_velocity(this);
+    UpdateTrackMotionUpStopCheck();
+    CheckAndApplyBlockSectionStopSite();
+    UpdateVelocity();
 
     Vehicle* vehicle = this;
     if (_vehicleVelocityF64E08 < 0)
@@ -9774,8 +9777,9 @@ rct_ride_entry_vehicle* Vehicle::Entry() const
     return &rideEntry->vehicles[vehicle_type];
 }
 
-int32_t vehicle_get_total_num_peeps(const Vehicle* vehicle)
+int32_t Vehicle::NumPeepsUntilTrainTail() const
 {
+    const Vehicle* vehicle = this;
     uint16_t spriteIndex;
     int32_t numPeeps = 0;
     for (;;)
@@ -9795,10 +9799,10 @@ int32_t vehicle_get_total_num_peeps(const Vehicle* vehicle)
  *
  *  rct2: 0x006DA1EC
  */
-void vehicle_invalidate_window(Vehicle* vehicle)
+void Vehicle::InvalidateWindow()
 {
     auto intent = Intent(INTENT_ACTION_INVALIDATE_VEHICLE_WINDOW);
-    intent.putExtra(INTENT_EXTRA_VEHICLE, vehicle);
+    intent.putExtra(INTENT_EXTRA_VEHICLE, this);
     context_broadcast_intent(&intent);
 }
 
@@ -9858,7 +9862,7 @@ void Vehicle::UpdateCrossings() const
             {
                 if (!playedClaxon && !pathElement->IsBlockedByVehicle())
                 {
-                    vehicle_claxon(this);
+                    Claxon();
                 }
                 crossingBonus = 4;
                 pathElement->SetIsBlockedByVehicle(true);
@@ -9931,16 +9935,16 @@ void Vehicle::UpdateCrossings() const
     }
 }
 
-void vehicle_claxon(const Vehicle* vehicle)
+void Vehicle::Claxon() const
 {
-    rct_ride_entry* rideEntry = get_ride_entry(vehicle->ride_subtype);
-    switch (rideEntry->vehicles[vehicle->vehicle_type].sound_range)
+    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    switch (rideEntry->vehicles[vehicle_type].sound_range)
     {
         case SOUND_RANGE_WHISTLE:
-            audio_play_sound_at_location(SoundId::TrainWhistle, { vehicle->x, vehicle->y, vehicle->z });
+            audio_play_sound_at_location(SoundId::TrainWhistle, { x, y, z });
             break;
         case SOUND_RANGE_BELL:
-            audio_play_sound_at_location(SoundId::Tram, { vehicle->x, vehicle->y, vehicle->z });
+            audio_play_sound_at_location(SoundId::Tram, { x, y, z });
             break;
     }
 }
@@ -9974,7 +9978,7 @@ void Vehicle::SetState(VEHICLE_STATUS vehicleStatus, uint8_t subState)
 {
     status = vehicleStatus;
     sub_state = subState;
-    vehicle_invalidate_window(this);
+    InvalidateWindow();
 }
 
 bool Vehicle::IsGhost() const

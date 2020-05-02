@@ -179,6 +179,12 @@ enum VEHICLE_TRACK_SUBPOSITION : uint8_t
 struct Ride;
 struct rct_ride_entry;
 
+struct GForces
+{
+    int32_t VerticalG{};
+    int32_t LateralG{};
+};
+
 struct Vehicle : SpriteBase
 {
     uint8_t vehicle_sprite_type;
@@ -307,6 +313,9 @@ struct Vehicle : SpriteBase
     void UpdateSoundParams(std::vector<rct_vehicle_sound_params>& vehicleSoundParamsList) const;
     bool DodgemsCarWouldCollideAt(const CoordsXY& coords, uint16_t* spriteId) const;
     int32_t UpdateTrackMotion(int32_t* outStation);
+    GForces GetGForces() const;
+    void SetMapToolbar() const;
+    int32_t IsUsedInPairs() const;
     rct_ride_entry_vehicle* Entry() const;
     Vehicle* TrainHead() const;
     Vehicle* TrainTail() const;
@@ -360,7 +369,25 @@ private:
     bool CurrentTowerElementIsTop();
     bool UpdateTrackMotionForwards(rct_ride_entry_vehicle* vehicleEntry, Ride* curRide, rct_ride_entry* rideEntry);
     bool UpdateTrackMotionBackwards(rct_ride_entry_vehicle* vehicleEntry, Ride* curRide, rct_ride_entry* rideEntry);
+    int32_t NumPeepsUntilTrainTail() const;
+    void InvalidateWindow();
+    void TestReset();
+    void UpdateTestFinish();
     void PeepEasterEggHereWeAre() const;
+    bool CanDepartSynchronised() const;
+    void ReverseReverserCar();
+    void UpdateReverserCarBogies();
+    void UpdateHandleWaterSplash() const;
+    void Claxon() const;
+    void UpdateTrackMotionUpStopCheck() const;
+    void CheckAndApplyBlockSectionStopSite();
+    void UpdateVelocity();
+    bool OpenRestraints();
+    bool CloseRestraints();
+    void CrashOnWater();
+    void CrashOnLand();
+    void SimulateCrash() const;
+    void TrainReadToDepart(uint8_t num_peeps_on_train, uint8_t num_used_seats);
 };
 
 struct train_ref
@@ -547,22 +574,9 @@ enum
 #define VEHICLE_SEAT_PAIR_FLAG 0x80
 #define VEHICLE_SEAT_NUM_MASK 0x7F
 
-struct GForces
-{
-    int32_t VerticalG{};
-    int32_t LateralG{};
-};
-
 Vehicle* try_get_vehicle(uint16_t spriteIndex);
 void vehicle_update_all();
 void vehicle_sounds_update();
-GForces vehicle_get_g_forces(const Vehicle* vehicle);
-void vehicle_set_map_toolbar(const Vehicle* vehicle);
-int32_t vehicle_is_used_in_pairs(const Vehicle* vehicle);
-int32_t vehicle_get_total_num_peeps(const Vehicle* vehicle);
-void vehicle_invalidate_window(Vehicle* vehicle);
-void vehicle_update_test_finish(Vehicle* vehicle);
-void vehicle_test_reset(Vehicle* vehicle);
 const rct_vehicle_info* vehicle_get_move_info(int32_t trackSubposition, int32_t typeAndDirection, int32_t offset);
 uint16_t vehicle_get_move_info_size(int32_t trackSubposition, int32_t typeAndDirection);
 

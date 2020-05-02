@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -507,7 +507,7 @@ static void window_top_toolbar_mousedown(rct_window* w, rct_widgetindex widgetIn
 #endif
             }
             window_dropdown_show_text(
-                w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1,
+                { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1,
                 w->colours[0] | 0x80, DROPDOWN_FLAG_STAY_OPEN, numItems);
 
 #ifndef DISABLE_TWITCH
@@ -2961,6 +2961,15 @@ static void window_top_toolbar_tool_update(rct_window* w, rct_widgetindex widget
         case WIDX_SCENERY:
             top_toolbar_tool_update_scenery(screenCoords);
             break;
+#ifdef ENABLE_SCRIPTING
+        default:
+            auto& customTool = OpenRCT2::Scripting::ActiveCustomTool;
+            if (customTool)
+            {
+                customTool->OnUpdate(screenCoords);
+            }
+            break;
+#endif
     }
 }
 
@@ -3009,6 +3018,15 @@ static void window_top_toolbar_tool_down(rct_window* w, rct_widgetindex widgetIn
         case WIDX_SCENERY:
             window_top_toolbar_scenery_tool_down(screenCoords, w, widgetIndex);
             break;
+#ifdef ENABLE_SCRIPTING
+        default:
+            auto& customTool = OpenRCT2::Scripting::ActiveCustomTool;
+            if (customTool)
+            {
+                customTool->OnDown(screenCoords);
+            }
+            break;
+#endif
     }
 }
 
@@ -3227,6 +3245,15 @@ static void window_top_toolbar_tool_drag(rct_window* w, rct_widgetindex widgetIn
             if (gWindowSceneryEyedropperEnabled)
                 window_top_toolbar_scenery_tool_down(screenCoords, w, widgetIndex);
             break;
+#ifdef ENABLE_SCRIPTING
+        default:
+            auto& customTool = OpenRCT2::Scripting::ActiveCustomTool;
+            if (customTool)
+            {
+                customTool->OnDrag(screenCoords);
+            }
+            break;
+#endif
     }
 }
 
@@ -3254,6 +3281,15 @@ static void window_top_toolbar_tool_up(rct_window* w, rct_widgetindex widgetInde
             gMapSelectFlags &= ~MAP_SELECT_FLAG_ENABLE;
             gCurrentToolId = TOOL_CROSSHAIR;
             break;
+#ifdef ENABLE_SCRIPTING
+        default:
+            auto& customTool = OpenRCT2::Scripting::ActiveCustomTool;
+            if (customTool)
+            {
+                customTool->OnUp(screenCoords);
+            }
+            break;
+#endif
     }
 }
 
@@ -3270,6 +3306,16 @@ static void window_top_toolbar_tool_abort(rct_window* w, rct_widgetindex widgetI
         case WIDX_CLEAR_SCENERY:
             hide_gridlines();
             break;
+#ifdef ENABLE_SCRIPTING
+        default:
+            auto& customTool = OpenRCT2::Scripting::ActiveCustomTool;
+            if (customTool)
+            {
+                customTool->OnAbort();
+                customTool = {};
+            }
+            break;
+#endif
     }
 }
 
@@ -3299,8 +3345,8 @@ static void top_toolbar_init_map_menu(rct_window* w, rct_widget* widget)
 #endif
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[1] | 0x80, 0,
-        i);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[1] | 0x80,
+        0, i);
     gDropdownDefaultIndex = DDIDX_SHOW_MAP;
 }
 
@@ -3361,8 +3407,8 @@ static void top_toolbar_init_fastforward_menu(rct_window* w, rct_widget* widget)
     gDropdownItemsArgs[3] = STR_SPEED_TURBO;
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[0] | 0x80, 0,
-        num_items);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[0] | 0x80,
+        0, num_items);
 
     // Set checkmarks
     if (gGameSpeed <= 4)
@@ -3409,8 +3455,8 @@ static void top_toolbar_init_rotate_menu(rct_window* w, rct_widget* widget)
     gDropdownItemsFormat[1] = STR_ROTATE_ANTI_CLOCKWISE;
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[1] | 0x80, 0,
-        2);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[1] | 0x80,
+        0, 2);
 
     gDropdownDefaultIndex = DDIDX_ROTATE_CLOCKWISE;
 }
@@ -3462,8 +3508,8 @@ static void top_toolbar_init_cheats_menu(rct_window* w, rct_widget* widget)
     gDropdownItemsArgs[DDIDX_DISABLE_SUPPORT_LIMITS] = STR_DISABLE_SUPPORT_LIMITS;
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[0] | 0x80, 0,
-        TOP_TOOLBAR_CHEATS_COUNT);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[0] | 0x80,
+        0, TOP_TOOLBAR_CHEATS_COUNT);
 
     // Disable items that are not yet available in multiplayer
     if (network_get_mode() != NETWORK_MODE_NONE)
@@ -3540,7 +3586,7 @@ static void top_toolbar_init_debug_menu(rct_window* w, rct_widget* widget)
     gDropdownItemsArgs[DDIDX_DEBUG_PAINT] = STR_DEBUG_DROPDOWN_DEBUG_PAINT;
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[0] | 0x80,
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[0] | 0x80,
         DROPDOWN_FLAG_STAY_OPEN, TOP_TOOLBAR_DEBUG_COUNT);
 
     dropdown_set_checked(DDIDX_DEBUG_PAINT, window_find_by_class(WC_DEBUG_PAINT) != nullptr);
@@ -3553,8 +3599,8 @@ static void top_toolbar_init_network_menu(rct_window* w, rct_widget* widget)
     gDropdownItemsFormat[DDIDX_MULTIPLAYER_RECONNECT] = STR_MULTIPLAYER_RECONNECT;
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[0] | 0x80, 0,
-        TOP_TOOLBAR_NETWORK_COUNT);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[0] | 0x80,
+        0, TOP_TOOLBAR_NETWORK_COUNT);
 
     dropdown_set_disabled(DDIDX_MULTIPLAYER_RECONNECT, !network_is_desynchronised());
 
@@ -3646,8 +3692,8 @@ static void top_toolbar_init_view_menu(rct_window* w, rct_widget* widget)
     gDropdownItemsArgs[DDIDX_HIGHLIGHT_PATH_ISSUES] = STR_HIGHLIGHT_PATH_ISSUES_MENU;
 
     window_dropdown_show_text(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->bottom - widget->top + 1, w->colours[1] | 0x80, 0,
-        TOP_TOOLBAR_VIEW_MENU_COUNT);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[1] | 0x80,
+        0, TOP_TOOLBAR_VIEW_MENU_COUNT);
 
     // Set checkmarks
     rct_viewport* mainViewport = window_get_main()->viewport;
