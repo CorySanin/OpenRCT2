@@ -139,6 +139,13 @@ declare global {
         sharedStorage: Configuration;
 
         /**
+         * Render the current state of the map and save to disc.
+         * Useful for server administration and timelapse creation.
+         * @param options Options that control the capture and output file.
+         */
+        captureImage(options: CaptureOptions): void;
+
+        /**
          * Gets the loaded object at the given index.
          * @param type The object type.
          * @param index The index.
@@ -214,6 +221,42 @@ declare global {
         has(key: string): boolean;
     }
 
+    interface CaptureOptions {
+        /**
+         * A relative filename from the screenshot directory to save the capture as.
+         * By default, the filename will be automatically generated using the system date and time.
+         */
+        filename?: string;
+
+        /**
+         * Width of the capture in pixels.
+         * Do not set if you would like a giant screenshot.
+         */
+        width?: number;
+
+        /**
+         * Height of the capture in pixels.
+         * Do not set if you would like a giant screenshot.
+         */
+        height?: number;
+
+        /**
+         * Map position to centre the view on in map units.
+         * Do not set if you would like a giant screenshot.
+         */
+        position?: CoordsXY;
+
+        /**
+         * The zoom level, 0 is 1:1, 1 is 2:1, 2 is 4:1 etc.
+         */
+        zoom: number;
+
+        /**
+         * Rotation of the camera from 0 to 3.
+         */
+        rotation: number;
+    }
+
     type ObjectType =
         "ride" |
         "small_scenery" |
@@ -254,6 +297,7 @@ declare global {
         readonly player: number;
         readonly type: string;
         readonly isClientOnly: boolean;
+        readonly args: object;
         result: GameActionResult;
     }
 
@@ -268,28 +312,6 @@ declare global {
 
     interface RideCreateGameActionResult extends GameActionResult {
         readonly ride: number;
-    }
-
-    interface RideCreateActionEventArgs extends GameActionEventArgs {
-        readonly rideType: number;
-        readonly rideObject: number;
-        result: RideCreateGameActionResult;
-    }
-
-    interface SmallSceneryPlaceEventArgs extends GameActionEventArgs {
-        readonly x: number;
-        readonly y: number;
-        readonly z: number;
-        readonly direction: number;
-        readonly quadrant: number;
-        readonly object: number;
-        readonly primaryColour: number;
-        readonly secondaryColour: number;
-    }
-
-    interface GuestSetNameActionEventArgs extends GameActionEventArgs {
-        readonly id: number;
-        readonly name: number;
     }
 
     interface NetworkEventArgs {
@@ -655,6 +677,10 @@ declare global {
      */
     interface Entity {
         /**
+         * The entity index within the entity list.
+         */
+        readonly id: number;
+        /**
          * The type of entity, e.g. car, duck, litter, or peep.
          */
         readonly type: EntityType;
@@ -677,13 +703,89 @@ declare global {
      */
     interface Peep extends Entity {
         /**
+         * Name of the peep.
+         */
+        name: string;
+
+        /**
          * Colour of the peep's t-shirt.
          */
         tshirtColour: number;
+
         /**
          * Colour of the peep's trousers.
          */
         trousersColour: number;
+
+        /**
+         * How tired the guest is between 32 and 128 where lower is more tired.
+         */
+        energy: number;
+
+        /**
+         * The target energy value. Energy will increase / decrease slowly towards this value.
+         */
+        energyTarget: number;
+
+        /**
+         * How happy the guest is between 0 and 255.
+         */
+        happiness: number;
+
+        /**
+         * The target happiness value. Happiness will increase / decrease slowly towards this value.
+         */
+        happinessTarget: number;
+
+        /**
+         * How nauseated the guest is between 0 and 255.
+         */
+        nausea: number;
+
+        /**
+         * The target nausea value. Nausea will increase / decrease slowly towards this value.
+         */
+        nauseaTarget: number;
+
+        /**
+         * How hungry the guest is between 0 and 255. Lower is more hungry.
+         */
+        hunger: number;
+
+        /**
+         * How thirsty the guest is between 0 and 255. Lower is more thirsty.
+         */
+        thirst: number;
+
+        /**
+         * How much the guest requires the need to go to the toilet between 0 and 255.
+         */
+        toilet: number;
+
+        /**
+         * The mass of the guest. Affects vehicle mass.
+         */
+        mass: number;
+
+        /**
+         * The guest's minimum preferred intensity between 0 and 15.
+         */
+        minIntensity: number;
+
+        /**
+         * The guest's maximum preferred intensity between 0 and 15.
+         */
+        maxIntensity: number;
+
+        /**
+         * The guest's tolerance to nauseating rides between 0 and 3.
+         */
+        nauseaTolerance: number;
+
+        /**
+         * Amount of cash in the guest's pocket.
+         */
+        cash: number;
     }
 
     /**
@@ -817,6 +919,12 @@ declare global {
         closeAllWindows(): void;
 
         /**
+         * Shows a text input prompt and calls the given callback when entered.
+         * @param desc The parameters for the text input window.
+         */
+        showTextInput(desc: TextInputDesc): void;
+
+        /**
          * Begins a new tool session. The cursor will change to the style specified by the
          * given tool descriptor and cursor events will be provided.
          * @param tool The properties and event handlers for the tool.
@@ -824,6 +932,36 @@ declare global {
         activateTool(tool: ToolDesc): void;
 
         registerMenuItem(text: string, callback: () => void): void;
+    }
+
+    /**
+     * Parameters for the text input window.
+     */
+    interface TextInputDesc {
+        /**
+         * The title of the text input window.
+         */
+        title: string;
+
+        /**
+         * The description to show above the text box.
+         */
+        description: string;
+
+        /**
+         * The current value of the text box.
+         */
+        initialValue?: string;
+
+        /**
+         * The maximum length the value can be.
+         */
+        maxLength?: number;
+
+        /**
+         * The function to call when the user has entered a new value and pressed OK.
+         */
+        callback: (value: string) => void;
     }
 
     interface TileSelection {
