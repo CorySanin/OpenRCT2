@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -434,16 +434,17 @@ bool ride_try_get_origin_element(const Ride* ride, CoordsXYE* output)
  * on the first element of a track block
  */
 bool track_block_get_next_from_zero(
-    int16_t x, int16_t y, int16_t z_start, Ride* ride, uint8_t direction_start, CoordsXYE* output, int32_t* z,
-    int32_t* direction, bool isGhost)
+    const CoordsXYZ& startPos, Ride* ride, uint8_t direction_start, CoordsXYE* output, int32_t* z, int32_t* direction,
+    bool isGhost)
 {
+    auto trackPos = startPos;
+
     if (!(direction_start & TRACK_BLOCK_2))
     {
-        x += CoordsDirectionDelta[direction_start].x;
-        y += CoordsDirectionDelta[direction_start].y;
+        trackPos += CoordsDirectionDelta[direction_start];
     }
 
-    TileElement* tileElement = map_get_first_element_at({ x, y });
+    TileElement* tileElement = map_get_first_element_at(trackPos);
     if (tileElement == nullptr)
     {
         output->element = nullptr;
@@ -481,26 +482,22 @@ bool track_block_get_next_from_zero(
             continue;
 
         int16_t nextZ = nextTrackCoordinate->z_begin - nextTrackBlock->z + tileElement->GetBaseZ();
-        if (nextZ != z_start)
+        if (nextZ != trackPos.z)
             continue;
 
         if (z != nullptr)
             *z = tileElement->GetBaseZ();
         if (direction != nullptr)
             *direction = nextRotation;
-        output->x = x;
-        output->y = y;
-        output->element = tileElement;
+        *output = { trackPos, tileElement };
         return true;
     } while (!(tileElement++)->IsLastForTile());
 
     if (direction != nullptr)
         *direction = direction_start;
     if (z != nullptr)
-        *z = z_start;
-    output->x = x;
-    output->y = y;
-    output->element = --tileElement;
+        *z = trackPos.z;
+    *output = { trackPos, --tileElement };
     return false;
 }
 
@@ -547,7 +544,7 @@ bool track_block_get_next(CoordsXYE* input, CoordsXYE* output, int32_t* z, int32
     uint8_t directionStart = ((trackCoordinate->rotation_end + rotation) & TILE_ELEMENT_DIRECTION_MASK)
         | (trackCoordinate->rotation_end & TRACK_BLOCK_2);
 
-    return track_block_get_next_from_zero(coords.x, coords.y, OriginZ, ride, directionStart, output, z, direction, false);
+    return track_block_get_next_from_zero({ coords, OriginZ }, ride, directionStart, output, z, direction, false);
 }
 
 /**
@@ -559,22 +556,22 @@ bool track_block_get_next(CoordsXYE* input, CoordsXYE* output, int32_t* z, int32
  *  rct2: 0x006C63D6
  */
 bool track_block_get_previous_from_zero(
-    int16_t x, int16_t y, int16_t z, Ride* ride, uint8_t direction, track_begin_end* outTrackBeginEnd)
+    const CoordsXYZ& startPos, Ride* ride, uint8_t direction, track_begin_end* outTrackBeginEnd)
 {
     uint8_t directionStart = direction;
     direction = direction_reverse(direction);
+    auto trackPos = startPos;
 
     if (!(direction & TRACK_BLOCK_2))
     {
-        x += CoordsDirectionDelta[direction].x;
-        y += CoordsDirectionDelta[direction].y;
+        trackPos += CoordsDirectionDelta[direction];
     }
 
-    TileElement* tileElement = map_get_first_element_at({ x, y });
+    TileElement* tileElement = map_get_first_element_at(trackPos);
     if (tileElement == nullptr)
     {
-        outTrackBeginEnd->end_x = x;
-        outTrackBeginEnd->end_y = y;
+        outTrackBeginEnd->end_x = trackPos.x;
+        outTrackBeginEnd->end_y = trackPos.y;
         outTrackBeginEnd->begin_element = nullptr;
         outTrackBeginEnd->begin_direction = direction_reverse(directionStart);
         return false;
@@ -608,16 +605,16 @@ bool track_block_get_previous_from_zero(
             continue;
 
         int16_t nextZ = nextTrackCoordinate->z_end - nextTrackBlock->z + tileElement->GetBaseZ();
-        if (nextZ != z)
+        if (nextZ != trackPos.z)
             continue;
 
         nextRotation = tileElement->GetDirectionWithOffset(nextTrackCoordinate->rotation_begin)
             | (nextTrackCoordinate->rotation_begin & TRACK_BLOCK_2);
         outTrackBeginEnd->begin_element = tileElement;
-        outTrackBeginEnd->begin_x = x;
-        outTrackBeginEnd->begin_y = y;
-        outTrackBeginEnd->end_x = x;
-        outTrackBeginEnd->end_y = y;
+        outTrackBeginEnd->begin_x = trackPos.x;
+        outTrackBeginEnd->begin_y = trackPos.y;
+        outTrackBeginEnd->end_x = trackPos.x;
+        outTrackBeginEnd->end_y = trackPos.y;
 
         CoordsXY coords = { outTrackBeginEnd->begin_x, outTrackBeginEnd->begin_y };
         CoordsXY offsets = { nextTrackCoordinate->x, nextTrackCoordinate->y };
@@ -637,9 +634,9 @@ bool track_block_get_previous_from_zero(
         return true;
     } while (!(tileElement++)->IsLastForTile());
 
-    outTrackBeginEnd->end_x = x;
-    outTrackBeginEnd->end_y = y;
-    outTrackBeginEnd->begin_z = z;
+    outTrackBeginEnd->end_x = trackPos.x;
+    outTrackBeginEnd->end_y = trackPos.y;
+    outTrackBeginEnd->begin_z = trackPos.z;
     outTrackBeginEnd->begin_element = nullptr;
     outTrackBeginEnd->end_direction = direction_reverse(directionStart);
     return false;
@@ -653,12 +650,12 @@ bool track_block_get_previous_from_zero(
  * higher two bytes of ecx and edx where as outTrackBeginEnd.end_x and
  * outTrackBeginEnd.end_y will be in the lower two bytes (cx and dx).
  */
-bool track_block_get_previous(int32_t x, int32_t y, TileElement* tileElement, track_begin_end* outTrackBeginEnd)
+bool track_block_get_previous(const CoordsXYE& trackPos, track_begin_end* outTrackBeginEnd)
 {
-    if (tileElement == nullptr)
+    if (trackPos.element == nullptr)
         return false;
 
-    auto trackElement = tileElement->AsTrack();
+    auto trackElement = trackPos.element->AsTrack();
     if (trackElement == nullptr)
         return false;
 
@@ -680,7 +677,7 @@ bool track_block_get_previous(int32_t x, int32_t y, TileElement* tileElement, tr
     int32_t z = trackElement->GetBaseZ();
 
     uint8_t rotation = trackElement->GetDirection();
-    CoordsXY coords = { x, y };
+    CoordsXY coords = CoordsXY{ trackPos };
     CoordsXY offsets = { trackBlock->x, trackBlock->y };
     coords += offsets.Rotate(direction_reverse(rotation));
 
@@ -690,7 +687,7 @@ bool track_block_get_previous(int32_t x, int32_t y, TileElement* tileElement, tr
     rotation = ((trackCoordinate->rotation_begin + rotation) & TILE_ELEMENT_DIRECTION_MASK)
         | (trackCoordinate->rotation_begin & TRACK_BLOCK_2);
 
-    return track_block_get_previous_from_zero(coords.x, coords.y, z, ride, rotation, outTrackBeginEnd);
+    return track_block_get_previous_from_zero({ coords, z }, ride, rotation, outTrackBeginEnd);
 }
 
 /**
@@ -1230,16 +1227,17 @@ void ride_restore_provisional_track_piece()
     if (_currentTrackSelectionFlags & TRACK_SELECTION_FLAG_TRACK)
     {
         ride_id_t rideIndex;
-        int32_t x, y, z, direction, type, liftHillAndAlternativeState;
+        int32_t direction, type, liftHillAndAlternativeState;
+        CoordsXYZ trackPos;
         if (window_ride_construction_update_state(
-                &type, &direction, &rideIndex, &liftHillAndAlternativeState, &x, &y, &z, nullptr))
+                &type, &direction, &rideIndex, &liftHillAndAlternativeState, &trackPos, nullptr))
         {
             ride_construction_remove_ghosts();
         }
         else
         {
             _currentTrackPrice = place_provisional_track_piece(
-                rideIndex, type, direction, liftHillAndAlternativeState, x, y, z);
+                rideIndex, type, direction, liftHillAndAlternativeState, trackPos);
             window_ride_construction_update_active_elements();
         }
     }
@@ -1275,7 +1273,7 @@ void ride_remove_provisional_track_piece()
             y -= CoordsDirectionDelta[direction].y;
         }
         CoordsXYE next_track;
-        if (track_block_get_next_from_zero(x, y, z, ride, direction, &next_track, &z, &direction, true))
+        if (track_block_get_next_from_zero({ x, y, z }, ride, direction, &next_track, &z, &direction, true))
         {
             auto trackType = next_track.element->AsTrack()->GetTrackType();
             int32_t trackSequence = next_track.element->AsTrack()->GetSequenceIndex();
@@ -1317,7 +1315,7 @@ void ride_construction_invalidate_current_track()
         case RIDE_CONSTRUCTION_STATE_SELECTED:
             sub_6C683D(
                 { _currentTrackBegin, static_cast<Direction>(_currentTrackPieceDirection & 3) }, _currentTrackPieceType, 0,
-                nullptr, 1);
+                nullptr, TRACK_ELEMENT_SET_HIGHLIGHT_FALSE);
             break;
         case RIDE_CONSTRUCTION_STATE_MAZE_BUILD:
         case RIDE_CONSTRUCTION_STATE_MAZE_MOVE:
@@ -1382,7 +1380,7 @@ void ride_construction_set_default_next_piece()
     if (ride == nullptr)
         return;
 
-    int32_t x, y, z, direction, trackType, curve, bank, slope;
+    int32_t z, direction, trackType, curve, bank, slope;
     track_begin_end trackBeginEnd;
     CoordsXYE xyElement;
     TileElement* tileElement;
@@ -1390,11 +1388,8 @@ void ride_construction_set_default_next_piece()
     switch (_rideConstructionState)
     {
         case RIDE_CONSTRUCTION_STATE_FRONT:
-            x = _currentTrackBegin.x;
-            y = _currentTrackBegin.y;
-            z = _currentTrackBegin.z;
             direction = _currentTrackPieceDirection;
-            if (!track_block_get_previous_from_zero(x, y, z, ride, direction, &trackBeginEnd))
+            if (!track_block_get_previous_from_zero(_currentTrackBegin, ride, direction, &trackBeginEnd))
             {
                 ride_construction_reset_current_piece();
                 return;
@@ -1460,11 +1455,8 @@ void ride_construction_set_default_next_piece()
                 && slope != TRACK_SLOPE_DOWN_60;
             break;
         case RIDE_CONSTRUCTION_STATE_BACK:
-            x = _currentTrackBegin.x;
-            y = _currentTrackBegin.y;
-            z = _currentTrackBegin.z;
             direction = direction_reverse(_currentTrackPieceDirection);
-            if (!track_block_get_next_from_zero(x, y, z, ride, direction, &xyElement, &z, &direction, false))
+            if (!track_block_get_next_from_zero(_currentTrackBegin, ride, direction, &xyElement, &z, &direction, false))
             {
                 ride_construction_reset_current_piece();
                 return;
@@ -1619,7 +1611,7 @@ void ride_select_previous_section()
         virtual_floor_invalidate();
 
         track_begin_end trackBeginEnd;
-        if (track_block_get_previous(newCoords->x, newCoords->y, tileElement, &trackBeginEnd))
+        if (track_block_get_previous({ *newCoords, tileElement }, &trackBeginEnd))
         {
             _currentTrackBegin.x = trackBeginEnd.begin_x;
             _currentTrackBegin.y = trackBeginEnd.begin_y;
@@ -3926,7 +3918,14 @@ static int32_t ride_check_block_brakes(CoordsXYE* input, CoordsXYE* output)
  */
 static bool ride_check_track_contains_inversions(CoordsXYE* input, CoordsXYE* output)
 {
-    ride_id_t rideIndex = input->element->AsTrack()->GetRideIndex();
+    if (input->element == nullptr)
+        return false;
+
+    const auto* trackElement = input->element->AsTrack();
+    if (trackElement == nullptr)
+        return false;
+
+    ride_id_t rideIndex = trackElement->GetRideIndex();
     auto ride = get_ride(rideIndex);
     if (ride != nullptr && ride->type == RIDE_TYPE_MAZE)
         return true;
@@ -3974,7 +3973,14 @@ static bool ride_check_track_contains_inversions(CoordsXYE* input, CoordsXYE* ou
  */
 static bool ride_check_track_contains_banked(CoordsXYE* input, CoordsXYE* output)
 {
-    auto rideIndex = input->element->AsTrack()->GetRideIndex();
+    if (input->element == nullptr)
+        return false;
+
+    const auto* trackElement = input->element->AsTrack();
+    if (trackElement == nullptr)
+        return false;
+
+    auto rideIndex = trackElement->GetRideIndex();
     auto ride = get_ride(rideIndex);
     if (ride == nullptr)
         return false;
@@ -4033,7 +4039,7 @@ static int32_t ride_check_station_length(CoordsXYE* input, CoordsXYE* output)
     output->y = input->y;
     output->element = input->element;
     track_begin_end trackBeginEnd;
-    while (track_block_get_previous(output->x, output->y, output->element, &trackBeginEnd))
+    while (track_block_get_previous(*output, &trackBeginEnd))
     {
         output->x = trackBeginEnd.begin_x;
         output->y = trackBeginEnd.begin_y;
@@ -4119,13 +4125,11 @@ static bool ride_check_start_and_end_is_station(CoordsXYE* input)
 static void ride_set_boat_hire_return_point(Ride* ride, CoordsXYE* startElement)
 {
     int32_t trackType = -1;
-    int32_t returnX = startElement->x;
-    int32_t returnY = startElement->y;
-    int32_t startX = returnX;
-    int32_t startY = returnY;
-    TileElement* returnTrackElement = startElement->element;
+    auto returnPos = *startElement;
+    int32_t startX = returnPos.x;
+    int32_t startY = returnPos.y;
     track_begin_end trackBeginEnd;
-    while (track_block_get_previous(returnX, returnY, returnTrackElement, &trackBeginEnd))
+    while (track_block_get_previous(returnPos, &trackBeginEnd))
     {
         // If previous track is back to the starting x, y, then break loop (otherwise possible infinite loop)
         if (trackType != -1 && startX == trackBeginEnd.begin_x && startY == trackBeginEnd.begin_y)
@@ -4134,16 +4138,15 @@ static void ride_set_boat_hire_return_point(Ride* ride, CoordsXYE* startElement)
         auto trackCoords = CoordsXYZ{ trackBeginEnd.begin_x, trackBeginEnd.begin_y, trackBeginEnd.begin_z };
         int32_t direction = trackBeginEnd.begin_direction;
         trackType = trackBeginEnd.begin_element->AsTrack()->GetTrackType();
-        auto newCoords = sub_6C683D({ trackCoords, static_cast<Direction>(direction) }, trackType, 0, &returnTrackElement, 0);
-        returnX = newCoords == std::nullopt ? trackCoords.x : newCoords->x;
-        returnY = newCoords == std::nullopt ? trackCoords.y : newCoords->y;
+        auto newCoords = sub_6C683D({ trackCoords, static_cast<Direction>(direction) }, trackType, 0, &returnPos.element, 0);
+        returnPos = newCoords == std::nullopt ? CoordsXYE{ trackCoords, returnPos.element }
+                                              : CoordsXYE{ *newCoords, returnPos.element };
     };
 
-    trackType = returnTrackElement->AsTrack()->GetTrackType();
+    trackType = returnPos.element->AsTrack()->GetTrackType();
     int32_t elementReturnDirection = TrackCoordinates[trackType].rotation_begin;
-    ride->boat_hire_return_direction = returnTrackElement->GetDirectionWithOffset(elementReturnDirection);
-    ride->boat_hire_return_position.x = returnX >> 5;
-    ride->boat_hire_return_position.y = returnY >> 5;
+    ride->boat_hire_return_direction = returnPos.element->GetDirectionWithOffset(elementReturnDirection);
+    ride->boat_hire_return_position = TileCoordsXY{ returnPos };
 }
 
 /**
@@ -4588,16 +4591,14 @@ static void ride_create_vehicles_find_first_block(Ride* ride, CoordsXYE* outXYEl
 
     assert(curTrackElement != nullptr);
 
-    int32_t x = curTrackPos.x;
-    int32_t y = curTrackPos.y;
+    CoordsXY trackPos = curTrackPos;
     auto trackElement = curTrackElement;
     track_begin_end trackBeginEnd;
-    while (track_block_get_previous(x, y, reinterpret_cast<TileElement*>(trackElement), &trackBeginEnd))
+    while (track_block_get_previous({ trackPos, reinterpret_cast<TileElement*>(trackElement) }, &trackBeginEnd))
     {
-        x = trackBeginEnd.end_x;
-        y = trackBeginEnd.end_y;
+        trackPos = { trackBeginEnd.end_x, trackBeginEnd.end_y };
         trackElement = trackBeginEnd.begin_element->AsTrack();
-        if (x == curTrackPos.x && y == curTrackPos.y && trackElement == curTrackElement)
+        if (trackPos == curTrackPos && trackElement == curTrackElement)
         {
             break;
         }
@@ -4609,9 +4610,7 @@ static void ride_create_vehicles_find_first_block(Ride* ride, CoordsXYE* outXYEl
             case TRACK_ELEM_60_DEG_UP_TO_FLAT:
                 if (trackElement->HasChain())
                 {
-                    outXYElement->x = x;
-                    outXYElement->y = y;
-                    outXYElement->element = reinterpret_cast<TileElement*>(trackElement);
+                    *outXYElement = { trackPos, reinterpret_cast<TileElement*>(trackElement) };
                     return;
                 }
                 break;
@@ -4634,9 +4633,7 @@ static void ride_create_vehicles_find_first_block(Ride* ride, CoordsXYE* outXYEl
             case TRACK_ELEM_END_STATION:
             case TRACK_ELEM_CABLE_LIFT_HILL:
             case TRACK_ELEM_BLOCK_BRAKES:
-                outXYElement->x = x;
-                outXYElement->y = y;
-                outXYElement->element = reinterpret_cast<TileElement*>(trackElement);
+                *outXYElement = { trackPos, reinterpret_cast<TileElement*>(trackElement) };
                 return;
         }
     }
@@ -4852,14 +4849,14 @@ static bool ride_initialise_cable_lift_track(Ride* ride, bool isApplying)
         tileElement = it.current.element;
         int32_t trackType = tileElement->AsTrack()->GetTrackType();
 
-        uint16_t flags = 16;
+        uint16_t flags = TRACK_ELEMENT_SET_HAS_CABLE_LIFT_FALSE;
         switch (state)
         {
             case STATE_FIND_CABLE_LIFT:
                 // Search for a cable lift hill track element
                 if (trackType == TRACK_ELEM_CABLE_LIFT_HILL)
                 {
-                    flags = 8;
+                    flags = TRACK_ELEMENT_SET_HAS_CABLE_LIFT_TRUE;
                     state = STATE_FIND_STATION;
                 }
                 break;
@@ -4875,7 +4872,7 @@ static bool ride_initialise_cable_lift_track(Ride* ride, bool isApplying)
                     case TRACK_ELEM_25_DEG_UP_TO_60_DEG_UP:
                     case TRACK_ELEM_60_DEG_UP_TO_25_DEG_UP:
                     case TRACK_ELEM_FLAT_TO_60_DEG_UP_LONG_BASE:
-                        flags = 8;
+                        flags = TRACK_ELEMENT_SET_HAS_CABLE_LIFT_TRUE;
                         break;
                     case TRACK_ELEM_END_STATION:
                         state = STATE_REST_OF_TRACK;
@@ -5045,13 +5042,10 @@ static void ride_scroll_to_track_error(CoordsXYE* trackElement)
  *
  *  rct2: 0x006B4F6B
  */
-static TileElement* loc_6B4F6B(ride_id_t rideIndex, int32_t x, int32_t y)
+TrackElement* Ride::GetOriginElement(StationIndex stationIndex) const
 {
-    auto ride = get_ride(rideIndex);
-    if (ride == nullptr)
-        return nullptr;
-
-    TileElement* tileElement = map_get_first_element_at({ x, y });
+    auto stationLoc = stations[stationIndex].Start;
+    TileElement* tileElement = map_get_first_element_at(stationLoc);
     if (tileElement == nullptr)
         return nullptr;
     do
@@ -5059,19 +5053,21 @@ static TileElement* loc_6B4F6B(ride_id_t rideIndex, int32_t x, int32_t y)
         if (tileElement->GetType() != TILE_ELEMENT_TYPE_TRACK)
             continue;
 
-        if (RideTypeDescriptors[ride->type].Flags & RIDE_TYPE_FLAG_FLAT_RIDE)
+        auto* trackElement = tileElement->AsTrack();
+
+        if (RideTypeDescriptors[type].Flags & RIDE_TYPE_FLAG_FLAT_RIDE)
         {
-            if (!(FlatRideTrackSequenceProperties[tileElement->AsTrack()->GetTrackType()][0] & TRACK_SEQUENCE_FLAG_ORIGIN))
+            if (!(FlatRideTrackSequenceProperties[trackElement->GetTrackType()][0] & TRACK_SEQUENCE_FLAG_ORIGIN))
                 continue;
         }
         else
         {
-            if (!(TrackSequenceProperties[tileElement->AsTrack()->GetTrackType()][0] & TRACK_SEQUENCE_FLAG_ORIGIN))
+            if (!(TrackSequenceProperties[trackElement->GetTrackType()][0] & TRACK_SEQUENCE_FLAG_ORIGIN))
                 continue;
         }
 
-        if (tileElement->AsTrack()->GetRideIndex() == rideIndex)
-            return tileElement;
+        if (trackElement->GetRideIndex() == id)
+            return trackElement;
     } while (!(tileElement++)->IsLastForTile());
 
     return nullptr;
@@ -5115,7 +5111,7 @@ int32_t ride_is_valid_for_test(Ride* ride, int32_t status, bool isApplying)
     auto startLoc = ride->stations[stationIndex].Start;
     trackElement.x = startLoc.x;
     trackElement.y = startLoc.y;
-    trackElement.element = loc_6B4F6B(ride->id, trackElement.x, trackElement.y);
+    trackElement.element = reinterpret_cast<TileElement*>(ride->GetOriginElement(stationIndex));
     if (trackElement.element == nullptr)
     {
         // Maze is strange, station start is 0... investigation required
@@ -5251,7 +5247,7 @@ int32_t ride_is_valid_for_open(Ride* ride, int32_t goingToBeOpen, bool isApplyin
     auto startLoc = ride->stations[stationIndex].Start;
     trackElement.x = startLoc.x;
     trackElement.y = startLoc.y;
-    trackElement.element = loc_6B4F6B(ride->id, trackElement.x, trackElement.y);
+    trackElement.element = reinterpret_cast<TileElement*>(ride->GetOriginElement(stationIndex));
     if (trackElement.element == nullptr)
     {
         // Maze is strange, station start is 0... investigation required
@@ -5279,10 +5275,10 @@ int32_t ride_is_valid_for_open(Ride* ride, int32_t goingToBeOpen, bool isApplyin
         }
     }
 
-    if (ride->subtype != RIDE_ENTRY_INDEX_NULL)
+    if (ride->subtype != RIDE_ENTRY_INDEX_NULL && !gCheatsEnableAllDrawableTrackPieces)
     {
-        rct_ride_entry* rideType = get_ride_entry(ride->subtype);
-        if (rideType->flags & RIDE_ENTRY_FLAG_NO_INVERSIONS)
+        rct_ride_entry* rideEntry = get_ride_entry(ride->subtype);
+        if (rideEntry->flags & RIDE_ENTRY_FLAG_NO_INVERSIONS)
         {
             gGameCommandErrorText = STR_TRACK_UNSUITABLE_FOR_TYPE_OF_TRAIN;
             if (ride_check_track_contains_inversions(&trackElement, &problematicTrackElement))
@@ -5291,7 +5287,7 @@ int32_t ride_is_valid_for_open(Ride* ride, int32_t goingToBeOpen, bool isApplyin
                 return 0;
             }
         }
-        if (rideType->flags & RIDE_ENTRY_FLAG_NO_BANKED_TRACK)
+        if (rideEntry->flags & RIDE_ENTRY_FLAG_NO_BANKED_TRACK)
         {
             gGameCommandErrorText = STR_TRACK_UNSUITABLE_FOR_TYPE_OF_TRAIN;
             if (ride_check_track_contains_banked(&trackElement, &problematicTrackElement))
@@ -5355,7 +5351,7 @@ void ride_get_start_of_track(CoordsXYE* output)
 {
     track_begin_end trackBeginEnd;
     CoordsXYE trackElement = *output;
-    if (track_block_get_previous(trackElement.x, trackElement.y, trackElement.element, &trackBeginEnd))
+    if (track_block_get_previous(trackElement, &trackBeginEnd))
     {
         TileElement* initial_map = trackElement.element;
         track_begin_end slowIt = trackBeginEnd;
@@ -5369,7 +5365,7 @@ void ride_get_start_of_track(CoordsXYE* output)
             };
 
             if (!track_block_get_previous(
-                    trackBeginEnd.end_x, trackBeginEnd.end_y, trackBeginEnd.begin_element, &trackBeginEnd))
+                    { trackBeginEnd.end_x, trackBeginEnd.end_y, trackBeginEnd.begin_element }, &trackBeginEnd))
             {
                 trackElement = lastGood;
                 break;
@@ -5378,7 +5374,7 @@ void ride_get_start_of_track(CoordsXYE* output)
             moveSlowIt = !moveSlowIt;
             if (moveSlowIt)
             {
-                if (!track_block_get_previous(slowIt.end_x, slowIt.end_y, slowIt.begin_element, &slowIt)
+                if (!track_block_get_previous({ slowIt.end_x, slowIt.end_y, slowIt.begin_element }, &slowIt)
                     || slowIt.begin_element == trackBeginEnd.begin_element)
                 {
                     break;
@@ -6238,9 +6234,7 @@ bool ride_select_backwards_from_front()
     {
         ride_construction_invalidate_current_track();
         track_begin_end trackBeginEnd;
-        if (track_block_get_previous_from_zero(
-                _currentTrackBegin.x, _currentTrackBegin.y, _currentTrackBegin.z, ride, _currentTrackPieceDirection,
-                &trackBeginEnd))
+        if (track_block_get_previous_from_zero(_currentTrackBegin, ride, _currentTrackPieceDirection, &trackBeginEnd))
         {
             _rideConstructionState = RIDE_CONSTRUCTION_STATE_SELECTED;
             _currentTrackBegin.x = trackBeginEnd.begin_x;
@@ -6263,12 +6257,10 @@ bool ride_select_forwards_from_back()
     {
         ride_construction_invalidate_current_track();
 
-        int32_t x = _currentTrackBegin.x;
-        int32_t y = _currentTrackBegin.y;
         int32_t z = _currentTrackBegin.z;
         int32_t direction = direction_reverse(_currentTrackPieceDirection);
         CoordsXYE next_track;
-        if (track_block_get_next_from_zero(x, y, z, ride, direction, &next_track, &z, &direction, false))
+        if (track_block_get_next_from_zero(_currentTrackBegin, ride, direction, &next_track, &z, &direction, false))
         {
             _rideConstructionState = RIDE_CONSTRUCTION_STATE_SELECTED;
             _currentTrackBegin.x = next_track.x;
