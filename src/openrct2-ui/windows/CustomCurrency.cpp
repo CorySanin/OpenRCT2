@@ -16,6 +16,10 @@
 #include <openrct2/localisation/Localisation.h>
 #include <openrct2/util/Util.h>
 
+static constexpr const rct_string_id WINDOW_TITLE = STR_CUSTOM_CURRENCY_WINDOW_TITLE;
+static constexpr const int32_t WH = 100;
+static constexpr const int32_t WW = 400;
+
 // clang-format off
 enum WINDOW_CUSTOM_CURRENCY_WIDGET_IDX {
     WIDX_BACKGROUND,
@@ -30,9 +34,7 @@ enum WINDOW_CUSTOM_CURRENCY_WIDGET_IDX {
 };
 
 static rct_widget window_custom_currency_widgets[] = {
-    { WWT_FRAME,            0,  0,      399,    0,      99, 0xFFFFFFFF,                         STR_NONE },
-    { WWT_CAPTION,          0,  1,      398,    1,      14, STR_CUSTOM_CURRENCY_WINDOW_TITLE,   STR_WINDOW_TITLE_TIP },
-    { WWT_CLOSEBOX,         0,  387,    397,    2,      13, STR_CLOSE_X,                        STR_CLOSE_WINDOW_TIP },
+    WINDOW_SHIM(WINDOW_TITLE, WW, WH),
       SPINNER_WIDGETS      (1,  100,    200,    30,     40, STR_CHEAT_CURRENCY_FORMAT,          STR_NONE), // NB: 3 widgets
     { WWT_BUTTON,           1,  120,    200,    50,     60, 0,                                  STR_NONE },
     { WWT_DROPDOWN,         1,  220,    350,    50,     60, STR_NONE,                           STR_NONE },
@@ -231,29 +233,27 @@ static void custom_currency_window_text_input([[maybe_unused]] struct rct_window
 
 static void custom_currency_window_paint(rct_window* w, rct_drawpixelinfo* dpi)
 {
-    int32_t x, y;
-
     set_format_arg(0, int32_t, 100);
 
     window_draw_widgets(w, dpi);
 
-    x = w->windowPos.x + 10;
-    y = w->windowPos.y + 30;
+    auto screenCoords = ScreenCoordsXY{ w->windowPos.x + 10, w->windowPos.y + 30 };
 
-    gfx_draw_string_left(dpi, STR_RATE, nullptr, w->colours[1], x, y);
+    gfx_draw_string_left(dpi, STR_RATE, nullptr, w->colours[1], screenCoords.x, screenCoords.y);
 
     int32_t baseExchange = CurrencyDescriptors[CURRENCY_POUNDS].rate;
     set_format_arg(0, int32_t, baseExchange);
-    gfx_draw_string_left(dpi, STR_CUSTOM_CURRENCY_EQUIVALENCY, gCommonFormatArgs, w->colours[1], x + 200, y);
+    gfx_draw_string_left(
+        dpi, STR_CUSTOM_CURRENCY_EQUIVALENCY, gCommonFormatArgs, w->colours[1], screenCoords.x + 200, screenCoords.y);
 
-    y += 20;
+    screenCoords.y += 20;
 
-    gfx_draw_string_left(dpi, STR_CURRENCY_SYMBOL_TEXT, nullptr, w->colours[1], x, y);
+    gfx_draw_string_left(dpi, STR_CURRENCY_SYMBOL_TEXT, nullptr, w->colours[1], screenCoords.x, screenCoords.y);
 
-    gfx_draw_string(
-        dpi, CurrencyDescriptors[CURRENCY_CUSTOM].symbol_unicode, w->colours[1],
-        w->windowPos.x + window_custom_currency_widgets[WIDX_SYMBOL_TEXT].left + 1,
-        w->windowPos.y + window_custom_currency_widgets[WIDX_SYMBOL_TEXT].top);
+    screenCoords.x = w->windowPos.x + window_custom_currency_widgets[WIDX_SYMBOL_TEXT].left + 1;
+    screenCoords.y = w->windowPos.y + window_custom_currency_widgets[WIDX_SYMBOL_TEXT].top;
+
+    gfx_draw_string(dpi, CurrencyDescriptors[CURRENCY_CUSTOM].symbol_unicode, w->colours[1], screenCoords);
 
     if (CurrencyDescriptors[CURRENCY_CUSTOM].affix_unicode == CURRENCY_PREFIX)
     {

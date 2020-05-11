@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-#define LOCATION_NULL ((int16_t)(uint16_t)0x8000)
+constexpr const int16_t LOCATION_NULL = -32768;
 
 constexpr const int32_t COORDS_XY_STEP = 32;
 constexpr const int32_t COORDS_Z_STEP = 8;
@@ -80,6 +80,29 @@ struct ScreenCoordsXY
     }
 
     bool operator!=(const ScreenCoordsXY& other) const
+    {
+        return !(*this == other);
+    }
+};
+
+struct ScreenSize
+{
+    int32_t width{};
+    int32_t height{};
+
+    ScreenSize() = default;
+    constexpr ScreenSize(int32_t _width, int32_t _height)
+        : width(_width)
+        , height(_height)
+    {
+    }
+
+    bool operator==(const ScreenSize& other) const
+    {
+        return width == other.width && height == other.height;
+    }
+
+    bool operator!=(const ScreenSize& other) const
     {
         return !(*this == other);
     }
@@ -254,6 +277,13 @@ struct TileCoordsXY
 
     CoordsXY ToCoordsXY() const
     {
+        if (isNull())
+        {
+            CoordsXY ret{};
+            ret.setNull();
+            return ret;
+        }
+
         return { x * COORDS_XY_STEP, y * COORDS_XY_STEP };
     }
 
@@ -404,6 +434,12 @@ struct TileCoordsXYZ : public TileCoordsXY
 
     CoordsXYZ ToCoordsXYZ() const
     {
+        if (isNull())
+        {
+            CoordsXYZ ret{};
+            ret.setNull();
+            return ret;
+        }
         return { x * COORDS_XY_STEP, y * COORDS_XY_STEP, z * COORDS_Z_STEP };
     }
 };
@@ -562,6 +598,12 @@ struct TileCoordsXYZD : public TileCoordsXYZ
 
     CoordsXYZD ToCoordsXYZD() const
     {
+        if (isNull())
+        {
+            CoordsXYZD ret{};
+            ret.setNull();
+            return ret;
+        }
         return { x * COORDS_XY_STEP, y * COORDS_XY_STEP, z * COORDS_Z_STEP, direction };
     }
 };

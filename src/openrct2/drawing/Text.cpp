@@ -141,13 +141,13 @@ static void DrawTextEllipsisedCompat(
     DrawText(dpi, x, y, &_legacyPaint, buffer);
 }
 
-void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t colour, int32_t x, int32_t y)
+void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t colour, const ScreenCoordsXY& coords)
 {
     _legacyPaint.UnderlineText = false;
     _legacyPaint.Colour = colour;
     _legacyPaint.Alignment = TextAlignment::LEFT;
     _legacyPaint.SpriteBase = gCurrentFontSpriteBase;
-    DrawText(dpi, x, y, &_legacyPaint, buffer);
+    DrawText(dpi, coords.x, coords.y, &_legacyPaint, buffer);
 }
 
 // Basic
@@ -229,7 +229,7 @@ int32_t gfx_draw_string_left_wrapped(
 }
 
 int32_t gfx_draw_string_centred_wrapped(
-    rct_drawpixelinfo* dpi, void* args, int32_t x, int32_t y, int32_t width, rct_string_id format, uint8_t colour)
+    rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour)
 {
     utf8 buffer[512];
     format_string(buffer, sizeof(buffer), format, args);
@@ -248,7 +248,7 @@ int32_t gfx_draw_string_centred_wrapped(
     int32_t lineHeight = layout.GetHeight() / lineCount;
     int32_t yOffset = (lineCount - 1) * lineHeight / 2;
 
-    layout.Draw(dpi, x - layout.GetWidth() / 2, y - yOffset);
+    layout.Draw(dpi, coords.x - layout.GetWidth() / 2, coords.y - yOffset);
 
     return layout.GetHeight();
 }

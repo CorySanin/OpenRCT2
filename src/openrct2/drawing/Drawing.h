@@ -17,6 +17,7 @@
 #include <vector>
 struct ScreenCoordsXY;
 
+struct ScreenCoordsXY;
 namespace OpenRCT2
 {
     interface IPlatformEnvironment;
@@ -530,7 +531,7 @@ void FASTCALL
     gfx_draw_sprite_raw_masked_software(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t maskImage, int32_t colourImage);
 
 // string
-void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t colour, int32_t x, int32_t y);
+void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t colour, const ScreenCoordsXY& coords);
 
 void gfx_draw_string_left(rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
 void gfx_draw_string_centred(
@@ -555,7 +556,7 @@ void gfx_draw_string_right_clipped(
 int32_t gfx_draw_string_left_wrapped(
     rct_drawpixelinfo* dpi, void* args, int32_t x, int32_t y, int32_t width, rct_string_id format, uint8_t colour);
 int32_t gfx_draw_string_centred_wrapped(
-    rct_drawpixelinfo* dpi, void* args, int32_t x, int32_t y, int32_t width, rct_string_id format, uint8_t colour);
+    rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour);
 
 void gfx_draw_string_left_centred(
     rct_drawpixelinfo* dpi, rct_string_id format, void* args, int32_t colour, int32_t x, int32_t y);

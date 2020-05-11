@@ -16,6 +16,10 @@
 #include <openrct2/ride/TrackDesignRepository.h>
 #include <openrct2/util/Util.h>
 
+static constexpr const rct_string_id WINDOW_TITLE = STR_STRING;
+static constexpr const int32_t WH = 44;
+static constexpr const int32_t WW = 250;
+
 #pragma region Widgets
 
 // clang-format off
@@ -31,18 +35,14 @@ enum {
 };
 
 static rct_widget window_track_manage_widgets[] = {
-    { WWT_FRAME,            0,  0,      249,    0,      43,     STR_NONE,                   STR_NONE                },
-    { WWT_CAPTION,          0,  1,      248,    1,      14,     STR_STRING,                     STR_WINDOW_TITLE_TIP    },
-    { WWT_CLOSEBOX,         0,  237,    247,    2,      13,     STR_CLOSE_X,                STR_CLOSE_WINDOW_TIP    },
+    WINDOW_SHIM(WINDOW_TITLE, WW, WH),
     { WWT_BUTTON,           0,  10,     119,    24,     35,     STR_TRACK_MANAGE_RENAME,    STR_NONE                },
     { WWT_BUTTON,           0,  130,    239,    24,     35,     STR_TRACK_MANAGE_DELETE,    STR_NONE                },
     { WIDGETS_END }
 };
 
 static rct_widget window_track_delete_prompt_widgets[] = {
-    { WWT_FRAME,            0,  0,      249,    0,      73,     STR_NONE,                   STR_NONE                },
-    { WWT_CAPTION,          0,  1,      248,    1,      14,     STR_DELETE_FILE,            STR_WINDOW_TITLE_TIP    },
-    { WWT_CLOSEBOX,         0,  237,    247,    2,      13,     STR_CLOSE_X,                STR_CLOSE_WINDOW_TIP    },
+    WINDOW_SHIM(WINDOW_TITLE, WW, WH),
     { WWT_BUTTON,           0,  10,     119,    54,     65,     STR_TRACK_MANAGE_DELETE,    STR_NONE                },
     { WWT_BUTTON,           0,  130,    239,    54,     65,     STR_CANCEL,                 STR_NONE                },
     { WIDGETS_END }
@@ -292,7 +292,7 @@ static void window_track_delete_prompt_paint(rct_window* w, rct_drawpixelinfo* d
     window_draw_widgets(w, dpi);
 
     gfx_draw_string_centred_wrapped(
-        dpi, &_trackDesignFileReference->name, w->windowPos.x + 125, w->windowPos.y + 28, 246,
+        dpi, &_trackDesignFileReference->name, { w->windowPos.x + 125, w->windowPos.y + 28 }, 246,
         STR_ARE_YOU_SURE_YOU_WANT_TO_PERMANENTLY_DELETE_TRACK, COLOUR_BLACK);
 }
 

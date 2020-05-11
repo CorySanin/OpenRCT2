@@ -71,7 +71,6 @@ uint8_t gPeepWarningThrottle[16];
 TileCoordsXYZ gPeepPathFindGoalPosition;
 bool gPeepPathFindIgnoreForeignQueues;
 ride_id_t gPeepPathFindQueueRideIndex;
-// uint32_t gPeepPathFindAltStationNum;
 
 static uint8_t _unk_F1AEF0;
 static TileElement* _peepRideEntranceExitElement;
@@ -2959,7 +2958,7 @@ static bool peep_interact_with_shop(Peep* peep, int16_t x, int16_t y, TileElemen
             return true;
         }
 
-        money16 cost = ride->price;
+        money16 cost = ride->price[0];
         if (cost != 0 && !(gParkFlags & PARK_FLAGS_NO_MONEY))
         {
             ride->total_profit += cost;

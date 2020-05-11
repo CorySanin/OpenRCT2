@@ -203,9 +203,11 @@ enum WINDOW_TILE_INSPECTOR_WIDGET_IDX {
     WIDX_CORRUPT_BUTTON_CLAMP,
 };
 
+static constexpr const rct_string_id WINDOW_TITLE = STR_TILE_INSPECTOR_TITLE;
+
 // Window sizes
-constexpr int32_t WW = 400;
-constexpr int32_t WH = 170;
+static constexpr const int32_t WW = 400;
+static constexpr const int32_t WH = 170;
 constexpr int32_t MIN_WW = WW;
 constexpr int32_t MAX_WW = WW;
 constexpr int32_t MIN_WH = 130;
@@ -249,9 +251,7 @@ constexpr int32_t BUTTONH = 17;
 #define CHK(x, y) x, x + 13, y + 2, y + 15
 
 #define MAIN_TILE_INSPECTOR_WIDGETS \
-    { WWT_FRAME,        0,  0,              WW - 1,             0,              WH - 1,     0xFFFFFFFF,                 STR_NONE },                 /* panel / background */    \
-    { WWT_CAPTION,      0,  1,              WW - 2,             1,              14,         STR_TILE_INSPECTOR_TITLE,   STR_WINDOW_TITLE_TIP },     /* title bar */             \
-    { WWT_CLOSEBOX,     0,  WW - 13,        WW - 3,             2,              13,         STR_CLOSE_X,                STR_CLOSE_WINDOW_TIP },     /* close x button */        \
+    WINDOW_SHIM(WINDOW_TITLE, WW, WH), \
     { WWT_SCROLL,       1,  3,              WW - 4,             57,             WH - PADDING_BOTTOM,    2,              STR_NONE },                 /* Element list */          \
       SPINNER_WIDGETS  (1,  20,             70,                 23,             34,         STR_NONE,                   STR_NONE),                  /* Spinner X (3 widgets) */ \
       SPINNER_WIDGETS  (1,  90,             140,                23,             34,         STR_NONE,                   STR_NONE),                  /* Spinner Y (3 widgets) */ \
@@ -1782,9 +1782,11 @@ static void window_tile_inspector_paint(rct_window* w, rct_drawpixelinfo* dpi)
             w->windowPos.y + widget->top + 1, widget->right - widget->left);
     }
 
+    ScreenCoordsXY screenCoords(w->windowPos.x, w->windowPos.y);
+
     // Draw coordinates
-    gfx_draw_string(dpi, (char*)"X:", COLOUR_WHITE, w->windowPos.x + 5, w->windowPos.y + 24);
-    gfx_draw_string(dpi, (char*)"Y:", COLOUR_WHITE, w->windowPos.x + 74, w->windowPos.y + 24);
+    gfx_draw_string(dpi, (char*)"X:", COLOUR_WHITE, screenCoords + ScreenCoordsXY(5, 24));
+    gfx_draw_string(dpi, (char*)"Y:", COLOUR_WHITE, screenCoords + ScreenCoordsXY(74, 24));
     if (windowTileInspectorTileSelected)
     {
         auto tileCoords = TileCoordsXY{ windowTileInspectorToolMap };
@@ -1793,8 +1795,8 @@ static void window_tile_inspector_paint(rct_window* w, rct_drawpixelinfo* dpi)
     }
     else
     {
-        gfx_draw_string(dpi, (char*)"-", COLOUR_WHITE, w->windowPos.x + 43 - 7, w->windowPos.y + 24);
-        gfx_draw_string(dpi, (char*)"-", COLOUR_WHITE, w->windowPos.x + 113 - 7, w->windowPos.y + 24);
+        gfx_draw_string(dpi, (char*)"-", COLOUR_WHITE, screenCoords + ScreenCoordsXY(43 - 7, 24));
+        gfx_draw_string(dpi, (char*)"-", COLOUR_WHITE, screenCoords + ScreenCoordsXY(113, 24));
     }
 
     if (windowTileInspectorSelectedIndex != -1)

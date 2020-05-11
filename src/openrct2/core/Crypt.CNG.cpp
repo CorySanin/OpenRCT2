@@ -153,8 +153,6 @@ private:
     int ReadTag(std::istream& stream)
     {
         auto a = Read<uint8_t>(stream);
-        // auto tagClass = a >> 6;
-        // auto tagConstructed = ((a & 0x20) != 0);
         auto tagNumber = a & 0x1F;
         if (tagNumber == 0x1F)
         {
@@ -270,12 +268,12 @@ public:
     {
         if (value < 128)
         {
-            _buffer.push_back((uint8_t)value);
+            _buffer.push_back(static_cast<uint8_t>(value));
         }
         else if (value <= std::numeric_limits<uint8_t>().max())
         {
             _buffer.push_back(0b10000001);
-            _buffer.push_back((uint8_t)value);
+            _buffer.push_back(static_cast<uint8_t>(value));
         }
         else if (value <= std::numeric_limits<uint16_t>().max())
         {

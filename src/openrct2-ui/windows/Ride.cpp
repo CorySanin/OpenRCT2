@@ -55,6 +55,10 @@
 #include <openrct2/world/Park.h>
 using namespace OpenRCT2;
 
+static constexpr const rct_string_id WINDOW_TITLE = STR_RIDE_WINDOW_TITLE;
+static constexpr const int32_t WH = 207;
+static constexpr const int32_t WW = 316;
+
 enum
 {
     WINDOW_RIDE_PAGE_MAIN,
@@ -205,9 +209,7 @@ enum {
 constexpr int32_t RCT1_LIGHT_OFFSET = 4;
 
 #define MAIN_RIDE_WIDGETS \
-    { WWT_FRAME,            0,  0,      315,    0,      206,    0xFFFFFFFF,                     STR_NONE                                    }, \
-    { WWT_CAPTION,          0,  1,      314,    1,      14,     STR_RIDE_WINDOW_TITLE,          STR_WINDOW_TITLE_TIP                        }, \
-    { WWT_CLOSEBOX,         0,  303,    313,    2,      13,     STR_CLOSE_X,                    STR_CLOSE_WINDOW_TIP                        }, \
+    WINDOW_SHIM(WINDOW_TITLE, WW, WH), \
     { WWT_RESIZE,           1,  0,      315,    43,     179,    0xFFFFFFFF,                     STR_NONE                                    }, \
     { WWT_TAB,              1,  3,      33,     17,     43,     IMAGE_TYPE_REMAP | SPR_TAB,     STR_VIEW_OF_RIDE_ATTRACTION_TIP             }, \
     { WWT_TAB,              1,  34,     64,     17,     46,     IMAGE_TYPE_REMAP | SPR_TAB,     STR_VEHICLE_DETAILS_AND_OPTIONS_TIP         }, \
@@ -4025,7 +4027,7 @@ static void window_ride_maintenance_mousedown(rct_window* w, rct_widgetindex wid
             gDropdownItemsArgs[0] = STR_DEBUG_FIX_RIDE;
             for (int32_t i = 0; i < 8; i++)
             {
-                assert(j < (int32_t)std::size(rideEntry->ride_type));
+                assert(j < static_cast<int32_t>(std::size(rideEntry->ride_type)));
                 if (RideTypeDescriptors[rideEntry->ride_type[j]].AvailableBreakdowns & static_cast<uint8_t>(1 << i))
                 {
                     if (i == BREAKDOWN_BRAKES_FAILURE
@@ -4168,7 +4170,7 @@ static void window_ride_maintenance_dropdown(rct_window* w, rct_widgetindex widg
                 int32_t num_items = 1;
                 for (i = 0; i < BREAKDOWN_COUNT; i++)
                 {
-                    assert(j < (int32_t)std::size(rideEntry->ride_type));
+                    assert(j < static_cast<int32_t>(std::size(rideEntry->ride_type)));
                     if (RideTypeDescriptors[rideEntry->ride_type[j]].AvailableBreakdowns & static_cast<uint8_t>(1 << i))
                     {
                         if (i == BREAKDOWN_BRAKES_FAILURE
@@ -5017,7 +5019,7 @@ static void window_ride_colour_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
     //
     auto rideEntry = ride->GetRideEntry();
-    if (rideEntry == nullptr || rideEntry->shop_item == SHOP_ITEM_NONE)
+    if (rideEntry == nullptr || rideEntry->shop_item[0] == SHOP_ITEM_NONE)
     {
         int32_t x = w->windowPos.x + widget->left;
         int32_t y = w->windowPos.y + widget->top;
@@ -5051,8 +5053,7 @@ static void window_ride_colour_paint(rct_window* w, rct_drawpixelinfo* dpi)
         int32_t x = w->windowPos.x + (widget->left + widget->right) / 2 - 8;
         int32_t y = w->windowPos.y + (widget->bottom + widget->top) / 2 - 6;
 
-        uint8_t shopItem = rideEntry->shop_item_secondary == SHOP_ITEM_NONE ? rideEntry->shop_item
-                                                                            : rideEntry->shop_item_secondary;
+        uint8_t shopItem = rideEntry->shop_item[1] == SHOP_ITEM_NONE ? rideEntry->shop_item[0] : rideEntry->shop_item[1];
         int32_t spriteIndex = ShopItems[shopItem].Image;
         spriteIndex |= SPRITE_ID_PALETTE_COLOUR_1(ride->track_colour[0].main);
 
@@ -5721,13 +5722,15 @@ static void window_ride_measurements_paint(rct_window* w, rct_drawpixelinfo* dpi
     {
         rct_widget* widget = &window_ride_measurements_widgets[WIDX_PAGE_BACKGROUND];
 
-        int32_t x = w->windowPos.x + (widget->right - widget->left) / 2;
-        int32_t y = w->windowPos.y + widget->top + 40;
-        gfx_draw_string_centred_wrapped(dpi, nullptr, x, y, w->width - 8, STR_CLICK_ITEMS_OF_SCENERY_TO_SELECT, COLOUR_BLACK);
+        ScreenCoordsXY widgetCoords(w->windowPos.x + (widget->right - widget->left) / 2, w->windowPos.y + widget->top + 40);
+        gfx_draw_string_centred_wrapped(
+            dpi, nullptr, widgetCoords, w->width - 8, STR_CLICK_ITEMS_OF_SCENERY_TO_SELECT, COLOUR_BLACK);
 
-        x = w->windowPos.x + 4;
-        y = w->windowPos.y + window_ride_measurements_widgets[WIDX_SELECT_NEARBY_SCENERY].bottom + 17;
-        gfx_fill_rect_inset(dpi, x, y, w->windowPos.x + 312, y + 1, w->colours[1], INSET_RECT_FLAG_BORDER_INSET);
+        widgetCoords.x = w->windowPos.x + 4;
+        widgetCoords.y = w->windowPos.y + window_ride_measurements_widgets[WIDX_SELECT_NEARBY_SCENERY].bottom + 17;
+        gfx_fill_rect_inset(
+            dpi, widgetCoords.x, widgetCoords.y, w->windowPos.x + 312, widgetCoords.y + 1, w->colours[1],
+            INSET_RECT_FLAG_BORDER_INSET);
     }
     else
     {
@@ -6192,10 +6195,9 @@ static void window_ride_graphs_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi
     if (measurement == nullptr)
     {
         // No measurement message
-        int32_t x = (widget->right - widget->left) / 2;
-        int32_t y = (widget->bottom - widget->top) / 2 - 5;
+        ScreenCoordsXY stringCoords((widget->right - widget->left) / 2, (widget->bottom - widget->top) / 2 - 5);
         int32_t width = widget->right - widget->left - 2;
-        gfx_draw_string_centred_wrapped(dpi, gCommonFormatArgs, x, y, width, stringId, COLOUR_BLACK);
+        gfx_draw_string_centred_wrapped(dpi, gCommonFormatArgs, stringCoords, width, stringId, COLOUR_BLACK);
         return;
     }
 
@@ -6346,7 +6348,7 @@ static void update_same_price_throughout_flags(uint32_t shop_item)
 {
     uint64_t newFlags;
 
-    if (shop_item_is_photo(shop_item))
+    if (ShopItems[shop_item].IsPhoto())
     {
         newFlags = gSamePriceThroughoutPark;
         newFlags ^= (1ULL << SHOP_ITEM_PHOTO) | (1ULL << SHOP_ITEM_PHOTO2) | (1ULL << SHOP_ITEM_PHOTO3)
@@ -6383,7 +6385,7 @@ static void window_ride_income_toggle_primary_price(rct_window* w)
         auto rideEntry = get_ride_entry(ride->subtype);
         if (rideEntry != nullptr)
         {
-            shop_item = rideEntry->shop_item;
+            shop_item = rideEntry->shop_item[0];
             if (shop_item == 0xFFFF)
                 return;
         }
@@ -6395,7 +6397,7 @@ static void window_ride_income_toggle_primary_price(rct_window* w)
 
     update_same_price_throughout_flags(shop_item);
 
-    auto rideSetPriceAction = RideSetPriceAction(w->number, ride->price, true);
+    auto rideSetPriceAction = RideSetPriceAction(w->number, ride->price[0], true);
     GameActions::Execute(&rideSetPriceAction);
 }
 
@@ -6413,13 +6415,13 @@ static void window_ride_income_toggle_secondary_price(rct_window* w)
     if (rideEntry == nullptr)
         return;
 
-    auto shop_item = rideEntry->shop_item_secondary;
+    auto shop_item = rideEntry->shop_item[1];
     if (shop_item == SHOP_ITEM_NONE)
         shop_item = RideTypeDescriptors[ride->type].PhotoItem;
 
     update_same_price_throughout_flags(shop_item);
 
-    auto rideSetPriceAction = RideSetPriceAction(w->number, ride->price_secondary, false);
+    auto rideSetPriceAction = RideSetPriceAction(w->number, ride->price[1], false);
     GameActions::Execute(&rideSetPriceAction);
 }
 
@@ -6442,7 +6444,7 @@ static void window_ride_income_increase_primary_price(rct_window* w)
     if (ride == nullptr)
         return;
 
-    money16 price = ride->price;
+    money16 price = ride->price[0];
     if (price < MONEY(20, 00))
         price++;
 
@@ -6462,7 +6464,7 @@ static void window_ride_income_decrease_primary_price(rct_window* w)
     if (ride == nullptr)
         return;
 
-    money16 price = ride->price;
+    money16 price = ride->price[0];
     if (price > MONEY(0, 00))
         price--;
 
@@ -6475,7 +6477,7 @@ static money16 window_ride_income_get_secondary_price(rct_window* w)
     if (ride == nullptr)
         return 0;
 
-    money16 price = ride->price_secondary;
+    money16 price = ride->price[1];
     return price;
 }
 
@@ -6493,7 +6495,7 @@ static bool window_ride_income_can_modify_primary_price(rct_window* w)
 
     auto rideEntry = ride->GetRideEntry();
     return park_ride_prices_unlocked() || ride->type == RIDE_TYPE_TOILETS
-        || (rideEntry != nullptr && rideEntry->shop_item != SHOP_ITEM_NONE);
+        || (rideEntry != nullptr && rideEntry->shop_item[0] != SHOP_ITEM_NONE);
 }
 
 /**
@@ -6555,7 +6557,7 @@ static void window_ride_income_mouseup(rct_window* w, rct_widgetindex widgetInde
             auto ride = get_ride(w->number);
             if (ride != nullptr)
             {
-                money_to_string(static_cast<money32>(ride->price), _moneyInputText, MONEY_STRING_MAXLENGTH, true);
+                money_to_string(static_cast<money32>(ride->price[0]), _moneyInputText, MONEY_STRING_MAXLENGTH, true);
                 window_text_input_raw_open(
                     w, WIDX_PRIMARY_PRICE, STR_ENTER_NEW_VALUE, STR_ENTER_NEW_VALUE, _moneyInputText, MONEY_STRING_MAXLENGTH);
             }
@@ -6687,7 +6689,7 @@ static void window_ride_income_invalidate(rct_window* w)
     window_ride_income_widgets[WIDX_PRIMARY_PRICE].tooltip = STR_NONE;
 
     // If ride prices are locked, do not allow setting the price, unless we're dealing with a shop or toilet.
-    if (!park_ride_prices_unlocked() && rideEntry->shop_item == SHOP_ITEM_NONE && ride->type != RIDE_TYPE_TOILETS)
+    if (!park_ride_prices_unlocked() && rideEntry->shop_item[0] == SHOP_ITEM_NONE && ride->type != RIDE_TYPE_TOILETS)
     {
         w->disabled_widgets |= (1 << WIDX_PRIMARY_PRICE);
         window_ride_income_widgets[WIDX_PRIMARY_PRICE_LABEL].tooltip = STR_RIDE_INCOME_ADMISSION_PAY_FOR_ENTRY_TIP;
@@ -6705,7 +6707,7 @@ static void window_ride_income_invalidate(rct_window* w)
         window_ride_income_widgets[WIDX_PRIMARY_PRICE].text = STR_FREE;
 
     uint8_t primaryItem = SHOP_ITEM_ADMISSION;
-    if (ride->type == RIDE_TYPE_TOILETS || ((primaryItem = rideEntry->shop_item) != SHOP_ITEM_NONE))
+    if (ride->type == RIDE_TYPE_TOILETS || ((primaryItem = rideEntry->shop_item[0]) != SHOP_ITEM_NONE))
     {
         window_ride_income_widgets[WIDX_PRIMARY_PRICE_SAME_THROUGHOUT_PARK].type = WWT_CHECKBOX;
 
@@ -6719,7 +6721,7 @@ static void window_ride_income_invalidate(rct_window* w)
     auto secondaryItem = RideTypeDescriptors[ride->type].PhotoItem;
     if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_ON_RIDE_PHOTO))
     {
-        if ((secondaryItem = rideEntry->shop_item_secondary) != SHOP_ITEM_NONE)
+        if ((secondaryItem = rideEntry->shop_item[1]) != SHOP_ITEM_NONE)
         {
             window_ride_income_widgets[WIDX_SECONDARY_PRICE_LABEL].text = ShopItems[secondaryItem].Naming.PriceLabel;
         }
@@ -6750,8 +6752,8 @@ static void window_ride_income_invalidate(rct_window* w)
 
         // Set secondary item price
         window_ride_income_widgets[WIDX_SECONDARY_PRICE].text = STR_RIDE_SECONDARY_PRICE_VALUE;
-        set_format_arg(10, money32, ride->price_secondary);
-        if (ride->price_secondary == 0)
+        set_format_arg(10, money32, ride->price[1]);
+        if (ride->price[1] == 0)
             window_ride_income_widgets[WIDX_SECONDARY_PRICE].text = STR_FREE;
     }
 
@@ -6784,10 +6786,10 @@ static void window_ride_income_paint(rct_window* w, rct_drawpixelinfo* dpi)
     y = w->windowPos.y + window_ride_income_widgets[WIDX_PAGE_BACKGROUND].top + 33;
 
     // Primary item profit / loss per item sold
-    primaryItem = rideEntry->shop_item;
+    primaryItem = rideEntry->shop_item[0];
     if (primaryItem != SHOP_ITEM_NONE)
     {
-        profit = ride->price;
+        profit = ride->price[0];
 
         stringId = STR_PROFIT_PER_ITEM_SOLD;
         profit -= ShopItems[primaryItem].Cost;
@@ -6804,11 +6806,11 @@ static void window_ride_income_paint(rct_window* w, rct_drawpixelinfo* dpi)
     // Secondary item profit / loss per item sold
     secondaryItem = RideTypeDescriptors[ride->type].PhotoItem;
     if (!(ride->lifecycle_flags & RIDE_LIFECYCLE_ON_RIDE_PHOTO))
-        secondaryItem = rideEntry->shop_item_secondary;
+        secondaryItem = rideEntry->shop_item[1];
 
     if (secondaryItem != SHOP_ITEM_NONE)
     {
-        profit = ride->price_secondary;
+        profit = ride->price[1];
 
         stringId = STR_PROFIT_PER_ITEM_SOLD;
         profit -= ShopItems[secondaryItem].Cost;
@@ -7042,7 +7044,7 @@ static void window_ride_customer_paint(rct_window* w, rct_drawpixelinfo* dpi)
     }
 
     // Primary shop items sold
-    shopItem = ride->GetRideEntry()->shop_item;
+    shopItem = ride->GetRideEntry()->shop_item[0];
     if (shopItem != SHOP_ITEM_NONE)
     {
         set_format_arg(0, rct_string_id, ShopItems[shopItem].Naming.Plural);
@@ -7053,7 +7055,7 @@ static void window_ride_customer_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
     // Secondary shop items sold / on-ride photos sold
     shopItem = (ride->lifecycle_flags & RIDE_LIFECYCLE_ON_RIDE_PHOTO) ? RideTypeDescriptors[ride->type].PhotoItem
-                                                                      : ride->GetRideEntry()->shop_item_secondary;
+                                                                      : ride->GetRideEntry()->shop_item[1];
     if (shopItem != SHOP_ITEM_NONE)
     {
         set_format_arg(0, rct_string_id, ShopItems[shopItem].Naming.Plural);
