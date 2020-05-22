@@ -213,22 +213,23 @@ static void window_game_bottom_toolbar_mouseup(rct_window* w, rct_widgetindex wi
 static void window_game_bottom_toolbar_tooltip(rct_window* w, rct_widgetindex widgetIndex, rct_string_id* stringId)
 {
     int32_t month, day;
+    auto ft = Formatter::Common();
 
     switch (widgetIndex)
     {
         case WIDX_MONEY:
-            set_format_arg(0, int32_t, gCurrentProfit);
-            set_format_arg(4, int32_t, gParkValue);
+            ft.Add<int32_t>(gCurrentProfit);
+            ft.Add<int32_t>(gParkValue);
             break;
         case WIDX_PARK_RATING:
-            set_format_arg(0, int16_t, gParkRating);
+            ft.Add<int16_t>(gParkRating);
             break;
         case WIDX_DATE:
             month = date_get_month(gDateMonthsElapsed);
             day = ((gDateMonthTicks * days_in_month[month]) >> 16) & 0xFF;
 
-            set_format_arg(0, rct_string_id, DateDayNames[day]);
-            set_format_arg(2, rct_string_id, DateGameMonthNames[month]);
+            ft.Add<rct_string_id>(DateDayNames[day]);
+            ft.Add<rct_string_id>(DateGameMonthNames[month]);
             break;
     }
 }
@@ -421,12 +422,13 @@ static void window_game_bottom_toolbar_draw_left_panel(rct_drawpixelinfo* dpi, r
     if (!(gParkFlags & PARK_FLAGS_NO_MONEY))
     {
         rct_widget widget = window_game_bottom_toolbar_widgets[WIDX_MONEY];
-        int32_t x = w->windowPos.x + (widget.left + widget.right) / 2;
-        int32_t y = w->windowPos.y + (widget.top + widget.bottom) / 2 - (line_height == 10 ? 5 : 6);
+        auto screenCoords = ScreenCoordsXY{ w->windowPos.x + (widget.left + widget.right) / 2,
+                                            w->windowPos.y + (widget.top + widget.bottom) / 2 - (line_height == 10 ? 5 : 6) };
 
-        set_format_arg(0, money32, gCash);
+        auto ft = Formatter::Common();
+        ft.Add<money32>(gCash);
         gfx_draw_string_centred(
-            dpi, (gCash < 0 ? STR_BOTTOM_TOOLBAR_CASH_NEGATIVE : STR_BOTTOM_TOOLBAR_CASH), x, y,
+            dpi, (gCash < 0 ? STR_BOTTOM_TOOLBAR_CASH_NEGATIVE : STR_BOTTOM_TOOLBAR_CASH), screenCoords,
             (gHoverWidget.window_classification == WC_BOTTOM_TOOLBAR && gHoverWidget.widget_index == WIDX_MONEY
                  ? COLOUR_WHITE
                  : NOT_TRANSLUCENT(w->colours[0])),
@@ -448,13 +450,13 @@ static void window_game_bottom_toolbar_draw_left_panel(rct_drawpixelinfo* dpi, r
     // Draw guests
     {
         rct_widget widget = window_game_bottom_toolbar_widgets[WIDX_GUESTS];
-        int32_t x = w->windowPos.x + (widget.left + widget.right) / 2;
-        int32_t y = w->windowPos.y + (widget.top + widget.bottom) / 2 - 6;
+        auto screenCoords = ScreenCoordsXY{ w->windowPos.x + (widget.left + widget.right) / 2,
+                                            w->windowPos.y + (widget.top + widget.bottom) / 2 - 6 };
 
         gfx_draw_string_centred(
             dpi,
             gNumGuestsInPark == 1 ? guestCountFormatsSingular[gGuestChangeModifier] : guestCountFormats[gGuestChangeModifier],
-            x, y,
+            screenCoords,
             (gHoverWidget.window_classification == WC_BOTTOM_TOOLBAR && gHoverWidget.widget_index == WIDX_GUESTS
                  ? COLOUR_WHITE
                  : NOT_TRANSLUCENT(w->colours[0])),
@@ -502,11 +504,11 @@ static void window_game_bottom_toolbar_draw_right_panel(rct_drawpixelinfo* dpi, 
         w->windowPos.x + window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].right - 1,
         w->windowPos.y + window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].bottom - 1, w->colours[1], INSET_RECT_F_30);
 
-    int32_t x = (window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].left
-                 + window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].right)
-            / 2
-        + w->windowPos.x;
-    int32_t y = window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].top + w->windowPos.y + 2;
+    auto screenCoords = ScreenCoordsXY{ (window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].left
+                                         + window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].right)
+                                                / 2
+                                            + w->windowPos.x,
+                                        window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].top + w->windowPos.y + 2 };
 
     // Date
     int32_t year = date_get_year(gDateMonthsElapsed) + 1;
@@ -514,11 +516,12 @@ static void window_game_bottom_toolbar_draw_right_panel(rct_drawpixelinfo* dpi, 
     int32_t day = ((gDateMonthTicks * days_in_month[month]) >> 16) & 0xFF;
 
     rct_string_id stringId = DateFormatStringFormatIds[gConfigGeneral.date_format];
-    set_format_arg(0, rct_string_id, DateDayNames[day]);
-    set_format_arg(2, int16_t, month);
-    set_format_arg(4, int16_t, year);
+    auto ft = Formatter::Common();
+    ft.Add<rct_string_id>(DateDayNames[day]);
+    ft.Add<int16_t>(month);
+    ft.Add<int16_t>(year);
     gfx_draw_string_centred(
-        dpi, stringId, x, y,
+        dpi, stringId, screenCoords,
         (gHoverWidget.window_classification == WC_BOTTOM_TOOLBAR && gHoverWidget.widget_index == WIDX_DATE
              ? COLOUR_WHITE
              : NOT_TRANSLUCENT(w->colours[0])),
@@ -528,8 +531,8 @@ static void window_game_bottom_toolbar_draw_right_panel(rct_drawpixelinfo* dpi, 
     uint32_t line_height = font_get_line_height(FONT_SPRITE_BASE_MEDIUM);
 
     // Temperature
-    x = w->windowPos.x + window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].left + 15;
-    y += line_height + 1;
+    screenCoords = { w->windowPos.x + window_game_bottom_toolbar_widgets[WIDX_RIGHT_OUTSET].left + 15,
+                     static_cast<int32_t>(screenCoords.y + line_height + 1) };
 
     int32_t temperature = gClimateCurrent.Temperature;
     rct_string_id format = STR_CELSIUS_VALUE;
@@ -538,13 +541,14 @@ static void window_game_bottom_toolbar_draw_right_panel(rct_drawpixelinfo* dpi, 
         temperature = climate_celsius_to_fahrenheit(temperature);
         format = STR_FAHRENHEIT_VALUE;
     }
-    set_format_arg(0, int16_t, temperature);
-    gfx_draw_string_left(dpi, format, gCommonFormatArgs, COLOUR_BLACK, x, y + 6);
-    x += 30;
+    ft = Formatter::Common();
+    ft.Add<int16_t>(temperature);
+    gfx_draw_string_left(dpi, format, gCommonFormatArgs, COLOUR_BLACK, screenCoords.x, screenCoords.y + 6);
+    screenCoords.x += 30;
 
     // Current weather
     auto currentWeatherSpriteId = climate_get_weather_sprite_id(gClimateCurrent);
-    gfx_draw_sprite(dpi, currentWeatherSpriteId, x, y, 0);
+    gfx_draw_sprite(dpi, currentWeatherSpriteId, screenCoords.x, screenCoords.y, 0);
 
     // Next weather
     auto nextWeatherSpriteId = climate_get_weather_sprite_id(gClimateNext);
@@ -552,8 +556,8 @@ static void window_game_bottom_toolbar_draw_right_panel(rct_drawpixelinfo* dpi, 
     {
         if (gClimateUpdateTimer < 960)
         {
-            gfx_draw_sprite(dpi, SPR_NEXT_WEATHER, x + 27, y + 5, 0);
-            gfx_draw_sprite(dpi, nextWeatherSpriteId, x + 40, y, 0);
+            gfx_draw_sprite(dpi, SPR_NEXT_WEATHER, screenCoords.x + 27, screenCoords.y + 5, 0);
+            gfx_draw_sprite(dpi, nextWeatherSpriteId, screenCoords.x + 40, screenCoords.y, 0);
         }
     }
 }
@@ -631,21 +635,21 @@ static void window_game_bottom_toolbar_draw_news_item(rct_drawpixelinfo* dpi, rc
             if (image_id_base >= 0x2A1D && image_id_base < 0x2A3D)
             {
                 image_id_base += 32;
-                image_id_base |= SPRITE_ID_PALETTE_COLOUR_1(peep->balloon_colour);
+                image_id_base |= SPRITE_ID_PALETTE_COLOUR_1(peep->BalloonColour);
 
                 gfx_draw_sprite(&cliped_dpi, image_id_base, clip_x, clip_y, 0);
             }
             else if (image_id_base >= 0x2BBD && image_id_base < 0x2BDD)
             {
                 image_id_base += 32;
-                image_id_base |= SPRITE_ID_PALETTE_COLOUR_1(peep->umbrella_colour);
+                image_id_base |= SPRITE_ID_PALETTE_COLOUR_1(peep->UmbrellaColour);
 
                 gfx_draw_sprite(&cliped_dpi, image_id_base, clip_x, clip_y, 0);
             }
             else if (image_id_base >= 0x29DD && image_id_base < 0x29FD)
             {
                 image_id_base += 32;
-                image_id_base |= SPRITE_ID_PALETTE_COLOUR_1(peep->hat_colour);
+                image_id_base |= SPRITE_ID_PALETTE_COLOUR_1(peep->HatColour);
 
                 gfx_draw_sprite(&cliped_dpi, image_id_base, clip_x, clip_y, 0);
             }

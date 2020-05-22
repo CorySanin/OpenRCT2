@@ -721,19 +721,19 @@ declare global {
      */
     interface Peep extends Entity {
         /**
+         * Whether the peep is a guest or staff member.
+         */
+        peepType: PeepType;
+
+        /**
          * Name of the peep.
          */
         name: string;
 
         /**
-         * Colour of the peep's t-shirt.
+         * The peep's direct destination.
          */
-        tshirtColour: number;
-
-        /**
-         * Colour of the peep's trousers.
-         */
-        trousersColour: number;
+        destination: CoordsXY;
 
         /**
          * How tired the guest is between 32 and 128 where lower is more tired.
@@ -744,6 +744,78 @@ declare global {
          * The target energy value. Energy will increase / decrease slowly towards this value.
          */
         energyTarget: number;
+
+        /**
+         * Gets whether a given flag is set or not.
+         * @param key The flag to test.
+         */
+        getFlag(key: PeepFlags): boolean;
+
+        /**
+         * Sets the given flag to the given value.
+         * @param key The flag to set.
+         * @param value Whether to set or clear the flag.
+         */
+        setFlag(key: PeepFlags, value: boolean): void;
+    }
+
+    type PeepFlags =
+        "leavingPark" |
+        "slowWalk" |
+        "tracking" |
+        "waving" |
+        "hasPaidForParkEntry" |
+        "photo" |
+        "painting" |
+        "wow" |
+        "litter" |
+        "lost" |
+        "hunger" |
+        "toilet" |
+        "crowded" |
+        "happiness" |
+        "nausea" |
+        "purple" |
+        "pizza" |
+        "explode" |
+        "rideShouldBeMarkedAsFavourite" |
+        "parkEntranceChosen" |
+        "contagious" |
+        "joy" |
+        "angry" |
+        "iceCream" |
+        "hereWeAre";
+
+    type PeepType = "guest" | "staff";
+
+    /**
+     * Represents a guest.
+     */
+    interface Guest extends Peep {
+        /**
+         * Colour of the guest's t-shirt.
+         */
+        tshirtColour: number;
+
+        /**
+         * Colour of the guest's trousers.
+         */
+        trousersColour: number;
+
+        /**
+         * Colour of the guest's balloon.
+         */
+        balloonColour: number;
+
+        /**
+         * Colour of the guest's hat.
+         */
+        hatColour: number;
+
+        /**
+         * Colour of the guest's umbrella.
+         */
+        umbrellaColour: number;
 
         /**
          * How happy the guest is between 0 and 255.
@@ -805,6 +877,33 @@ declare global {
          */
         cash: number;
     }
+
+    /**
+     * Represents a staff member.
+     */
+    interface Staff extends Peep {
+        /**
+         * The type of staff member, e.g. handyman, mechanic.
+         */
+        staffType: StaffType;
+
+        /**
+         * Colour of the staff member. Not applicable for entertainers.
+         */
+        colour: number;
+
+        /**
+         * The entertainer's costume, only applicable for entertainers.
+         */
+        costume: number;
+
+        /**
+         * The enabled jobs the staff can do, e.g. sweep litter, water plants, inspect rides etc.
+         */
+        orders: number;
+    }
+
+    type StaffType = "handyman" | "mechanic" | "security" | "entertainer";
 
     /**
      * Network APIs
@@ -896,7 +995,34 @@ declare global {
         "attraction" | "peep_on_attraction" | "peep" | "money" | "blank" | "research" | "guests" | "award" | "chart";
 
     interface ParkMessage {
+        /**
+         * Whether the message has been shown and archived.
+         */
+        readonly isArchived: boolean;
+
+        /**
+         * The date this message was posted in total elapsed months.
+         */
+        month: number;
+
+        /**
+         * The day of the month this message was posted.
+         */
+        day: number;
+
+        /**
+         * How old the message is in number of ticks.
+         */
+        tickCount: number;
+
+        /**
+         * The format of the message such as the icon and whether location is enabled.
+         */
         type: ParkMessageType;
+
+        /**
+         * The actual message content.
+         */
         text: string;
 
         /**
@@ -905,6 +1031,17 @@ declare global {
          * Researched item for research.
          */
         subject?: number;
+
+        /**
+         * Removes the message.
+         */
+        remove(): void;
+    }
+
+    interface ParkMessageDesc  {
+        type: ParkMessageType;
+        text: string;
+        subject?: number;
     }
 
     interface Park {
@@ -912,9 +1049,10 @@ declare global {
         rating: number;
         bankLoan: number;
         maxBankLoan: number;
+        messages: ParkMessage[];
 
         postMessage(message: string): void;
-        postMessage(message: ParkMessage): void;
+        postMessage(message: ParkMessageDesc): void;
     }
 
     interface Cheats {

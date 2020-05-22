@@ -173,9 +173,9 @@ void window_text_input_raw_open(
     }
     else
     {
-        w->colours[0] = call_w->colours[0];
+        w->colours[0] = call_w->colours[1];
         w->colours[1] = call_w->colours[1];
-        w->colours[2] = call_w->colours[2];
+        w->colours[2] = call_w->colours[1];
     }
 }
 
@@ -259,7 +259,7 @@ static void window_text_input_paint(rct_window* w, rct_drawpixelinfo* dpi)
     int32_t font_height = 0;
 
     gfx_draw_string_centred(
-        dpi, input_text_description, w->windowPos.x + WW / 2, screenCoords.y, w->colours[1], &TextInputDescriptionArgs);
+        dpi, input_text_description, { w->windowPos.x + WW / 2, screenCoords.y }, w->colours[1], &TextInputDescriptionArgs);
 
     screenCoords.y += 25;
 
@@ -419,7 +419,8 @@ static void window_text_input_invalidate(rct_window* w)
     window_text_input_widgets[WIDX_BACKGROUND].bottom = height - 1;
 
     // Set window title argument
-    set_format_arg(0, const char*, _title.c_str());
+    auto ft = Formatter::Common();
+    ft.Add<const char*>(_title.c_str());
 }
 
 static void draw_ime_composition(rct_drawpixelinfo* dpi, int cursorX, int cursorY)

@@ -588,8 +588,9 @@ static void window_park_prepare_window_title_text()
     auto& park = OpenRCT2::GetContext()->GetGameState()->GetPark();
     auto parkName = park.Name.c_str();
 
-    set_format_arg(0, rct_string_id, STR_STRING);
-    set_format_arg(2, const char*, parkName);
+    auto ft = Formatter::Common();
+    ft.Add<rct_string_id>(STR_STRING);
+    ft.Add<const char*>(parkName);
 }
 
 #pragma region Entrance page
@@ -778,8 +779,9 @@ static void window_park_entrance_invalidate(rct_window* w)
         auto& park = OpenRCT2::GetContext()->GetGameState()->GetPark();
         auto parkName = park.Name.c_str();
 
-        set_format_arg(0, rct_string_id, STR_STRING);
-        set_format_arg(2, const char*, parkName);
+        auto ft = Formatter::Common();
+        ft.Add<rct_string_id>(STR_STRING);
+        ft.Add<const char*>(parkName);
     }
     window_park_entrance_widgets[WIDX_OPEN_OR_CLOSE].image = park_is_open() ? SPR_OPEN : SPR_CLOSED;
     window_park_entrance_widgets[WIDX_CLOSE_LIGHT].image = SPR_G2_RCT1_CLOSE_BUTTON_0 + !park_is_open() * 2
@@ -870,7 +872,8 @@ static void window_park_entrance_paint(rct_window* w, rct_drawpixelinfo* dpi)
     }
 
     // Draw park closed / open label
-    set_format_arg(0, rct_string_id, park_is_open() ? STR_PARK_OPEN : STR_PARK_CLOSED);
+    auto ft = Formatter::Common();
+    ft.Add<rct_string_id>(park_is_open() ? STR_PARK_OPEN : STR_PARK_CLOSED);
 
     labelWidget = &window_park_entrance_widgets[WIDX_STATUS];
     gfx_draw_string_centred_clipped(
@@ -1593,9 +1596,10 @@ static void window_park_objective_paint(rct_window* w, rct_drawpixelinfo* dpi)
     // Scenario description
     x = w->windowPos.x + window_park_objective_widgets[WIDX_PAGE_BACKGROUND].left + 4;
     y = w->windowPos.y + window_park_objective_widgets[WIDX_PAGE_BACKGROUND].top + 7;
-    set_format_arg(0, rct_string_id, STR_STRING);
-    set_format_arg(2, const char*, gScenarioDetails.c_str());
-    y += gfx_draw_string_left_wrapped(dpi, gCommonFormatArgs, x, y, 222, STR_BLACK_STRING, COLOUR_BLACK);
+    auto ft = Formatter::Common();
+    ft.Add<rct_string_id>(STR_STRING);
+    ft.Add<const char*>(gScenarioDetails.c_str());
+    y += gfx_draw_string_left_wrapped(dpi, gCommonFormatArgs, { x, y }, 222, STR_BLACK_STRING, COLOUR_BLACK);
     y += 5;
 
     // Your objective:
@@ -1603,11 +1607,13 @@ static void window_park_objective_paint(rct_window* w, rct_drawpixelinfo* dpi)
     y += LIST_ROW_HEIGHT;
 
     // Objective
-    set_format_arg(0, uint16_t, gScenarioObjectiveNumGuests);
-    set_format_arg(2, int16_t, date_get_total_months(MONTH_OCTOBER, gScenarioObjectiveYear));
-    set_format_arg(4, money32, gScenarioObjectiveCurrency);
+    ft = Formatter::Common();
+    ft.Add<uint16_t>(gScenarioObjectiveNumGuests);
+    ft.Add<int16_t>(date_get_total_months(MONTH_OCTOBER, gScenarioObjectiveYear));
+    ft.Add<money32>(gScenarioObjectiveCurrency);
 
-    y += gfx_draw_string_left_wrapped(dpi, gCommonFormatArgs, x, y, 221, ObjectiveNames[gScenarioObjectiveType], COLOUR_BLACK);
+    y += gfx_draw_string_left_wrapped(
+        dpi, gCommonFormatArgs, { x, y }, 221, ObjectiveNames[gScenarioObjectiveType], COLOUR_BLACK);
     y += 5;
 
     // Objective outcome
@@ -1616,13 +1622,13 @@ static void window_park_objective_paint(rct_window* w, rct_drawpixelinfo* dpi)
         if (gScenarioCompletedCompanyValue == COMPANY_VALUE_ON_FAILED_OBJECTIVE)
         {
             // Objective failed
-            gfx_draw_string_left_wrapped(dpi, nullptr, x, y, 222, STR_OBJECTIVE_FAILED, COLOUR_BLACK);
+            gfx_draw_string_left_wrapped(dpi, nullptr, { x, y }, 222, STR_OBJECTIVE_FAILED, COLOUR_BLACK);
         }
         else
         {
             // Objective completed
             set_format_arg(0, money32, gScenarioCompletedCompanyValue);
-            gfx_draw_string_left_wrapped(dpi, gCommonFormatArgs, x, y, 222, STR_OBJECTIVE_ACHIEVED, COLOUR_BLACK);
+            gfx_draw_string_left_wrapped(dpi, gCommonFormatArgs, { x, y }, 222, STR_OBJECTIVE_ACHIEVED, COLOUR_BLACK);
         }
     }
 }
@@ -1736,7 +1742,7 @@ static void window_park_awards_paint(rct_window* w, rct_drawpixelinfo* dpi)
             continue;
 
         gfx_draw_sprite(dpi, ParkAwards[award->Type].sprite, x, y, 0);
-        gfx_draw_string_left_wrapped(dpi, nullptr, x + 34, y + 6, 180, ParkAwards[award->Type].text, COLOUR_BLACK);
+        gfx_draw_string_left_wrapped(dpi, nullptr, { x + 34, y + 6 }, 180, ParkAwards[award->Type].text, COLOUR_BLACK);
 
         y += 32;
         count++;

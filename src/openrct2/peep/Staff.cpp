@@ -1100,6 +1100,16 @@ bool Staff::DoPathFinding()
     }
 }
 
+uint8_t Staff::GetCostume() const
+{
+    return sprite_type - PEEP_SPRITE_TYPE_ENTERTAINER_PANDA;
+}
+
+void Staff::SetCostume(uint8_t value)
+{
+    sprite_type = static_cast<PeepSpriteType>(value + PEEP_SPRITE_TYPE_ENTERTAINER_PANDA);
+}
+
 colour_t staff_get_colour(uint8_t staffType)
 {
     switch (staffType)
@@ -1192,7 +1202,7 @@ void Staff::UpdateMowing()
         if (auto loc = UpdateAction())
         {
             int16_t checkZ = tile_element_height(*loc);
-            MoveTo((*loc).x, (*loc).y, checkZ);
+            MoveTo({ *loc, checkZ });
             return;
         }
 
@@ -1390,7 +1400,7 @@ void Staff::UpdateSweeping()
     if (auto loc = UpdateAction())
     {
         int16_t actionZ = GetZOnSlope((*loc).x, (*loc).y);
-        MoveTo((*loc).x, (*loc).y, actionZ);
+        MoveTo({ *loc, actionZ });
         return;
     }
 
@@ -1505,7 +1515,7 @@ void Staff::UpdateHeadingToInspect()
             newZ += RideData5[ride->type].z;
         }
 
-        MoveTo((*loc).x, (*loc).y, newZ);
+        MoveTo({ *loc, newZ });
         return;
     }
 
@@ -1616,7 +1626,7 @@ void Staff::UpdateAnswering()
             newZ += RideData5[ride->type].z;
         }
 
-        MoveTo((*loc).x, (*loc).y, newZ);
+        MoveTo({ *loc, newZ });
         return;
     }
 
@@ -1926,7 +1936,7 @@ void Staff::UpdatePatrolling()
             int32_t water_height = surfaceElement->GetWaterHeight();
             if (water_height > 0)
             {
-                MoveTo(x, y, water_height);
+                MoveTo({ x, y, water_height });
                 SetState(PEEP_STATE_FALLING);
                 return;
             }
@@ -2219,7 +2229,7 @@ bool Staff::UpdateFixingMoveToBrokenDownVehicle(bool firstRun, Ride* ride)
 
     if (auto loc = UpdateAction())
     {
-        MoveTo(loc->x, loc->y, z);
+        MoveTo({ *loc, z });
         return false;
     }
 
@@ -2371,7 +2381,7 @@ bool Staff::UpdateFixingMoveToStationEnd(bool firstRun, Ride* ride)
 
     if (auto loc = UpdateAction())
     {
-        MoveTo(loc->x, loc->y, z);
+        MoveTo({ *loc, z });
         return false;
     }
 
@@ -2481,7 +2491,7 @@ bool Staff::UpdateFixingMoveToStationStart(bool firstRun, Ride* ride)
 
     if (auto loc = UpdateAction())
     {
-        MoveTo(loc->x, loc->y, z);
+        MoveTo({ *loc, z });
         return false;
     }
 
@@ -2596,7 +2606,7 @@ bool Staff::UpdateFixingMoveToStationExit(bool firstRun, Ride* ride)
 
     if (auto loc = UpdateAction())
     {
-        MoveTo(loc->x, loc->y, z);
+        MoveTo({ *loc, z });
         return false;
     }
     else
@@ -2691,7 +2701,7 @@ bool Staff::UpdateFixingLeaveByEntranceExit(bool firstRun, Ride* ride)
             stationHeight += RideData5[ride->type].z;
         }
 
-        MoveTo(loc->x, loc->y, stationHeight);
+        MoveTo({ *loc, stationHeight });
         return false;
     }
     SetState(PEEP_STATE_FALLING);

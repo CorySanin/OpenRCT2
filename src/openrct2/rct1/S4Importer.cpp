@@ -1246,8 +1246,7 @@ private:
         dst->mini_golf_current_animation = src->mini_golf_current_animation;
         dst->mini_golf_flags = src->mini_golf_flags;
 
-        sprite_move(src->x, src->y, src->z, dst);
-        invalidate_sprite_2(dst);
+        dst->MoveTo({ src->x, src->y, src->z });
 
         dst->num_peeps = src->num_peeps;
         dst->next_free_seat = src->next_free_seat;
@@ -1405,7 +1404,7 @@ private:
         dst->sprite_height_negative = spriteBounds[dst->action_sprite_type].sprite_height_negative;
         dst->sprite_height_positive = spriteBounds[dst->action_sprite_type].sprite_height_positive;
 
-        sprite_move(src->x, src->y, src->z, dst);
+        dst->MoveTo({ src->x, src->y, src->z });
         invalidate_sprite_2(dst);
 
         dst->sprite_direction = src->sprite_direction;
@@ -1431,17 +1430,17 @@ private:
 
         dst->tshirt_colour = RCT1::GetColour(src->tshirt_colour);
         dst->trousers_colour = RCT1::GetColour(src->trousers_colour);
-        dst->umbrella_colour = RCT1::GetColour(src->umbrella_colour);
-        dst->hat_colour = RCT1::GetColour(src->hat_colour);
+        dst->UmbrellaColour = RCT1::GetColour(src->umbrella_colour);
+        dst->HatColour = RCT1::GetColour(src->hat_colour);
 
         // Balloons were always blue in RCT1 without AA/LL
         if (_gameVersion == FILE_VERSION_RCT1)
         {
-            dst->balloon_colour = COLOUR_LIGHT_BLUE;
+            dst->BalloonColour = COLOUR_LIGHT_BLUE;
         }
         else
         {
-            dst->balloon_colour = RCT1::GetColour(src->balloon_colour);
+            dst->BalloonColour = RCT1::GetColour(src->balloon_colour);
         }
 
         dst->destination_x = src->destination_x;
@@ -1473,7 +1472,7 @@ private:
         dst->current_car = src->current_car;
         dst->current_seat = src->current_seat;
         dst->time_on_ride = src->time_on_ride;
-        dst->days_in_queue = src->days_in_queue;
+        dst->DaysInQueue = src->days_in_queue;
 
         dst->interaction_ride_index = src->interaction_ride_index;
 
@@ -1498,9 +1497,9 @@ private:
         dst->voucher_arguments = src->voucher_arguments;
         dst->voucher_type = src->voucher_type;
 
-        dst->surroundings_thought_timeout = src->surroundings_thought_timeout;
-        dst->angriness = src->angriness;
-        dst->time_lost = src->time_lost;
+        dst->SurroundingsThoughtTimeout = src->surroundings_thought_timeout;
+        dst->Angriness = src->angriness;
+        dst->TimeLost = src->time_lost;
 
         for (size_t i = 0; i < 32; i++)
         {
@@ -1543,16 +1542,16 @@ private:
         // Set it to N/A if the save comes from the original or AA.
         if (_gameVersion == FILE_VERSION_RCT1_LL)
         {
-            dst->favourite_ride = src->favourite_ride;
-            dst->favourite_ride_rating = src->favourite_ride_rating;
+            dst->FavouriteRide = src->favourite_ride;
+            dst->FavouriteRideRating = src->favourite_ride_rating;
         }
         else
         {
-            dst->favourite_ride = RIDE_ID_NULL;
-            dst->favourite_ride_rating = 0;
+            dst->FavouriteRide = RIDE_ID_NULL;
+            dst->FavouriteRideRating = 0;
         }
 
-        dst->item_standard_flags = src->item_standard_flags;
+        dst->ItemStandardFlags = src->item_standard_flags;
 
         if (dst->type == PEEP_TYPE_GUEST)
         {
@@ -1646,7 +1645,7 @@ private:
                 litter->sprite_height_positive = srcLitter->sprite_height_positive;
                 litter->sprite_height_negative = srcLitter->sprite_height_negative;
 
-                sprite_move(srcLitter->x, srcLitter->y, srcLitter->z, litter);
+                litter->MoveTo({ srcLitter->x, srcLitter->y, srcLitter->z });
                 invalidate_sprite_2(litter);
             }
         }
@@ -1668,7 +1667,7 @@ private:
                 dst->sprite_height_negative = src->sprite_height_negative;
                 dst->sprite_height_positive = src->sprite_height_positive;
 
-                sprite_move(src->x, src->y, src->z, dst);
+                dst->MoveTo({ src->x, src->y, src->z });
 
                 switch (src->type)
                 {
@@ -1698,7 +1697,7 @@ private:
                         break;
                 }
 
-                sprite_move(src->x, src->y, src->z, dst);
+                dst->MoveTo({ src->x, src->y, src->z });
                 invalidate_sprite_2(dst);
             }
         }
@@ -1706,11 +1705,11 @@ private:
 
     void ImportMoneyEffect(MoneyEffect* dst, MoneyEffect* src)
     {
-        dst->move_delay = src->move_delay;
-        dst->num_movements = src->num_movements;
-        dst->value = src->value;
-        dst->offset_x = src->offset_x;
-        dst->wiggle = src->wiggle;
+        dst->MoveDelay = src->MoveDelay;
+        dst->NumMovements = src->NumMovements;
+        dst->Value = src->Value;
+        dst->OffsetX = src->OffsetX;
+        dst->Wiggle = src->Wiggle;
     }
 
     void ImportSteamParticle(SteamParticle* dst, SteamParticle* src)

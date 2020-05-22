@@ -535,26 +535,29 @@ void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t co
 
 void gfx_draw_string_left(rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
 void gfx_draw_string_centred(
-    rct_drawpixelinfo* dpi, rct_string_id format, int32_t x, int32_t y, uint8_t colour, const void* args);
+    rct_drawpixelinfo* dpi, rct_string_id format, const ScreenCoordsXY& coords, uint8_t colour, const void* args);
 void gfx_draw_string_right(
     rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords);
 void gfx_draw_string_right(rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
 
-void draw_string_left_underline(rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
+void draw_string_left_underline(
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords);
 void draw_string_centred_underline(
-    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords);
 void draw_string_right_underline(
-    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords);
 
 void gfx_draw_string_left_clipped(
-    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y, int32_t width);
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords, int32_t width);
 void gfx_draw_string_centred_clipped(
     rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y, int32_t width);
 void gfx_draw_string_right_clipped(
-    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y, int32_t width);
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords, int32_t width);
 
 int32_t gfx_draw_string_left_wrapped(
     rct_drawpixelinfo* dpi, void* args, int32_t x, int32_t y, int32_t width, rct_string_id format, uint8_t colour);
+int32_t gfx_draw_string_left_wrapped(
+    rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour);
 int32_t gfx_draw_string_centred_wrapped(
     rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour);
 

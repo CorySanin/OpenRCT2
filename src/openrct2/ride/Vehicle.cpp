@@ -49,8 +49,6 @@ static bool vehicle_boat_is_location_accessible(const CoordsXYZ& location);
 static bool vehicle_update_motion_collision_detection(
     Vehicle* vehicle, int16_t x, int16_t y, int16_t z, uint16_t* otherVehicleIndex);
 
-static void vehicle_kill_all_passengers(Vehicle* vehicle);
-
 constexpr int16_t VEHICLE_MAX_SPIN_SPEED = 1536;
 constexpr int16_t VEHICLE_MIN_SPIN_SPEED = -VEHICLE_MAX_SPIN_SPEED;
 constexpr int16_t VEHICLE_MAX_SPIN_SPEED_FOR_STOPPING = 700;
@@ -3599,7 +3597,7 @@ void Vehicle::UpdateCollisionSetup()
 
     curRide->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
     curRide->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
-    vehicle_kill_all_passengers(this);
+    KillAllPassengersInTrain();
 
     Vehicle* lastVehicle = this;
     uint16_t spriteId = sprite_index;
@@ -3628,7 +3626,7 @@ void Vehicle::UpdateCollisionSetup()
         train->sprite_height_negative = 45;
         train->sprite_height_positive = 5;
 
-        sprite_move(train->x, train->y, train->z, train);
+        train->MoveTo({ train->x, train->y, train->z });
         invalidate_sprite_2(train);
 
         train->var_4E = 0;
@@ -4521,13 +4519,13 @@ void Vehicle::UpdateMotionBoatHire()
 
                     if (!(curRide->boat_hire_return_direction & 1))
                     {
-                        uint16_t bp = curY & 0x1F;
-                        if (bp == 16)
+                        uint16_t tilePart = curY % COORDS_XY_STEP;
+                        if (tilePart == COORDS_XY_HALF_TILE)
                         {
                             TryReconnectBoatToTrack({ curX, curY }, flooredLocation);
                             break;
                         }
-                        if (bp <= 16)
+                        if (tilePart <= COORDS_XY_HALF_TILE)
                         {
                             curX = unk_F64E20.x;
                             curY = unk_F64E20.y + 1;
@@ -4541,13 +4539,13 @@ void Vehicle::UpdateMotionBoatHire()
                     else
                     {
                         // loc_6DA9A2:
-                        uint16_t bp = curX & 0x1F;
-                        if (bp == 16)
+                        uint16_t tilePart = curX % COORDS_XY_STEP;
+                        if (tilePart == COORDS_XY_HALF_TILE)
                         {
                             TryReconnectBoatToTrack({ curX, curY }, flooredLocation);
                             break;
                         }
-                        if (bp <= 16)
+                        if (tilePart <= COORDS_XY_HALF_TILE)
                         {
                             curX = unk_F64E20.x + 1;
                             curY = unk_F64E20.y;
@@ -4581,7 +4579,7 @@ void Vehicle::UpdateMotionBoatHire()
             _vehicleUnkF64E10++;
         }
 
-        sprite_move(unk_F64E20.x, unk_F64E20.y, unk_F64E20.z, this);
+        MoveTo(unk_F64E20);
         Invalidate();
     }
 
@@ -5225,24 +5223,8 @@ static TileElement* vehicle_check_collision(int16_t x, int16_t y, int16_t z)
     return nullptr;
 }
 
-/**
- *
- *  rct2: 0x006DE6C6
- */
-static void vehicle_kill_all_passengers(Vehicle* vehicle)
+static void ride_train_crash(Ride* ride, uint16_t numFatalities)
 {
-    auto ride = get_ride(vehicle->ride);
-    if (ride == nullptr)
-        return;
-
-    uint16_t numFatalities = 0;
-    uint16_t spriteId = vehicle->sprite_index;
-    for (Vehicle* curVehicle; spriteId != SPRITE_INDEX_NULL; spriteId = curVehicle->next_vehicle_on_train)
-    {
-        curVehicle = GET_VEHICLE(spriteId);
-        numFatalities += curVehicle->num_peeps;
-    }
-
     auto ft = Formatter::Common();
     ft.Add<uint16_t>(numFatalities);
 
@@ -5257,7 +5239,7 @@ static void vehicle_kill_all_passengers(Vehicle* vehicle)
         {
             ride->FormatNameTo(ft);
             news_item_add_to_queue(
-                NEWS_ITEM_RIDE, numFatalities == 1 ? STR_X_PERSON_DIED_ON_X : STR_X_PEOPLE_DIED_ON_X, vehicle->ride);
+                NEWS_ITEM_RIDE, numFatalities == 1 ? STR_X_PERSON_DIED_ON_X : STR_X_PEOPLE_DIED_ON_X, ride->id);
         }
 
         if (gParkRatingCasualtyPenalty < 500)
@@ -5265,34 +5247,50 @@ static void vehicle_kill_all_passengers(Vehicle* vehicle)
             gParkRatingCasualtyPenalty += 200;
         }
     }
+}
+/**
+ *
+ *  rct2: 0x006DE6C6
+ */
+void Vehicle::KillAllPassengersInTrain()
+{
+    auto curRide = get_ride(ride);
+    if (curRide == nullptr)
+        return;
 
-    spriteId = vehicle->sprite_index;
+    ride_train_crash(curRide, NumPeepsUntilTrainTail());
+
+    uint16_t spriteId = sprite_index;
     for (Vehicle* curVehicle; spriteId != SPRITE_INDEX_NULL; spriteId = curVehicle->next_vehicle_on_train)
     {
         curVehicle = GET_VEHICLE(spriteId);
-
-        if (curVehicle->num_peeps != curVehicle->next_free_seat)
-            continue;
-
-        if (curVehicle->num_peeps == 0)
-            continue;
-
-        for (uint8_t i = 0; i < curVehicle->num_peeps; i++)
-        {
-            Peep* peep = GET_PEEP(curVehicle->peep[i]);
-            if (peep->outside_of_park == 0)
-            {
-                decrement_guests_in_park();
-                auto intent = Intent(INTENT_ACTION_UPDATE_GUEST_COUNT);
-                context_broadcast_intent(&intent);
-            }
-            ride->num_riders--;
-            peep_sprite_remove(peep);
-        }
-
-        curVehicle->num_peeps = 0;
-        curVehicle->next_free_seat = 0;
+        curVehicle->KillPassengers(curRide);
     }
+}
+
+void Vehicle::KillPassengers(Ride* curRide)
+{
+    if (num_peeps != next_free_seat)
+        return;
+
+    if (num_peeps == 0)
+        return;
+
+    for (auto i = 0; i < num_peeps; i++)
+    {
+        Peep* curPeep = GET_PEEP(peep[i]);
+        if (curPeep->outside_of_park == 0)
+        {
+            decrement_guests_in_park();
+            auto intent = Intent(INTENT_ACTION_UPDATE_GUEST_COUNT);
+            context_broadcast_intent(&intent);
+        }
+        curRide->num_riders--;
+        peep_sprite_remove(curPeep);
+    }
+
+    num_peeps = 0;
+    next_free_seat = 0;
 }
 
 void Vehicle::CrashOnLand()
@@ -5331,7 +5329,7 @@ void Vehicle::CrashOnLand()
 
     if (IsHead())
     {
-        vehicle_kill_all_passengers(this);
+        KillAllPassengersInTrain();
     }
 
     sub_state = 2;
@@ -5352,7 +5350,7 @@ void Vehicle::CrashOnLand()
     sprite_height_negative = 45;
     sprite_height_positive = 5;
 
-    sprite_move(x, y, z, this);
+    MoveTo({ x, y, z });
     Invalidate();
 
     crash_z = 0;
@@ -5394,7 +5392,7 @@ void Vehicle::CrashOnWater()
 
     if (IsHead())
     {
-        vehicle_kill_all_passengers(this);
+        KillAllPassengersInTrain();
     }
 
     sub_state = 2;
@@ -5416,7 +5414,7 @@ void Vehicle::CrashOnWater()
     sprite_height_negative = 45;
     sprite_height_positive = 5;
 
-    sprite_move(x, y, z, this);
+    MoveTo({ x, y, z });
     Invalidate();
 
     crash_z = -1;
@@ -5502,7 +5500,7 @@ void Vehicle::UpdateCrash()
             continue;
         }
 
-        sprite_move(curPosition.x, curPosition.y, curPosition.z, curVehicle);
+        curVehicle->MoveTo(curPosition);
         invalidate_sprite_2(curVehicle);
 
         if (curVehicle->sub_state == 1)
@@ -6366,7 +6364,7 @@ int32_t Vehicle::UpdateMotionDodgems()
         if (!DodgemsCarWouldCollideAt(location, &collideSprite))
         {
             Invalidate();
-            sprite_move(location.x, location.y, location.z, this);
+            MoveTo(location);
             Invalidate();
         }
     }
@@ -6434,7 +6432,7 @@ int32_t Vehicle::UpdateMotionDodgems()
             }
         }
 
-        sprite_move(unk_F64E20.x, unk_F64E20.y, unk_F64E20.z, this);
+        MoveTo(unk_F64E20);
         Invalidate();
     }
 
@@ -6620,7 +6618,7 @@ void Vehicle::UpdateTrackMotionUpStopCheck() const
  * merely as a velocity regulator, in a closed state. When the brake is open, it
  * boosts the train to the speed limit
  */
-static void apply_non_stop_block_brake(Vehicle* vehicle, bool slowDownToBlockBrakeSpeed)
+static void apply_non_stop_block_brake(Vehicle* vehicle)
 {
     if (vehicle->velocity >= 0)
     {
@@ -6631,7 +6629,7 @@ static void apply_non_stop_block_brake(Vehicle* vehicle, bool slowDownToBlockBra
             vehicle->velocity = BLOCK_BRAKE_BASE_SPEED;
             vehicle->acceleration = 0;
         }
-        else if (slowDownToBlockBrakeSpeed)
+        else
         {
             // Slow it down till the fixed block brake speed
             vehicle->velocity -= vehicle->velocity >> 4;
@@ -6664,11 +6662,7 @@ static void apply_block_brakes(Vehicle* vehicle, bool is_block_brake_closed)
     }
     else
     {
-#ifdef NEW_BLOCK_BRAKES
-        apply_non_stop_block_brake(vehicle, false);
-#else
-        apply_non_stop_block_brake(vehicle, true);
-#endif
+        apply_non_stop_block_brake(vehicle);
     }
 }
 
@@ -6708,7 +6702,7 @@ void Vehicle::CheckAndApplyBlockSectionStopSite()
             if (curRide->IsBlockSectioned())
                 apply_block_brakes(this, trackElement->AsTrack()->BlockBrakeClosed());
             else
-                apply_non_stop_block_brake(this, true);
+                apply_non_stop_block_brake(this);
 
             break;
         case TRACK_ELEM_END_STATION:
@@ -7270,7 +7264,7 @@ static void steam_particle_create(int16_t x, int16_t y, int16_t z)
         steam->type = SPRITE_MISC_STEAM_PARTICLE;
         steam->frame = 256;
         steam->time_to_move = 0;
-        sprite_move(x, y, z, steam);
+        steam->MoveTo({ x, y, z });
     }
 }
 
@@ -7653,7 +7647,7 @@ void Vehicle::UpdateHandleWaterSplash() const
 void Vehicle::UpdateReverserCarBogies()
 {
     const auto moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
-    sprite_move(TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y, z, this);
+    MoveTo({ TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y, z });
 }
 
 /**
@@ -9255,7 +9249,7 @@ loc_6DCD6B:
     goto loc_6DC99A;
 
 loc_6DCDE4:
-    sprite_move(unk_F64E20.x, unk_F64E20.y, unk_F64E20.z, vehicle);
+    vehicle->MoveTo(unk_F64E20);
     vehicle->Invalidate();
 
 loc_6DCE02:
@@ -9690,7 +9684,7 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
             }
         }
         // loc_6DBF20
-        sprite_move(unk_F64E20.x, unk_F64E20.y, unk_F64E20.z, car);
+        car->MoveTo(unk_F64E20);
         invalidate_sprite_2(car);
 
     loc_6DBF3E:

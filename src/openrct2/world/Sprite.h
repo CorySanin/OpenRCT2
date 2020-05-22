@@ -70,17 +70,16 @@ struct Duck : SpriteGeneric
     void Invalidate();
     bool IsFlying();
     void Remove();
-    void MoveTo(const CoordsXYZ& destination);
 };
 
 struct MoneyEffect : SpriteBase
 {
-    uint16_t move_delay;
-    uint8_t num_movements;
-    uint8_t vertical;
-    money32 value;
-    int16_t offset_x;
-    uint16_t wiggle;
+    uint16_t MoveDelay;
+    uint8_t NumMovements;
+    uint8_t Vertical;
+    money32 Value;
+    int16_t OffsetX;
+    uint16_t Wiggle;
 
     static void CreateAt(money32 value, int32_t x, int32_t y, int32_t z, bool vertical);
     static void Create(money32 value, CoordsXYZ loc);
@@ -209,7 +208,6 @@ void reset_sprite_list();
 void reset_sprite_spatial_index();
 void sprite_clear_all_unused();
 void sprite_misc_update_all();
-void sprite_move(int16_t x, int16_t y, int16_t z, SpriteBase* sprite);
 void sprite_set_coordinates(int16_t x, int16_t y, int16_t z, SpriteBase* sprite);
 void invalidate_sprite_0(SpriteBase* sprite);
 void invalidate_sprite_1(SpriteBase* sprite);

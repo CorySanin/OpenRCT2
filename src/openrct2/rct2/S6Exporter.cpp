@@ -1231,16 +1231,16 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
     dst->vandalism_seen = src->vandalism_seen;
     dst->voucher_type = src->voucher_type;
     dst->voucher_arguments = src->voucher_arguments;
-    dst->surroundings_thought_timeout = src->surroundings_thought_timeout;
-    dst->angriness = src->angriness;
-    dst->time_lost = src->time_lost;
-    dst->days_in_queue = src->days_in_queue;
-    dst->balloon_colour = src->balloon_colour;
-    dst->umbrella_colour = src->umbrella_colour;
-    dst->hat_colour = src->hat_colour;
-    dst->favourite_ride = src->favourite_ride;
-    dst->favourite_ride_rating = src->favourite_ride_rating;
-    dst->item_standard_flags = src->item_standard_flags;
+    dst->surroundings_thought_timeout = src->SurroundingsThoughtTimeout;
+    dst->angriness = src->Angriness;
+    dst->time_lost = src->TimeLost;
+    dst->days_in_queue = src->DaysInQueue;
+    dst->balloon_colour = src->BalloonColour;
+    dst->umbrella_colour = src->UmbrellaColour;
+    dst->hat_colour = src->HatColour;
+    dst->favourite_ride = src->FavouriteRide;
+    dst->favourite_ride_rating = src->FavouriteRideRating;
+    dst->item_standard_flags = src->ItemStandardFlags;
 }
 
 void S6Exporter::ExportSpriteMisc(RCT12SpriteBase* cdst, const SpriteBase* csrc)
@@ -1260,12 +1260,12 @@ void S6Exporter::ExportSpriteMisc(RCT12SpriteBase* cdst, const SpriteBase* csrc)
         {
             auto src = static_cast<const MoneyEffect*>(csrc);
             auto dst = static_cast<RCT12SpriteMoneyEffect*>(cdst);
-            dst->move_delay = src->move_delay;
-            dst->num_movements = src->num_movements;
-            dst->vertical = src->vertical;
-            dst->value = src->value;
-            dst->offset_x = src->offset_x;
-            dst->wiggle = src->wiggle;
+            dst->move_delay = src->MoveDelay;
+            dst->num_movements = src->NumMovements;
+            dst->vertical = src->Vertical;
+            dst->value = src->Value;
+            dst->offset_x = src->OffsetX;
+            dst->wiggle = src->Wiggle;
             break;
         }
         case SPRITE_MISC_CRASHED_VEHICLE_PARTICLE:

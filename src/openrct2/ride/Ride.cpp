@@ -324,9 +324,9 @@ void ride_update_favourited_stat()
 
     FOR_ALL_GUESTS (spriteIndex, peep)
     {
-        if (peep->favourite_ride != RIDE_ID_NULL)
+        if (peep->FavouriteRide != RIDE_ID_NULL)
         {
-            auto ride = get_ride(peep->favourite_ride);
+            auto ride = get_ride(peep->FavouriteRide);
             if (ride != nullptr)
             {
                 ride->guests_favourite++;
@@ -1049,8 +1049,8 @@ void ride_remove_peeps(Ride* ride)
         {
             auto direction = direction_reverse(location.direction);
             exitPosition = location;
-            exitPosition.x += (DirectionOffsets[direction].x * 20) + (COORDS_XY_STEP / 2);
-            exitPosition.y += (DirectionOffsets[direction].y * 20) + (COORDS_XY_STEP / 2);
+            exitPosition.x += (DirectionOffsets[direction].x * 20) + COORDS_XY_HALF_TILE;
+            exitPosition.y += (DirectionOffsets[direction].y * 20) + COORDS_XY_HALF_TILE;
             exitPosition.z += 2;
 
             // Reverse direction
@@ -1075,23 +1075,20 @@ void ride_remove_peeps(Ride* ride)
             if (peep->state == PEEP_STATE_QUEUING_FRONT && peep->sub_state == PEEP_RIDE_AT_ENTRANCE)
                 peep->RemoveFromQueue();
 
-            peep->Invalidate();
-
             if (exitPosition.direction == INVALID_DIRECTION)
             {
                 CoordsXYZ newLoc = { peep->NextLoc.ToTileCentre(), peep->NextLoc.z };
                 if (peep->GetNextIsSloped())
                     newLoc.z += COORDS_Z_STEP;
                 newLoc.z++;
-                sprite_move(newLoc.x, newLoc.y, newLoc.z, peep);
+                peep->MoveTo(newLoc);
             }
             else
             {
-                sprite_move(exitPosition.x, exitPosition.y, exitPosition.z, peep);
+                peep->MoveTo(exitPosition);
                 peep->sprite_direction = exitPosition.direction;
             }
 
-            peep->Invalidate();
             peep->state = PEEP_STATE_FALLING;
             peep->SwitchToSpecialSprite(0);
 
@@ -3001,8 +2998,9 @@ std::pair<RideMeasurement*, rct_string_id> ride_get_measurement(Ride* ride)
     }
     else
     {
-        set_format_arg(0, rct_string_id, RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.vehicle].singular);
-        set_format_arg(2, rct_string_id, RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.station].singular);
+        auto ft = Formatter::Common();
+        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.vehicle].singular);
+        ft.Add<rct_string_id>(RideComponentNames[RideTypeDescriptors[ride->type].NameConvention.station].singular);
         return { measurement.get(), STR_DATA_LOGGING_WILL_START_WHEN_NEXT_LEAVES };
     }
 }
@@ -4382,7 +4380,7 @@ static Vehicle* vehicle_create_car(
             chosenLoc.x = x + (scenario_rand() & 0xFF);
         } while (vehicle->DodgemsCarWouldCollideAt(chosenLoc, nullptr));
 
-        sprite_move(chosenLoc.x, chosenLoc.y, z, vehicle);
+        vehicle->MoveTo({ chosenLoc.x, chosenLoc.y, z });
     }
     else
     {
@@ -4457,7 +4455,7 @@ static Vehicle* vehicle_create_car(
         z = tileElement->GetBaseZ();
         z += RideData5[ride->type].z_offset;
 
-        sprite_move(x, y, z, vehicle);
+        vehicle->MoveTo({ x, y, z });
         vehicle->track_type = (tileElement->AsTrack()->GetTrackType() << 2) | (vehicle->sprite_direction >> 3);
         vehicle->track_progress = 31;
         if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_MINI_GOLF)

@@ -208,11 +208,13 @@ static void window_about_openrct2_common_paint(rct_window* w, rct_drawpixelinfo*
     ScreenCoordsXY aboutOpenRCT2Coords(w->windowPos.x + aboutOpenRCT2.left + 45, y);
     ScreenCoordsXY aboutRCT2Coords(w->windowPos.x + aboutRCT2.left + 45, y);
 
-    set_format_arg(0, rct_string_id, STR_TITLE_SEQUENCE_OPENRCT2);
+    auto ft = Formatter::Common();
+    ft.Add<rct_string_id>(STR_TITLE_SEQUENCE_OPENRCT2);
     gfx_draw_string_centred_wrapped(
         dpi, gCommonFormatArgs, aboutOpenRCT2Coords, 87, STR_WINDOW_COLOUR_2_STRINGID, COLOUR_AQUAMARINE);
 
-    set_format_arg(0, rct_string_id, STR_TITLE_SEQUENCE_RCT2);
+    ft = Formatter::Common();
+    ft.Add<rct_string_id>(STR_TITLE_SEQUENCE_RCT2);
     gfx_draw_string_centred_wrapped(
         dpi, gCommonFormatArgs, aboutRCT2Coords, 87, STR_WINDOW_COLOUR_2_STRINGID, COLOUR_AQUAMARINE);
 }
@@ -290,35 +292,34 @@ static void window_about_rct2_mouseup(rct_window* w, rct_widgetindex widgetIndex
  */
 static void window_about_rct2_paint(rct_window* w, rct_drawpixelinfo* dpi)
 {
-    int32_t x, y, yPage;
+    int32_t yPage;
 
     window_about_openrct2_common_paint(w, dpi);
 
     yPage = w->windowPos.y + w->widgets[WIDX_PAGE_BACKGROUND].top + 5;
 
-    x = w->windowPos.x + 200;
-    y = yPage + 5;
+    auto screenCoords = ScreenCoordsXY{ w->windowPos.x + 200, yPage + 5 };
 
     int32_t lineHeight = font_get_line_height(gCurrentFontSpriteBase);
 
     // Credits
-    gfx_draw_string_centred(dpi, STR_COPYRIGHT_CS, x, y, COLOUR_BLACK, nullptr);
-    y += lineHeight + 74;
-    gfx_draw_string_centred(dpi, STR_DESIGNED_AND_PROGRAMMED_BY_CS, x, y, COLOUR_BLACK, nullptr);
-    y += lineHeight;
-    gfx_draw_string_centred(dpi, STR_GRAPHICS_BY_SF, x, y, COLOUR_BLACK, nullptr);
-    y += lineHeight;
-    gfx_draw_string_centred(dpi, STR_SOUND_AND_MUSIC_BY_AB, x, y, COLOUR_BLACK, nullptr);
-    y += lineHeight;
-    gfx_draw_string_centred(dpi, STR_ADDITIONAL_SOUNDS_RECORDED_BY_DE, x, y, COLOUR_BLACK, nullptr);
-    y += lineHeight + 3;
-    gfx_draw_string_centred(dpi, STR_REPRESENTATION_BY_JL, x, y, COLOUR_BLACK, nullptr);
-    y += 2 * lineHeight + 5;
-    gfx_draw_string_centred(dpi, STR_THANKS_TO, x, y, COLOUR_BLACK, nullptr);
-    y += lineHeight;
-    gfx_draw_string_centred(dpi, STR_THANKS_TO_PEOPLE, x, y, COLOUR_BLACK, nullptr);
-    y += 2 * lineHeight + 5;
-    gfx_draw_string_centred(dpi, STR_LICENSED_TO_INFOGRAMES_INTERACTIVE_INC, x, y, COLOUR_BLACK, nullptr);
+    gfx_draw_string_centred(dpi, STR_COPYRIGHT_CS, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += lineHeight + 74;
+    gfx_draw_string_centred(dpi, STR_DESIGNED_AND_PROGRAMMED_BY_CS, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += lineHeight;
+    gfx_draw_string_centred(dpi, STR_GRAPHICS_BY_SF, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += lineHeight;
+    gfx_draw_string_centred(dpi, STR_SOUND_AND_MUSIC_BY_AB, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += lineHeight;
+    gfx_draw_string_centred(dpi, STR_ADDITIONAL_SOUNDS_RECORDED_BY_DE, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += lineHeight + 3;
+    gfx_draw_string_centred(dpi, STR_REPRESENTATION_BY_JL, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += 2 * lineHeight + 5;
+    gfx_draw_string_centred(dpi, STR_THANKS_TO, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += lineHeight;
+    gfx_draw_string_centred(dpi, STR_THANKS_TO_PEOPLE, screenCoords, COLOUR_BLACK, nullptr);
+    screenCoords.y += 2 * lineHeight + 5;
+    gfx_draw_string_centred(dpi, STR_LICENSED_TO_INFOGRAMES_INTERACTIVE_INC, screenCoords, COLOUR_BLACK, nullptr);
 
     // Images
     gfx_draw_sprite(dpi, SPR_CREDITS_CHRIS_SAWYER_SMALL, w->windowPos.x + 92, yPage + 24, 0);

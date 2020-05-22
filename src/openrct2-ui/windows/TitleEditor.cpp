@@ -838,8 +838,8 @@ static void window_title_editor_paint(rct_window* w, rct_drawpixelinfo* dpi)
                 w->windowPos.y + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].top + 1);
             gfx_draw_string_left_clipped(
                 dpi, STR_STRING, gCommonFormatArgs, w->colours[1],
-                w->windowPos.x + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].left + 1,
-                w->windowPos.y + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].top,
+                { w->windowPos.x + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].left + 1,
+                  w->windowPos.y + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].top },
                 w->windowPos.x + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS_DROPDOWN].left
                     - window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].left - 4);
             break;
@@ -1125,7 +1125,6 @@ static void window_title_editor_add_park_callback(int32_t result, const utf8* pa
     {
         free(_renameSavePath);
         _renameSavePath = _strdup(filename);
-        // set_format_arg(0, intptr_t, static_cast<intptr_t>(&_renameSavePath));
         rct_window* w = window_find_by_class(WC_TITLE_EDITOR);
         window_text_input_open(
             w, WIDX_TITLE_EDITOR_RENAME_SAVE, STR_FILEBROWSER_RENAME_SAVE_TITLE, STR_ERROR_EXISTING_NAME, STR_STRING,

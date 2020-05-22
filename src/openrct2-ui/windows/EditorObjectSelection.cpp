@@ -785,7 +785,8 @@ static void window_editor_object_selection_tooltip(rct_window* w, rct_widgetinde
 {
     if (widgetIndex >= WIDX_TAB_1 && static_cast<size_t>(widgetIndex) < WIDX_TAB_1 + std::size(ObjectSelectionPages))
     {
-        set_format_arg(0, rct_string_id, ObjectSelectionPages[(widgetIndex - WIDX_TAB_1)].Caption);
+        auto ft = Formatter::Common();
+        ft.Add<rct_string_id>(ObjectSelectionPages[(widgetIndex - WIDX_TAB_1)].Caption);
     }
 }
 
@@ -823,7 +824,8 @@ static void window_editor_object_selection_invalidate(rct_window* w)
         w->pressed_widgets &= ~(1 << WIDX_ADVANCED);
 
     // Set window title and buttons
-    set_format_arg(0, rct_string_id, ObjectSelectionPages[w->selected_tab].Caption);
+    auto ft = Formatter::Common();
+    ft.Add<rct_string_id>(ObjectSelectionPages[w->selected_tab].Caption);
     if (gScreenFlags & SCREEN_FLAGS_TRACK_MANAGER)
     {
         w->widgets[WIDX_TITLE].text = STR_TRACK_DESIGNS_MANAGER_SELECT_RIDE_TYPE;
@@ -1026,18 +1028,18 @@ static void window_editor_object_selection_paint(rct_window* w, rct_drawpixelinf
     {
         stringId = _listSortType == RIDE_SORT_TYPE ? static_cast<rct_string_id>(_listSortDescending ? STR_DOWN : STR_UP)
                                                    : STR_NONE;
+        ScreenCoordsXY screenCoords = { w->windowPos.x + widget->left + 1, w->windowPos.y + widget->top + 1 };
         gfx_draw_string_left_clipped(
-            dpi, STR_OBJECTS_SORT_TYPE, &stringId, w->colours[1], w->windowPos.x + widget->left + 1,
-            w->windowPos.y + widget->top + 1, widget->right - widget->left);
+            dpi, STR_OBJECTS_SORT_TYPE, &stringId, w->colours[1], screenCoords, widget->right - widget->left);
     }
     widget = &w->widgets[WIDX_LIST_SORT_RIDE];
     if (widget->type != WWT_EMPTY)
     {
         stringId = _listSortType == RIDE_SORT_RIDE ? static_cast<rct_string_id>(_listSortDescending ? STR_DOWN : STR_UP)
                                                    : STR_NONE;
+        ScreenCoordsXY screenCoord = { w->windowPos.x + widget->left + 1, w->windowPos.y + widget->top + 1 };
         gfx_draw_string_left_clipped(
-            dpi, STR_OBJECTS_SORT_RIDE, &stringId, w->colours[1], w->windowPos.x + widget->left + 1,
-            w->windowPos.y + widget->top + 1, widget->right - widget->left);
+            dpi, STR_OBJECTS_SORT_RIDE, &stringId, w->colours[1], screenCoord, widget->right - widget->left);
     }
 
     if (w->selected_list_item == -1 || _loadedObject == nullptr)
@@ -1171,8 +1173,7 @@ static void window_editor_object_selection_scrollpaint(rct_window* w, rct_drawpi
                 // Draw ride type
                 rct_string_id rideTypeStringId = get_ride_type_string_id(listItem.repositoryItem);
                 safe_strcpy(buffer, language_get_string(rideTypeStringId), 256 - (buffer - bufferWithColour));
-                gfx_draw_string_left_clipped(
-                    dpi, STR_STRING, &bufferWithColour, colour, screenCoords.x, screenCoords.y, width_limit - 15);
+                gfx_draw_string_left_clipped(dpi, STR_STRING, &bufferWithColour, colour, screenCoords, width_limit - 15);
                 screenCoords.x = w->widgets[WIDX_LIST_SORT_RIDE].left - w->widgets[WIDX_LIST].left;
             }
 
@@ -1185,8 +1186,7 @@ static void window_editor_object_selection_scrollpaint(rct_window* w, rct_drawpi
 
                 *buffer = 0;
             }
-            gfx_draw_string_left_clipped(
-                dpi, STR_STRING, &bufferWithColour, colour, screenCoords.x, screenCoords.y, width_limit);
+            gfx_draw_string_left_clipped(dpi, STR_STRING, &bufferWithColour, colour, screenCoords, width_limit);
         }
         screenCoords.y += 12;
     }

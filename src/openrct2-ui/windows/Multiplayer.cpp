@@ -495,14 +495,15 @@ static void window_multiplayer_information_paint(rct_window* w, rct_drawpixelinf
 
         const utf8* name = network_get_server_name();
         {
-            y += gfx_draw_string_left_wrapped(dpi, static_cast<void*>(&name), x, y, width, STR_STRING, w->colours[1]);
+            y += gfx_draw_string_left_wrapped(dpi, static_cast<void*>(&name), { x, y }, width, STR_STRING, w->colours[1]);
             y += LIST_ROW_HEIGHT / 2;
         }
 
         const utf8* description = network_get_server_description();
         if (!str_is_null_or_empty(description))
         {
-            y += gfx_draw_string_left_wrapped(dpi, static_cast<void*>(&description), x, y, width, STR_STRING, w->colours[1]);
+            y += gfx_draw_string_left_wrapped(
+                dpi, static_cast<void*>(&description), { x, y }, width, STR_STRING, w->colours[1]);
             y += LIST_ROW_HEIGHT / 2;
         }
 
@@ -700,7 +701,7 @@ static void window_multiplayer_players_scrollpaint(rct_window* w, rct_drawpixeli
             {
                 set_format_arg(0, rct_string_id, network_get_action_name_string_id(action));
             }
-            gfx_draw_string_left_clipped(dpi, STR_BLACK_STRING, gCommonFormatArgs, COLOUR_BLACK, 256, screenCoords.y, 100);
+            gfx_draw_string_left_clipped(dpi, STR_BLACK_STRING, gCommonFormatArgs, COLOUR_BLACK, { 256, screenCoords.y }, 100);
 
             // Draw ping
             lineCh = buffer;

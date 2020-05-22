@@ -665,22 +665,24 @@ static void window_finances_summary_paint(rct_window* w, rct_drawpixelinfo* dpi)
     window_draw_widgets(w, dpi);
     window_finances_draw_tab_images(dpi, w);
 
-    int32_t x = w->windowPos.x + 8;
-    int32_t y = w->windowPos.y + 51;
+    auto screenCoords = ScreenCoordsXY{ w->windowPos.x + 8, w->windowPos.y + 51 };
 
     // Expenditure / Income heading
-    draw_string_left_underline(dpi, STR_FINANCES_SUMMARY_EXPENDITURE_INCOME, nullptr, COLOUR_BLACK, x, y);
-    y += 14;
+    draw_string_left_underline(dpi, STR_FINANCES_SUMMARY_EXPENDITURE_INCOME, nullptr, COLOUR_BLACK, screenCoords);
+    screenCoords.y += 14;
 
     // Expenditure / Income row labels
     for (int32_t i = 0; i < static_cast<int32_t>(ExpenditureType::Count); i++)
     {
         // Darken every even row
         if (i % 2 == 0)
-            gfx_fill_rect(dpi, x, y - 1, x + 121, y + (TABLE_CELL_HEIGHT - 2), ColourMapA[w->colours[1]].lighter | 0x1000000);
+            gfx_fill_rect(
+                dpi, screenCoords.x, screenCoords.y - 1, screenCoords.x + 121, screenCoords.y + (TABLE_CELL_HEIGHT - 2),
+                ColourMapA[w->colours[1]].lighter | 0x1000000);
 
-        gfx_draw_string_left(dpi, window_finances_summary_row_labels[i], nullptr, COLOUR_BLACK, x, y - 1);
-        y += TABLE_CELL_HEIGHT;
+        gfx_draw_string_left(
+            dpi, window_finances_summary_row_labels[i], nullptr, COLOUR_BLACK, screenCoords.x, screenCoords.y - 1);
+        screenCoords.y += TABLE_CELL_HEIGHT;
     }
 
     // Horizontal rule below expenditure / income table
@@ -718,8 +720,7 @@ static void window_finances_summary_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
 static void window_finances_summary_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t scrollIndex)
 {
-    int32_t x = 0;
-    int32_t y = TABLE_CELL_HEIGHT + 2;
+    auto screenCoords = ScreenCoordsXY{ 0, TABLE_CELL_HEIGHT + 2 };
 
     rct_widget self = w->widgets[WIDX_SUMMARY_SCROLL];
     int32_t row_width = std::max<uint16_t>(w->scrolls[0].h_right, self.right - self.left);
@@ -730,28 +731,30 @@ static void window_finances_summary_scrollpaint(rct_window* w, rct_drawpixelinfo
         // Darken every even row
         if (i % 2 == 0)
             gfx_fill_rect(
-                dpi, x, y - 1, x + row_width, y + (TABLE_CELL_HEIGHT - 2), ColourMapA[w->colours[1]].lighter | 0x1000000);
+                dpi, screenCoords.x, screenCoords.y - 1, screenCoords.x + row_width, screenCoords.y + (TABLE_CELL_HEIGHT - 2),
+                ColourMapA[w->colours[1]].lighter | 0x1000000);
 
-        y += TABLE_CELL_HEIGHT;
+        screenCoords.y += TABLE_CELL_HEIGHT;
     }
 
     // Expenditure / Income values for each month
     int16_t currentMonthYear = gDateMonthsElapsed;
     for (int32_t i = summary_max_available_month(); i >= 0; i--)
     {
-        y = 0;
+        screenCoords.y = 0;
 
         int16_t monthyear = currentMonthYear - i;
         if (monthyear < 0)
             continue;
 
         // Month heading
-        set_format_arg(0, rct_string_id, STR_FINANCES_SUMMARY_MONTH_HEADING);
-        set_format_arg(2, uint16_t, monthyear);
+        auto ft = Formatter::Common();
+        ft.Add<rct_string_id>(STR_FINANCES_SUMMARY_MONTH_HEADING);
+        ft.Add<uint16_t>(monthyear);
         draw_string_right_underline(
             dpi, monthyear == currentMonthYear ? STR_WINDOW_COLOUR_2_STRINGID : STR_BLACK_STRING, gCommonFormatArgs,
-            COLOUR_BLACK, x + EXPENDITURE_COLUMN_WIDTH, y);
-        y += 14;
+            COLOUR_BLACK, screenCoords + ScreenCoordsXY{ EXPENDITURE_COLUMN_WIDTH, 0 });
+        screenCoords.y += 14;
 
         // Month expenditures
         money32 profit = 0;
@@ -763,19 +766,21 @@ static void window_finances_summary_scrollpaint(rct_window* w, rct_drawpixelinfo
                 profit += expenditure;
                 gfx_draw_string_right(
                     dpi, expenditure >= 0 ? STR_FINANCES_SUMMARY_INCOME_VALUE : STR_FINANCES_SUMMARY_EXPENDITURE_VALUE,
-                    &expenditure, COLOUR_BLACK, x + EXPENDITURE_COLUMN_WIDTH, y);
+                    &expenditure, COLOUR_BLACK, screenCoords + ScreenCoordsXY{ EXPENDITURE_COLUMN_WIDTH, 0 });
             }
-            y += TABLE_CELL_HEIGHT;
+            screenCoords.y += TABLE_CELL_HEIGHT;
         }
-        y += 4;
+        screenCoords.y += 4;
 
         // Month profit
         gfx_draw_string_right(
             dpi, profit >= 0 ? STR_FINANCES_SUMMARY_INCOME_VALUE : STR_FINANCES_SUMMARY_LOSS_VALUE, &profit, COLOUR_BLACK,
-            x + EXPENDITURE_COLUMN_WIDTH, y);
-        gfx_fill_rect(dpi, x + 10, y - 2, x + EXPENDITURE_COLUMN_WIDTH, y - 2, PALETTE_INDEX_10);
+            screenCoords + ScreenCoordsXY{ EXPENDITURE_COLUMN_WIDTH, 0 });
+        gfx_fill_rect(
+            dpi, screenCoords.x + 10, screenCoords.y - 2, screenCoords.x + EXPENDITURE_COLUMN_WIDTH, screenCoords.y - 2,
+            PALETTE_INDEX_10);
 
-        x += EXPENDITURE_COLUMN_WIDTH;
+        screenCoords.x += EXPENDITURE_COLUMN_WIDTH;
     }
 
     _lastPaintedMonth = currentMonthYear;
@@ -1187,6 +1192,7 @@ static void window_finances_marketing_paint(rct_window* w, rct_drawpixelinfo* dp
             continue;
 
         noCampaignsActive = 0;
+        auto ft = Formatter::Common();
 
         // Set special parameters
         switch (i)
@@ -1201,24 +1207,24 @@ static void window_finances_marketing_paint(rct_window* w, rct_drawpixelinfo* dp
                 }
                 else
                 {
-                    set_format_arg(0, rct_string_id, STR_NONE);
+                    ft.Add<rct_string_id>(STR_NONE);
                 }
                 break;
             }
             case ADVERTISING_CAMPAIGN_FOOD_OR_DRINK_FREE:
-                set_format_arg(0, rct_string_id, ShopItems[campaign->ShopItemType].Naming.Plural);
+                ft.Add<rct_string_id>(ShopItems[campaign->ShopItemType].Naming.Plural);
                 break;
             default:
             {
                 auto& park = OpenRCT2::GetContext()->GetGameState()->GetPark();
                 auto parkName = park.Name.c_str();
-                set_format_arg(0, rct_string_id, STR_STRING);
-                set_format_arg(2, const char*, parkName);
+                ft.Add<rct_string_id>(STR_STRING);
+                ft.Add<const char*>(parkName);
             }
         }
 
         // Advertisement
-        gfx_draw_string_left_clipped(dpi, MarketingCampaignNames[i][1], gCommonFormatArgs, COLOUR_BLACK, x + 4, y, 296);
+        gfx_draw_string_left_clipped(dpi, MarketingCampaignNames[i][1], gCommonFormatArgs, COLOUR_BLACK, { x + 4, y }, 296);
 
         // Duration
         uint16_t weeksRemaining = campaign->WeeksLeft;

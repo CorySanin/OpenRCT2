@@ -173,7 +173,7 @@ private:
             newPeep->paid_on_rides = 0;
             newPeep->paid_on_food = 0;
             newPeep->paid_on_souvenirs = 0;
-            newPeep->favourite_ride = RIDE_ID_NULL;
+            newPeep->FavouriteRide = RIDE_ID_NULL;
             newPeep->staff_orders = _staffOrders;
 
             uint16_t idSearchSpriteIndex;
@@ -227,8 +227,7 @@ private:
                 // NOTE: This state is required for the window to act.
                 newPeep->state = PEEP_STATE_PICKED;
 
-                sprite_move(newPeep->x, newPeep->y, newPeep->z, newPeep);
-                invalidate_sprite_2(newPeep);
+                newPeep->MoveTo({ newPeep->x, newPeep->y, newPeep->z });
             }
 
             // Staff uses this
@@ -332,7 +331,6 @@ private:
             }
         }
 
-        sprite_move(x, y, z + 16, newPeep);
-        invalidate_sprite_2(newPeep);
+        newPeep->MoveTo({ x, y, z + 16 });
     }
 };

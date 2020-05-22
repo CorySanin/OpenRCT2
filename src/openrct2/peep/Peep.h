@@ -403,7 +403,7 @@ enum PeepNauseaTolerance
 
 enum PeepItem
 {
-    // item_standard_flags
+    // ItemStandardFlags
     PEEP_ITEM_BALLOON = (1 << 0),
     PEEP_ITEM_TOY = (1 << 1),
     PEEP_ITEM_MAP = (1 << 2),
@@ -738,16 +738,16 @@ struct Peep : SpriteBase
     uint8_t vandalism_seen; // 0xC0 vandalism thought timeout, 0x3F vandalism tiles seen
     uint8_t voucher_type;
     uint8_t voucher_arguments; // ride_id or string_offset_id
-    uint8_t surroundings_thought_timeout;
-    uint8_t angriness;
-    uint8_t time_lost; // the time the peep has been lost when it reaches 254 generates the lost thought
-    uint8_t days_in_queue;
-    uint8_t balloon_colour;
-    uint8_t umbrella_colour;
-    uint8_t hat_colour;
-    uint8_t favourite_ride;
-    uint8_t favourite_ride_rating;
-    uint32_t item_standard_flags;
+    uint8_t SurroundingsThoughtTimeout;
+    uint8_t Angriness;
+    uint8_t TimeLost; // the time the peep has been lost when it reaches 254 generates the lost thought
+    uint8_t DaysInQueue;
+    uint8_t BalloonColour;
+    uint8_t UmbrellaColour;
+    uint8_t HatColour;
+    uint8_t FavouriteRide;
+    uint8_t FavouriteRideRating;
+    uint32_t ItemStandardFlags;
 
 public: // Peep
     Guest* AsGuest();
@@ -762,7 +762,7 @@ public: // Peep
     void UpdateCurrentActionSpriteType();
     void SwitchToSpecialSprite(uint8_t special_sprite_id);
     void StateReset();
-    void MoveTo(int16_t destX, int16_t destY, int16_t destZ);
+    void MoveTo(const CoordsXYZ& newLocation);
     uint8_t GetNextDirection() const;
     bool GetNextIsSloped() const;
     bool GetNextIsSurface() const;
@@ -893,6 +893,8 @@ public:
     bool IsPatrolAreaSet(const CoordsXY& coords) const;
     bool IsLocationInPatrol(const CoordsXY& loc) const;
     bool DoPathFinding();
+    uint8_t GetCostume() const;
+    void SetCostume(uint8_t value);
 
 private:
     void UpdatePatrolling();
@@ -1044,7 +1046,7 @@ void peep_window_state_update(Peep* peep);
 void peep_decrement_num_riders(Peep* peep);
 
 void peep_set_map_tooltip(Peep* peep);
-int32_t peep_compare(const void* sprite_index_a, const void* sprite_index_b);
+int32_t peep_compare(const uint16_t sprite_index_a, const uint16_t sprite_index_b);
 
 void SwitchToSpecialSprite(Peep* peep, uint8_t special_sprite_id);
 void peep_update_names(bool realNames);

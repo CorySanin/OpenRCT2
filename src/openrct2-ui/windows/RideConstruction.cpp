@@ -2270,7 +2270,8 @@ static void window_ride_construction_invalidate(rct_window* w)
             stringId = STR_BOOSTER;
         }
     }
-    set_format_arg(0, uint16_t, stringId);
+    auto ft = Formatter::Common();
+    ft.Add<uint16_t>(stringId);
 
     if (_currentlyShowingBrakeOrBoosterSpeed)
     {
@@ -2279,7 +2280,7 @@ static void window_ride_construction_invalidate(rct_window* w)
         {
             brakeSpeed2 = get_booster_speed(ride->type, brakeSpeed2);
         }
-        set_format_arg(2, uint16_t, brakeSpeed2);
+        ft.Add<uint16_t>(brakeSpeed2);
     }
 
     window_ride_construction_widgets[WIDX_SEAT_ROTATION_ANGLE_SPINNER].text = RideConstructionSeatAngleRotationStrings
@@ -2313,7 +2314,7 @@ static void window_ride_construction_paint(rct_window* w, rct_drawpixelinfo* dpi
 {
     rct_drawpixelinfo clipdpi;
     rct_widget* widget;
-    int32_t x, y, width, height;
+    int32_t width, height;
 
     window_draw_widgets(w, dpi);
 
@@ -2328,26 +2329,24 @@ static void window_ride_construction_paint(rct_window* w, rct_drawpixelinfo* dpi
         return;
 
     // Draw track piece
-    x = w->windowPos.x + widget->left + 1;
-    y = w->windowPos.y + widget->top + 1;
+    auto screenCoords = ScreenCoordsXY{ w->windowPos.x + widget->left + 1, w->windowPos.y + widget->top + 1 };
     width = widget->right - widget->left - 1;
     height = widget->bottom - widget->top - 1;
-    if (clip_drawpixelinfo(&clipdpi, dpi, x, y, width, height))
+    if (clip_drawpixelinfo(&clipdpi, dpi, screenCoords.x, screenCoords.y, width, height))
     {
         window_ride_construction_draw_track_piece(
             w, &clipdpi, rideIndex, trackType, trackDirection, liftHillAndInvertedState, width, height);
     }
 
     // Draw cost
-    x = w->windowPos.x + (widget->left + widget->right) / 2;
-    y = w->windowPos.y + widget->bottom - 23;
+    screenCoords = { w->windowPos.x + (widget->left + widget->right) / 2, w->windowPos.y + widget->bottom - 23 };
     if (_rideConstructionState != RIDE_CONSTRUCTION_STATE_PLACE)
-        gfx_draw_string_centred(dpi, STR_BUILD_THIS, x, y, COLOUR_BLACK, w);
+        gfx_draw_string_centred(dpi, STR_BUILD_THIS, screenCoords, COLOUR_BLACK, w);
 
-    y += 11;
+    screenCoords.y += 11;
     if (_currentTrackPrice != MONEY32_UNDEFINED && !(gParkFlags & PARK_FLAGS_NO_MONEY))
     {
-        gfx_draw_string_centred(dpi, STR_COST_LABEL, x, y, COLOUR_BLACK, static_cast<void*>(&_currentTrackPrice));
+        gfx_draw_string_centred(dpi, STR_COST_LABEL, screenCoords, COLOUR_BLACK, static_cast<void*>(&_currentTrackPrice));
     }
 }
 
