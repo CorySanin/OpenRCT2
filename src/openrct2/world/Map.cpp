@@ -955,7 +955,7 @@ void tile_element_remove(TileElement* tileElement)
 
     // Mark the latest element with the last element flag.
     (tileElement - 1)->SetLastForTile(true);
-    tileElement->base_height = 0xFF;
+    tileElement->base_height = MAX_ELEMENT_HEIGHT;
 
     if ((tileElement + 1) == gNextFreeTileElement)
     {
@@ -1178,7 +1178,7 @@ TileElement* tile_element_insert(const CoordsXYZ& loc, int32_t occupiedQuadrants
         {
             // Copy over map element
             *newTileElement = *originalTileElement;
-            originalTileElement->base_height = 255;
+            originalTileElement->base_height = MAX_ELEMENT_HEIGHT;
             originalTileElement++;
             newTileElement++;
 
@@ -1211,7 +1211,7 @@ TileElement* tile_element_insert(const CoordsXYZ& loc, int32_t occupiedQuadrants
         {
             // Copy over map element
             *newTileElement = *originalTileElement;
-            originalTileElement->base_height = 255;
+            originalTileElement->base_height = MAX_ELEMENT_HEIGHT;
             originalTileElement++;
             newTileElement++;
         } while (!((newTileElement - 1)->IsLastForTile()));
@@ -1254,10 +1254,13 @@ void map_obstruction_set_error_text(TileElement* tileElement, GameActionResult& 
             }
             break;
         case TILE_ELEMENT_TYPE_SMALL_SCENERY:
+        {
             sceneryEntry = tileElement->AsSmallScenery()->GetEntry();
             res.ErrorMessage = STR_X_IN_THE_WAY;
-            set_format_arg<rct_string_id>(res.ErrorMessageArgs.data(), 0, sceneryEntry->name);
+            auto ft = Formatter(res.ErrorMessageArgs.data());
+            ft.Add<rct_string_id>(sceneryEntry->name);
             break;
+        }
         case TILE_ELEMENT_TYPE_ENTRANCE:
             switch (tileElement->AsEntrance()->GetEntranceType())
             {
@@ -1273,15 +1276,21 @@ void map_obstruction_set_error_text(TileElement* tileElement, GameActionResult& 
             }
             break;
         case TILE_ELEMENT_TYPE_WALL:
+        {
             sceneryEntry = tileElement->AsWall()->GetEntry();
             res.ErrorMessage = STR_X_IN_THE_WAY;
-            set_format_arg<rct_string_id>(res.ErrorMessageArgs.data(), 0, sceneryEntry->name);
+            auto ft = Formatter(res.ErrorMessageArgs.data());
+            ft.Add<rct_string_id>(sceneryEntry->name);
             break;
+        }
         case TILE_ELEMENT_TYPE_LARGE_SCENERY:
+        {
             sceneryEntry = tileElement->AsLargeScenery()->GetEntry();
             res.ErrorMessage = STR_X_IN_THE_WAY;
-            set_format_arg<rct_string_id>(res.ErrorMessageArgs.data(), 0, sceneryEntry->name);
+            auto ft = Formatter(res.ErrorMessageArgs.data());
+            ft.Add<rct_string_id>(sceneryEntry->name);
             break;
+        }
     }
 }
 

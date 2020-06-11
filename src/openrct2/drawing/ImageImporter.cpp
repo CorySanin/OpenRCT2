@@ -142,7 +142,7 @@ std::tuple<void*, size_t> ImageImporter::EncodeRLE(const int32_t* pixels, uint32
     {
         yOffsets[y] = static_cast<uint16_t>(dst - buffer);
 
-        auto previousCode = (RLECode*)nullptr;
+        auto previousCode = static_cast<RLECode*>(nullptr);
         auto currentCode = reinterpret_cast<RLECode*>(dst);
         dst += 2;
 
@@ -225,7 +225,7 @@ std::tuple<void*, size_t> ImageImporter::EncodeRLE(const int32_t* pixels, uint32
 int32_t ImageImporter::CalculatePaletteIndex(
     IMPORT_MODE mode, int16_t* rgbaSrc, int32_t x, int32_t y, int32_t width, int32_t height)
 {
-    auto palette = StandardPalette;
+    auto& palette = StandardPalette;
     auto paletteIndex = GetPaletteIndex(palette, rgbaSrc);
     if (mode == IMPORT_MODE::CLOSEST || mode == IMPORT_MODE::DITHERING)
     {

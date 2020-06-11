@@ -105,7 +105,7 @@ public:
     void DrawSprite(uint32_t image, int32_t x, int32_t y, uint32_t tertiaryColour) override;
     void DrawSpriteRawMasked(int32_t x, int32_t y, uint32_t maskImage, uint32_t colourImage) override;
     void DrawSpriteSolid(uint32_t image, int32_t x, int32_t y, uint8_t colour) override;
-    void DrawGlyph(uint32_t image, int32_t x, int32_t y, uint8_t* palette) override;
+    void DrawGlyph(uint32_t image, int32_t x, int32_t y, const PaletteMap& palette) override;
 
     void FlushCommandBuffers();
 
@@ -255,14 +255,14 @@ public:
         _drawingContext->Resize(width, height);
     }
 
-    void SetPalette(const rct_palette_entry* palette) override
+    void SetPalette(const GamePalette& palette) override
     {
         for (int32_t i = 0; i < 256; i++)
         {
             SDL_Color colour;
-            colour.r = palette[i].red;
-            colour.g = palette[i].green;
-            colour.b = palette[i].blue;
+            colour.r = palette[i].Red;
+            colour.g = palette[i].Green;
+            colour.b = palette[i].Blue;
             colour.a = i == 0 ? 0 : 255;
 
             Palette[i] = colour;
@@ -875,7 +875,7 @@ void OpenGLDrawingContext::DrawSpriteSolid(uint32_t image, int32_t x, int32_t y,
     command.depth = _drawCount++;
 }
 
-void OpenGLDrawingContext::DrawGlyph(uint32_t image, int32_t x, int32_t y, uint8_t* palette)
+void OpenGLDrawingContext::DrawGlyph(uint32_t image, int32_t x, int32_t y, const PaletteMap& palette)
 {
     auto g1Element = gfx_get_g1_element(image & 0x7FFFF);
     if (g1Element == nullptr)

@@ -443,7 +443,7 @@ static int32_t cc_staff(InteractiveConsole& console, const arguments_t& argv)
             {
                 auto name = peep->GetName();
                 console.WriteFormatLine(
-                    "staff id %03d type: %02u energy %03u name %s", i, peep->staff_type, peep->energy, name.c_str());
+                    "staff id %03d type: %02u energy %03u name %s", i, peep->staff_type, peep->Energy, name.c_str());
             }
         }
         else if (argv[0] == "set")
@@ -474,8 +474,8 @@ static int32_t cc_staff(InteractiveConsole& console, const arguments_t& argv)
                 {
                     Peep* peep = GET_PEEP(int_val[0]);
 
-                    peep->energy = int_val[1];
-                    peep->energy_target = int_val[1];
+                    peep->Energy = int_val[1];
+                    peep->EnergyTarget = int_val[1];
                 }
             }
             else if (argv[1] == "costume")
@@ -737,7 +737,7 @@ static int32_t cc_set(InteractiveConsole& console, const arguments_t& argv)
 
         if (argv[0] == "money" && invalidArguments(&invalidArgs, double_valid[0]))
         {
-            money32 money = MONEY((int32_t)double_val[0], ((int32_t)(double_val[0] * 100)) % 100);
+            money32 money = MONEY(static_cast<int32_t>(double_val[0]), (static_cast<int32_t>(double_val[0] * 100)) % 100);
             if (gCash != money)
             {
                 auto setCheatAction = SetCheatAction(CheatType::SetMoney, money);
@@ -772,7 +772,8 @@ static int32_t cc_set(InteractiveConsole& console, const arguments_t& argv)
         else if (argv[0] == "guest_initial_cash" && invalidArguments(&invalidArgs, double_valid[0]))
         {
             gGuestInitialCash = std::clamp(
-                MONEY((int32_t)double_val[0], ((int32_t)(double_val[0] * 100)) % 100), MONEY(0, 0), MONEY(1000, 0));
+                MONEY(static_cast<int32_t>(double_val[0]), (static_cast<int32_t>(double_val[0] * 100)) % 100), MONEY(0, 0),
+                MONEY(1000, 0));
             console.Execute("get guest_initial_cash");
         }
         else if (argv[0] == "guest_initial_happiness" && invalidArguments(&invalidArgs, int_valid[0]))
@@ -848,13 +849,15 @@ static int32_t cc_set(InteractiveConsole& console, const arguments_t& argv)
         else if (argv[0] == "land_rights_cost" && invalidArguments(&invalidArgs, double_valid[0]))
         {
             gLandPrice = std::clamp(
-                MONEY((int32_t)double_val[0], ((int32_t)(double_val[0] * 100)) % 100), MONEY(0, 0), MONEY(200, 0));
+                MONEY(static_cast<int32_t>(double_val[0]), (static_cast<int32_t>(double_val[0] * 100)) % 100), MONEY(0, 0),
+                MONEY(200, 0));
             console.Execute("get land_rights_cost");
         }
         else if (argv[0] == "construction_rights_cost" && invalidArguments(&invalidArgs, double_valid[0]))
         {
             gConstructionRightsPrice = std::clamp(
-                MONEY((int32_t)double_val[0], ((int32_t)(double_val[0] * 100)) % 100), MONEY(0, 0), MONEY(200, 0));
+                MONEY(static_cast<int32_t>(double_val[0]), (static_cast<int32_t>(double_val[0] * 100)) % 100), MONEY(0, 0),
+                MONEY(200, 0));
             console.Execute("get construction_rights_cost");
         }
         else if (argv[0] == "climate")
@@ -1032,18 +1035,6 @@ static int32_t cc_set(InteractiveConsole& console, const arguments_t& argv)
     {
         console.WriteLineError("Value required.");
     }
-    return 0;
-}
-
-static int32_t cc_twitch([[maybe_unused]] InteractiveConsole& console, [[maybe_unused]] const arguments_t& argv)
-{
-#ifdef DISABLE_TWITCH
-    console.WriteLineError("OpenRCT2 build not compiled with Twitch integration.");
-#else
-    // TODO: Add some twitch commands
-    // Display a message to the player for now
-    console.WriteLine("To be implemented");
-#endif
     return 0;
 }
 
@@ -1586,7 +1577,7 @@ static int32_t cc_mp_desync(InteractiveConsole& console, const arguments_t& argv
         if (sprite->generic.sprite_identifier == SPRITE_IDENTIFIER_NULL)
             continue;
 
-        auto peep = sprite->AsPeep();
+        auto peep = sprite->generic.As<Peep>();
         if (peep != nullptr)
             peeps.push_back(peep);
     }
@@ -1781,7 +1772,6 @@ static constexpr const console_command console_command_table[] = {
     { "show_limits", cc_show_limits, "Shows the map data counts and limits.", "show_limits" },
     { "staff", cc_staff, "Staff management.", "staff <subcommand>" },
     { "terminate", cc_terminate, "Calls std::terminate(), for testing purposes only.", "terminate" },
-    { "twitch", cc_twitch, "Twitch API", "twitch" },
     { "variables", cc_variables, "Lists all the variables that can be used with get and sometimes set.", "variables" },
     { "windows", cc_windows, "Lists all the windows that can be opened.", "windows" },
     { "replay_startrecord", cc_replay_startrecord, "Starts recording a new replay.", "replay_startrecord <name> [max_ticks]"},

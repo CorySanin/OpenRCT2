@@ -159,27 +159,27 @@ private:
         else
         {
             newPeep->sprite_identifier = 1;
-            newPeep->window_invalidate_flags = 0;
-            newPeep->action = PEEP_ACTION_NONE_2;
-            newPeep->special_sprite = 0;
-            newPeep->action_sprite_image_offset = 0;
-            newPeep->no_action_frame_num = 0;
-            newPeep->action_sprite_type = PEEP_ACTION_SPRITE_TYPE_NONE;
-            newPeep->path_check_optimisation = 0;
+            newPeep->WindowInvalidateFlags = 0;
+            newPeep->Action = PEEP_ACTION_NONE_2;
+            newPeep->SpecialSprite = 0;
+            newPeep->ActionSpriteImageOffset = 0;
+            newPeep->WalkingFrameNum = 0;
+            newPeep->ActionSpriteType = PEEP_ACTION_SPRITE_TYPE_NONE;
+            newPeep->PathCheckOptimisation = 0;
             newPeep->type = PEEP_TYPE_STAFF;
             newPeep->outside_of_park = 0;
-            newPeep->peep_flags = 0;
-            newPeep->paid_to_enter = 0;
-            newPeep->paid_on_rides = 0;
-            newPeep->paid_on_food = 0;
-            newPeep->paid_on_souvenirs = 0;
+            newPeep->PeepFlags = 0;
+            newPeep->PaidToEnter = 0;
+            newPeep->PaidOnRides = 0;
+            newPeep->PaidOnFood = 0;
+            newPeep->PaidOnSouvenirs = 0;
             newPeep->FavouriteRide = RIDE_ID_NULL;
-            newPeep->staff_orders = _staffOrders;
+            newPeep->StaffOrders = _staffOrders;
 
             uint16_t idSearchSpriteIndex;
             Peep* idSearchPeep;
 
-            // We search for the first available id for a given staff type
+            // We search for the first available Id for a given staff type
             uint32_t newStaffId = 0;
             for (;;)
             {
@@ -191,7 +191,7 @@ private:
                     if (idSearchPeep->staff_type != _staffType)
                         continue;
 
-                    if (idSearchPeep->id == newStaffId)
+                    if (idSearchPeep->Id == newStaffId)
                     {
                         found = true;
                         break;
@@ -202,7 +202,7 @@ private:
                     break;
             }
 
-            newPeep->id = newStaffId;
+            newPeep->Id = newStaffId;
             newPeep->staff_type = _staffType;
 
             PeepSpriteType spriteType = spriteTypes[_staffType];
@@ -231,22 +231,22 @@ private:
             }
 
             // Staff uses this
-            newPeep->time_in_park = gDateMonthsElapsed;
-            newPeep->pathfind_goal.x = 0xFF;
-            newPeep->pathfind_goal.y = 0xFF;
-            newPeep->pathfind_goal.z = 0xFF;
-            newPeep->pathfind_goal.direction = INVALID_DIRECTION;
+            newPeep->TimeInPark = gDateMonthsElapsed;
+            newPeep->PathfindGoal.x = 0xFF;
+            newPeep->PathfindGoal.y = 0xFF;
+            newPeep->PathfindGoal.z = 0xFF;
+            newPeep->PathfindGoal.direction = INVALID_DIRECTION;
 
             uint8_t colour = staff_get_colour(_staffType);
             newPeep->tshirt_colour = colour;
             newPeep->trousers_colour = colour;
 
             // Staff energy determines their walking speed
-            newPeep->energy = 0x60;
-            newPeep->energy_target = 0x60;
-            newPeep->staff_mowing_timeout = 0;
+            newPeep->Energy = 0x60;
+            newPeep->EnergyTarget = 0x60;
+            newPeep->StaffMowingTimeout = 0;
 
-            newPeep->staff_id = staffIndex;
+            newPeep->StaffId = staffIndex;
 
             gStaffModes[staffIndex] = STAFF_MODE_WALK;
 

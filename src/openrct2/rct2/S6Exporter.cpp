@@ -178,7 +178,7 @@ void S6Exporter::Export()
         const rct_object_entry* entry = get_loaded_object_entry(i);
         void* entryData = get_loaded_object_chunk(i);
         // RCT2 uses (void *)-1 to mark NULL. Make sure it's written in a vanilla-compatible way.
-        if (entryData == nullptr || entryData == (void*)-1)
+        if (entryData == nullptr || entryData == reinterpret_cast<void*>(-1))
         {
             std::memset(&_s6.objects[i], 0xFF, sizeof(rct_object_entry));
         }
@@ -1046,7 +1046,7 @@ void S6Exporter::ExportSpriteVehicle(RCT2SpriteVehicle* dst, const Vehicle* src)
     dst->var_44 = src->var_44;
     dst->mass = src->mass;
     dst->update_flags = src->update_flags;
-    dst->swing_sprite = src->swing_sprite;
+    dst->SwingSprite = src->SwingSprite;
     dst->current_station = src->current_station;
     dst->current_time = src->current_time;
     dst->crash_z = src->crash_z;
@@ -1125,7 +1125,7 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
         }
         else if (gParkFlags & PARK_FLAGS_SHOW_REAL_GUEST_NAMES)
         {
-            dst->name_string_idx = get_real_name_string_id_from_id(src->id);
+            dst->name_string_idx = get_real_name_string_id_from_id(src->Id);
         }
         else
         {
@@ -1148,89 +1148,89 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
     dst->destination_x = src->destination_x;
     dst->destination_y = src->destination_y;
     dst->destination_tolerance = src->destination_tolerance;
-    dst->var_37 = src->var_37;
-    dst->energy = src->energy;
-    dst->energy_target = src->energy_target;
-    dst->happiness = src->happiness;
-    dst->happiness_target = src->happiness_target;
-    dst->nausea = src->nausea;
-    dst->nausea_target = src->nausea_target;
-    dst->hunger = src->hunger;
-    dst->thirst = src->thirst;
-    dst->toilet = src->toilet;
-    dst->mass = src->mass;
-    dst->time_to_consume = src->time_to_consume;
-    dst->intensity = static_cast<uint8_t>(src->intensity);
-    dst->nausea_tolerance = src->nausea_tolerance;
-    dst->window_invalidate_flags = src->window_invalidate_flags;
-    dst->paid_on_drink = src->paid_on_drink;
-    for (size_t i = 0; i < std::size(src->ride_types_been_on); i++)
+    dst->var_37 = src->Var37;
+    dst->energy = src->Energy;
+    dst->energy_target = src->EnergyTarget;
+    dst->happiness = src->Happiness;
+    dst->happiness_target = src->HappinessTarget;
+    dst->nausea = src->Nausea;
+    dst->nausea_target = src->NauseaTarget;
+    dst->hunger = src->Hunger;
+    dst->thirst = src->Thirst;
+    dst->toilet = src->Toilet;
+    dst->mass = src->Mass;
+    dst->time_to_consume = src->TimeToConsume;
+    dst->intensity = static_cast<uint8_t>(src->Intensity);
+    dst->nausea_tolerance = src->NauseaTolerance;
+    dst->window_invalidate_flags = src->WindowInvalidateFlags;
+    dst->paid_on_drink = src->PaidOnDrink;
+    for (size_t i = 0; i < std::size(src->RideTypesBeenOn); i++)
     {
-        dst->ride_types_been_on[i] = src->ride_types_been_on[i];
+        dst->ride_types_been_on[i] = src->RideTypesBeenOn[i];
     }
-    dst->item_extra_flags = src->item_extra_flags;
-    dst->photo2_ride_ref = src->photo2_ride_ref;
-    dst->photo3_ride_ref = src->photo3_ride_ref;
-    dst->photo4_ride_ref = src->photo4_ride_ref;
-    dst->current_ride = src->current_ride;
-    dst->current_ride_station = src->current_ride_station;
-    dst->current_train = src->current_train;
-    dst->time_to_sitdown = src->time_to_sitdown;
-    dst->special_sprite = src->special_sprite;
-    dst->action_sprite_type = static_cast<uint8_t>(src->action_sprite_type);
-    dst->next_action_sprite_type = static_cast<uint8_t>(src->next_action_sprite_type);
-    dst->action_sprite_image_offset = src->action_sprite_image_offset;
-    dst->action = static_cast<uint8_t>(src->action);
-    dst->action_frame = src->action_frame;
-    dst->step_progress = src->step_progress;
-    dst->next_in_queue = src->next_in_queue;
-    dst->direction = src->direction;
-    dst->interaction_ride_index = src->interaction_ride_index;
-    dst->time_in_queue = src->time_in_queue;
-    for (size_t i = 0; i < std::size(src->rides_been_on); i++)
+    dst->item_extra_flags = src->ItemExtraFlags;
+    dst->photo2_ride_ref = src->Photo2RideRef;
+    dst->photo3_ride_ref = src->Photo3RideRef;
+    dst->photo4_ride_ref = src->Photo4RideRef;
+    dst->current_ride = src->CurrentRide;
+    dst->current_ride_station = src->CurrentRideStation;
+    dst->current_train = src->CurrentTrain;
+    dst->time_to_sitdown = src->TimeToSitdown;
+    dst->special_sprite = src->SpecialSprite;
+    dst->action_sprite_type = static_cast<uint8_t>(src->ActionSpriteType);
+    dst->next_action_sprite_type = static_cast<uint8_t>(src->NextActionSpriteType);
+    dst->action_sprite_image_offset = src->ActionSpriteImageOffset;
+    dst->action = static_cast<uint8_t>(src->Action);
+    dst->action_frame = src->ActionFrame;
+    dst->step_progress = src->StepProgress;
+    dst->next_in_queue = src->GuestNextInQueue;
+    dst->direction = src->PeepDirection;
+    dst->interaction_ride_index = src->InteractionRideIndex;
+    dst->time_in_queue = src->TimeInQueue;
+    for (size_t i = 0; i < std::size(src->RidesBeenOn); i++)
     {
-        dst->rides_been_on[i] = src->rides_been_on[i];
+        dst->rides_been_on[i] = src->RidesBeenOn[i];
     }
-    dst->id = src->id;
-    dst->cash_in_pocket = src->cash_in_pocket;
-    dst->cash_spent = src->cash_spent;
-    dst->time_in_park = src->time_in_park;
-    dst->rejoin_queue_timeout = src->rejoin_queue_timeout;
-    dst->previous_ride = src->previous_ride;
-    dst->previous_ride_time_out = src->previous_ride_time_out;
-    for (size_t i = 0; i < std::size(src->thoughts); i++)
+    dst->id = src->Id;
+    dst->cash_in_pocket = src->CashInPocket;
+    dst->cash_spent = src->CashSpent;
+    dst->time_in_park = src->TimeInPark;
+    dst->rejoin_queue_timeout = src->RejoinQueueTimeout;
+    dst->previous_ride = src->PreviousRide;
+    dst->previous_ride_time_out = src->PreviousRideTimeOut;
+    for (size_t i = 0; i < std::size(src->Thoughts); i++)
     {
-        auto srcThought = &src->thoughts[i];
+        auto srcThought = &src->Thoughts[i];
         auto dstThought = &dst->thoughts[i];
         dstThought->type = static_cast<uint8_t>(srcThought->type);
         dstThought->item = srcThought->item;
         dstThought->freshness = srcThought->freshness;
         dstThought->fresh_timeout = srcThought->fresh_timeout;
     }
-    dst->path_check_optimisation = src->path_check_optimisation;
-    dst->guest_heading_to_ride_id = src->guest_heading_to_ride_id;
-    dst->peep_is_lost_countdown = src->peep_is_lost_countdown;
-    dst->photo1_ride_ref = src->photo1_ride_ref;
-    dst->peep_flags = src->peep_flags;
-    dst->pathfind_goal = src->pathfind_goal;
-    for (size_t i = 0; i < std::size(src->pathfind_history); i++)
+    dst->path_check_optimisation = src->PathCheckOptimisation;
+    dst->guest_heading_to_ride_id = src->GuestHeadingToRideId;
+    dst->peep_is_lost_countdown = src->GuestIsLostCountdown;
+    dst->photo1_ride_ref = src->Photo1RideRef;
+    dst->peep_flags = src->PeepFlags;
+    dst->pathfind_goal = src->PathfindGoal;
+    for (size_t i = 0; i < std::size(src->PathfindHistory); i++)
     {
-        dst->pathfind_history[i] = src->pathfind_history[i];
+        dst->pathfind_history[i] = src->PathfindHistory[i];
     }
-    dst->no_action_frame_num = src->no_action_frame_num;
-    dst->litter_count = src->litter_count;
-    dst->time_on_ride = src->time_on_ride;
-    dst->disgusting_count = src->disgusting_count;
-    dst->paid_to_enter = src->paid_to_enter;
-    dst->paid_on_rides = src->paid_on_rides;
-    dst->paid_on_food = src->paid_on_food;
-    dst->paid_on_souvenirs = src->paid_on_souvenirs;
-    dst->no_of_food = src->no_of_food;
-    dst->no_of_drinks = src->no_of_drinks;
-    dst->no_of_souvenirs = src->no_of_souvenirs;
-    dst->vandalism_seen = src->vandalism_seen;
-    dst->voucher_type = src->voucher_type;
-    dst->voucher_arguments = src->voucher_arguments;
+    dst->no_action_frame_num = src->WalkingFrameNum;
+    dst->litter_count = src->LitterCount;
+    dst->time_on_ride = src->GuestTimeOnRide;
+    dst->disgusting_count = src->DisgustingCount;
+    dst->paid_to_enter = src->PaidToEnter;
+    dst->paid_on_rides = src->PaidOnRides;
+    dst->paid_on_food = src->PaidOnFood;
+    dst->paid_on_souvenirs = src->PaidOnSouvenirs;
+    dst->no_of_food = src->AmountOfFood;
+    dst->no_of_drinks = src->AmountOfDrinks;
+    dst->no_of_souvenirs = src->AmountOfSouvenirs;
+    dst->vandalism_seen = src->VandalismSeen;
+    dst->voucher_type = src->VoucherType;
+    dst->voucher_arguments = src->VoucherArguments;
     dst->surroundings_thought_timeout = src->SurroundingsThoughtTimeout;
     dst->angriness = src->Angriness;
     dst->time_lost = src->TimeLost;
@@ -1413,7 +1413,7 @@ void S6Exporter::ExportTileElements()
     {
         auto src = &gTileElements[index];
         auto dst = &_s6.tile_elements[index];
-        if (src->base_height == 0xFF)
+        if (src->base_height == MAX_ELEMENT_HEIGHT)
         {
             std::memcpy(dst, src, sizeof(*dst));
         }

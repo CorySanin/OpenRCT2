@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -251,7 +251,7 @@ struct rct2_ride
     uint8_t pad_16F[0x7];              // 0x16F
     uint8_t spiral_slide_progress;     // 0x176
     uint8_t pad_177[0x9];              // 0x177
-    int16_t build_date;                // 0x180
+    uint16_t build_date;               // 0x180
     money16 upkeep_cost;               // 0x182
     uint16_t race_winner;              // 0x184
     uint8_t pad_186[0x02];             // 0x186
@@ -483,12 +483,12 @@ struct RCT2SpriteVehicle : RCT12SpriteBase
     uint16_t var_44;
     uint16_t mass;         // 0x46
     uint16_t update_flags; // 0x48
-    uint8_t swing_sprite;
+    uint8_t SwingSprite;
     uint8_t current_station; // 0x4B
     union
     {
-        int16_t swinging_car_var_0; // 0x4C
-        int16_t current_time;       // 0x4C
+        int16_t SwingPosition; // 0x4C
+        int16_t current_time;  // 0x4C
         struct
         {
             int8_t ferris_wheel_var_0; // 0x4C
@@ -497,7 +497,7 @@ struct RCT2SpriteVehicle : RCT12SpriteBase
     };
     union
     {
-        int16_t var_4E;
+        int16_t SwingSpeed;
         int16_t crash_z; // 0x4E
     };
     uint8_t status;                  // 0x50

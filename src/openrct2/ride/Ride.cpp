@@ -248,6 +248,42 @@ int32_t ride_get_count()
     return static_cast<int32_t>(GetRideManager().size());
 }
 
+size_t Ride::GetNumPrices() const
+{
+    size_t result = 0;
+    if (type == RIDE_TYPE_CASH_MACHINE || type == RIDE_TYPE_FIRST_AID)
+    {
+        result = 0;
+    }
+    else if (type == RIDE_TYPE_TOILETS)
+    {
+        result = 1;
+    }
+    else
+    {
+        result = 1;
+
+        auto rideEntry = GetRideEntry();
+        if (rideEntry != nullptr)
+        {
+            if (lifecycle_flags & RIDE_LIFECYCLE_ON_RIDE_PHOTO)
+            {
+                result++;
+            }
+            else if (rideEntry->shop_item[1] != SHOP_ITEM_NONE)
+            {
+                result++;
+            }
+        }
+    }
+    return result;
+}
+
+int32_t Ride::GetAge() const
+{
+    return static_cast<int32_t>(gDateMonthsElapsed) - build_date;
+}
+
 int32_t Ride::GetTotalQueueLength() const
 {
     int32_t i, queueLength = 0;
@@ -273,7 +309,7 @@ Peep* Ride::GetQueueHeadGuest(StationIndex stationIndex) const
     uint16_t spriteIndex = stations[stationIndex].LastPeepInQueue;
     while ((peep = try_get_guest(spriteIndex)) != nullptr)
     {
-        spriteIndex = peep->next_in_queue;
+        spriteIndex = peep->GuestNextInQueue;
         result = peep;
     }
     return result;
@@ -286,7 +322,7 @@ void Ride::UpdateQueueLength(StationIndex stationIndex)
     uint16_t spriteIndex = stations[stationIndex].LastPeepInQueue;
     while ((peep = try_get_guest(spriteIndex)) != nullptr)
     {
-        spriteIndex = peep->next_in_queue;
+        spriteIndex = peep->GuestNextInQueue;
         count++;
     }
     stations[stationIndex].QueueLength = count;
@@ -297,17 +333,17 @@ void Ride::QueueInsertGuestAtFront(StationIndex stationIndex, Peep* peep)
     assert(stationIndex < MAX_STATIONS);
     assert(peep != nullptr);
 
-    peep->next_in_queue = SPRITE_INDEX_NULL;
-    Peep* queueHeadGuest = GetQueueHeadGuest(peep->current_ride_station);
+    peep->GuestNextInQueue = SPRITE_INDEX_NULL;
+    Peep* queueHeadGuest = GetQueueHeadGuest(peep->CurrentRideStation);
     if (queueHeadGuest == nullptr)
     {
-        stations[peep->current_ride_station].LastPeepInQueue = peep->sprite_index;
+        stations[peep->CurrentRideStation].LastPeepInQueue = peep->sprite_index;
     }
     else
     {
-        queueHeadGuest->next_in_queue = peep->sprite_index;
+        queueHeadGuest->GuestNextInQueue = peep->sprite_index;
     }
-    UpdateQueueLength(peep->current_ride_station);
+    UpdateQueueLength(peep->CurrentRideStation);
 }
 
 /**
@@ -796,9 +832,9 @@ size_t Ride::FormatStatusTo(void* argsV) const
         && race_winner != SPRITE_INDEX_NULL)
     {
         auto sprite = get_sprite(race_winner);
-        if (sprite != nullptr && sprite->IsPeep())
+        if (sprite != nullptr && sprite->generic.Is<Peep>())
         {
-            auto peep = sprite->AsPeep();
+            auto peep = sprite->generic.As<Peep>();
             ft.Add<rct_string_id>(STR_RACE_WON_BY);
             peep->FormatNameTo(ft);
         }
@@ -891,7 +927,9 @@ void ride_init_all()
 void reset_all_ride_build_dates()
 {
     for (auto& ride : GetRideManager())
-        ride.build_date -= gDateMonthsElapsed;
+    {
+        ride.build_date = gDateMonthsElapsed;
+    }
 }
 
 #pragma endregion
@@ -966,7 +1004,7 @@ static void ride_remove_cable_lift(Ride* ride)
         do
         {
             Vehicle* vehicle = GET_VEHICLE(spriteIndex);
-            invalidate_sprite_2(vehicle);
+            vehicle->Invalidate();
             sprite_remove(vehicle);
             spriteIndex = vehicle->next_vehicle_on_train;
         } while (spriteIndex != SPRITE_INDEX_NULL);
@@ -990,7 +1028,7 @@ static void ride_remove_vehicles(Ride* ride)
             while (spriteIndex != SPRITE_INDEX_NULL)
             {
                 Vehicle* vehicle = GET_VEHICLE(spriteIndex);
-                invalidate_sprite_2(vehicle);
+                vehicle->Invalidate();
                 sprite_remove(vehicle);
                 spriteIndex = vehicle->next_vehicle_on_train;
             }
@@ -1068,7 +1106,7 @@ void ride_remove_peeps(Ride* ride)
         if (peep->state == PEEP_STATE_QUEUING_FRONT || peep->state == PEEP_STATE_ENTERING_RIDE
             || peep->state == PEEP_STATE_LEAVING_RIDE || peep->state == PEEP_STATE_ON_RIDE)
         {
-            if (peep->current_ride != ride->id)
+            if (peep->CurrentRide != ride->id)
                 continue;
 
             peep_decrement_num_riders(peep);
@@ -1092,9 +1130,9 @@ void ride_remove_peeps(Ride* ride)
             peep->state = PEEP_STATE_FALLING;
             peep->SwitchToSpecialSprite(0);
 
-            peep->happiness = std::min(peep->happiness, peep->happiness_target) / 2;
-            peep->happiness_target = peep->happiness;
-            peep->window_invalidate_flags |= PEEP_INVALIDATE_PEEP_STATS;
+            peep->Happiness = std::min(peep->Happiness, peep->HappinessTarget) / 2;
+            peep->HappinessTarget = peep->Happiness;
+            peep->WindowInvalidateFlags |= PEEP_INVALIDATE_PEEP_STATS;
         }
     }
 
@@ -2214,8 +2252,7 @@ static void ride_inspection_update(Ride* ride)
 
 static int32_t get_age_penalty(Ride* ride)
 {
-    int32_t years;
-    years = date_get_year(gDateMonthsElapsed - ride->build_date);
+    auto years = date_get_year(ride->GetAge());
     switch (years)
     {
         case 0:
@@ -2308,7 +2345,7 @@ static void ride_breakdown_update(Ride* ride)
  */
 static int32_t ride_get_new_breakdown_problem(Ride* ride)
 {
-    int32_t availableBreakdownProblems, monthsOld, totalProbability, randomProbability, problemBits, breakdownProblem;
+    int32_t availableBreakdownProblems, totalProbability, randomProbability, problemBits, breakdownProblem;
 
     // Brake failure is more likely when it's raining
     _breakdownProblemProbabilities[BREAKDOWN_BRAKES_FAILURE] = climate_is_raining() ? 20 : 3;
@@ -2356,7 +2393,7 @@ static int32_t ride_get_new_breakdown_problem(Ride* ride)
     if (gCheatsDisableBrakesFailure)
         return -1;
 
-    monthsOld = gDateMonthsElapsed - ride->build_date;
+    auto monthsOld = ride->GetAge();
     if (monthsOld < 16 || ride->reliability_percentage > 50)
         return -1;
 
@@ -2450,7 +2487,7 @@ void ride_prepare_breakdown(Ride* ride, int32_t breakdownReason)
                         }
                     }
                     if (vehicle != nullptr)
-                        vehicle->update_flags |= VEHICLE_UPDATE_FLAG_BROKEN_CAR;
+                        vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR);
                 }
             }
             break;
@@ -2464,7 +2501,7 @@ void ride_prepare_breakdown(Ride* ride, int32_t breakdownReason)
             if (vehicleSpriteIdx != SPRITE_INDEX_NULL)
             {
                 vehicle = GET_VEHICLE(vehicleSpriteIdx);
-                vehicle->update_flags |= VEHICLE_UPDATE_FLAG_BROKEN_TRAIN;
+                vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN);
             }
             break;
         case BREAKDOWN_BRAKES_FAILURE:
@@ -2567,7 +2604,7 @@ static void ride_mechanic_status_update(Ride* ride, int32_t mechanicStatus)
             auto mechanic = ride_get_mechanic(ride);
             if (mechanic == nullptr
                 || (mechanic->state != PEEP_STATE_HEADING_TO_INSPECTION && mechanic->state != PEEP_STATE_ANSWERING)
-                || mechanic->current_ride != ride->id)
+                || mechanic->CurrentRide != ride->id)
             {
                 ride->mechanic_status = RIDE_MECHANIC_STATUS_CALLING;
                 ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAINTENANCE;
@@ -2602,8 +2639,8 @@ static void ride_call_mechanic(Ride* ride, Peep* mechanic, int32_t forInspection
     ride->mechanic_status = RIDE_MECHANIC_STATUS_HEADING;
     ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_MAINTENANCE;
     ride->mechanic = mechanic->sprite_index;
-    mechanic->current_ride = ride->id;
-    mechanic->current_ride_station = ride->inspection_station;
+    mechanic->CurrentRide = ride->id;
+    mechanic->CurrentRideStation = ride->inspection_station;
 }
 
 /**
@@ -2669,12 +2706,12 @@ Peep* find_closest_mechanic(int32_t x, int32_t y, int32_t forInspection)
             else if (peep->state != PEEP_STATE_PATROLLING)
                 continue;
 
-            if (!(peep->staff_orders & STAFF_ORDERS_FIX_RIDES))
+            if (!(peep->StaffOrders & STAFF_ORDERS_FIX_RIDES))
                 continue;
         }
         else
         {
-            if (peep->state != PEEP_STATE_PATROLLING || !(peep->staff_orders & STAFF_ORDERS_INSPECT_RIDES))
+            if (peep->state != PEEP_STATE_PATROLLING || !(peep->StaffOrders & STAFF_ORDERS_INSPECT_RIDES))
                 continue;
         }
 
@@ -2851,7 +2888,7 @@ static void ride_measurement_update(Ride& ride, RideMeasurement& measurement)
         return;
     }
 
-    uint8_t trackType = (vehicle->track_type >> 2) & 0xFF;
+    uint8_t trackType = (vehicle->GetTrackType()) & 0xFF;
     if (trackType == TRACK_ELEM_BLOCK_BRAKES || trackType == TRACK_ELEM_CABLE_LIFT_HILL
         || trackType == TRACK_ELEM_25_DEG_UP_TO_FLAT || trackType == TRACK_ELEM_60_DEG_UP_TO_FLAT
         || trackType == TRACK_ELEM_DIAG_25_DEG_UP_TO_FLAT || trackType == TRACK_ELEM_DIAG_60_DEG_UP_TO_FLAT)
@@ -3377,7 +3414,7 @@ void ride_set_map_tooltip(TileElement* tileElement)
     }
     else if (tileElement->GetType() == TILE_ELEMENT_TYPE_TRACK)
     {
-        if (track_element_is_station(tileElement))
+        if (tileElement->AsTrack()->IsStation())
         {
             ride_station_set_map_tooltip(tileElement);
         }
@@ -4330,9 +4367,9 @@ static Vehicle* vehicle_create_car(
     vehicle->powered_acceleration = vehicleEntry->powered_acceleration;
     vehicle->velocity = 0;
     vehicle->acceleration = 0;
-    vehicle->swing_sprite = 0;
-    vehicle->swinging_car_var_0 = 0;
-    vehicle->var_4E = 0;
+    vehicle->SwingSprite = 0;
+    vehicle->SwingPosition = 0;
+    vehicle->SwingSpeed = 0;
     vehicle->restraints_position = 0;
     vehicle->spin_sprite = 0;
     vehicle->spin_speed = 0;
@@ -4467,7 +4504,7 @@ static Vehicle* vehicle_create_car(
         {
             if (tileElement->AsTrack()->IsInverted())
             {
-                vehicle->update_flags |= VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES;
+                vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES);
             }
         }
         vehicle->SetState(VEHICLE_STATUS_MOVING_TO_END_OF_STATION);
@@ -4567,7 +4604,7 @@ static void vehicle_unset_update_flag_b1(Vehicle* head)
     Vehicle* vehicle = head;
     while (true)
     {
-        vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_1;
+        vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_1);
         uint16_t spriteIndex = vehicle->next_vehicle_on_train;
         if (spriteIndex == SPRITE_INDEX_NULL)
         {
@@ -4757,7 +4794,7 @@ void loc_6DDF9C(Ride* ride, TileElement* tileElement)
             {
                 car->velocity = 0;
                 car->acceleration = 0;
-                car->swing_sprite = 0;
+                car->SwingSprite = 0;
                 car->remaining_distance += 13962;
 
                 uint16_t spriteIndex = car->next_vehicle_on_train;
@@ -4773,9 +4810,9 @@ void loc_6DDF9C(Ride* ride, TileElement* tileElement)
         car = train;
         while (true)
         {
-            car->update_flags &= ~VEHICLE_UPDATE_FLAG_1;
+            car->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_1);
             car->SetState(VEHICLE_STATUS_TRAVELLING, car->sub_state);
-            if ((car->track_type >> 2) == TRACK_ELEM_END_STATION)
+            if ((car->GetTrackType()) == TRACK_ELEM_END_STATION)
             {
                 car->SetState(VEHICLE_STATUS_MOVING_TO_END_OF_STATION, car->sub_state);
             }
@@ -4965,7 +5002,7 @@ static bool ride_create_cable_lift(ride_id_t rideIndex, bool isApplying)
     tail->next_vehicle_on_ride = head->sprite_index;
 
     ride->lifecycle_flags |= RIDE_LIFECYCLE_CABLE_LIFT;
-    cable_lift_update_track_motion(head);
+    head->CableLiftUpdateTrackMotion();
     return true;
 }
 
@@ -5454,7 +5491,7 @@ void Ride::StopGuestsQueuing()
     {
         if (peep->state != PEEP_STATE_QUEUING)
             continue;
-        if (peep->current_ride != id)
+        if (peep->CurrentRide != id)
             continue;
 
         peep->RemoveFromQueue();
@@ -6185,12 +6222,9 @@ CoordsXYZD ride_get_entrance_or_exit_position_from_screen_position(const ScreenC
                 if (tileElement->AsTrack()->GetStationIndex() != gRideEntranceExitPlaceStationIndex)
                     continue;
 
-                switch (tileElement->AsTrack()->GetTrackType())
+                if (tileElement->AsTrack()->IsStation())
                 {
-                    case TRACK_ELEM_END_STATION:
-                    case TRACK_ELEM_BEGIN_STATION:
-                    case TRACK_ELEM_MIDDLE_STATION:
-                        goToNextTile = true;
+                    goToNextTile = true;
                 }
             } while (!goToNextTile && !(tileElement++)->IsLastForTile());
 
@@ -6321,7 +6355,7 @@ void invalidate_test_results(Ride* ride)
             if (spriteIndex != SPRITE_INDEX_NULL)
             {
                 Vehicle* vehicle = GET_VEHICLE(spriteIndex);
-                vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_TESTING;
+                vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING);
             }
         }
     }
@@ -6350,9 +6384,9 @@ void ride_fix_breakdown(Ride* ride, int32_t reliabilityIncreaseFactor)
             while (spriteIndex != SPRITE_INDEX_NULL)
             {
                 Vehicle* vehicle = GET_VEHICLE(spriteIndex);
-                vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_ZERO_VELOCITY;
-                vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_BROKEN_CAR;
-                vehicle->update_flags &= ~VEHICLE_UPDATE_FLAG_BROKEN_TRAIN;
+                vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_ZERO_VELOCITY);
+                vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR);
+                vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN);
                 spriteIndex = vehicle->next_vehicle_on_train;
             }
         }
@@ -6401,7 +6435,7 @@ void ride_update_vehicle_colours(Ride* ride)
             vehicle->colours.body_colour = colours.Body;
             vehicle->colours.trim_colour = colours.Trim;
             vehicle->colours_extended = colours.Ternary;
-            invalidate_sprite_2(vehicle);
+            vehicle->Invalidate();
             spriteIndex = vehicle->next_vehicle_on_train;
             carIndex++;
         }
@@ -7191,7 +7225,7 @@ TileElement* get_station_platform(int32_t x, int32_t y, int32_t z, int32_t z_tol
             if (tileElement->GetType() != TILE_ELEMENT_TYPE_TRACK)
                 continue;
             /* Check if tileElement is a station platform. */
-            if (!track_element_is_station(tileElement))
+            if (!tileElement->AsTrack()->IsStation())
                 continue;
 
             if (z - z_tolerance > tileElement->base_height || z + z_tolerance < tileElement->base_height)

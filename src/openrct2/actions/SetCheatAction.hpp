@@ -104,6 +104,8 @@ public:
                 break;
             case CheatType::DisableClearanceChecks:
                 gCheatsDisableClearanceChecks = _param1 != 0;
+                // Required to update the clearance checks overlay on the Cheats button.
+                window_invalidate_by_class(WC_TOP_TOOLBAR);
                 break;
             case CheatType::DisableSupportLimits:
                 gCheatsDisableSupportLimits = _param1 != 0;
@@ -582,37 +584,37 @@ private:
             switch (parameter)
             {
                 case GUEST_PARAMETER_HAPPINESS:
-                    peep->happiness = value;
-                    peep->happiness_target = value;
+                    peep->Happiness = value;
+                    peep->HappinessTarget = value;
                     // Clear the 'red-faced with anger' status if we're making the guest happy
                     if (value > 0)
                     {
-                        peep->peep_flags &= ~PEEP_FLAGS_ANGRY;
+                        peep->PeepFlags &= ~PEEP_FLAGS_ANGRY;
                         peep->Angriness = 0;
                     }
                     break;
                 case GUEST_PARAMETER_ENERGY:
-                    peep->energy = value;
-                    peep->energy_target = value;
+                    peep->Energy = value;
+                    peep->EnergyTarget = value;
                     break;
                 case GUEST_PARAMETER_HUNGER:
-                    peep->hunger = value;
+                    peep->Hunger = value;
                     break;
                 case GUEST_PARAMETER_THIRST:
-                    peep->thirst = value;
+                    peep->Thirst = value;
                     break;
                 case GUEST_PARAMETER_NAUSEA:
-                    peep->nausea = value;
-                    peep->nausea_target = value;
+                    peep->Nausea = value;
+                    peep->NauseaTarget = value;
                     break;
                 case GUEST_PARAMETER_NAUSEA_TOLERANCE:
-                    peep->nausea_tolerance = value;
+                    peep->NauseaTolerance = value;
                     break;
                 case GUEST_PARAMETER_TOILET:
-                    peep->toilet = value;
+                    peep->Toilet = value;
                     break;
                 case GUEST_PARAMETER_PREFERRED_RIDE_INTENSITY:
-                    peep->intensity = IntensityRange(value, 15);
+                    peep->Intensity = IntensityRange(value, 15);
                     break;
             }
             peep->UpdateSpriteType();
@@ -630,7 +632,7 @@ private:
             switch (object)
             {
                 case OBJECT_MONEY:
-                    peep->cash_in_pocket = MONEY(1000, 00);
+                    peep->CashInPocket = MONEY(1000, 00);
                     break;
                 case OBJECT_PARK_MAP:
                     peep->ItemStandardFlags |= PEEP_ITEM_MAP;
@@ -678,7 +680,7 @@ private:
                         auto peep = GET_PEEP(vehicle->peep[i + offset]);
                         if (peep != nullptr)
                         {
-                            vehicle->mass -= peep->mass;
+                            vehicle->mass -= peep->Mass;
                         }
                     }
 
@@ -720,7 +722,7 @@ private:
         {
             if (scenario_rand_max(6) == 0)
             {
-                peep->peep_flags |= PEEP_FLAGS_EXPLODE;
+                peep->PeepFlags |= PEEP_FLAGS_EXPLODE;
             }
         }
     }
@@ -732,8 +734,8 @@ private:
 
         FOR_ALL_STAFF (spriteIndex, peep)
         {
-            peep->energy = value;
-            peep->energy_target = value;
+            peep->Energy = value;
+            peep->EnergyTarget = value;
         }
     }
 

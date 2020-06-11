@@ -384,11 +384,13 @@ void ScriptEngine::Initialise()
     ScPlayer::Register(ctx);
     ScPlayerGroup::Register(ctx);
     ScRide::Register(ctx);
+    ScRideStation::Register(ctx);
     ScRideObject::Register(ctx);
     ScRideObjectVehicle::Register(ctx);
     ScTile::Register(ctx);
     ScTileElement::Register(ctx);
     ScEntity::Register(ctx);
+    ScVehicle::Register(ctx);
     ScPeep::Register(ctx);
     ScGuest::Register(ctx);
     ScStaff::Register(ctx);
@@ -1094,7 +1096,8 @@ void ScriptEngine::LoadSharedStorage()
         if (File::Exists(path))
         {
             auto data = File::ReadAllBytes(path);
-            auto result = DuktapeTryParseJson(_context, std::string_view((const char*)data.data(), data.size()));
+            auto result = DuktapeTryParseJson(
+                _context, std::string_view(reinterpret_cast<const char*>(data.data()), data.size()));
             if (result)
             {
                 _sharedStorage = std::move(*result);

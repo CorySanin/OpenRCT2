@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -684,10 +684,7 @@ static void ride_ratings_score_close_proximity(TileElement* inputTileElement)
                 }
                 else
                 {
-                    trackType = tileElement->AsTrack()->GetTrackType();
-                    bool isStation
-                        = (trackType == TRACK_ELEM_END_STATION || trackType == TRACK_ELEM_MIDDLE_STATION
-                           || trackType == TRACK_ELEM_BEGIN_STATION);
+                    bool isStation = tileElement->AsTrack()->IsStation();
                     if (tileElement->clearance_height == inputTileElement->base_height)
                     {
                         proximity_score_increment(PROXIMITY_OWN_TRACK_TOUCH_ABOVE);
@@ -846,7 +843,7 @@ static void ride_ratings_calculate_value(Ride* ride)
     int32_t monthsOld = 0;
     if (!gCheatsDisableRideValueAging)
     {
-        monthsOld = gDateMonthsElapsed - ride->build_date;
+        monthsOld = ride->GetAge();
     }
 
     const row* ageTable = ageTableNew;

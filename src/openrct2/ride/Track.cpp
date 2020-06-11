@@ -611,7 +611,7 @@ static TileElement* find_station_element(const CoordsXYZD& loc, ride_id_t rideIn
             continue;
         if (tileElement->AsTrack()->GetRideIndex() != rideIndex)
             continue;
-        if (!track_element_is_station(tileElement))
+        if (!tileElement->AsTrack()->IsStation())
             continue;
 
         return tileElement;
@@ -1158,14 +1158,19 @@ int32_t track_get_actual_bank_3(Vehicle* vehicle, TileElement* tileElement)
     if (ride == nullptr)
         return bankStart;
 
-    bool isInverted = ((vehicle->update_flags & VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES) > 0)
+    bool isInverted = (vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES) > 0)
         ^ tileElement->AsTrack()->IsInverted();
     return track_get_actual_bank_2(ride->type, isInverted, bankStart);
 }
 
-bool track_element_is_station(TileElement* trackElement)
+bool TrackElement::IsStation() const
 {
-    switch (trackElement->AsTrack()->GetTrackType())
+    return track_type_is_station(GetTrackType());
+}
+
+bool track_type_is_station(track_type_t trackType)
+{
+    switch (trackType)
     {
         case TRACK_ELEM_END_STATION:
         case TRACK_ELEM_BEGIN_STATION:

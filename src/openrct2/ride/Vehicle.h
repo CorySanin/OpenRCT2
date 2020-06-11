@@ -221,11 +221,11 @@ struct Vehicle : SpriteBase
     uint16_t var_44;
     uint16_t mass;
     uint16_t update_flags;
-    uint8_t swing_sprite;
+    uint8_t SwingSprite;
     StationIndex current_station;
     union
     {
-        int16_t swinging_car_var_0;
+        int16_t SwingPosition;
         int16_t current_time;
         struct
         {
@@ -235,7 +235,7 @@ struct Vehicle : SpriteBase
     };
     union
     {
-        int16_t var_4E;
+        int16_t SwingSpeed;
         int16_t crash_z;
     };
     VEHICLE_STATUS status;
@@ -313,6 +313,7 @@ struct Vehicle : SpriteBase
     void UpdateSoundParams(std::vector<rct_vehicle_sound_params>& vehicleSoundParamsList) const;
     bool DodgemsCarWouldCollideAt(const CoordsXY& coords, uint16_t* spriteId) const;
     int32_t UpdateTrackMotion(int32_t* outStation);
+    int32_t CableLiftUpdateTrackMotion();
     GForces GetGForces() const;
     void SetMapToolbar() const;
     int32_t IsUsedInPairs() const;
@@ -320,11 +321,31 @@ struct Vehicle : SpriteBase
     Vehicle* TrainHead() const;
     Vehicle* TrainTail() const;
 
+    uint16_t GetTrackType() const
+    {
+        return track_type >> 2;
+    }
+
+    uint16_t UpdateFlag(uint32_t flag) const
+    {
+        return update_flags & flag;
+    }
+    void ClearUpdateFlag(uint32_t flag)
+    {
+        update_flags &= ~flag;
+    }
+    void SetUpdateFlag(uint32_t flag)
+    {
+        update_flags |= flag;
+    }
+
 private:
     bool SoundCanPlay() const;
     uint16_t GetSoundPriority() const;
     rct_vehicle_sound_params CreateSoundParam(uint16_t priority) const;
     void CableLiftUpdate();
+    bool CableLiftUpdateTrackMotionForwards();
+    bool CableLiftUpdateTrackMotionBackwards();
     void CableLiftUpdateMovingToEndOfStation();
     void CableLiftUpdateWaitingToDepart();
     void CableLiftUpdateDeparting();
@@ -370,6 +391,8 @@ private:
     bool CurrentTowerElementIsTop();
     bool UpdateTrackMotionForwards(rct_ride_entry_vehicle* vehicleEntry, Ride* curRide, rct_ride_entry* rideEntry);
     bool UpdateTrackMotionBackwards(rct_ride_entry_vehicle* vehicleEntry, Ride* curRide, rct_ride_entry* rideEntry);
+    int32_t UpdateTrackMotionPoweredRideAcceleration(
+        rct_ride_entry_vehicle* vehicleEntry, uint32_t totalMass, const int32_t curAcceleration);
     int32_t NumPeepsUntilTrainTail() const;
     void InvalidateWindow();
     void TestReset();
@@ -381,8 +404,13 @@ private:
     void UpdateHandleWaterSplash() const;
     void Claxon() const;
     void UpdateTrackMotionUpStopCheck() const;
+    void ApplyNonStopBlockBrake();
+    void ApplyStopBlockBrake();
     void CheckAndApplyBlockSectionStopSite();
     void UpdateVelocity();
+    void UpdateSpinningCar();
+    void UpdateSwingingCar();
+    int32_t GetSwingAmount() const;
     bool OpenRestraints();
     bool CloseRestraints();
     void CrashOnWater();
@@ -391,6 +419,11 @@ private:
     void KillAllPassengersInTrain();
     void KillPassengers(Ride* curRide);
     void TrainReadyToDepart(uint8_t num_peeps_on_train, uint8_t num_used_seats);
+    int32_t UpdateTrackMotionMiniGolf(int32_t* outStation);
+    void UpdateTrackMotionMiniGolfVehicle(
+        Ride* curRide, rct_ride_entry* rideEntry, rct_ride_entry_vehicle* vehicleEntry, registers& regs);
+    bool UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* curRide, rct_ride_entry* rideEntry);
+    bool UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* curRide, uint16_t* progress);
 };
 
 struct train_ref

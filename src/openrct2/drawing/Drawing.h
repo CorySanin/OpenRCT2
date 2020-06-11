@@ -14,6 +14,7 @@
 #include "../interface/Colour.h"
 #include "../interface/ZoomLevel.hpp"
 
+#include <optional>
 #include <vector>
 struct ScreenCoordsXY;
 
@@ -27,6 +28,47 @@ namespace OpenRCT2::Drawing
 {
     interface IDrawingEngine;
 }
+
+struct PaletteBGRA
+{
+    uint8_t Blue{};
+    uint8_t Green{};
+    uint8_t Red{};
+    uint8_t Alpha{};
+};
+
+constexpr const auto PALETTE_SIZE = 256;
+
+struct GamePalette
+{
+    PaletteBGRA Colour[PALETTE_SIZE]{};
+
+    PaletteBGRA& operator[](uint16_t idx)
+    {
+        assert(idx < PALETTE_SIZE);
+        if (idx >= PALETTE_SIZE)
+        {
+            static PaletteBGRA dummy;
+            return dummy;
+        }
+
+        return Colour[idx];
+    }
+
+    const PaletteBGRA operator[](uint16_t idx) const
+    {
+        assert(idx < PALETTE_SIZE);
+        if (idx >= PALETTE_SIZE)
+            return {};
+
+        return Colour[idx];
+    }
+
+    explicit operator uint8_t*()
+    {
+        return reinterpret_cast<uint8_t*>(Colour);
+    }
+};
 
 struct rct_g1_element
 {
@@ -99,6 +141,28 @@ enum : uint32_t
     // REMAP_2_PLUS + REMAP = REMAP 2
     // REMAP_2_PLUS = REMAP 3
 };
+
+using DrawBlendOp = uint8_t;
+
+constexpr DrawBlendOp BLEND_NONE = 0;
+
+/**
+ * Only supported by BITMAP. RLE images always encode transparency via the encoding.
+ * Pixel value of 0 represents transparent.
+ */
+constexpr DrawBlendOp BLEND_TRANSPARENT = 1 << 0;
+
+/**
+ * Whether to use the pixel value from the source image.
+ * This is usually only unset for glass images where there the src is only a transparency mask.
+ */
+constexpr DrawBlendOp BLEND_SRC = 1 << 1;
+
+/**
+ * Whether to use the pixel value of the destination image for blending.
+ * This is used for any image that filters the target image, e.g. glass or water.
+ */
+constexpr DrawBlendOp BLEND_DST = 2 << 2;
 
 enum
 {
@@ -225,24 +289,6 @@ struct translucent_window_palette
     FILTER_PALETTE_ID base;
     FILTER_PALETTE_ID highlight;
     FILTER_PALETTE_ID shadow;
-};
-
-#pragma pack(push, 1)
-
-struct rct_palette_entry
-{
-    uint8_t blue;
-    uint8_t green;
-    uint8_t red;
-    uint8_t alpha;
-};
-assert_struct_size(rct_palette_entry, 4);
-
-#pragma pack(pop)
-
-struct rct_palette
-{
-    rct_palette_entry entries[256];
 };
 
 struct rct_size16
@@ -426,6 +472,76 @@ public:
     }
 };
 
+/**
+ * Represents an 8-bit indexed map that maps from one palette index to another.
+ */
+struct PaletteMap
+{
+private:
+    uint8_t* _data{};
+    uint32_t _dataLength{};
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-private-field"
+    uint16_t _numMaps;
+#pragma clang diagnostic pop
+    uint16_t _mapLength;
+
+public:
+    static const PaletteMap& GetDefault();
+
+    PaletteMap() = default;
+
+    PaletteMap(uint8_t* data, uint16_t numMaps, uint16_t mapLength)
+        : _data(data)
+        , _dataLength(numMaps * mapLength)
+        , _numMaps(numMaps)
+        , _mapLength(mapLength)
+    {
+    }
+
+    template<std::size_t TSize>
+    PaletteMap(uint8_t (&map)[TSize])
+        : _data(map)
+        , _dataLength(static_cast<uint32_t>(std::size(map)))
+        , _numMaps(1)
+        , _mapLength(static_cast<uint16_t>(std::size(map)))
+    {
+    }
+
+    uint8_t& operator[](size_t index);
+    uint8_t operator[](size_t index) const;
+    uint8_t Blend(uint8_t src, uint8_t dst) const;
+    void Copy(size_t dstIndex, const PaletteMap& src, size_t srcIndex, size_t length);
+};
+
+struct DrawSpriteArgs
+{
+    rct_drawpixelinfo* DPI;
+    ImageId Image;
+    const PaletteMap& PalMap;
+    const rct_g1_element& SourceImage;
+    int32_t SrcX;
+    int32_t SrcY;
+    int32_t Width;
+    int32_t Height;
+    uint8_t* DestinationBits;
+
+    DrawSpriteArgs(
+        rct_drawpixelinfo* dpi, ImageId image, const PaletteMap& palMap, const rct_g1_element& sourceImage, int32_t srcX,
+        int32_t srcY, int32_t width, int32_t height, uint8_t* destinationBits)
+        : DPI(dpi)
+        , Image(image)
+        , PalMap(palMap)
+        , SourceImage(sourceImage)
+        , SrcX(srcX)
+        , SrcY(srcY)
+        , Width(width)
+        , Height(height)
+        , DestinationBits(destinationBits)
+    {
+    }
+};
+
 #define SPRITE_ID_PALETTE_COLOUR_1(colourId) (IMAGE_TYPE_REMAP | ((colourId) << 19))
 #define SPRITE_ID_PALETTE_COLOUR_2(primaryId, secondaryId)                                                                     \
     (IMAGE_TYPE_REMAP_2_PLUS | IMAGE_TYPE_REMAP | (((primaryId) << 19) | ((secondaryId) << 24)))
@@ -443,11 +559,10 @@ public:
 extern thread_local int16_t gCurrentFontSpriteBase;
 extern thread_local uint16_t gCurrentFontFlags;
 
-extern rct_palette_entry gPalette[256];
+extern GamePalette gPalette;
 extern uint8_t gGamePalette[256 * 4];
 extern uint32_t gPaletteEffectFrame;
 extern const FILTER_PALETTE_ID GlassPaletteIds[COLOUR_COUNT];
-extern const uint16_t palette_to_g1_offset[];
 extern uint8_t gPeepPalette[256];
 extern uint8_t gOtherPalette[256];
 extern uint8_t text_palette[];
@@ -511,22 +626,17 @@ void gfx_object_free_images(uint32_t baseImageId, uint32_t count);
 void gfx_object_check_all_images_freed();
 size_t ImageListGetUsedCount();
 size_t ImageListGetMaximum();
-void FASTCALL gfx_bmp_sprite_to_buffer(
-    const uint8_t* palette_pointer, uint8_t* source_pointer, uint8_t* dest_pointer, const rct_g1_element* source_image,
-    rct_drawpixelinfo* dest_dpi, int32_t height, int32_t width, ImageId imageId);
-void FASTCALL gfx_rle_sprite_to_buffer(
-    const uint8_t* RESTRICT source_bits_pointer, uint8_t* RESTRICT dest_bits_pointer, const uint8_t* RESTRICT palette_pointer,
-    const rct_drawpixelinfo* RESTRICT dpi, ImageId imageId, int32_t source_y_start, int32_t height, int32_t source_x_start,
-    int32_t width);
+void FASTCALL gfx_sprite_to_buffer(DrawSpriteArgs& args);
+void FASTCALL gfx_bmp_sprite_to_buffer(DrawSpriteArgs& args);
+void FASTCALL gfx_rle_sprite_to_buffer(DrawSpriteArgs& args);
 void FASTCALL gfx_draw_sprite(rct_drawpixelinfo* dpi, int32_t image_id, int32_t x, int32_t y, uint32_t tertiary_colour);
-void FASTCALL gfx_draw_glpyh(rct_drawpixelinfo* dpi, int32_t image_id, int32_t x, int32_t y, uint8_t* palette);
+void FASTCALL gfx_draw_glyph(rct_drawpixelinfo* dpi, int32_t image_id, int32_t x, int32_t y, const PaletteMap& paletteMap);
 void FASTCALL gfx_draw_sprite_raw_masked(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t maskImage, int32_t colourImage);
 void FASTCALL gfx_draw_sprite_solid(rct_drawpixelinfo* dpi, int32_t image, int32_t x, int32_t y, uint8_t colour);
 
 void FASTCALL gfx_draw_sprite_software(rct_drawpixelinfo* dpi, ImageId imageId, int32_t x, int32_t y);
-const uint8_t* FASTCALL gfx_draw_sprite_get_palette(ImageId imageId);
 void FASTCALL gfx_draw_sprite_palette_set_software(
-    rct_drawpixelinfo* dpi, ImageId imageId, int32_t x, int32_t y, const uint8_t* palette_pointer);
+    rct_drawpixelinfo* dpi, ImageId imageId, int32_t x, int32_t y, const PaletteMap& paletteMap);
 void FASTCALL
     gfx_draw_sprite_raw_masked_software(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t maskImage, int32_t colourImage);
 
@@ -602,6 +712,9 @@ void mask_init();
 extern void (*mask_fn)(
     int32_t width, int32_t height, const uint8_t* RESTRICT maskSrc, const uint8_t* RESTRICT colourSrc, uint8_t* RESTRICT dst,
     int32_t maskWrap, int32_t colourWrap, int32_t dstWrap);
+
+std::optional<uint32_t> GetPaletteG1Index(colour_t paletteId);
+std::optional<PaletteMap> GetPaletteMapForColour(colour_t paletteId);
 
 #include "NewDrawing.h"
 

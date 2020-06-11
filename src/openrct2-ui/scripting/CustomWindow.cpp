@@ -112,6 +112,7 @@ namespace OpenRCT2::Ui::Windows
         int32_t SelectedIndex{};
         bool IsChecked{};
         bool IsDisabled{};
+        bool IsPressed{};
         bool HasBorder{};
         bool ShowColumnHeaders{};
         bool IsStriped{};
@@ -149,16 +150,13 @@ namespace OpenRCT2::Ui::Windows
                     result.Text = ProcessString(desc["text"]);
                     result.HasBorder = true;
                 }
+                result.IsPressed = AsOrDefault(desc["isPressed"], false);
                 result.OnClick = desc["onClick"];
             }
             else if (result.Type == "checkbox")
             {
                 result.Text = ProcessString(desc["text"]);
-                auto dukIsChecked = desc["isChecked"];
-                if (dukIsChecked.type() == DukValue::Type::BOOLEAN)
-                {
-                    result.IsChecked = dukIsChecked.as_bool();
-                }
+                result.IsChecked = AsOrDefault(desc["isChecked"], false);
                 result.OnChange = desc["onChange"];
             }
             else if (result.Type == "dropdown")
@@ -579,8 +577,9 @@ namespace OpenRCT2::Ui::Windows
                 }
                 widget_invalidate(w, WIDX_TAB_0 + w->page);
             }
-            InvokeEventHandler(info.Owner, info.Desc.OnUpdate);
         }
+
+        InvokeEventHandler(info.Owner, info.Desc.OnUpdate);
 
         // Since the plugin may alter widget positions and sizes during an update event,
         // we need to force an update for all list view scrollbars
@@ -821,6 +820,10 @@ namespace OpenRCT2::Ui::Windows
                 widget.string = const_cast<utf8*>(desc.Text.c_str());
                 widget.flags |= WIDGET_FLAGS::TEXT_IS_STRING;
             }
+            if (desc.IsPressed)
+            {
+                widget.flags |= WIDGET_FLAGS::IS_PRESSED;
+            }
             widgetList.push_back(widget);
         }
         else if (desc.Type == "checkbox")
@@ -837,7 +840,7 @@ namespace OpenRCT2::Ui::Windows
         else if (desc.Type == "dropdown")
         {
             widget.type = WWT_DROPDOWN;
-            if (desc.SelectedIndex >= 0 && (size_t)desc.SelectedIndex < desc.Items.size())
+            if (desc.SelectedIndex >= 0 && static_cast<size_t>(desc.SelectedIndex) < desc.Items.size())
             {
                 widget.string = const_cast<utf8*>(desc.Items[desc.SelectedIndex].c_str());
             }

@@ -391,11 +391,11 @@ int32_t Park::CalculateParkRating() const
         {
             if (peep->outside_of_park == 0)
             {
-                if (peep->happiness > 128)
+                if (peep->Happiness > 128)
                 {
                     happyGuestCount++;
                 }
-                if ((peep->peep_flags & PEEP_FLAGS_LEAVING_PARK) && (peep->peep_is_lost_countdown < 90))
+                if ((peep->PeepFlags & PEEP_FLAGS_LEAVING_PARK) && (peep->GuestIsLostCountdown < 90))
                 {
                     lostGuestCount++;
                 }
@@ -728,8 +728,8 @@ Peep* Park::GenerateGuest()
             peep->destination_y = (peep->y & 0xFFE0) + 16;
 
             peep->destination_tolerance = 5;
-            peep->direction = direction;
-            peep->var_37 = 0;
+            peep->PeepDirection = direction;
+            peep->Var37 = 0;
             peep->state = PEEP_STATE_ENTERING_PARK;
         }
     }

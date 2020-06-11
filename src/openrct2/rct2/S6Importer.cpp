@@ -1013,7 +1013,7 @@ public:
         {
             auto src = &_s6.tile_elements[index];
             auto dst = &gTileElements[index];
-            if (src->base_height == 0xFF)
+            if (src->base_height == RCT12_MAX_ELEMENT_HEIGHT)
             {
                 std::memcpy(dst, src, sizeof(*src));
             }
@@ -1341,7 +1341,7 @@ public:
         dst->var_44 = src->var_44;
         dst->mass = src->mass;
         dst->update_flags = src->update_flags;
-        dst->swing_sprite = src->swing_sprite;
+        dst->SwingSprite = src->SwingSprite;
         dst->current_station = src->current_station;
         dst->current_time = src->current_time;
         dst->crash_z = src->crash_z;
@@ -1413,89 +1413,89 @@ public:
         dst->destination_x = src->destination_x;
         dst->destination_y = src->destination_y;
         dst->destination_tolerance = src->destination_tolerance;
-        dst->var_37 = src->var_37;
-        dst->energy = src->energy;
-        dst->energy_target = src->energy_target;
-        dst->happiness = src->happiness;
-        dst->happiness_target = src->happiness_target;
-        dst->nausea = src->nausea;
-        dst->nausea_target = src->nausea_target;
-        dst->hunger = src->hunger;
-        dst->thirst = src->thirst;
-        dst->toilet = src->toilet;
-        dst->mass = src->mass;
-        dst->time_to_consume = src->time_to_consume;
-        dst->intensity = static_cast<IntensityRange>(src->intensity);
-        dst->nausea_tolerance = src->nausea_tolerance;
-        dst->window_invalidate_flags = src->window_invalidate_flags;
-        dst->paid_on_drink = src->paid_on_drink;
+        dst->Var37 = src->var_37;
+        dst->Energy = src->energy;
+        dst->EnergyTarget = src->energy_target;
+        dst->Happiness = src->happiness;
+        dst->HappinessTarget = src->happiness_target;
+        dst->Nausea = src->nausea;
+        dst->NauseaTarget = src->nausea_target;
+        dst->Hunger = src->hunger;
+        dst->Thirst = src->thirst;
+        dst->Toilet = src->toilet;
+        dst->Mass = src->mass;
+        dst->TimeToConsume = src->time_to_consume;
+        dst->Intensity = static_cast<IntensityRange>(src->intensity);
+        dst->NauseaTolerance = src->nausea_tolerance;
+        dst->WindowInvalidateFlags = src->window_invalidate_flags;
+        dst->PaidOnDrink = src->paid_on_drink;
         for (size_t i = 0; i < std::size(src->ride_types_been_on); i++)
         {
-            dst->ride_types_been_on[i] = src->ride_types_been_on[i];
+            dst->RideTypesBeenOn[i] = src->ride_types_been_on[i];
         }
-        dst->item_extra_flags = src->item_extra_flags;
-        dst->photo2_ride_ref = src->photo2_ride_ref;
-        dst->photo3_ride_ref = src->photo3_ride_ref;
-        dst->photo4_ride_ref = src->photo4_ride_ref;
-        dst->current_ride = src->current_ride;
-        dst->current_ride_station = src->current_ride_station;
-        dst->current_train = src->current_train;
-        dst->time_to_sitdown = src->time_to_sitdown;
-        dst->special_sprite = src->special_sprite;
-        dst->action_sprite_type = static_cast<PeepActionSpriteType>(src->action_sprite_type);
-        dst->next_action_sprite_type = static_cast<PeepActionSpriteType>(src->next_action_sprite_type);
-        dst->action_sprite_image_offset = src->action_sprite_image_offset;
-        dst->action = static_cast<PeepActionType>(src->action);
-        dst->action_frame = src->action_frame;
-        dst->step_progress = src->step_progress;
-        dst->next_in_queue = src->next_in_queue;
-        dst->direction = src->direction;
-        dst->interaction_ride_index = src->interaction_ride_index;
-        dst->time_in_queue = src->time_in_queue;
+        dst->ItemExtraFlags = src->item_extra_flags;
+        dst->Photo2RideRef = src->photo2_ride_ref;
+        dst->Photo3RideRef = src->photo3_ride_ref;
+        dst->Photo4RideRef = src->photo4_ride_ref;
+        dst->CurrentRide = src->current_ride;
+        dst->CurrentRideStation = src->current_ride_station;
+        dst->CurrentTrain = src->current_train;
+        dst->TimeToSitdown = src->time_to_sitdown;
+        dst->SpecialSprite = src->special_sprite;
+        dst->ActionSpriteType = static_cast<PeepActionSpriteType>(src->action_sprite_type);
+        dst->NextActionSpriteType = static_cast<PeepActionSpriteType>(src->next_action_sprite_type);
+        dst->ActionSpriteImageOffset = src->action_sprite_image_offset;
+        dst->Action = static_cast<PeepActionType>(src->action);
+        dst->ActionFrame = src->action_frame;
+        dst->StepProgress = src->step_progress;
+        dst->GuestNextInQueue = src->next_in_queue;
+        dst->PeepDirection = src->direction;
+        dst->InteractionRideIndex = src->interaction_ride_index;
+        dst->TimeInQueue = src->time_in_queue;
         for (size_t i = 0; i < std::size(src->rides_been_on); i++)
         {
-            dst->rides_been_on[i] = src->rides_been_on[i];
+            dst->RidesBeenOn[i] = src->rides_been_on[i];
         }
-        dst->id = src->id;
-        dst->cash_in_pocket = src->cash_in_pocket;
-        dst->cash_spent = src->cash_spent;
-        dst->time_in_park = src->time_in_park;
-        dst->rejoin_queue_timeout = src->rejoin_queue_timeout;
-        dst->previous_ride = src->previous_ride;
-        dst->previous_ride_time_out = src->previous_ride_time_out;
+        dst->Id = src->id;
+        dst->CashInPocket = src->cash_in_pocket;
+        dst->CashSpent = src->cash_spent;
+        dst->TimeInPark = src->time_in_park;
+        dst->RejoinQueueTimeout = src->rejoin_queue_timeout;
+        dst->PreviousRide = src->previous_ride;
+        dst->PreviousRideTimeOut = src->previous_ride_time_out;
         for (size_t i = 0; i < std::size(src->thoughts); i++)
         {
             auto srcThought = &src->thoughts[i];
-            auto dstThought = &dst->thoughts[i];
+            auto dstThought = &dst->Thoughts[i];
             dstThought->type = static_cast<PeepThoughtType>(srcThought->type);
             dstThought->item = srcThought->item;
             dstThought->freshness = srcThought->freshness;
             dstThought->fresh_timeout = srcThought->fresh_timeout;
         }
-        dst->path_check_optimisation = src->path_check_optimisation;
-        dst->guest_heading_to_ride_id = src->guest_heading_to_ride_id;
-        dst->peep_is_lost_countdown = src->peep_is_lost_countdown;
-        dst->photo1_ride_ref = src->photo1_ride_ref;
-        dst->peep_flags = src->peep_flags;
-        dst->pathfind_goal = src->pathfind_goal;
+        dst->PathCheckOptimisation = src->path_check_optimisation;
+        dst->GuestHeadingToRideId = src->guest_heading_to_ride_id;
+        dst->GuestIsLostCountdown = src->peep_is_lost_countdown;
+        dst->Photo1RideRef = src->photo1_ride_ref;
+        dst->PeepFlags = src->peep_flags;
+        dst->PathfindGoal = src->pathfind_goal;
         for (size_t i = 0; i < std::size(src->pathfind_history); i++)
         {
-            dst->pathfind_history[i] = src->pathfind_history[i];
+            dst->PathfindHistory[i] = src->pathfind_history[i];
         }
-        dst->no_action_frame_num = src->no_action_frame_num;
-        dst->litter_count = src->litter_count;
-        dst->time_on_ride = src->time_on_ride;
-        dst->disgusting_count = src->disgusting_count;
-        dst->paid_to_enter = src->paid_to_enter;
-        dst->paid_on_rides = src->paid_on_rides;
-        dst->paid_on_food = src->paid_on_food;
-        dst->paid_on_souvenirs = src->paid_on_souvenirs;
-        dst->no_of_food = src->no_of_food;
-        dst->no_of_drinks = src->no_of_drinks;
-        dst->no_of_souvenirs = src->no_of_souvenirs;
-        dst->vandalism_seen = src->vandalism_seen;
-        dst->voucher_type = src->voucher_type;
-        dst->voucher_arguments = src->voucher_arguments;
+        dst->WalkingFrameNum = src->no_action_frame_num;
+        dst->LitterCount = src->litter_count;
+        dst->GuestTimeOnRide = src->time_on_ride;
+        dst->DisgustingCount = src->disgusting_count;
+        dst->PaidToEnter = src->paid_to_enter;
+        dst->PaidOnRides = src->paid_on_rides;
+        dst->PaidOnFood = src->paid_on_food;
+        dst->PaidOnSouvenirs = src->paid_on_souvenirs;
+        dst->AmountOfFood = src->no_of_food;
+        dst->AmountOfDrinks = src->no_of_drinks;
+        dst->AmountOfSouvenirs = src->no_of_souvenirs;
+        dst->VandalismSeen = src->vandalism_seen;
+        dst->VoucherType = src->voucher_type;
+        dst->VoucherArguments = src->voucher_arguments;
         dst->SurroundingsThoughtTimeout = src->surroundings_thought_timeout;
         dst->Angriness = src->angriness;
         dst->TimeLost = src->time_lost;

@@ -46,7 +46,6 @@
 #include "localisation/Localisation.h"
 #include "localisation/LocalisationService.h"
 #include "network/DiscordService.h"
-#include "network/Twitch.h"
 #include "network/network.h"
 #include "object/ObjectManager.h"
 #include "object/ObjectRepository.h"
@@ -638,8 +637,7 @@ namespace OpenRCT2
                         // which the window function doesn't like
                         auto intent = Intent(WC_OBJECT_LOAD_ERROR);
                         intent.putExtra(INTENT_EXTRA_PATH, path);
-                        // TODO: CAST-IMPROVEMENT-NEEDED
-                        intent.putExtra(INTENT_EXTRA_LIST, (void*)e.MissingObjects.data());
+                        intent.putExtra(INTENT_EXTRA_LIST, const_cast<rct_object_entry*>(e.MissingObjects.data()));
                         intent.putExtra(INTENT_EXTRA_LIST_COUNT, static_cast<uint32_t>(e.MissingObjects.size()));
 
                         auto windowManager = _uiContext->GetWindowManager();
@@ -1030,7 +1028,6 @@ namespace OpenRCT2
             }
 #endif
 
-            Twitch::Update();
             chat_update();
 #ifdef ENABLE_SCRIPTING
             _scriptEngine.Update();
@@ -1439,7 +1436,7 @@ void platform_get_user_directory(utf8* outPath, const utf8* subDirectory, size_t
  * This function is deprecated.
  * Use IPlatformEnvironment instead.
  */
-void platform_get_openrct_data_path(utf8* outPath, size_t outSize)
+void platform_get_openrct2_data_path(utf8* outPath, size_t outSize)
 {
     auto env = GetContext()->GetPlatformEnvironment();
     auto path = env->GetDirectoryPath(DIRBASE::OPENRCT2);

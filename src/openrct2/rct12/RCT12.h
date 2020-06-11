@@ -67,6 +67,8 @@ constexpr const uint32_t RCT12_RESEARCHED_ITEMS_END = 0xFFFFFFFE;
 // Extra end of list entry. Leftover from RCT1.
 constexpr const uint32_t RCT12_RESEARCHED_ITEMS_END_2 = 0xFFFFFFFD;
 
+constexpr const uint8_t RCT12_MAX_ELEMENT_HEIGHT = 255;
+
 enum class RCT12TrackDesignVersion : uint8_t
 {
     TD4,
@@ -280,8 +282,9 @@ struct RCT12TileElement : public RCT12TileElementBase
     uint8_t pad_04[4];
     template<typename TType, RCT12TileElementType TClass> TType* as() const
     {
-        // TODO: CAST-IMPROVEMENT-NEEDED
-        return static_cast<RCT12TileElementType>(GetType()) == TClass ? (TType*)this : nullptr;
+        return static_cast<RCT12TileElementType>(GetType()) == TClass
+            ? reinterpret_cast<TType*>(const_cast<RCT12TileElement*>(this))
+            : nullptr;
     }
 
     RCT12SurfaceElement* AsSurface() const

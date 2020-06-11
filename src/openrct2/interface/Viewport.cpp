@@ -689,13 +689,13 @@ viewport_focus viewport_update_smart_guest_follow(rct_window* window, Peep* peep
         if (peep->state == PEEP_STATE_ON_RIDE || peep->state == PEEP_STATE_ENTERING_RIDE
             || (peep->state == PEEP_STATE_LEAVING_RIDE && peep->x == LOCATION_NULL))
         {
-            auto ride = get_ride(peep->current_ride);
+            auto ride = get_ride(peep->CurrentRide);
             if (ride != nullptr && (ride->lifecycle_flags & RIDE_LIFECYCLE_ON_TRACK))
             {
-                auto train = GET_VEHICLE(ride->vehicles[peep->current_train]);
+                auto train = GET_VEHICLE(ride->vehicles[peep->CurrentTrain]);
                 if (train != nullptr)
                 {
-                    auto car = train->GetCar(peep->current_car);
+                    auto car = train->GetCar(peep->CurrentCar);
                     if (car != nullptr)
                     {
                         focus.sprite.sprite_id = car->sprite_index;
@@ -706,7 +706,7 @@ viewport_focus viewport_update_smart_guest_follow(rct_window* window, Peep* peep
         }
         if (peep->x == LOCATION_NULL && overallFocus)
         {
-            auto ride = get_ride(peep->current_ride);
+            auto ride = get_ride(peep->CurrentRide);
             if (ride != nullptr)
             {
                 auto xy = ride->overall_view.ToTileCentre();
@@ -828,11 +828,14 @@ static void record_session(const paint_session* session, std::vector<paint_sessi
     // Mind the offset needs to be calculated against the original `session`, not `session_copy`
     for (auto& ps : session_copy->PaintStructs)
     {
-        ps.basic.next_quadrant_ps = (paint_struct*)(ps.basic.next_quadrant_ps ? int(ps.basic.next_quadrant_ps - &session->PaintStructs[0].basic) : std::size(session->PaintStructs));
+        ps.basic.next_quadrant_ps = reinterpret_cast<paint_struct*>(
+            ps.basic.next_quadrant_ps ? int(ps.basic.next_quadrant_ps - &session->PaintStructs[0].basic)
+                                      : std::size(session->PaintStructs));
     }
     for (auto& quad : session_copy->Quadrants)
     {
-        quad = (paint_struct*)(quad ? int(quad - &session->PaintStructs[0].basic) : std::size(session->Quadrants));
+        quad = reinterpret_cast<paint_struct*>(
+            quad ? int(quad - &session->PaintStructs[0].basic) : std::size(session->Quadrants));
     }
 }
 
@@ -1288,7 +1291,8 @@ static bool PSSpriteTypeIsInFilter(paint_struct* ps, uint16_t filter)
 /**
  * rct2: 0x00679236, 0x00679662, 0x00679B0D, 0x00679FF1
  */
-static bool is_pixel_present_bmp(uint32_t imageType, const rct_g1_element* g1, const uint8_t* index, const uint8_t* palette)
+static bool is_pixel_present_bmp(
+    uint32_t imageType, const rct_g1_element* g1, const uint8_t* index, const PaletteMap& paletteMap)
 {
     // Probably used to check for corruption
     if (!(g1->flags & G1_FLAG_BMP))
@@ -1298,7 +1302,7 @@ static bool is_pixel_present_bmp(uint32_t imageType, const rct_g1_element* g1, c
 
     if (imageType & IMAGE_TYPE_REMAP)
     {
-        return palette[*index] != 0;
+        return paletteMap[*index] != 0;
     }
 
     if (imageType & IMAGE_TYPE_TRANSPARENT)
@@ -1405,7 +1409,7 @@ static bool is_pixel_present_rle(const uint8_t* esi, int16_t x_start_point, int1
  * @return value originally stored in 0x00141F569
  */
 static bool is_sprite_interacted_with_palette_set(
-    rct_drawpixelinfo* dpi, int32_t imageId, int16_t x, int16_t y, const uint8_t* palette)
+    rct_drawpixelinfo* dpi, int32_t imageId, int16_t x, int16_t y, const PaletteMap& paletteMap)
 {
     const rct_g1_element* g1 = gfx_get_g1_element(imageId & 0x7FFFF);
     if (g1 == nullptr)
@@ -1433,7 +1437,7 @@ static bool is_sprite_interacted_with_palette_set(
                 /* .zoom_level = */ dpi->zoom_level - 1,
             };
 
-            return is_sprite_interacted_with_palette_set(&zoomed_dpi, imageId - g1->zoomed_offset, x / 2, y / 2, palette);
+            return is_sprite_interacted_with_palette_set(&zoomed_dpi, imageId - g1->zoomed_offset, x / 2, y / 2, paletteMap);
         }
     }
 
@@ -1535,7 +1539,7 @@ static bool is_sprite_interacted_with_palette_set(
 
     if (!(g1->flags & G1_FLAG_1))
     {
-        return is_pixel_present_bmp(imageType, g1, offset, palette);
+        return is_pixel_present_bmp(imageType, g1, offset, paletteMap);
     }
 
     Guard::Assert(false, "Invalid image type encountered.");
@@ -1548,7 +1552,7 @@ static bool is_sprite_interacted_with_palette_set(
  */
 static bool is_sprite_interacted_with(rct_drawpixelinfo* dpi, int32_t imageId, int32_t x, int32_t y)
 {
-    const uint8_t* palette = nullptr;
+    auto paletteMap = PaletteMap::GetDefault();
     imageId &= ~IMAGE_TYPE_TRANSPARENT;
     if (imageId & IMAGE_TYPE_REMAP)
     {
@@ -1558,18 +1562,16 @@ static bool is_sprite_interacted_with(rct_drawpixelinfo* dpi, int32_t imageId, i
         {
             index &= 0x1F;
         }
-        int32_t g1Index = palette_to_g1_offset[index];
-        const rct_g1_element* g1 = gfx_get_g1_element(g1Index);
-        if (g1 != nullptr)
+        if (auto pm = GetPaletteMapForColour(index))
         {
-            palette = g1->offset;
+            paletteMap = *pm;
         }
     }
     else
     {
         _currentImageType = 0;
     }
-    return is_sprite_interacted_with_palette_set(dpi, imageId, x, y, palette);
+    return is_sprite_interacted_with_palette_set(dpi, imageId, x, y, paletteMap);
 }
 
 /**

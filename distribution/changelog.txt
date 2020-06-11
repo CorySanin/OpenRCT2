@@ -2,14 +2,19 @@
 ------------------------------------------------------------------------
 - Feature: [#7648] "Enable all drawable track pieces" now enables more pieces for the Twister, Vertical and Air Powered Vertical coasters.
 - Feature: [#9029] Open doors with the tile inspector.
+- Feature: [#9614] Allow popping balloons and quacking ducks in the title screen.
 - Feature: [#10572] Cheat to allow building at invalid heights.
 - Feature: [#11155] Guest entry points can now be removed by clicking them again.
 - Feature: [#11231] Change shortcut window list order to be more intuitive, and split it into logical sections.
+- Feature: [#11298] Custom IP address can now be advertised to the master server to work around IPv6 issues.
 - Feature: [#11306] Path additions are now kept when replacing the path.
 - Feature: [#11320] Support for custom JavaScript plugins.
+- Feature: [#11422] Added a shortcut key for disabling/enabling clearance checks.
+- Feature: [#11788] Command to extract images from a .DAT file.
 - Change: [#11209] Warn when user is running OpenRCT2 through Wine.
 - Change: [#11358] Switch copy and paste button positions in tile inspector.
 - Change: [#11449] Remove complete circuit requirement from Air Powered Vertical Coaster (for RCT1 parity).
+- Change: [#11898] The `openrct-data-path` command-line argument has been renamed to `openrct2-data-path`.
 - Fix: [#1013] Negative length displayed in Ride window.
 - Fix: [#1148] Research funding dropdown not shown in finances window.
 - Fix: [#5451] Guests scream on every descent, no matter how small.
@@ -36,6 +41,7 @@
 - Technical: [#8110] OpenRCT2 now uses a single directory name for title sequences instead of three.
 - Technical: [#11517] Windows Vista is supported again (libzip regression in the previous release).
 - Technical: The required version of macOS has been increased to 10.14 (Mojave) for plugin support.
+- Removed: [#11820] Twitch support (relied on a server that has been down for a few years).
 
 0.2.6 (2020-04-17)
 ------------------------------------------------------------------------

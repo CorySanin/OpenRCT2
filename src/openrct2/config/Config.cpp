@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -386,6 +386,7 @@ namespace Config
             model->default_password = reader->GetString("default_password", "");
             model->stay_connected = reader->GetBoolean("stay_connected", true);
             model->advertise = reader->GetBoolean("advertise", true);
+            model->advertise_address = reader->GetString("advertise_address", "");
             model->maxplayers = reader->GetInt32("maxplayers", 16);
             model->server_name = reader->GetString("server_name", "Server");
             model->server_description = reader->GetString("server_description", "");
@@ -412,6 +413,7 @@ namespace Config
         writer->WriteString("default_password", model->default_password);
         writer->WriteBoolean("stay_connected", model->stay_connected);
         writer->WriteBoolean("advertise", model->advertise);
+        writer->WriteString("advertise_address", model->advertise_address);
         writer->WriteInt32("maxplayers", model->maxplayers);
         writer->WriteString("server_name", model->server_name);
         writer->WriteString("server_description", model->server_description);
@@ -475,34 +477,6 @@ namespace Config
         writer->WriteBoolean("guest_bought_item", model->guest_bought_item);
         writer->WriteBoolean("guest_used_facility", model->guest_used_facility);
         writer->WriteBoolean("guest_died", model->guest_died);
-    }
-
-    static void ReadTwitch(IIniReader* reader)
-    {
-        if (reader->ReadSection("twitch"))
-        {
-            auto model = &gConfigTwitch;
-            model->api_url = reader->GetCString("api_url", nullptr);
-            model->channel = reader->GetCString("channel", nullptr);
-            model->enable_follower_peep_names = reader->GetBoolean("follower_peep_names", true);
-            model->enable_follower_peep_tracking = reader->GetBoolean("follower_peep_tracking", false);
-            model->enable_chat_peep_names = reader->GetBoolean("chat_peep_names", true);
-            model->enable_chat_peep_tracking = reader->GetBoolean("chat_peep_tracking", true);
-            model->enable_news = reader->GetBoolean("news", false);
-        }
-    }
-
-    static void WriteTwitch(IIniWriter* writer)
-    {
-        auto model = &gConfigTwitch;
-        writer->WriteSection("twitch");
-        writer->WriteString("api_url", model->api_url);
-        writer->WriteString("channel", model->channel);
-        writer->WriteBoolean("follower_peep_names", model->enable_follower_peep_names);
-        writer->WriteBoolean("follower_peep_tracking", model->enable_follower_peep_tracking);
-        writer->WriteBoolean("chat_peep_names", model->enable_chat_peep_names);
-        writer->WriteBoolean("chat_peep_tracking", model->enable_chat_peep_tracking);
-        writer->WriteBoolean("news", model->enable_news);
     }
 
     static void ReadFont(IIniReader* reader)
@@ -573,7 +547,6 @@ namespace Config
             ReadSound(reader.get());
             ReadNetwork(reader.get());
             ReadNotifications(reader.get());
-            ReadTwitch(reader.get());
             ReadFont(reader.get());
             ReadPlugin(reader.get());
             return true;
@@ -595,7 +568,6 @@ namespace Config
             ReadSound(reader.get());
             ReadNetwork(reader.get());
             ReadNotifications(reader.get());
-            ReadTwitch(reader.get());
             ReadFont(reader.get());
             ReadPlugin(reader.get());
             return true;
@@ -620,7 +592,6 @@ namespace Config
             WriteSound(writer.get());
             WriteNetwork(writer.get());
             WriteNotifications(writer.get());
-            WriteTwitch(writer.get());
             WriteFont(writer.get());
             WritePlugin(writer.get());
             return true;
@@ -734,7 +705,6 @@ namespace Config
 GeneralConfiguration gConfigGeneral;
 InterfaceConfiguration gConfigInterface;
 SoundConfiguration gConfigSound;
-TwitchConfiguration gConfigTwitch;
 NetworkConfiguration gConfigNetwork;
 NotificationConfiguration gConfigNotifications;
 FontConfiguration gConfigFonts;
@@ -780,8 +750,6 @@ void config_release()
     SafeFree(gConfigInterface.current_theme_preset);
     SafeFree(gConfigInterface.current_title_sequence_preset);
     SafeFree(gConfigSound.device);
-    SafeFree(gConfigTwitch.api_url);
-    SafeFree(gConfigTwitch.channel);
     SafeFree(gConfigFonts.file_name);
     SafeFree(gConfigFonts.font_name);
 }

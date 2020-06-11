@@ -413,7 +413,7 @@ static void widget_text(rct_drawpixelinfo* dpi, rct_window* w, rct_widgetindex w
         stringId = STR_STRING;
         formatArgs = &widget->string;
     }
-    gfx_draw_string_left_clipped(dpi, stringId, formatArgs, colour, { l + 1, t }, r - 1);
+    gfx_draw_string_left_clipped(dpi, stringId, formatArgs, colour, { l + 1, t }, r - l);
 }
 
 /**
@@ -452,7 +452,7 @@ static std::pair<rct_string_id, void*> widget_get_stringid_and_args(const rct_wi
         else
         {
             stringId = STR_STRING;
-            formatArgs = (void*)&widget->string;
+            formatArgs = const_cast<void*>(reinterpret_cast<const void*>(&widget->string));
         }
     }
     return std::make_pair(stringId, formatArgs);

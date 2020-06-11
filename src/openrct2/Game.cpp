@@ -24,6 +24,7 @@
 #include "config/Config.h"
 #include "core/FileScanner.h"
 #include "core/Path.hpp"
+#include "interface/Colour.h"
 #include "interface/Screenshot.h"
 #include "interface/Viewport.h"
 #include "interface/Window.h"
@@ -166,7 +167,7 @@ void update_palette_effects()
                 paletteOffset[(i * 4) + 1] = -((0xFF - g1->offset[(i * 3) + 1]) / 2) - 1;
                 paletteOffset[(i * 4) + 2] = -((0xFF - g1->offset[(i * 3) + 2]) / 2) - 1;
             }
-            platform_update_palette(gGamePalette, 10, 236);
+            platform_update_palette(gGamePalette, PALETTE_OFFSET_DYNAMIC, PALETTE_LENGTH_DYNAMIC);
         }
         gClimateLightningFlash++;
     }
@@ -222,8 +223,8 @@ void update_palette_effects()
         if (g1 != nullptr)
         {
             uint8_t* vs = &g1->offset[j * 3];
-            uint8_t* vd = &gGamePalette[230 * 4];
-            int32_t n = 5;
+            uint8_t* vd = &gGamePalette[PALETTE_OFFSET_WATER_WAVES * 4];
+            int32_t n = PALETTE_LENGTH_WATER_WAVES;
             for (int32_t i = 0; i < n; i++)
             {
                 vd[0] = vs[0];
@@ -247,8 +248,8 @@ void update_palette_effects()
         if (g1 != nullptr)
         {
             uint8_t* vs = &g1->offset[j * 3];
-            uint8_t* vd = &gGamePalette[235 * 4];
-            int32_t n = 5;
+            uint8_t* vd = &gGamePalette[PALETTE_OFFSET_WATER_SPARKLES * 4];
+            int32_t n = PALETTE_LENGTH_WATER_SPARKLES;
             for (int32_t i = 0; i < n; i++)
             {
                 vd[0] = vs[0];
@@ -269,7 +270,7 @@ void update_palette_effects()
         if (g1 != nullptr)
         {
             uint8_t* vs = &g1->offset[j * 3];
-            uint8_t* vd = &gGamePalette[243 * 4];
+            uint8_t* vd = &gGamePalette[PALETTE_INDEX_243 * 4];
             int32_t n = 3;
             for (int32_t i = 0; i < n; i++)
             {
@@ -285,10 +286,10 @@ void update_palette_effects()
             }
         }
 
-        platform_update_palette(gGamePalette, 230, 16);
+        platform_update_palette(gGamePalette, PALETTE_OFFSET_ANIMATED, PALETTE_LENGTH_ANIMATED);
         if (gClimateLightningFlash == 2)
         {
-            platform_update_palette(gGamePalette, 10, 236);
+            platform_update_palette(gGamePalette, PALETTE_OFFSET_DYNAMIC, PALETTE_LENGTH_DYNAMIC);
             gClimateLightningFlash = 0;
         }
     }
@@ -448,10 +449,10 @@ void game_fix_save_vars()
     // Fix possibly invalid field values
     FOR_ALL_GUESTS (spriteIndex, peep)
     {
-        if (peep->current_ride_station >= MAX_STATIONS)
+        if (peep->CurrentRideStation >= MAX_STATIONS)
         {
-            const uint8_t srcStation = peep->current_ride_station;
-            const uint8_t rideIdx = peep->current_ride;
+            const uint8_t srcStation = peep->CurrentRideStation;
+            const uint8_t rideIdx = peep->CurrentRide;
             if (rideIdx == RIDE_ID_NULL)
             {
                 continue;
@@ -460,11 +461,11 @@ void game_fix_save_vars()
             if (ride == nullptr)
             {
                 log_warning("Couldn't find ride %u, resetting ride on peep %u", rideIdx, spriteIndex);
-                peep->current_ride = RIDE_ID_NULL;
+                peep->CurrentRide = RIDE_ID_NULL;
                 continue;
             }
             auto ft = Formatter::Common();
-            ft.Add<uint32_t>(peep->id);
+            ft.Add<uint32_t>(peep->Id);
             auto curName = peep->GetName();
             log_warning(
                 "Peep %u (%s) has invalid ride station = %u for ride %u.", spriteIndex, curName.c_str(), srcStation, rideIdx);
@@ -477,7 +478,7 @@ void game_fix_save_vars()
             else
             {
                 log_warning("Amending ride station to %u.", station);
-                peep->current_ride_station = station;
+                peep->CurrentRideStation = station;
             }
         }
     }
@@ -682,8 +683,7 @@ void save_game_as()
 
 static int32_t compare_autosave_file_paths(const void* a, const void* b)
 {
-    // TODO: CAST-IMPROVEMENT-NEEDED
-    return strcmp(*(char**)a, *(char**)b);
+    return strcmp(static_cast<const char*>(a), static_cast<const char*>(b));
 }
 
 static void limit_autosave_count(const size_t numberOfFilesToKeep, bool processLandscapeFolder)
