@@ -94,12 +94,6 @@ const NewsItem* NewsItemQueues::At(int32_t index) const
     }
 }
 
-bool news_item_is_empty(int32_t index)
-{
-    NewsItem* news = gNewsItems.At(index);
-    return news != nullptr && news->IsEmpty();
-}
-
 bool news_item_is_queue_empty()
 {
     return gNewsItems.IsEmpty();
@@ -251,7 +245,7 @@ std::optional<CoordsXYZ> news_item_get_subject_location(int32_t type, int32_t su
             if (subjectLoc->x != LOCATION_NULL)
                 break;
 
-            if (peep->state != PEEP_STATE_ON_RIDE && peep->state != PEEP_STATE_ENTERING_RIDE)
+            if (peep->State != PEEP_STATE_ON_RIDE && peep->State != PEEP_STATE_ENTERING_RIDE)
             {
                 subjectLoc = std::nullopt;
                 break;

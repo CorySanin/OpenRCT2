@@ -174,6 +174,8 @@ enum VEHICLE_TRACK_SUBPOSITION : uint8_t
     VEHICLE_TRACK_SUBPOSITION_MINI_GOLF_BALL_PATH_C_14,
     VEHICLE_TRACK_SUBPOSITION_REVERSER_RC_FRONT_BOGIE,
     VEHICLE_TRACK_SUBPOSITION_REVERSER_RC_REAR_BOGIE,
+
+    VEHICLE_TRACK_SUBPOSITION_COUNT,
 };
 
 struct Ride;
@@ -420,8 +422,7 @@ private:
     void KillPassengers(Ride* curRide);
     void TrainReadyToDepart(uint8_t num_peeps_on_train, uint8_t num_used_seats);
     int32_t UpdateTrackMotionMiniGolf(int32_t* outStation);
-    void UpdateTrackMotionMiniGolfVehicle(
-        Ride* curRide, rct_ride_entry* rideEntry, rct_ride_entry_vehicle* vehicleEntry, registers& regs);
+    void UpdateTrackMotionMiniGolfVehicle(Ride* curRide, rct_ride_entry* rideEntry, rct_ride_entry_vehicle* vehicleEntry);
     bool UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* curRide, rct_ride_entry* rideEntry);
     bool UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* curRide, uint16_t* progress);
 };

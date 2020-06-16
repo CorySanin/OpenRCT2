@@ -2930,8 +2930,8 @@ static void window_ride_main_paint(rct_window* w, rct_drawpixelinfo* dpi)
     widget = &window_ride_main_widgets[WIDX_STATUS];
     rct_string_id ride_status = window_ride_get_status(w, gCommonFormatArgs);
     gfx_draw_string_centred_clipped(
-        dpi, ride_status, gCommonFormatArgs, COLOUR_BLACK, w->windowPos.x + (widget->left + widget->right) / 2,
-        w->windowPos.y + widget->top, widget->right - widget->left);
+        dpi, ride_status, gCommonFormatArgs, COLOUR_BLACK,
+        w->windowPos + ScreenCoordsXY{ (widget->left + widget->right) / 2, widget->top }, widget->right - widget->left);
 }
 
 #pragma endregion
@@ -4352,7 +4352,7 @@ static void window_ride_maintenance_paint(rct_window* w, rct_drawpixelinfo* dpi)
                 Peep* peep;
                 FOR_ALL_STAFF (spriteIndex, peep)
                 {
-                    if (peep->staff_type == STAFF_TYPE_MECHANIC)
+                    if (peep->StaffType == STAFF_TYPE_MECHANIC)
                     {
                         stringId = STR_CALLING_MECHANIC;
                         break;

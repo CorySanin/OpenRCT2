@@ -66,6 +66,7 @@ private:
     const utf8* _s6Path = nullptr;
     rct_s6_data _s6{};
     uint8_t _gameVersion = 0;
+    bool _isSV7 = false;
 
 public:
     S6Importer(IObjectRepository& objectRepository)
@@ -145,6 +146,12 @@ public:
         for (uint16_t i = 0; i < _s6.header.num_packed_objects; i++)
         {
             _objectRepository.ExportPackedObject(stream);
+        }
+
+        if (path)
+        {
+            auto extension = path_get_extension(path);
+            _isSV7 = _stricmp(extension, ".sv7") == 0;
         }
 
         if (isScenario)
@@ -754,7 +761,14 @@ public:
         }
 
         dst->music = src->music;
-        dst->entrance_style = src->entrance_style;
+
+        auto entranceStyle = src->entrance_style;
+        // In SV7, "plain" entrances are invisible.
+        if (_isSV7 && entranceStyle == RCT12_STATION_STYLE_PLAIN)
+        {
+            entranceStyle = RCT12_STATION_STYLE_INVISIBLE;
+        }
+        dst->entrance_style = entranceStyle;
         dst->vehicle_change_timeout = src->vehicle_change_timeout;
         dst->num_block_brakes = src->num_block_brakes;
         dst->lift_hill_speed = src->lift_hill_speed;
@@ -1401,18 +1415,18 @@ public:
             dst->SetName(GetUserString(src->name_string_idx));
         }
         dst->NextLoc = { src->next_x, src->next_y, src->next_z * COORDS_Z_STEP };
-        dst->next_flags = src->next_flags;
-        dst->outside_of_park = src->outside_of_park;
-        dst->state = static_cast<PeepState>(src->state);
-        dst->sub_state = src->sub_state;
-        dst->sprite_type = static_cast<PeepSpriteType>(src->sprite_type);
-        dst->type = static_cast<PeepType>(src->peep_type);
-        dst->no_of_rides = src->no_of_rides;
-        dst->tshirt_colour = src->tshirt_colour;
-        dst->trousers_colour = src->trousers_colour;
-        dst->destination_x = src->destination_x;
-        dst->destination_y = src->destination_y;
-        dst->destination_tolerance = src->destination_tolerance;
+        dst->NextFlags = src->next_flags;
+        dst->OutsideOfPark = src->outside_of_park;
+        dst->State = static_cast<PeepState>(src->state);
+        dst->SubState = src->sub_state;
+        dst->SpriteType = static_cast<PeepSpriteType>(src->sprite_type);
+        dst->AssignedPeepType = static_cast<PeepType>(src->peep_type);
+        dst->GuestNumRides = src->no_of_rides;
+        dst->TshirtColour = src->tshirt_colour;
+        dst->TrousersColour = src->trousers_colour;
+        dst->DestinationX = src->destination_x;
+        dst->DestinationY = src->destination_y;
+        dst->DestinationTolerance = src->destination_tolerance;
         dst->Var37 = src->var_37;
         dst->Energy = src->energy;
         dst->EnergyTarget = src->energy_target;
