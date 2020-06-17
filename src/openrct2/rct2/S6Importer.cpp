@@ -852,7 +852,7 @@ public:
     {
         set_every_ride_type_not_invented();
 
-        for (int32_t rideType = 0; rideType < RIDE_TYPE_COUNT; rideType++)
+        for (int32_t rideType = 0; rideType < RCT2_RIDE_TYPE_COUNT; rideType++)
         {
             int32_t quadIndex = rideType >> 5;
             int32_t bitIndex = rideType & 0x1F;
@@ -1282,8 +1282,8 @@ public:
         for (int32_t i = 0; i < RCT2_MAX_SPRITES; i++)
         {
             auto src = &_s6.sprites[i];
-            auto dst = get_sprite(i);
-            ImportSprite(dst, src);
+            auto dst = GetEntity(i);
+            ImportSprite(reinterpret_cast<rct_sprite*>(dst), src);
         }
 
         for (int32_t i = 0; i < SPRITE_LIST_COUNT; i++)

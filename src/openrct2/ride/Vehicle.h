@@ -328,9 +328,9 @@ struct Vehicle : SpriteBase
         return track_type >> 2;
     }
 
-    uint16_t UpdateFlag(uint32_t flag) const
+    bool HasUpdateFlag(uint32_t flag) const
     {
-        return update_flags & flag;
+        return (update_flags & flag) != 0;
     }
     void ClearUpdateFlag(uint32_t flag)
     {
@@ -516,7 +516,7 @@ enum : uint32_t
     VEHICLE_UPDATE_FLAG_ZERO_VELOCITY = (1 << 7), // Used on rides when safety cutout stops them on a lift
     VEHICLE_UPDATE_FLAG_BROKEN_CAR = (1 << 8),
     VEHICLE_UPDATE_FLAG_BROKEN_TRAIN = (1 << 9),
-    VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP = (1 << 10),
+    VEHICLE_UPDATE_FLAG_ON_BRAKE_FOR_DROP = (1 << 10),
     VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES = (1 << 11), // Used on rides where trains can run for extended periods of time,
                                                           // i.e. the Flying, Lay-down and Multi-dimension RCs.
     VEHICLE_UPDATE_FLAG_12 = (1 << 12),

@@ -537,7 +537,7 @@ void S6Exporter::ExportRide(rct2_ride* dst, const Ride* src)
     if (useDefaultName)
     {
         // Default name with number
-        dst->name = RideNaming[src->type].name;
+        dst->name = RideTypeDescriptors[src->type].Naming.Name;
         dst->name_arguments_number = src->default_name_number;
     }
 
@@ -852,7 +852,7 @@ void S6Exporter::ExportResearchedRideTypes()
 {
     std::fill(std::begin(_s6.researched_ride_types), std::end(_s6.researched_ride_types), false);
 
-    for (int32_t rideType = 0; rideType < RIDE_TYPE_COUNT; rideType++)
+    for (int32_t rideType = 0; rideType < RCT2_RIDE_TYPE_COUNT; rideType++)
     {
         if (ride_type_is_invented(rideType))
         {
@@ -945,7 +945,7 @@ void S6Exporter::ExportSprites()
     sprite_clear_all_unused();
     for (int32_t i = 0; i < RCT2_MAX_SPRITES; i++)
     {
-        ExportSprite(&_s6.sprites[i], get_sprite(i));
+        ExportSprite(&_s6.sprites[i], reinterpret_cast<const rct_sprite*>(GetEntity(i)));
     }
 
     for (int32_t i = 0; i < SPRITE_LIST_COUNT; i++)

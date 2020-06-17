@@ -604,7 +604,7 @@ static void window_guest_common_invalidate(rct_window* w)
  */
 void window_guest_disable_widgets(rct_window* w)
 {
-    Peep* peep = &get_sprite(w->number)->peep;
+    Peep* peep = GetEntity<Peep>(w->number);
     uint64_t disabled_widgets = 0;
 
     if (peep_can_be_picked_up(peep))
@@ -700,7 +700,9 @@ void window_guest_overview_mouse_up(rct_window* w, rct_widgetindex widgetIndex)
                 return;
             }
             w->picked_peep_old_x = peep->x;
-            PeepPickupAction pickupAction{ PeepPickupType::Pickup, w->number, {}, network_get_current_player_id() };
+            CoordsXYZ nullLoc{};
+            nullLoc.setNull();
+            PeepPickupAction pickupAction{ PeepPickupType::Pickup, w->number, nullLoc, network_get_current_player_id() };
             pickupAction.SetCallback([peepnum = w->number](const GameAction* ga, const GameActionResult* result) {
                 if (result->Error != GA_ERROR::OK)
                     return;

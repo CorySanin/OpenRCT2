@@ -63,7 +63,7 @@ public:
             return res;
         }
 
-        if (!map_is_location_owned(_loc) && !gCheatsSandboxMode)
+        if (!LocationValid(_loc) || (!map_is_location_owned(_loc) && !gCheatsSandboxMode))
         {
             res->Error = GA_ERROR::NOT_OWNED;
             res->ErrorMessage = STR_LAND_NOT_OWNED_BY_PARK;
@@ -86,7 +86,7 @@ public:
         {
             heightDifference /= COORDS_Z_PER_TINY_Z;
 
-            if (heightDifference > RideData5[RIDE_TYPE_MAZE].max_height)
+            if (heightDifference > RideTypeDescriptors[RIDE_TYPE_MAZE].Heights.MaxHeight)
             {
                 res->Error = GA_ERROR::TOO_HIGH;
                 res->ErrorMessage = STR_TOO_HIGH_FOR_SUPPORTS;

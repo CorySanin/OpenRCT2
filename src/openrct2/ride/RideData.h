@@ -61,13 +61,12 @@ struct RideBuildCost
     uint8_t PriceEstimateMultiplier;
 };
 
-struct rct_ride_data_5
+struct RideHeights
 {
-    uint8_t max_height;
-    uint8_t clearance_height;
-    int8_t z_offset;
-    uint8_t max_mass;
-    uint8_t z;
+    uint8_t MaxHeight;
+    uint8_t ClearanceHeight;
+    int8_t VehicleZOffset;
+    uint8_t PlatformHeight;
 };
 
 struct rct_ride_lift_data
@@ -107,6 +106,7 @@ struct RideTypeDescriptor
     // Pieces that this ride type _can_ draw, but are disabled because their vehicles lack the relevant sprites,
     // or because they are not realistic for the ride type (e.g. LIM boosters in Mini Roller Coasters).
     uint64_t ExtraTrackPieces;
+    uint64_t CoveredTrackPieces;
     /** rct2: 0x0097CC68 */
     uint64_t StartTrackPiece;
     TRACK_PAINT_FUNCTION_GETTER TrackPaintFunction;
@@ -114,10 +114,18 @@ struct RideTypeDescriptor
     /** rct2: 0x0097C8AC */
     uint64_t RideModes;
     uint8_t DefaultMode;
+    /** rct2: 0x0097CF40 */
+    RideOperatingSettings OperatingSettings;
+    RideNaming Naming;
     RideNameConvention NameConvention;
     uint8_t AvailableBreakdowns;
+    /** rct2: 0x0097D218 */
+    RideHeights Heights;
+    uint8_t MaxMass;
     /** rct2: 0x0097D7C8, 0x0097D7C9, 0x0097D7CA */
     rct_ride_lift_data LiftData;
+    // rct2: 0x0097CD1E
+    RatingTuple RatingsMultipliers;
     UpkeepCostsDescriptor UpkeepCosts;
     // rct2: 0x0097DD78
     RideBuildCost BuildCosts;
@@ -125,6 +133,8 @@ struct RideTypeDescriptor
     uint8_t DefaultMusic;
     /** rct2: 0x0097D7CB */
     uint8_t PhotoItem;
+    /** rct2: 0x0097D21E */
+    uint8_t BonusValue;
 
     bool HasFlag(uint64_t flag) const;
     uint64_t GetAvailableTrackPieces() const;
@@ -224,8 +234,6 @@ constexpr const uint64_t RIDE_TYPE_FLAGS_COMMON_COASTER = RIDE_TYPE_FLAG_HAS_G_F
 constexpr const uint64_t RIDE_TYPE_FLAGS_COMMON_COASTER_NON_ALT = RIDE_TYPE_FLAG_SHOW_IN_TRACK_DESIGNER
     | RIDE_TYPE_FLAG_HAS_AIR_TIME | RIDE_TYPE_FLAG_HAS_ENTRANCE_EXIT;
 
-extern const uint8_t rideBonusValue[RIDE_TYPE_COUNT];
-
 // clang-format off
 constexpr const RideComponentName RideComponentNames[] = 
 {
@@ -246,8 +254,6 @@ constexpr const RideComponentName RideComponentNames[] =
 };
 // clang-format on
 
-extern const rct_ride_name RideNaming[RIDE_TYPE_COUNT];
-
 constexpr const uint64_t AllRideModesAvailable = (1ULL << RIDE_MODE_CONTINUOUS_CIRCUIT)
     | (1ULL << RIDE_MODE_CONTINUOUS_CIRCUIT_BLOCK_SECTIONED) | (1ULL << RIDE_MODE_REVERSE_INCLINE_LAUNCHED_SHUTTLE)
     | (1ULL << RIDE_MODE_POWERED_LAUNCH_PASSTROUGH) | (1ULL << RIDE_MODE_SHUTTLE) | (1ULL << RIDE_MODE_NORMAL)
@@ -263,13 +269,9 @@ constexpr const uint64_t AllRideModesAvailable = (1ULL << RIDE_MODE_CONTINUOUS_C
     | (1ULL << RIDE_MODE_DOWNWARD_LAUNCH) | (1ULL << RIDE_MODE_CROOKED_HOUSE) | (1ULL << RIDE_MODE_FREEFALL_DROP)
     | (1ULL << RIDE_MODE_POWERED_LAUNCH) | (1ULL << RIDE_MODE_POWERED_LAUNCH_BLOCK_SECTIONED);
 
-extern const rct_ride_data_5 RideData5[RIDE_TYPE_COUNT];
-
 extern const rct_ride_entry_vehicle CableLiftVehicle;
 
 extern const uint16_t RideFilmLength[3];
-
-extern const rating_tuple RideRatings[RIDE_TYPE_COUNT];
 
 extern const track_colour_preset_list RideColourPresets[RIDE_TYPE_COUNT];
 
@@ -282,19 +284,26 @@ constexpr const RideTypeDescriptor DummyRTD =
     SET_FIELD(Category, RIDE_CATEGORY_NONE),
     SET_FIELD(EnabledTrackPieces, 0),
     SET_FIELD(ExtraTrackPieces, 0),
+    SET_FIELD(CoveredTrackPieces, 0),
     SET_FIELD(StartTrackPiece, TRACK_ELEM_END_STATION),
     SET_FIELD(TrackPaintFunction, nullptr),
     SET_FIELD(Flags, 0),
     SET_FIELD(RideModes, (1ULL << RIDE_MODE_CONTINUOUS_CIRCUIT)),
     SET_FIELD(DefaultMode, RIDE_MODE_CONTINUOUS_CIRCUIT),
+    SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
+    SET_FIELD(Naming, { STR_UNKNOWN_RIDE, STR_RIDE_DESCRIPTION_UNKNOWN }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
     SET_FIELD(AvailableBreakdowns, 0),
+    SET_FIELD(Heights, { 12, 64, 0, 0, }),
+    SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsMultipliers, { 0, 0, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 0, 0, 1 }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_GENTLE),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
+    SET_FIELD(BonusValue, 0)
 };
 // clang-format on
 

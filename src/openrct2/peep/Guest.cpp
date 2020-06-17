@@ -399,6 +399,12 @@ static void peep_head_for_nearest_ride_type(Guest* peep, int32_t rideType);
 static void peep_head_for_nearest_ride_with_flags(Guest* peep, int32_t rideTypeFlags);
 bool loc_690FD0(Peep* peep, uint8_t* rideToView, uint8_t* rideSeatToView, TileElement* tileElement);
 
+template<> bool SpriteBase::Is<Guest>() const
+{
+    auto peep = As<Peep>();
+    return peep && peep->AssignedPeepType == PEEP_TYPE_GUEST;
+}
+
 bool Guest::GuestHasValidXY() const
 {
     if (x != LOCATION_NULL)
@@ -417,14 +423,8 @@ void Guest::ApplyEasterEggToNearbyGuests(easter_egg_function easter_egg)
     if (!GuestHasValidXY())
         return;
 
-    uint16_t spriteIndex = sprite_get_first_in_quadrant(x, y);
-    if (spriteIndex == SPRITE_INDEX_NULL)
-        return;
-
-    auto otherPeep = GET_PEEP(spriteIndex);
-    for (; spriteIndex != SPRITE_INDEX_NULL; spriteIndex = otherPeep->next_in_quadrant)
+    for (auto otherPeep : EntityTileList<Peep>({ x, y }))
     {
-        otherPeep = GET_PEEP(spriteIndex);
         auto otherGuest = otherPeep->AsGuest();
         if (otherGuest)
         {
@@ -3012,11 +3012,8 @@ static PeepThoughtType peep_assess_surroundings(int16_t centre_x, int16_t centre
         }
     }
 
-    Litter* litter;
-    for (uint16_t sprite_idx = gSpriteListHead[SPRITE_LIST_LITTER]; sprite_idx != SPRITE_INDEX_NULL; sprite_idx = litter->next)
+    for (auto litter : EntityList<Litter>(SPRITE_LIST_LITTER))
     {
-        litter = &(get_sprite(sprite_idx)->litter);
-
         int16_t dist_x = abs(litter->x - centre_x);
         int16_t dist_y = abs(litter->y - centre_y);
         if (std::max(dist_x, dist_y) <= 160)
@@ -3270,7 +3267,7 @@ static void peep_head_for_nearest_ride_with_flags(Guest* peep, int32_t rideTypeF
  *  rct2: 0x00699FE3
  * Stops peeps that are having thoughts
  * such as "I'm hungry" after visiting a food shop.
- * Works for Thirst/Hungry/Low Money/Bathroom
+ * Works for Thirst/Hungry/Low Money/Toilet
  */
 void Guest::StopPurchaseThought(uint8_t ride_type)
 {
@@ -3683,7 +3680,7 @@ void Guest::UpdateRideAdvanceThroughEntrance()
         distanceThreshold += 4;
         if (xy_distance < distanceThreshold)
         {
-            actionZ += RideData5[ride->type].z;
+            actionZ += RideTypeDescriptors[ride->type].Heights.PlatformHeight;
         }
 
         MoveTo({ *loc, actionZ });
@@ -3803,7 +3800,7 @@ void Guest::UpdateRideAdvanceThroughEntrance()
  */
 static void peep_go_to_ride_exit(Peep* peep, Ride* ride, int16_t x, int16_t y, int16_t z, uint8_t exit_direction)
 {
-    z += RideData5[ride->type].z;
+    z += RideTypeDescriptors[ride->type].Heights.PlatformHeight;
 
     peep->MoveTo({ x, y, z });
 
@@ -4017,7 +4014,7 @@ void Guest::UpdateRideFreeVehicleCheck()
 
     Vehicle* currentTrain = GET_VEHICLE(ride->vehicles[CurrentTrain]);
     if (ride->status == RIDE_STATUS_OPEN && ++RejoinQueueTimeout != 0
-        && !currentTrain->UpdateFlag(VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART))
+        && !currentTrain->HasUpdateFlag(VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART))
     {
         return;
     }
@@ -4265,7 +4262,7 @@ void Guest::UpdateRideLeaveVehicle()
     Guard::Assert(!exitLocation.isNull());
 
     auto waypointLoc = CoordsXYZ{ ride->stations[CurrentRideStation].Start.ToTileCentre(),
-                                  exitLocation.z + RideData5[ride->type].z };
+                                  exitLocation.z + RideTypeDescriptors[ride->type].Heights.PlatformHeight };
 
     TileElement* trackElement = ride_get_station_start_track_element(ride, CurrentRideStation);
 
@@ -4385,7 +4382,7 @@ void Guest::UpdateRideInExit()
         {
             int16_t actionZ = ride->stations[CurrentRideStation].GetBaseZ();
 
-            actionZ += RideData5[ride->type].z;
+            actionZ += RideTypeDescriptors[ride->type].Heights.PlatformHeight;
             MoveTo({ *loc, actionZ });
             return;
         }
@@ -5477,24 +5474,18 @@ void Guest::UpdateWalking()
         return;
 
     // Check if there is a peep watching (and if there is place for us)
-    uint16_t sprite_id = sprite_get_first_in_quadrant(x, y);
-    for (rct_sprite* sprite; sprite_id != SPRITE_INDEX_NULL; sprite_id = sprite->generic.next_in_quadrant)
+    for (auto peep : EntityTileList<Peep>({ x, y }))
     {
-        sprite = get_sprite(sprite_id);
-
-        if (!sprite->generic.Is<Peep>())
+        if (peep->State != PEEP_STATE_WATCHING)
             continue;
 
-        if (sprite->peep.State != PEEP_STATE_WATCHING)
+        if (z != peep->z)
             continue;
 
-        if (z != sprite->peep.z)
+        if ((peep->Var37 & 0x3) != chosen_edge)
             continue;
 
-        if ((sprite->peep.Var37 & 0x3) != chosen_edge)
-            continue;
-
-        positions_free &= ~(1 << ((sprite->peep.Var37 & 0x1C) >> 2));
+        positions_free &= ~(1 << ((peep->Var37 & 0x1C) >> 2));
     }
 
     if (!positions_free)
@@ -6060,27 +6051,21 @@ bool Guest::UpdateWalkingFindBench()
     for (; !(edges & (1 << chosen_edge));)
         chosen_edge = (chosen_edge + 1) & 0x3;
 
-    uint16_t sprite_id = sprite_get_first_in_quadrant(x, y);
     uint8_t free_edge = 3;
 
     // Check if there is no peep sitting in chosen_edge
-    for (rct_sprite* sprite; sprite_id != SPRITE_INDEX_NULL; sprite_id = sprite->generic.next_in_quadrant)
+    for (auto peep : EntityTileList<Peep>({ x, y }))
     {
-        sprite = get_sprite(sprite_id);
-
-        if (!sprite->generic.Is<Peep>())
+        if (peep->State != PEEP_STATE_SITTING)
             continue;
 
-        if (sprite->peep.State != PEEP_STATE_SITTING)
+        if (z != peep->z)
             continue;
 
-        if (z != sprite->peep.z)
+        if ((peep->Var37 & 0x3) != chosen_edge)
             continue;
 
-        if ((sprite->peep.Var37 & 0x3) != chosen_edge)
-            continue;
-
-        free_edge &= ~(1 << ((sprite->peep.Var37 & 0x4) >> 2));
+        free_edge &= ~(1 << ((peep->Var37 & 0x4) >> 2));
     }
 
     if (!free_edge)
@@ -6255,14 +6240,10 @@ static void peep_update_walking_break_scenery(Peep* peep)
     if (edges == 0xF)
         return;
 
-    uint16_t sprite_id = sprite_get_first_in_quadrant(peep->x, peep->y);
-
     // Check if a peep is already sitting on the bench. If so, do not vandalise it.
-    for (rct_sprite* sprite; sprite_id != SPRITE_INDEX_NULL; sprite_id = sprite->generic.next_in_quadrant)
+    for (auto peep2 : EntityTileList<Peep>({ peep->x, peep->y }))
     {
-        sprite = get_sprite(sprite_id);
-
-        if (!sprite->generic.Is<Peep>() || (sprite->peep.State != PEEP_STATE_SITTING) || (peep->z != sprite->peep.z))
+        if ((peep2->State != PEEP_STATE_SITTING) || (peep->z != peep2->z))
         {
             continue;
         }
@@ -6270,10 +6251,7 @@ static void peep_update_walking_break_scenery(Peep* peep)
         return;
     }
 
-    Peep* inner_peep;
-    uint16_t sprite_index;
-
-    FOR_ALL_STAFF (sprite_index, inner_peep)
+    for (auto inner_peep : EntityList<Staff>(SPRITE_LIST_PEEP))
     {
         if (inner_peep->StaffType != STAFF_TYPE_SECURITY)
             continue;

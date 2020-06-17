@@ -347,18 +347,13 @@ static RideSelection* window_new_ride_iterate_over_ride_group(
     bool buttonForRideTypeCreated = false;
     bool allowDrawingOverLastButton = false;
 
-    char preferredVehicleName[DAT_NAME_LENGTH + 1];
-    safe_strcpy(preferredVehicleName, "        ", sizeof(preferredVehicleName));
+    uint8_t highestVehiclePriority = 0;
 
     // For each ride entry for this ride type
     auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
     auto& rideEntries = objManager.GetAllRideEntries(rideType);
     for (auto rideEntryIndex : rideEntries)
     {
-        char rideEntryName[DAT_NAME_LENGTH + 1];
-        std::memcpy(rideEntryName, object_entry_get_entry(OBJECT_TYPE_RIDE, rideEntryIndex)->name, 8);
-        rideEntryName[DAT_NAME_LENGTH] = 0;
-
         // Skip if vehicle type is not invented yet
         if (!ride_entry_is_invented(rideEntryIndex) && !gCheatsIgnoreResearchStatus)
             continue;
@@ -376,26 +371,12 @@ static RideSelection* window_new_ride_iterate_over_ride_group(
         }
 
         // Skip if the vehicle isn't the preferred vehicle for this generic track type
-        if (!RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY))
+        if (!RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY)
+            && highestVehiclePriority > rideEntry->BuildMenuPriority)
         {
-            if (strcmp(preferredVehicleName, "        \0") == 0)
-            {
-                safe_strcpy(preferredVehicleName, rideEntryName, sizeof(preferredVehicleName));
-                preferredVehicleName[DAT_NAME_LENGTH] = 0;
-            }
-            else
-            {
-                if (RideGroupManager::VehiclePreferenceCompare(rideType, preferredVehicleName, rideEntryName) == 1)
-                {
-                    safe_strcpy(preferredVehicleName, rideEntryName, sizeof(preferredVehicleName));
-                    preferredVehicleName[DAT_NAME_LENGTH] = 0;
-                }
-                else
-                {
-                    continue;
-                }
-            }
+            continue;
         }
+        highestVehiclePriority = rideEntry->BuildMenuPriority;
 
         // Determines how and where to draw a button for this ride type/vehicle.
         if (RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY))
@@ -966,13 +947,13 @@ static void window_new_ride_paint_ride_information(
     rct_window* w, rct_drawpixelinfo* dpi, RideSelection item, const ScreenCoordsXY& screenPos, int32_t width)
 {
     rct_ride_entry* rideEntry = get_ride_entry(item.EntryIndex);
-    rct_ride_name rideNaming;
+    RideNaming rideNaming;
 
     // Ride name and description
     rideNaming = get_ride_naming(item.Type, rideEntry);
     auto ft = Formatter::Common();
-    ft.Add<rct_string_id>(rideNaming.name);
-    ft.Add<rct_string_id>(rideNaming.description);
+    ft.Add<rct_string_id>(rideNaming.Name);
+    ft.Add<rct_string_id>(rideNaming.Description);
     gfx_draw_string_left_wrapped(dpi, gCommonFormatArgs, screenPos, width, STR_NEW_RIDE_NAME_AND_DESCRIPTION, COLOUR_BLACK);
 
     char availabilityString[AVAILABILITY_STRING_SIZE];
@@ -1093,7 +1074,7 @@ static void window_new_ride_list_vehicles_for(uint8_t rideType, const rct_ride_e
         }
 
         // Append vehicle name
-        auto vehicleName = language_get_string(currentRideEntry->naming.name);
+        auto vehicleName = language_get_string(currentRideEntry->naming.Name);
         safe_strcat(buffer, vehicleName, bufferLen);
 
         isFirst = false;

@@ -352,13 +352,10 @@ void Ride::QueueInsertGuestAtFront(StationIndex stationIndex, Peep* peep)
  */
 void ride_update_favourited_stat()
 {
-    uint16_t spriteIndex;
-    Peep* peep;
-
     for (auto& ride : GetRideManager())
         ride.guests_favourite = 0;
 
-    FOR_ALL_GUESTS (spriteIndex, peep)
+    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
     {
         if (peep->FavouriteRide != RIDE_ID_NULL)
         {
@@ -831,10 +828,9 @@ size_t Ride::FormatStatusTo(void* argsV) const
         mode == RIDE_MODE_RACE && !(lifecycle_flags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING)
         && race_winner != SPRITE_INDEX_NULL)
     {
-        auto sprite = get_sprite(race_winner);
-        if (sprite != nullptr && sprite->generic.Is<Peep>())
+        auto peep = GetEntity<Peep>(race_winner);
+        if (peep != nullptr)
         {
-            auto peep = sprite->generic.As<Peep>();
             ft.Add<rct_string_id>(STR_RACE_WON_BY);
             peep->FormatNameTo(ft);
         }
@@ -1099,9 +1095,7 @@ void ride_remove_peeps(Ride* ride)
     }
 
     // Place all the peeps at exit
-    uint16_t spriteIndex;
-    Peep* peep;
-    FOR_ALL_PEEPS (spriteIndex, peep)
+    for (auto peep : EntityList<Peep>(SPRITE_LIST_PEEP))
     {
         if (peep->State == PEEP_STATE_QUEUING_FRONT || peep->State == PEEP_STATE_ENTERING_RIDE
             || peep->State == PEEP_STATE_LEAVING_RIDE || peep->State == PEEP_STATE_ON_RIDE)
@@ -2686,12 +2680,10 @@ Peep* ride_find_closest_mechanic(Ride* ride, int32_t forInspection)
  */
 Peep* find_closest_mechanic(int32_t x, int32_t y, int32_t forInspection)
 {
-    uint32_t closestDistance, distance;
-    uint16_t spriteIndex;
-    Peep *peep, *closestMechanic = nullptr;
+    Peep* closestMechanic = nullptr;
+    uint32_t closestDistance = std::numeric_limits<uint32_t>::max();
 
-    closestDistance = UINT_MAX;
-    FOR_ALL_STAFF (spriteIndex, peep)
+    for (auto peep : EntityList<Staff>(SPRITE_LIST_PEEP))
     {
         if (peep->StaffType != STAFF_TYPE_MECHANIC)
             continue;
@@ -2724,7 +2716,7 @@ Peep* find_closest_mechanic(int32_t x, int32_t y, int32_t forInspection)
             continue;
 
         // Manhattan distance
-        distance = std::abs(peep->x - x) + std::abs(peep->y - y);
+        uint32_t distance = std::abs(peep->x - x) + std::abs(peep->y - y);
         if (distance < closestDistance)
         {
             closestDistance = distance;
@@ -2739,10 +2731,12 @@ Staff* ride_get_mechanic(Ride* ride)
 {
     if (ride->mechanic != SPRITE_INDEX_NULL)
     {
-        auto peep = (&(get_sprite(ride->mechanic)->peep))->AsStaff();
-        if (peep != nullptr && peep->IsMechanic())
+        auto peep = GetEntity<Peep>(ride->mechanic);
+        if (peep != nullptr)
         {
-            return peep;
+            auto staff = peep->AsStaff();
+            if (staff != nullptr && staff->IsMechanic())
+                return staff;
         }
     }
     return nullptr;
@@ -4401,7 +4395,7 @@ static Vehicle* vehicle_create_car(
         vehicle->TrackLocation = { x, y, z };
         vehicle->current_station = tileElement->AsTrack()->GetStationIndex();
 
-        z += RideData5[ride->type].z_offset;
+        z += RideTypeDescriptors[ride->type].Heights.VehicleZOffset;
 
         vehicle->track_type = tileElement->AsTrack()->GetTrackType() << 2;
         vehicle->track_progress = 0;
@@ -4490,7 +4484,7 @@ static Vehicle* vehicle_create_car(
 
         vehicle->current_station = tileElement->AsTrack()->GetStationIndex();
         z = tileElement->GetBaseZ();
-        z += RideData5[ride->type].z_offset;
+        z += RideTypeDescriptors[ride->type].Heights.VehicleZOffset;
 
         vehicle->MoveTo({ x, y, z });
         vehicle->track_type = (tileElement->AsTrack()->GetTrackType() << 2) | (vehicle->sprite_direction >> 3);
@@ -5484,10 +5478,7 @@ int32_t ride_get_refund_price(const Ride* ride)
  */
 void Ride::StopGuestsQueuing()
 {
-    uint16_t spriteIndex;
-    Peep* peep;
-
-    FOR_ALL_PEEPS (spriteIndex, peep)
+    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
     {
         if (peep->State != PEEP_STATE_QUEUING)
             continue;
@@ -5632,7 +5623,7 @@ void Ride::SetNameToDefault()
 /**
  * This will return the name of the ride, as seen in the New Ride window.
  */
-rct_ride_name get_ride_naming(const uint8_t rideType, rct_ride_entry* rideEntry)
+RideNaming get_ride_naming(const uint8_t rideType, rct_ride_entry* rideEntry)
 {
     if (RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_HAS_RIDE_GROUPS))
     {
@@ -5641,7 +5632,7 @@ rct_ride_name get_ride_naming(const uint8_t rideType, rct_ride_entry* rideEntry)
     }
     else if (!RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY))
     {
-        return RideNaming[rideType];
+        return RideTypeDescriptors[rideType].Naming;
     }
     else
     {
@@ -6691,7 +6682,7 @@ void Ride::UpdateMaxVehicles()
             return;
 
         auto stationLength = (*stationNumTiles * 0x44180) - 0x16B2A;
-        int32_t maxMass = RideData5[type].max_mass << 8;
+        int32_t maxMass = RideTypeDescriptors[type].MaxMass << 8;
         int32_t maxCarsPerTrain = 1;
         for (int32_t numCars = rideEntry->max_cars_in_train; numCars > 0; numCars--)
         {
@@ -7441,16 +7432,9 @@ uint8_t ride_entry_get_first_non_null_ride_type(const rct_ride_entry* rideEntry)
     return RIDE_TYPE_NULL;
 }
 
-bool ride_type_supports_boosters(uint8_t rideType)
-{
-    return rideType == RIDE_TYPE_LOOPING_ROLLER_COASTER || rideType == RIDE_TYPE_CORKSCREW_ROLLER_COASTER
-        || rideType == RIDE_TYPE_TWISTER_ROLLER_COASTER || rideType == RIDE_TYPE_VERTICAL_DROP_ROLLER_COASTER
-        || rideType == RIDE_TYPE_GIGA_COASTER || rideType == RIDE_TYPE_JUNIOR_ROLLER_COASTER;
-}
-
 int32_t get_booster_speed(uint8_t rideType, int32_t rawSpeed)
 {
-    int8_t shiftFactor = RideProperties[rideType].booster_speed_factor;
+    int8_t shiftFactor = RideTypeDescriptors[rideType].OperatingSettings.BoosterSpeedFactor;
     if (shiftFactor == 0)
     {
         return rawSpeed;
@@ -7746,13 +7730,13 @@ size_t Ride::FormatNameTo(void* argsV) const
     }
     else
     {
-        auto rideTypeName = RideNaming[type].name;
+        auto rideTypeName = RideTypeDescriptors[type].Naming.Name;
         if (RideTypeDescriptors[type].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY))
         {
             auto rideEntry = GetRideEntry();
             if (rideEntry != nullptr)
             {
-                rideTypeName = rideEntry->naming.name;
+                rideTypeName = rideEntry->naming.Name;
             }
         }
         else if (RideTypeDescriptors[type].HasFlag(RIDE_TYPE_FLAG_HAS_RIDE_GROUPS))
@@ -7763,7 +7747,7 @@ size_t Ride::FormatNameTo(void* argsV) const
                 auto rideGroup = RideGroupManager::GetRideGroup(type, rideEntry);
                 if (rideGroup != nullptr)
                 {
-                    rideTypeName = rideGroup->Naming.name;
+                    rideTypeName = rideGroup->Naming.Name;
                 }
             }
         }

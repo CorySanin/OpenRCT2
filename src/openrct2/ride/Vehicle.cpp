@@ -1321,9 +1321,9 @@ void vehicle_sounds_update()
 
     vehicle_sounds_update_window_setup();
 
-    for (uint16_t i = gSpriteListHead[SPRITE_LIST_TRAIN_HEAD]; i != SPRITE_INDEX_NULL; i = get_sprite(i)->vehicle.next)
+    for (auto vehicle : EntityList<Vehicle>(SPRITE_LIST_TRAIN_HEAD))
     {
-        get_sprite(i)->vehicle.UpdateSoundParams(vehicleSoundParamsList);
+        vehicle->UpdateSoundParams(vehicleSoundParamsList);
     }
 
     // Stop all playing sounds that no longer have priority to play after vehicle_update_sound_params
@@ -1393,21 +1393,14 @@ void vehicle_sounds_update()
  */
 void vehicle_update_all()
 {
-    uint16_t sprite_index;
-    Vehicle* vehicle;
-
     if (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR)
         return;
 
     if ((gScreenFlags & SCREEN_FLAGS_TRACK_DESIGNER) && gS6Info.editor_step != EDITOR_STEP_ROLLERCOASTER_DESIGNER)
         return;
 
-    sprite_index = gSpriteListHead[SPRITE_LIST_TRAIN_HEAD];
-    while (sprite_index != SPRITE_INDEX_NULL)
+    for (auto vehicle : EntityList<Vehicle>(SPRITE_LIST_TRAIN_HEAD))
     {
-        vehicle = GET_VEHICLE(sprite_index);
-        sprite_index = vehicle->next;
-
         vehicle->Update();
     }
 }
@@ -1429,7 +1422,7 @@ bool Vehicle::CloseRestraints()
     do
     {
         vehicle = GET_VEHICLE(vehicle_id);
-        if (vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR) && vehicle->restraints_position != 0
+        if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR) && vehicle->restraints_position != 0
             && (curRide->breakdown_reason_pending == BREAKDOWN_RESTRAINTS_STUCK_OPEN
                 || curRide->breakdown_reason_pending == BREAKDOWN_DOORS_STUCK_OPEN))
         {
@@ -1539,7 +1532,7 @@ bool Vehicle::OpenRestraints()
             continue;
         }
 
-        if (vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR) && vehicle->restraints_position != 0xFF
+        if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR) && vehicle->restraints_position != 0xFF
             && (curRide->breakdown_reason_pending == BREAKDOWN_RESTRAINTS_STUCK_CLOSED
                 || curRide->breakdown_reason_pending == BREAKDOWN_DOORS_STUCK_CLOSED))
         {
@@ -1662,7 +1655,7 @@ void Vehicle::UpdateMeasurements()
             return;
 
         uint16_t trackElemType = GetTrackType();
-        if (trackElemType == TRACK_ELEM_POWERED_LIFT || UpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
+        if (trackElemType == TRACK_ELEM_POWERED_LIFT || HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
         {
             if (!(curRide->testing_flags & RIDE_TESTING_POWERED_LIFT))
             {
@@ -2009,7 +2002,7 @@ void Vehicle::Update()
     if (curRide == nullptr)
         return;
 
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_TESTING))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING))
         UpdateMeasurements();
 
     _vehicleBreakdown = 255;
@@ -2225,7 +2218,7 @@ void Vehicle::TrainReadyToDepart(uint8_t num_peeps_on_train, uint8_t num_used_se
         return;
 
     if (curRide->status == RIDE_STATUS_OPEN && !(curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN)
-        && !UpdateFlag(VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART))
+        && !HasUpdateFlag(VEHICLE_UPDATE_FLAG_TRAIN_READY_DEPART))
     {
         return;
     }
@@ -2487,7 +2480,7 @@ void Vehicle::UpdateDodgemsMode()
 
     UpdateMotionDodgems();
 
-    // Update the length of time vehicle has been in bumper mode
+    // Update the length of time vehicle has been in dodgems mode
     if (sub_state++ == 0xFF)
     {
         var_CE++;
@@ -2582,7 +2575,7 @@ void Vehicle::UpdateWaitingToDepart()
     {
         if (curRide->depart_flags & RIDE_DEPART_SYNCHRONISE_WITH_ADJACENT_STATIONS)
         {
-            if (UpdateFlag(VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT))
+            if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT))
             {
                 if (!CanDepartSynchronised())
                 {
@@ -2613,7 +2606,7 @@ void Vehicle::UpdateWaitingToDepart()
     switch (curRide->mode)
     {
         case RIDE_MODE_DODGEMS:
-            // Bumper mode uses sub_state / var_CE to tell how long
+            // Dodgems mode uses sub_state / var_CE to tell how long
             // the vehicle has been ridden.
             SetState(VEHICLE_STATUS_TRAVELLING_DODGEMS);
             var_CE = 0;
@@ -2808,7 +2801,7 @@ static bool try_add_synchronised_station(int32_t x, int32_t y, int32_t z)
         {
             continue;
         }
-        if (!vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT))
+        if (!vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT))
         {
             continue;
         }
@@ -3236,7 +3229,7 @@ void Vehicle::UpdateDeparting()
 
     if (sub_state == 0)
     {
-        if (UpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN))
+        if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN))
         {
             if (curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN)
                 return;
@@ -3270,7 +3263,7 @@ void Vehicle::UpdateDeparting()
 
         if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED))
         {
-            if (UpdateFlag(VEHICLE_UPDATE_FLAG_TESTING))
+            if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING))
             {
                 if (curRide->current_test_segment + 1 < curRide->num_stations)
                 {
@@ -3831,7 +3824,7 @@ void Vehicle::UpdateTravelling()
                 if (velocity != 0)
                     sound2_flags |= VEHICLE_SOUND2_FLAGS_LIFT_HILL;
 
-                if (!UpdateFlag(VEHICLE_UPDATE_FLAG_12))
+                if (!HasUpdateFlag(VEHICLE_UPDATE_FLAG_12))
                 {
                     if (velocity >= curRide->lift_hill_speed * -31079)
                     {
@@ -3871,7 +3864,7 @@ void Vehicle::UpdateTravelling()
     if (!(curFlags & VEHICLE_UPDATE_MOTION_TRACK_FLAG_3))
         return;
 
-    if (curRide->mode == RIDE_MODE_REVERSE_INCLINE_LAUNCHED_SHUTTLE && velocity >= 0 && !UpdateFlag(VEHICLE_UPDATE_FLAG_12))
+    if (curRide->mode == RIDE_MODE_REVERSE_INCLINE_LAUNCHED_SHUTTLE && velocity >= 0 && !HasUpdateFlag(VEHICLE_UPDATE_FLAG_12))
     {
         return;
     }
@@ -4061,7 +4054,7 @@ loc_6D8E36:
             return;
         }
 
-        if (num_laps == curRide->num_circuits && UpdateFlag(VEHICLE_UPDATE_FLAG_12))
+        if (num_laps == curRide->num_circuits && HasUpdateFlag(VEHICLE_UPDATE_FLAG_12))
         {
             SetState(VEHICLE_STATUS_DEPARTING, 1);
             return;
@@ -4140,7 +4133,7 @@ void Vehicle::UpdateUnloadingPassengers()
             if (sub_state != 1)
                 return;
 
-            if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && UpdateFlag(VEHICLE_UPDATE_FLAG_TESTING)
+            if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && HasUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING)
                 && curRide->current_test_segment + 1 >= curRide->num_stations)
             {
                 UpdateTestFinish();
@@ -4180,7 +4173,7 @@ void Vehicle::UpdateUnloadingPassengers()
             return;
     }
 
-    if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && UpdateFlag(VEHICLE_UPDATE_FLAG_TESTING)
+    if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && HasUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING)
         && curRide->current_test_segment + 1 >= curRide->num_stations)
     {
         UpdateTestFinish();
@@ -4219,7 +4212,7 @@ void Vehicle::UpdateTravellingCableLift()
 
     if (sub_state == 0)
     {
-        if (UpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN))
+        if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN))
         {
             if (curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN)
                 return;
@@ -4240,7 +4233,7 @@ void Vehicle::UpdateTravellingCableLift()
         PeepEasterEggHereWeAre();
         if (!(curRide->lifecycle_flags & RIDE_LIFECYCLE_TESTED))
         {
-            if (UpdateFlag(VEHICLE_UPDATE_FLAG_TESTING))
+            if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING))
             {
                 if (curRide->current_test_segment + 1 < curRide->num_stations)
                 {
@@ -4607,7 +4600,7 @@ void Vehicle::UpdateMotionBoatHire()
         {
             eax = speed << 14;
             int32_t ebx = (speed * curMass) >> 2;
-            if (UpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
+            if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
             {
                 eax = -eax;
             }
@@ -5632,12 +5625,7 @@ void Vehicle::UpdateSound()
  */
 SoundId Vehicle::UpdateScreamSound()
 {
-    uint32_t r;
-    uint16_t spriteIndex;
-    rct_ride_entry* rideEntry;
-    Vehicle* vehicle2;
-
-    rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
 
     rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
 
@@ -5650,10 +5638,15 @@ SoundId Vehicle::UpdateScreamSound()
         if (velocity > -0x2C000)
             return SoundId::Null;
 
-        spriteIndex = sprite_index;
-        do
+        for (uint16_t spriteIndex = sprite_index; spriteIndex != SPRITE_INDEX_NULL;)
         {
-            vehicle2 = &(get_sprite(spriteIndex)->vehicle);
+            auto vehicle2 = GetEntity<Vehicle>(spriteIndex);
+            if (vehicle2 == nullptr)
+            {
+                return SoundId::Null;
+            }
+            spriteIndex = vehicle2->next_vehicle_on_train;
+
             if (vehicle2->vehicle_sprite_type < 1)
                 continue;
             if (vehicle2->vehicle_sprite_type <= 4)
@@ -5662,17 +5655,21 @@ SoundId Vehicle::UpdateScreamSound()
                 continue;
             if (vehicle2->vehicle_sprite_type <= 15)
                 goto produceScream;
-        } while ((spriteIndex = vehicle2->next_vehicle_on_train) != SPRITE_INDEX_NULL);
+        }
         return SoundId::Null;
     }
 
     if (velocity < 0x2C000)
         return SoundId::Null;
 
-    spriteIndex = sprite_index;
-    do
+    for (uint16_t spriteIndex = sprite_index; spriteIndex != SPRITE_INDEX_NULL;)
     {
-        vehicle2 = &(get_sprite(spriteIndex)->vehicle);
+        auto vehicle2 = GetEntity<Vehicle>(spriteIndex);
+        if (vehicle2 == nullptr)
+        {
+            return SoundId::Null;
+        }
+        spriteIndex = vehicle2->next_vehicle_on_train;
         if (vehicle2->vehicle_sprite_type < 5)
             continue;
         if (vehicle2->vehicle_sprite_type <= 8)
@@ -5681,13 +5678,13 @@ SoundId Vehicle::UpdateScreamSound()
             continue;
         if (vehicle2->vehicle_sprite_type <= 23)
             goto produceScream;
-    } while ((spriteIndex = vehicle2->next_vehicle_on_train) != SPRITE_INDEX_NULL);
+    }
     return SoundId::Null;
 
 produceScream:
     if (scream_sound_id == SoundId::Null)
     {
-        r = scenario_rand();
+        auto r = scenario_rand();
         if (totalNumPeeps >= static_cast<int32_t>(r % 16))
         {
             switch (vehicleEntry->sound_range)
@@ -6460,7 +6457,7 @@ int32_t Vehicle::UpdateMotionDodgems()
 
     int32_t ebx = (speed * mass) >> 2;
     int32_t _eax = speed << 14;
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
     {
         _eax = -_eax;
     }
@@ -6506,18 +6503,10 @@ bool Vehicle::DodgemsCarWouldCollideAt(const CoordsXY& coords, uint16_t* collide
     {
         location += xy_offset;
 
-        uint16_t spriteIdx = sprite_get_first_in_quadrant(location.x, location.y);
-        while (spriteIdx != SPRITE_INDEX_NULL)
+        for (auto vehicle2 : EntityTileList<Vehicle>(location))
         {
-            Vehicle* vehicle2 = GET_VEHICLE(spriteIdx);
-            spriteIdx = vehicle2->next_in_quadrant;
-
             if (vehicle2 == this)
                 continue;
-
-            if (vehicle2->sprite_identifier != SPRITE_IDENTIFIER_VEHICLE)
-                continue;
-
             if (vehicle2->ride != rideIndex)
                 continue;
 
@@ -6733,16 +6722,16 @@ void Vehicle::CheckAndApplyBlockSectionStopSite()
 void Vehicle::UpdateVelocity()
 {
     int32_t nextVelocity = acceleration + velocity;
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_ZERO_VELOCITY))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_ZERO_VELOCITY))
     {
         nextVelocity = 0;
     }
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_BRAKE_FOR_DROP))
     {
         vertical_drop_countdown--;
         if (vertical_drop_countdown == -70)
         {
-            ClearUpdateFlag(VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP);
+            ClearUpdateFlag(VEHICLE_UPDATE_FLAG_ON_BRAKE_FOR_DROP);
         }
         if (vertical_drop_countdown >= 0)
         {
@@ -6999,7 +6988,7 @@ void Vehicle::UpdateSwingingCar()
             cx = 0;
         }
 
-        if (UpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
+        if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
         {
             dx = 0;
             cx = 0;
@@ -7127,7 +7116,7 @@ static const uint8_t TrackTypeToSpinFunction[256] = {
  */
 void Vehicle::UpdateSpinningCar()
 {
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_ROTATION_OFF_WILD_MOUSE))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_ROTATION_OFF_WILD_MOUSE))
     {
         spin_speed = 0;
         return;
@@ -7507,7 +7496,7 @@ static bool loc_6DB38B(Vehicle* vehicle, TileElement* tileElement)
 static void VehicleUpdateGoKartAttemptSwitchLanes(Vehicle* vehicle)
 {
     uint16_t probability = 0x8000;
-    if (vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_6))
+    if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_6))
     {
         vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_6);
     }
@@ -7652,7 +7641,7 @@ void Vehicle::UpdateReverserCarBogies()
 static bool vehicle_update_motion_collision_detection(
     Vehicle* vehicle, int16_t x, int16_t y, int16_t z, uint16_t* otherVehicleIndex)
 {
-    if (vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_1))
+    if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_1))
         return false;
 
     auto vehicleEntry = vehicle->Entry();
@@ -7699,54 +7688,47 @@ static bool vehicle_update_motion_collision_detection(
     auto location = CoordsXY{ x, y };
 
     bool mayCollide = false;
-    uint16_t collideId = SPRITE_INDEX_NULL;
     Vehicle* collideVehicle = nullptr;
     for (auto xy_offset : SurroundingTiles)
     {
         location += xy_offset;
 
-        collideId = sprite_get_first_in_quadrant(location.x, location.y);
-        for (; collideId != SPRITE_INDEX_NULL; collideId = collideVehicle->next_in_quadrant)
+        for (auto vehicle2 : EntityTileList<Vehicle>(location))
         {
-            collideVehicle = GET_VEHICLE(collideId);
-            if (collideVehicle == vehicle)
+            if (vehicle2 == vehicle)
                 continue;
-
-            if (collideVehicle->sprite_identifier != SPRITE_IDENTIFIER_VEHICLE)
-                continue;
-
-            int32_t z_diff = abs(collideVehicle->z - z);
+            int32_t z_diff = abs(vehicle2->z - z);
 
             if (z_diff > 16)
                 continue;
 
-            if (collideVehicle->ride_subtype == RIDE_TYPE_NULL)
+            if (vehicle2->ride_subtype == RIDE_TYPE_NULL)
                 continue;
 
-            auto collideVehicleEntry = collideVehicle->Entry();
+            auto collideVehicleEntry = vehicle2->Entry();
             if (collideVehicleEntry == nullptr)
                 continue;
 
             if (!(collideVehicleEntry->flags & VEHICLE_ENTRY_FLAG_BOAT_HIRE_COLLISION_DETECTION))
                 continue;
 
-            uint32_t x_diff = abs(collideVehicle->x - x);
+            uint32_t x_diff = abs(vehicle2->x - x);
             if (x_diff > 0x7FFF)
                 continue;
 
-            uint32_t y_diff = abs(collideVehicle->y - y);
+            uint32_t y_diff = abs(vehicle2->y - y);
             if (y_diff > 0x7FFF)
                 continue;
 
-            uint8_t cl = std::min(vehicle->TrackSubposition, collideVehicle->TrackSubposition);
-            uint8_t ch = std::max(vehicle->TrackSubposition, collideVehicle->TrackSubposition);
+            uint8_t cl = std::min(vehicle->TrackSubposition, vehicle2->TrackSubposition);
+            uint8_t ch = std::max(vehicle->TrackSubposition, vehicle2->TrackSubposition);
             if (cl != ch)
             {
                 if (cl == VEHICLE_TRACK_SUBPOSITION_GO_KARTS_LEFT_LANE && ch == VEHICLE_TRACK_SUBPOSITION_GO_KARTS_RIGHT_LANE)
                     continue;
             }
 
-            uint32_t ecx = vehicle->var_44 + collideVehicle->var_44;
+            uint32_t ecx = vehicle->var_44 + vehicle2->var_44;
             ecx = ((ecx >> 1) * 30) >> 8;
 
             if (x_diff + y_diff >= ecx)
@@ -7754,22 +7736,24 @@ static bool vehicle_update_motion_collision_detection(
 
             if (!(collideVehicleEntry->flags & VEHICLE_ENTRY_FLAG_GO_KART))
             {
+                collideVehicle = vehicle2;
                 mayCollide = true;
                 break;
             }
 
-            uint8_t direction = (vehicle->sprite_direction - collideVehicle->sprite_direction - 6) & 0x1F;
+            uint8_t direction = (vehicle->sprite_direction - vehicle2->sprite_direction - 6) & 0x1F;
 
             if (direction < 0x14)
                 continue;
 
             uint32_t offsetSpriteDirection = (vehicle->sprite_direction + 4) & 31;
             uint32_t offsetDirection = offsetSpriteDirection >> 3;
-            uint32_t next_x_diff = abs(x + AvoidCollisionMoveOffset[offsetDirection].x - collideVehicle->x);
-            uint32_t next_y_diff = abs(y + AvoidCollisionMoveOffset[offsetDirection].y - collideVehicle->y);
+            uint32_t next_x_diff = abs(x + AvoidCollisionMoveOffset[offsetDirection].x - vehicle2->x);
+            uint32_t next_y_diff = abs(y + AvoidCollisionMoveOffset[offsetDirection].y - vehicle2->y);
 
             if (next_x_diff + next_y_diff < x_diff + y_diff)
             {
+                collideVehicle = vehicle2;
                 mayCollide = true;
                 break;
             }
@@ -7791,7 +7775,7 @@ static bool vehicle_update_motion_collision_detection(
     {
         vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_6);
         if (otherVehicleIndex != nullptr)
-            *otherVehicleIndex = collideId;
+            *otherVehicleIndex = collideVehicle->sprite_index;
         return true;
     }
 
@@ -7837,7 +7821,7 @@ static bool vehicle_update_motion_collision_detection(
 
     vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_6);
     if (otherVehicleIndex != nullptr)
-        *otherVehicleIndex = collideId;
+        *otherVehicleIndex = collideVehicle->sprite_index;
     return true;
 }
 
@@ -7900,7 +7884,7 @@ static void sub_6DBF3E(Vehicle* vehicle)
 
     if (trackType == TRACK_ELEM_TOWER_BASE && vehicle == gCurrentVehicle)
     {
-        if (vehicle->track_progress > 3 && !vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
+        if (vehicle->track_progress > 3 && !vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
         {
             CoordsXYE output;
             int32_t outputZ, outputDirection;
@@ -8200,27 +8184,28 @@ loc_6DAEB9:
 
         if (regs.eax > _vehicleVelocityF64E08)
         {
-            acceleration = RideProperties[curRide->type].booster_acceleration << 16; //_vehicleVelocityF64E08 * 1.2;
+            acceleration = RideTypeDescriptors[curRide->type].OperatingSettings.BoosterAcceleration
+                << 16; //_vehicleVelocityF64E08 * 1.2;
         }
     }
 
     if ((trackType == TRACK_ELEM_FLAT && curRide->type == RIDE_TYPE_REVERSE_FREEFALL_COASTER)
         || (trackType == TRACK_ELEM_POWERED_LIFT))
     {
-        acceleration = RideProperties[curRide->type].powered_lift_acceleration << 16;
+        acceleration = RideTypeDescriptors[curRide->type].OperatingSettings.PoweredLiftAcceleration << 16;
     }
     if (trackType == TRACK_ELEM_BRAKE_FOR_DROP)
     {
         if (IsHead())
         {
-            if (!UpdateFlag(VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP))
+            if (!HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_BRAKE_FOR_DROP))
             {
                 if (track_progress >= 8)
                 {
                     acceleration = -_vehicleVelocityF64E08 * 16;
                     if (track_progress >= 24)
                     {
-                        SetUpdateFlag(VEHICLE_UPDATE_FLAG_ON_BREAK_FOR_DROP);
+                        SetUpdateFlag(VEHICLE_UPDATE_FLAG_ON_BRAKE_FOR_DROP);
                         vertical_drop_countdown = 90;
                     }
                 }
@@ -8272,7 +8257,7 @@ loc_6DAEB9:
     {
         int16_t curX = TrackLocation.x + moveInfo->x;
         int16_t curY = TrackLocation.y + moveInfo->y;
-        int16_t curZ = TrackLocation.z + moveInfo->z + RideData5[curRide->type].z_offset;
+        int16_t curZ = TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset;
 
         regs.ebx = 0;
         if (curX != unk_F64E20.x)
@@ -8434,7 +8419,7 @@ bool Vehicle::UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* cu
             return false;
         }
 
-        bool isInverted = (UpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES) > 0) ^ tileElement->AsTrack()->IsInverted();
+        bool isInverted = HasUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES) ^ tileElement->AsTrack()->IsInverted();
         int32_t bank = TrackDefinitions[trackType].bank_end;
         bank = track_get_actual_bank_2(curRide->type, isInverted, bank);
         int32_t vAngle = TrackDefinitions[trackType].vangle_end;
@@ -8509,7 +8494,7 @@ bool Vehicle::UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* cu
     }
     else
     {
-        if (UpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
+        if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
         {
             ClearUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL);
             if (next_vehicle_on_train == SPRITE_INDEX_NULL)
@@ -8575,7 +8560,7 @@ loc_6DBA33:;
 
         if (regs.eax < _vehicleVelocityF64E08)
         {
-            regs.eax = RideProperties[curRide->type].booster_acceleration << 16;
+            regs.eax = RideTypeDescriptors[curRide->type].OperatingSettings.BoosterAcceleration << 16;
             acceleration = regs.eax;
         }
     }
@@ -8597,7 +8582,7 @@ loc_6DBA33:;
         const rct_vehicle_info* moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
         int16_t curX = TrackLocation.x + moveInfo->x;
         int16_t curY = TrackLocation.y + moveInfo->y;
-        int16_t curZ = TrackLocation.z + moveInfo->z + RideData5[curRide->type].z_offset;
+        int16_t curZ = TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset;
 
         regs.ebx = 0;
         if (curX != unk_F64E20.x)
@@ -8962,7 +8947,7 @@ loc_6DC743:
 
     // loc_6DC8A1
     trackPos = { TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y,
-                 TrackLocation.z + moveInfo->z + RideData5[curRide->type].z_offset };
+                 TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset };
 
     remaining_distance -= 0x368A;
     if (remaining_distance < 0)
@@ -9061,7 +9046,7 @@ loc_6DCA9A:
 
     TrackLocation = trackPos;
 
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
     {
         ClearUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL);
         if (next_vehicle_on_train == SPRITE_INDEX_NULL)
@@ -9082,7 +9067,7 @@ loc_6DCA9A:
 loc_6DCC2C:
     moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
     trackPos = { TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y,
-                 TrackLocation.z + moveInfo->z + RideData5[curRide->type].z_offset };
+                 TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset };
 
     remaining_distance -= 0x368A;
     if (remaining_distance < 0)
@@ -9244,7 +9229,7 @@ int32_t Vehicle::UpdateTrackMotionMiniGolf(int32_t* outStation)
     for (Vehicle* vehicle = _vehicleFrontVehicle;;)
     {
         vehicle->UpdateTrackMotionMiniGolfVehicle(curRide, rideEntry, vehicleEntry);
-        if (vehicle->UpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
+        if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
         {
             _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_ON_LIFT_HILL;
         }
@@ -9301,7 +9286,7 @@ int32_t Vehicle::UpdateTrackMotionMiniGolf(int32_t* outStation)
     {
         int32_t poweredAcceleration = speed << 14;
         int32_t quarterForce = (speed * totalMass) >> 2;
-        if (UpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
+        if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
         {
             poweredAcceleration = -poweredAcceleration;
         }
@@ -9402,7 +9387,7 @@ int32_t Vehicle::UpdateTrackMotionPoweredRideAcceleration(
     uint8_t modifiedSpeed = modified_speed(GetTrackType(), TrackSubposition, speed);
     int32_t poweredAcceleration = modifiedSpeed << 14;
     int32_t quarterForce = (modifiedSpeed * totalMass) >> 2;
-    if (UpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
     {
         poweredAcceleration = -poweredAcceleration;
     }
@@ -9587,7 +9572,7 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
         sub_6DBF3E(car);
 
         // loc_6DC0F7
-        if (car->UpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
+        if (car->HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
         {
             _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_ON_LIFT_HILL;
         }
@@ -9713,17 +9698,16 @@ rct_ride_entry_vehicle* Vehicle::Entry() const
 
 int32_t Vehicle::NumPeepsUntilTrainTail() const
 {
-    const Vehicle* vehicle = this;
-    uint16_t spriteIndex;
     int32_t numPeeps = 0;
-    for (;;)
+    for (uint16_t spriteIndex = sprite_index; spriteIndex != SPRITE_INDEX_NULL;)
     {
-        numPeeps += vehicle->num_peeps;
+        const Vehicle* vehicle = GetEntity<Vehicle>(spriteIndex);
+        if (vehicle == nullptr)
+        {
+            return numPeeps;
+        }
         spriteIndex = vehicle->next_vehicle_on_train;
-        if (spriteIndex == SPRITE_INDEX_NULL)
-            break;
-
-        vehicle = &(get_sprite(spriteIndex)->vehicle);
+        numPeeps += vehicle->num_peeps;
     }
 
     return numPeeps;
@@ -9750,7 +9734,7 @@ void Vehicle::UpdateCrossings() const
     const Vehicle* frontVehicle{};
     const Vehicle* backVehicle{};
 
-    bool travellingForwards = !UpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE);
+    bool travellingForwards = !HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE);
 
     if (travellingForwards)
     {

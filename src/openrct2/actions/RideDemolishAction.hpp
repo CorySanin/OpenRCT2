@@ -161,9 +161,7 @@ private:
             }
         }
 
-        uint16_t spriteIndex;
-        Peep* peep;
-        FOR_ALL_GUESTS (spriteIndex, peep)
+        for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
         {
             uint8_t ride_id_bit = _rideIndex % 8;
             uint8_t ride_id_offset = _rideIndex / 8;
