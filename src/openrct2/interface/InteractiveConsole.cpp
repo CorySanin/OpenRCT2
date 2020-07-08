@@ -437,7 +437,7 @@ static int32_t cc_staff(InteractiveConsole& console, const arguments_t& argv)
     {
         if (argv[0] == "list")
         {
-            for (auto peep : EntityList<Staff>(SPRITE_LIST_PEEP))
+            for (auto peep : EntityList<Staff>(EntityListId::Peep))
             {
                 auto name = peep->GetName();
                 console.WriteFormatLine(
@@ -1223,7 +1223,7 @@ static int32_t cc_show_limits(InteractiveConsole& console, [[maybe_unused]] cons
 
     int32_t rideCount = ride_get_count();
     int32_t spriteCount = 0;
-    for (int32_t i = 1; i < SPRITE_LIST_COUNT; ++i)
+    for (int32_t i = 1; i < static_cast<uint8_t>(EntityListId::Count); ++i)
     {
         spriteCount += gSpriteListCount[i];
     }
@@ -1573,7 +1573,7 @@ static int32_t cc_mp_desync(InteractiveConsole& console, const arguments_t& argv
     for (int i = 0; i < MAX_SPRITES; i++)
     {
         auto* sprite = GetEntity(i);
-        if (sprite->sprite_identifier == SPRITE_IDENTIFIER_NULL)
+        if (sprite == nullptr || sprite->sprite_identifier == SPRITE_IDENTIFIER_NULL)
             continue;
 
         auto peep = sprite->As<Peep>();

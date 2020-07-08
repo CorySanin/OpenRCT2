@@ -578,14 +578,14 @@ void mask_init()
     }
 }
 
-void gfx_draw_pixel(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t colour)
+void gfx_draw_pixel(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, int32_t colour)
 {
-    gfx_fill_rect(dpi, x, y, x, y, colour);
+    gfx_fill_rect(dpi, coords.x, coords.y, coords.x, coords.y, colour);
 }
 
-void gfx_filter_pixel(rct_drawpixelinfo* dpi, int32_t x, int32_t y, FILTER_PALETTE_ID palette)
+void gfx_filter_pixel(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, FILTER_PALETTE_ID palette)
 {
-    gfx_filter_rect(dpi, x, y, x, y, palette);
+    gfx_filter_rect(dpi, { coords, coords }, palette);
 }
 
 /**
@@ -675,19 +675,20 @@ void gfx_invalidate_screen()
  * height (dx)
  * drawpixelinfo (edi)
  */
-bool clip_drawpixelinfo(rct_drawpixelinfo* dst, rct_drawpixelinfo* src, int32_t x, int32_t y, int32_t width, int32_t height)
+bool clip_drawpixelinfo(
+    rct_drawpixelinfo* dst, rct_drawpixelinfo* src, const ScreenCoordsXY& coords, int32_t width, int32_t height)
 {
-    int32_t right = x + width;
-    int32_t bottom = y + height;
+    int32_t right = coords.x + width;
+    int32_t bottom = coords.y + height;
 
     *dst = *src;
     dst->zoom_level = 0;
 
-    if (x > dst->x)
+    if (coords.x > dst->x)
     {
-        uint16_t clippedFromLeft = x - dst->x;
+        uint16_t clippedFromLeft = coords.x - dst->x;
         dst->width -= clippedFromLeft;
-        dst->x = x;
+        dst->x = coords.x;
         dst->pitch += clippedFromLeft;
         dst->bits += clippedFromLeft;
     }
@@ -699,11 +700,11 @@ bool clip_drawpixelinfo(rct_drawpixelinfo* dst, rct_drawpixelinfo* src, int32_t 
         dst->pitch += stickOutWidth;
     }
 
-    if (y > dst->y)
+    if (coords.y > dst->y)
     {
-        uint16_t clippedFromTop = y - dst->y;
+        uint16_t clippedFromTop = coords.y - dst->y;
         dst->height -= clippedFromTop;
-        dst->y = y;
+        dst->y = coords.y;
         uint32_t bitsPlus = (dst->pitch + dst->width) * clippedFromTop;
         dst->bits += bitsPlus;
     }
@@ -716,8 +717,8 @@ bool clip_drawpixelinfo(rct_drawpixelinfo* dst, rct_drawpixelinfo* src, int32_t 
 
     if (dst->width > 0 && dst->height > 0)
     {
-        dst->x -= x;
-        dst->y -= y;
+        dst->x -= coords.x;
+        dst->y -= coords.y;
         return true;
     }
 
@@ -745,7 +746,7 @@ void gfx_draw_pickedup_peep(rct_drawpixelinfo* dpi)
 {
     if (gPickupPeepImage != UINT32_MAX)
     {
-        gfx_draw_sprite(dpi, gPickupPeepImage, gPickupPeepX, gPickupPeepY, 0);
+        gfx_draw_sprite(dpi, gPickupPeepImage, { gPickupPeepX, gPickupPeepY }, 0);
     }
 }
 

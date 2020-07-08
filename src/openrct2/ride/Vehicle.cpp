@@ -47,8 +47,6 @@
 #include <iterator>
 
 static bool vehicle_boat_is_location_accessible(const CoordsXYZ& location);
-static bool vehicle_update_motion_collision_detection(
-    Vehicle* vehicle, int16_t x, int16_t y, int16_t z, uint16_t* otherVehicleIndex);
 
 constexpr int16_t VEHICLE_MAX_SPIN_SPEED = 1536;
 constexpr int16_t VEHICLE_MIN_SPIN_SPEED = -VEHICLE_MAX_SPIN_SPEED;
@@ -65,8 +63,6 @@ uint32_t _vehicleMotionTrackFlags;
 int32_t _vehicleVelocityF64E08;
 int32_t _vehicleVelocityF64E0C;
 int32_t _vehicleUnkF64E10;
-uint8_t _vehicleVAngleEndF64E36;
-uint8_t _vehicleBankEndF64E37;
 uint8_t _vehicleF64E2C;
 Vehicle* _vehicleFrontVehicle;
 CoordsXYZ unk_F64E20;
@@ -782,7 +778,7 @@ static bool vehicle_move_info_valid(int32_t trackSubposition, int32_t typeAndDir
     return true;
 }
 
-const rct_vehicle_info* vehicle_get_move_info(int32_t trackSubposition, int32_t typeAndDirection, int32_t offset)
+static const rct_vehicle_info* vehicle_get_move_info(int32_t trackSubposition, int32_t typeAndDirection, int32_t offset)
 {
     if (!vehicle_move_info_valid(trackSubposition, typeAndDirection, offset))
     {
@@ -792,7 +788,12 @@ const rct_vehicle_info* vehicle_get_move_info(int32_t trackSubposition, int32_t 
     return &gTrackVehicleInfo[trackSubposition][typeAndDirection]->info[offset];
 }
 
-uint16_t vehicle_get_move_info_size(int32_t trackSubposition, int32_t typeAndDirection)
+const rct_vehicle_info* Vehicle::GetMoveInfo() const
+{
+    return vehicle_get_move_info(TrackSubposition, track_type, track_progress);
+}
+
+static uint16_t vehicle_get_move_info_size(int32_t trackSubposition, int32_t typeAndDirection)
 {
     if (!vehicle_move_info_valid(trackSubposition, typeAndDirection, 0))
     {
@@ -801,14 +802,14 @@ uint16_t vehicle_get_move_info_size(int32_t trackSubposition, int32_t typeAndDir
     return gTrackVehicleInfo[trackSubposition][typeAndDirection]->size;
 }
 
+uint16_t Vehicle::GetTrackProgress() const
+{
+    return vehicle_get_move_info_size(TrackSubposition, track_type);
+}
+
 Vehicle* try_get_vehicle(uint16_t spriteIndex)
 {
-    rct_sprite* sprite = try_get_sprite(spriteIndex);
-    if (sprite == nullptr)
-        return nullptr;
-    if (sprite->generic.sprite_identifier != SPRITE_IDENTIFIER_VEHICLE)
-        return nullptr;
-    return &sprite->vehicle;
+    return TryGetEntity<Vehicle>(spriteIndex);
 }
 
 void Vehicle::Invalidate()
@@ -999,7 +1000,7 @@ rct_vehicle_sound_params Vehicle::CreateSoundParam(uint16_t priority) const
 
     int32_t frequency = std::abs(velocity);
 
-    rct_ride_entry* rideType = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideType = GetRideEntry();
     if (rideType != nullptr)
     {
         if (rideType->vehicles[vehicle_type].double_sound_frequency & 1)
@@ -1164,8 +1165,8 @@ static rct_vehicle_sound* vehicle_sounds_update_get_vehicle_sound(rct_vehicle_so
             if (vehicleSound->id == SOUND_ID_NULL)
             {
                 vehicleSound->id = sound_params->id;
-                vehicleSound->sound1_id = SoundId::Null;
-                vehicleSound->sound2_id = SoundId::Null;
+                vehicleSound->TrackSound.Id = SoundId::Null;
+                vehicleSound->OtherSound.Id = SoundId::Null;
                 vehicleSound->volume = 0x30;
                 return vehicleSound;
             }
@@ -1174,135 +1175,90 @@ static rct_vehicle_sound* vehicle_sounds_update_get_vehicle_sound(rct_vehicle_so
     return nullptr;
 }
 
-// Track Noises
-static void vehicle_sounds_update_sound_1(
-    Vehicle* vehicle, rct_vehicle_sound_params* sound_params, rct_vehicle_sound* sound, uint8_t panVol)
+enum class SoundType
 {
-    int32_t volume = vehicle->sound1_volume;
-    volume *= panVol;
-    volume = volume / 8;
-    volume = std::max(volume - 0x1FFF, -10000);
+    TrackNoises,
+    OtherNoises, // e.g. Screams
+};
 
-    if (vehicle->sound1_id == SoundId::Null)
+template<SoundType type> static uint16_t SoundFrequency(const SoundId id, uint16_t baseFrequency)
+{
+    if constexpr (type == SoundType::TrackNoises)
     {
-        if (sound->sound1_id != SoundId::Null)
+        if (_soundParams[static_cast<uint8_t>(id)][1] & 2)
         {
-            sound->sound1_id = SoundId::Null;
-            Mixer_Stop_Channel(sound->sound1_channel);
+            return (baseFrequency / 2) + 4000;
         }
-        return;
+        return baseFrequency;
     }
-
-    if (sound->sound1_id != SoundId::Null && vehicle->sound1_id != sound->sound1_id)
+    else
     {
-        Mixer_Stop_Channel(sound->sound1_channel);
-    }
-
-    if ((sound->sound1_id == SoundId::Null) || (vehicle->sound1_id != sound->sound1_id))
-    {
-        sound->sound1_id = vehicle->sound1_id;
-        sound->sound1_pan = sound_params->pan_x;
-        sound->sound1_volume = volume;
-        sound->sound1_freq = sound_params->frequency;
-        uint16_t frequency = sound_params->frequency;
-        if (_soundParams[static_cast<uint8_t>(vehicle->sound1_id)][1] & 2)
+        if (_soundParams[static_cast<uint8_t>(id)][1] & 1)
         {
-            frequency = (frequency / 2) + 4000;
+            return 22050;
         }
-        uint8_t looping = _soundParams[static_cast<uint8_t>(vehicle->sound1_id)][0];
-        int32_t pan = sound_params->pan_x;
-        sound->sound1_channel = Mixer_Play_Effect(
-            vehicle->sound1_id, looping ? MIXER_LOOP_INFINITE : MIXER_LOOP_NONE, DStoMixerVolume(volume), DStoMixerPan(pan),
-            DStoMixerRate(frequency), 0);
-        return;
-    }
-    if (volume != sound->sound1_volume)
-    {
-        sound->sound1_volume = volume;
-        Mixer_Channel_Volume(sound->sound1_channel, DStoMixerVolume(volume));
-    }
-    if (sound_params->pan_x != sound->sound1_pan)
-    {
-        sound->sound1_pan = sound_params->pan_x;
-        Mixer_Channel_Pan(sound->sound1_channel, DStoMixerPan(sound_params->pan_x));
-    }
-    if (!(gCurrentTicks & 3) && sound_params->frequency != sound->sound1_freq)
-    {
-        sound->sound1_freq = sound_params->frequency;
-        uint16_t frequency = sound_params->frequency;
-        if (_soundParams[static_cast<uint8_t>(vehicle->sound1_id)][1] & 2)
-        {
-            frequency = (frequency / 2) + 4000;
-        }
-        Mixer_Channel_Rate(sound->sound1_channel, DStoMixerRate(frequency));
+        return std::min((baseFrequency * 2) - 3248, 25700);
     }
 }
 
-// Other noises (e.g. Screams)
-static void vehicle_sounds_update_sound_2(
-    Vehicle* vehicle, rct_vehicle_sound_params* sound_params, rct_vehicle_sound* sound, uint8_t panVol)
+template<SoundType type> static bool ShouldUpdateChannelRate(const SoundId id)
 {
-    int32_t volume = vehicle->sound2_volume;
+    return type == SoundType::TrackNoises || !(_soundParams[static_cast<uint8_t>(id)][1] & 1);
+}
+
+template<SoundType type>
+static void UpdateSound(const SoundId id, int32_t volume, rct_vehicle_sound_params* sound_params, Sound& sound, uint8_t panVol)
+{
     volume *= panVol;
     volume = volume / 8;
     volume = std::max(volume - 0x1FFF, -10000);
 
-    if (vehicle->sound2_id == SoundId::Null)
+    if (id == SoundId::Null)
     {
-        if (sound->sound2_id != SoundId::Null)
+        if (sound.Id != SoundId::Null)
         {
-            sound->sound2_id = SoundId::Null;
-            Mixer_Stop_Channel(sound->sound2_channel);
+            sound.Id = SoundId::Null;
+            Mixer_Stop_Channel(sound.Channel);
         }
         return;
     }
 
-    if (sound->sound2_id != SoundId::Null && vehicle->sound2_id != sound->sound2_id)
+    if (sound.Id != SoundId::Null && id != sound.Id)
     {
-        Mixer_Stop_Channel(sound->sound2_channel);
+        Mixer_Stop_Channel(sound.Channel);
     }
 
-    if ((sound->sound2_id == SoundId::Null) || (vehicle->sound2_id != sound->sound2_id))
+    if ((sound.Id == SoundId::Null) || (id != sound.Id))
     {
-        sound->sound2_id = vehicle->sound2_id;
-        sound->sound2_pan = sound_params->pan_x;
-        sound->sound2_volume = volume;
-        sound->sound2_freq = sound_params->frequency;
-        uint16_t frequency = sound_params->frequency;
-        if (_soundParams[static_cast<uint8_t>(vehicle->sound2_id)][1] & 1)
-        {
-            frequency = 12649;
-        }
-        frequency = std::min((frequency * 2) - 3248, 25700);
-
-        uint8_t looping = _soundParams[static_cast<uint8_t>(vehicle->sound2_id)][0];
+        sound.Id = id;
+        sound.Pan = sound_params->pan_x;
+        sound.Volume = volume;
+        sound.Frequency = sound_params->frequency;
+        uint16_t frequency = SoundFrequency<type>(id, sound_params->frequency);
+        uint8_t looping = _soundParams[static_cast<uint8_t>(id)][0];
         int32_t pan = sound_params->pan_x;
-        sound->sound2_channel = Mixer_Play_Effect(
-            vehicle->sound2_id, looping ? MIXER_LOOP_INFINITE : MIXER_LOOP_NONE, DStoMixerVolume(volume), DStoMixerPan(pan),
+        sound.Channel = Mixer_Play_Effect(
+            id, looping ? MIXER_LOOP_INFINITE : MIXER_LOOP_NONE, DStoMixerVolume(volume), DStoMixerPan(pan),
             DStoMixerRate(frequency), 0);
         return;
     }
-    if (volume != sound->sound2_volume)
+    if (volume != sound.Volume)
     {
-        Mixer_Channel_Volume(sound->sound2_channel, DStoMixerVolume(volume));
-        sound->sound2_volume = volume;
+        sound.Volume = volume;
+        Mixer_Channel_Volume(sound.Channel, DStoMixerVolume(volume));
     }
-    if (sound_params->pan_x != sound->sound2_pan)
+    if (sound_params->pan_x != sound.Pan)
     {
-        sound->sound2_pan = sound_params->pan_x;
-        Mixer_Channel_Pan(sound->sound2_channel, DStoMixerPan(sound_params->pan_x));
+        sound.Pan = sound_params->pan_x;
+        Mixer_Channel_Pan(sound.Channel, DStoMixerPan(sound_params->pan_x));
     }
-    if (!(gCurrentTicks & 3) && sound_params->frequency != sound->sound2_freq)
+    if (!(gCurrentTicks & 3) && sound_params->frequency != sound.Frequency)
     {
-        sound->sound2_freq = sound_params->frequency;
-        if (!(_soundParams[static_cast<uint8_t>(vehicle->sound2_id)][1] & 1))
+        sound.Frequency = sound_params->frequency;
+        if (ShouldUpdateChannelRate<type>(id))
         {
-            uint16_t frequency = (sound_params->frequency * 2) - 3248;
-            if (frequency > 25700)
-            {
-                frequency = 25700;
-            }
-            Mixer_Channel_Rate(sound->sound2_channel, DStoMixerRate(frequency));
+            uint16_t frequency = SoundFrequency<type>(id, sound_params->frequency);
+            Mixer_Channel_Rate(sound.Channel, DStoMixerRate(frequency));
         }
     }
 }
@@ -1321,7 +1277,7 @@ void vehicle_sounds_update()
 
     vehicle_sounds_update_window_setup();
 
-    for (auto vehicle : EntityList<Vehicle>(SPRITE_LIST_TRAIN_HEAD))
+    for (auto vehicle : EntityList<Vehicle>(EntityListId::TrainHead))
     {
         vehicle->UpdateSoundParams(vehicleSoundParamsList);
     }
@@ -1344,13 +1300,13 @@ void vehicle_sounds_update()
             if (keepPlaying)
                 continue;
 
-            if (vehicle_sound.sound1_id != SoundId::Null)
+            if (vehicle_sound.TrackSound.Id != SoundId::Null)
             {
-                Mixer_Stop_Channel(vehicle_sound.sound1_channel);
+                Mixer_Stop_Channel(vehicle_sound.TrackSound.Channel);
             }
-            if (vehicle_sound.sound2_id != SoundId::Null)
+            if (vehicle_sound.OtherSound.Id != SoundId::Null)
             {
-                Mixer_Stop_Channel(vehicle_sound.sound2_channel);
+                Mixer_Stop_Channel(vehicle_sound.OtherSound.Channel);
             }
             vehicle_sound.id = SOUND_ID_NULL;
         }
@@ -1382,8 +1338,10 @@ void vehicle_sounds_update()
         panVol = std::max(0, panVol - tempvolume);
 
         Vehicle* vehicle = GET_VEHICLE(vehicleSoundParams.id);
-        vehicle_sounds_update_sound_1(vehicle, &vehicleSoundParams, vehicleSound, panVol);
-        vehicle_sounds_update_sound_2(vehicle, &vehicleSoundParams, vehicleSound, panVol);
+        UpdateSound<SoundType::TrackNoises>(
+            vehicle->sound1_id, vehicle->sound1_volume, &vehicleSoundParams, vehicleSound->TrackSound, panVol);
+        UpdateSound<SoundType::OtherNoises>(
+            vehicle->sound2_id, vehicle->sound2_volume, &vehicleSoundParams, vehicleSound->OtherSound, panVol);
     }
 }
 
@@ -1399,7 +1357,7 @@ void vehicle_update_all()
     if ((gScreenFlags & SCREEN_FLAGS_TRACK_DESIGNER) && gS6Info.editor_step != EDITOR_STEP_ROLLERCOASTER_DESIGNER)
         return;
 
-    for (auto vehicle : EntityList<Vehicle>(SPRITE_LIST_TRAIN_HEAD))
+    for (auto vehicle : EntityList<Vehicle>(EntityListId::TrainHead))
     {
         vehicle->Update();
     }
@@ -1412,7 +1370,7 @@ void vehicle_update_all()
  */
 bool Vehicle::CloseRestraints()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return true;
 
@@ -1476,11 +1434,11 @@ bool Vehicle::OpenRestraints()
         vehicle->SwingSpeed = 0;
         vehicle->SwingSprite = 0;
 
-        auto curRide = get_ride(vehicle->ride);
+        auto curRide = vehicle->GetRide();
         if (curRide == nullptr)
             continue;
 
-        auto rideEntry = get_ride_entry(vehicle->ride_subtype);
+        auto rideEntry = vehicle->GetRideEntry();
         if (rideEntry == nullptr)
         {
             continue;
@@ -1575,7 +1533,7 @@ bool Vehicle::OpenRestraints()
  */
 void Vehicle::UpdateMeasurements()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -1994,11 +1952,11 @@ void Vehicle::Update()
         return;
     }
 
-    auto rideEntry = get_ride_entry(ride_subtype);
+    auto rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
         return;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -2100,7 +2058,7 @@ void Vehicle::Update()
  */
 void Vehicle::UpdateMovingToEndOfStation()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -2149,7 +2107,7 @@ void Vehicle::UpdateMovingToEndOfStation()
             break;
         default:
         {
-            rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+            rct_ride_entry* rideEntry = GetRideEntry();
             if (rideEntry == nullptr)
             {
                 return;
@@ -2213,7 +2171,7 @@ void Vehicle::TrainReadyToDepart(uint8_t num_peeps_on_train, uint8_t num_used_se
     if (num_peeps_on_train != num_used_seats)
         return;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -2289,7 +2247,7 @@ void Vehicle::UpdateWaitingForPassengers()
 {
     velocity = 0;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -2460,11 +2418,11 @@ void Vehicle::UpdateWaitingForPassengers()
  */
 void Vehicle::UpdateDodgemsMode()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
     {
         return;
@@ -2503,7 +2461,7 @@ void Vehicle::UpdateDodgemsMode()
  */
 void Vehicle::UpdateWaitingToDepart()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -2831,16 +2789,12 @@ static bool try_add_synchronised_station(int32_t x, int32_t y, int32_t z)
  *  The vehicle flag VEHICLE_UPDATE_FLAG_WAIT_ON_ADJACENT is cleared for those
  *  vehicles that depart in sync with the vehicle in the param.
  */
-static bool ride_station_can_depart_synchronised(ride_id_t curRideId, StationIndex station)
+static bool ride_station_can_depart_synchronised(const Ride& ride, StationIndex station)
 {
-    auto ride = get_ride(curRideId);
-    if (ride == nullptr)
-        return false;
-
-    auto location = ride->stations[station].GetStart();
+    auto location = ride.stations[station].GetStart();
     int32_t x = location.x;
     int32_t y = location.y;
-    int32_t z = ride->stations[station].Height;
+    int32_t z = ride.stations[station].Height;
 
     auto tileElement = map_get_track_element_at(location);
     if (tileElement == nullptr)
@@ -2932,12 +2886,12 @@ static bool ride_station_can_depart_synchronised(ride_id_t curRideId, StationInd
                         }
 
                         /* Here all the of sync-ed stations are from the same ride */
-                        ride = get_ride(rideId);
-                        if (ride != nullptr)
+                        auto curRide = get_ride(rideId);
+                        if (curRide != nullptr)
                         {
-                            for (int32_t i = 0; i < ride->num_vehicles; i++)
+                            for (int32_t i = 0; i < curRide->num_vehicles; i++)
                             {
-                                Vehicle* v = GET_VEHICLE(ride->vehicles[i]);
+                                Vehicle* v = GET_VEHICLE(curRide->vehicles[i]);
                                 if (v->status != VEHICLE_STATUS_WAITING_TO_DEPART && v->velocity != 0)
                                 {
                                     // Here at least one vehicle on the ride is moving.
@@ -2960,7 +2914,7 @@ static bool ride_station_can_depart_synchronised(ride_id_t curRideId, StationInd
                         return false;
                     }
                     ride_id_t someRideIndex = _synchronisedVehicles[0].ride_id;
-                    if (someRideIndex != curRideId)
+                    if (someRideIndex != ride.id)
                     {
                         // Sync condition: the first station to sync is a different ride
                         return false;
@@ -3030,7 +2984,10 @@ static bool ride_station_can_depart_synchronised(ride_id_t curRideId, StationInd
 
 bool Vehicle::CanDepartSynchronised() const
 {
-    return ride_station_can_depart_synchronised(ride, current_station);
+    auto curRide = GetRide();
+    if (curRide == nullptr)
+        return false;
+    return ride_station_can_depart_synchronised(*curRide, current_station);
 }
 
 /**
@@ -3059,46 +3016,42 @@ void Vehicle::PeepEasterEggHereWeAre() const
  * Performed when vehicle has completed a full circuit
  *  rct2: 0x006D7338
  */
-static bool test_finish(ride_id_t rideId)
+static void test_finish(Ride& ride)
 {
-    auto ride = get_ride(rideId);
-    if (ride == nullptr)
-        return false;
+    ride.lifecycle_flags &= ~RIDE_LIFECYCLE_TEST_IN_PROGRESS;
+    ride.lifecycle_flags |= RIDE_LIFECYCLE_TESTED;
 
-    ride->lifecycle_flags &= ~RIDE_LIFECYCLE_TEST_IN_PROGRESS;
-    ride->lifecycle_flags |= RIDE_LIFECYCLE_TESTED;
-
-    for (int32_t i = ride->num_stations - 1; i >= 1; i--)
+    for (int32_t i = ride.num_stations - 1; i >= 1; i--)
     {
-        if (ride->stations[i - 1].SegmentTime != 0)
+        if (ride.stations[i - 1].SegmentTime != 0)
             continue;
 
-        uint16_t oldTime = ride->stations[i - 1].SegmentTime;
-        ride->stations[i - 1].SegmentTime = ride->stations[i].SegmentTime;
-        ride->stations[i].SegmentTime = oldTime;
+        uint16_t oldTime = ride.stations[i - 1].SegmentTime;
+        ride.stations[i - 1].SegmentTime = ride.stations[i].SegmentTime;
+        ride.stations[i].SegmentTime = oldTime;
 
-        int32_t oldLength = ride->stations[i - 1].SegmentLength;
-        ride->stations[i - 1].SegmentLength = ride->stations[i].SegmentLength;
-        ride->stations[i].SegmentLength = oldLength;
+        int32_t oldLength = ride.stations[i - 1].SegmentLength;
+        ride.stations[i - 1].SegmentLength = ride.stations[i].SegmentLength;
+        ride.stations[i].SegmentLength = oldLength;
     }
 
     uint32_t totalTime = 0;
-    for (uint8_t i = 0; i < ride->num_stations; ++i)
+    for (uint8_t i = 0; i < ride.num_stations; ++i)
     {
-        totalTime += ride->stations[i].SegmentTime;
+        totalTime += ride.stations[i].SegmentTime;
     }
 
     totalTime = std::max(totalTime, 1u);
-    ride->average_speed = ride->average_speed / totalTime;
-    window_invalidate_by_number(WC_RIDE, rideId);
-    return true;
+    ride.average_speed = ride.average_speed / totalTime;
+    window_invalidate_by_number(WC_RIDE, ride.id);
 }
 
 void Vehicle::UpdateTestFinish()
 {
-    if (!test_finish(ride))
+    auto curRide = GetRide();
+    if (curRide == nullptr)
         return;
-
+    test_finish(*curRide);
     ClearUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING);
 }
 
@@ -3106,51 +3059,50 @@ void Vehicle::UpdateTestFinish()
  *
  *  rct2: 0x006D6BE7
  */
-static void test_reset(ride_id_t rideId, StationIndex curStation)
+static void test_reset(Ride& ride, StationIndex curStation)
 {
-    auto ride = get_ride(rideId);
-    if (ride == nullptr)
-        return;
-
-    ride->lifecycle_flags |= RIDE_LIFECYCLE_TEST_IN_PROGRESS;
-    ride->lifecycle_flags &= ~RIDE_LIFECYCLE_NO_RAW_STATS;
-    ride->max_speed = 0;
-    ride->average_speed = 0;
-    ride->current_test_segment = 0;
-    ride->average_speed_test_timeout = 0;
-    ride->max_positive_vertical_g = FIXED_2DP(1, 0);
-    ride->max_negative_vertical_g = FIXED_2DP(1, 0);
-    ride->max_lateral_g = 0;
-    ride->previous_vertical_g = 0;
-    ride->previous_lateral_g = 0;
-    ride->testing_flags = 0;
-    ride->CurTestTrackLocation.setNull();
-    ride->turn_count_default = 0;
-    ride->turn_count_banked = 0;
-    ride->turn_count_sloped = 0;
-    ride->inversions = 0;
-    ride->holes = 0;
-    ride->sheltered_eighths = 0;
-    ride->drops = 0;
-    ride->sheltered_length = 0;
-    ride->var_11C = 0;
-    ride->num_sheltered_sections = 0;
-    ride->highest_drop_height = 0;
-    ride->special_track_elements = 0;
-    for (auto& station : ride->stations)
+    ride.lifecycle_flags |= RIDE_LIFECYCLE_TEST_IN_PROGRESS;
+    ride.lifecycle_flags &= ~RIDE_LIFECYCLE_NO_RAW_STATS;
+    ride.max_speed = 0;
+    ride.average_speed = 0;
+    ride.current_test_segment = 0;
+    ride.average_speed_test_timeout = 0;
+    ride.max_positive_vertical_g = FIXED_2DP(1, 0);
+    ride.max_negative_vertical_g = FIXED_2DP(1, 0);
+    ride.max_lateral_g = 0;
+    ride.previous_vertical_g = 0;
+    ride.previous_lateral_g = 0;
+    ride.testing_flags = 0;
+    ride.CurTestTrackLocation.setNull();
+    ride.turn_count_default = 0;
+    ride.turn_count_banked = 0;
+    ride.turn_count_sloped = 0;
+    ride.inversions = 0;
+    ride.holes = 0;
+    ride.sheltered_eighths = 0;
+    ride.drops = 0;
+    ride.sheltered_length = 0;
+    ride.var_11C = 0;
+    ride.num_sheltered_sections = 0;
+    ride.highest_drop_height = 0;
+    ride.special_track_elements = 0;
+    for (auto& station : ride.stations)
     {
         station.SegmentLength = 0;
         station.SegmentTime = 0;
     }
-    ride->total_air_time = 0;
-    ride->current_test_station = curStation;
-    window_invalidate_by_number(WC_RIDE, rideId);
+    ride.total_air_time = 0;
+    ride.current_test_station = curStation;
+    window_invalidate_by_number(WC_RIDE, ride.id);
 }
 
 void Vehicle::TestReset()
 {
     SetUpdateFlag(VEHICLE_UPDATE_FLAG_TESTING);
-    test_reset(ride, current_station);
+    auto curRide = GetRide();
+    if (curRide == nullptr)
+        return;
+    test_reset(*curRide, current_station);
 }
 
 bool Vehicle::CurrentTowerElementIsTop()
@@ -3202,7 +3154,7 @@ void Vehicle::UpdateDepartingBoatHire()
 {
     lost_time_out = 0;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -3219,11 +3171,11 @@ void Vehicle::UpdateDepartingBoatHire()
  */
 void Vehicle::UpdateDeparting()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
-    auto rideEntry = get_ride_entry(ride_subtype);
+    auto rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
         return;
 
@@ -3457,7 +3409,7 @@ void Vehicle::UpdateDeparting()
  */
 void Vehicle::FinishDeparting()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -3502,7 +3454,7 @@ void Vehicle::FinishDeparting()
  */
 void Vehicle::CheckIfMissing()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -3548,7 +3500,7 @@ void Vehicle::CheckIfMissing()
 
 void Vehicle::SimulateCrash() const
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide != nullptr)
     {
         curRide->lifecycle_flags |= RIDE_LIFECYCLE_CRASHED;
@@ -3563,7 +3515,7 @@ void Vehicle::SimulateCrash() const
  */
 void Vehicle::UpdateCollisionSetup()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -3609,11 +3561,11 @@ void Vehicle::UpdateCollisionSetup()
 
         audio_play_sound_at_location(SoundId::Crash, { train->x, train->y, train->z });
 
-        sprite_misc_explosion_cloud_create(train->x, train->y, train->z);
+        sprite_misc_explosion_cloud_create({ train->x, train->y, train->z });
 
         for (int32_t i = 0; i < 10; i++)
         {
-            crashed_vehicle_particle_create(train->colours, train->x, train->y, train->z);
+            crashed_vehicle_particle_create(train->colours, { train->x, train->y, train->z });
         }
 
         train->flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
@@ -3648,7 +3600,7 @@ static constexpr const CoordsXY stru_9A3AC4[] = {
  */
 void Vehicle::UpdateCrashSetup()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide != nullptr && curRide->status == RIDE_STATUS_SIMULATING)
     {
         SimulateCrash();
@@ -3710,7 +3662,7 @@ void Vehicle::UpdateTravelling()
 {
     CheckIfMissing();
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr || (_vehicleBreakdown == 0 && curRide->mode == RIDE_MODE_ROTATING_LIFT))
         return;
 
@@ -3885,7 +3837,7 @@ void Vehicle::UpdateTravelling()
  */
 void Vehicle::UpdateArriving()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -3922,7 +3874,7 @@ void Vehicle::UpdateArriving()
         unkF64E35 = 0;
     }
 
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
 
     if (sub_state == 0)
@@ -4102,7 +4054,7 @@ void Vehicle::UpdateUnloadingPassengers()
         }
     }
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -4187,7 +4139,7 @@ void Vehicle::UpdateUnloadingPassengers()
  */
 void Vehicle::UpdateWaitingForCableLift()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -4206,7 +4158,7 @@ void Vehicle::UpdateWaitingForCableLift()
  */
 void Vehicle::UpdateTravellingCableLift()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -4302,14 +4254,14 @@ void Vehicle::UpdateTravellingBoat()
 void Vehicle::TryReconnectBoatToTrack(const CoordsXY& currentBoatLocation, const CoordsXY& trackCoords)
 {
     remaining_distance = 0;
-    if (!vehicle_update_motion_collision_detection(this, currentBoatLocation.x, currentBoatLocation.y, z, nullptr))
+    if (!UpdateMotionCollisionDetection({ currentBoatLocation, z }, nullptr))
     {
         TrackLocation.x = trackCoords.x;
         TrackLocation.y = trackCoords.y;
 
         auto trackElement = map_get_track_element_at(TrackLocation);
 
-        auto curRide = get_ride(ride);
+        auto curRide = GetRide();
         if (curRide != nullptr)
         {
             track_type = (trackElement->GetTrackType() << 2) | (curRide->boat_hire_return_direction & 3);
@@ -4360,24 +4312,22 @@ void Vehicle::UpdateMotionBoatHire()
             // loc_6DA7A5
             var_35++;
             auto loc = BoatLocation.ToTileCentre();
-            int32_t curX = loc.x;
-            int32_t curY = loc.y;
-            int32_t curZ;
+            CoordsXY loc2 = loc;
             uint8_t bl;
 
-            curX -= x;
-            if (curX >= 0)
+            loc2.x -= x;
+            if (loc2.x >= 0)
             {
-                curY -= y;
-                if (curY < 0)
+                loc2.y -= y;
+                if (loc2.y < 0)
                 {
                     // loc_6DA81A:
-                    curY = -curY;
+                    loc2.y = -loc2.y;
                     bl = 24;
-                    if (curY <= curX * 4)
+                    if (loc2.y <= loc2.x * 4)
                     {
                         bl = 16;
-                        if (curX <= curY * 4)
+                        if (loc2.x <= loc2.y * 4)
                         {
                             bl = 20;
                         }
@@ -4386,10 +4336,10 @@ void Vehicle::UpdateMotionBoatHire()
                 else
                 {
                     bl = 8;
-                    if (curY <= curX * 4)
+                    if (loc2.y <= loc2.x * 4)
                     {
                         bl = 16;
-                        if (curX <= curY * 4)
+                        if (loc2.x <= loc2.y * 4)
                         {
                             bl = 12;
                         }
@@ -4398,17 +4348,17 @@ void Vehicle::UpdateMotionBoatHire()
             }
             else
             {
-                curY -= y;
-                if (curY < 0)
+                loc2.y -= y;
+                if (loc2.y < 0)
                 {
                     // loc_6DA83D:
-                    curX = -curX;
-                    curY = -curY;
+                    loc2.x = -loc2.x;
+                    loc2.y = -loc2.y;
                     bl = 24;
-                    if (curY <= curX * 4)
+                    if (loc2.y <= loc2.x * 4)
                     {
                         bl = 0;
-                        if (curX <= curY * 4)
+                        if (loc2.x <= loc2.y * 4)
                         {
                             bl = 28;
                         }
@@ -4416,12 +4366,12 @@ void Vehicle::UpdateMotionBoatHire()
                 }
                 else
                 {
-                    curX = -curX;
+                    loc2.x = -loc2.x;
                     bl = 8;
-                    if (curY <= curX * 4)
+                    if (loc2.y <= loc2.x * 4)
                     {
                         bl = 0;
-                        if (curX <= curY * 4)
+                        if (loc2.x <= loc2.y * 4)
                         {
                             bl = 4;
                         }
@@ -4431,8 +4381,8 @@ void Vehicle::UpdateMotionBoatHire()
 
             // loc_6DA861:
             var_34 = bl;
-            curX += curY;
-            if (curX <= 12)
+            loc2.x += loc2.y;
+            if (loc2.x <= 12)
             {
                 UpdateBoatLocation();
             }
@@ -4465,10 +4415,8 @@ void Vehicle::UpdateMotionBoatHire()
             }
 
             int32_t edi = (sprite_direction | (var_35 & 1)) & 0x1F;
-            curX = x + Unk9A36C4[edi].x;
-            curY = y + Unk9A36C4[edi].y;
-            curZ = z;
-            if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, nullptr))
+            loc2 = { x + Unk9A36C4[edi].x, y + Unk9A36C4[edi].y };
+            if (UpdateMotionCollisionDetection({ loc2, z }, nullptr))
             {
                 remaining_distance = 0;
                 if (sprite_direction == var_34)
@@ -4480,13 +4428,13 @@ void Vehicle::UpdateMotionBoatHire()
                 break;
             }
 
-            auto flooredLocation = CoordsXY(curX, curY).ToTileStart();
+            auto flooredLocation = loc2.ToTileStart();
             if (flooredLocation != TrackLocation)
             {
-                if (!vehicle_boat_is_location_accessible(CoordsXYZ{ curX, curY, TrackLocation.z }))
+                if (!vehicle_boat_is_location_accessible({ loc2, TrackLocation.z }))
                 {
                     // loc_6DA939:
-                    auto curRide = get_ride(ride);
+                    auto curRide = GetRide();
                     if (curRide == nullptr)
                         return;
 
@@ -4517,50 +4465,48 @@ void Vehicle::UpdateMotionBoatHire()
 
                     if (!(curRide->boat_hire_return_direction & 1))
                     {
-                        uint16_t tilePart = curY % COORDS_XY_STEP;
+                        uint16_t tilePart = loc2.y % COORDS_XY_STEP;
                         if (tilePart == COORDS_XY_HALF_TILE)
                         {
-                            TryReconnectBoatToTrack({ curX, curY }, flooredLocation);
+                            TryReconnectBoatToTrack(loc2, flooredLocation);
                             break;
                         }
+                        loc2 = unk_F64E20;
                         if (tilePart <= COORDS_XY_HALF_TILE)
                         {
-                            curX = unk_F64E20.x;
-                            curY = unk_F64E20.y + 1;
+                            loc2.y += 1;
                         }
                         else
                         {
-                            curX = unk_F64E20.x;
-                            curY = unk_F64E20.y - 1;
+                            loc2.y -= 1;
                         }
                     }
                     else
                     {
                         // loc_6DA9A2:
-                        uint16_t tilePart = curX % COORDS_XY_STEP;
+                        uint16_t tilePart = loc2.x % COORDS_XY_STEP;
                         if (tilePart == COORDS_XY_HALF_TILE)
                         {
-                            TryReconnectBoatToTrack({ curX, curY }, flooredLocation);
+                            TryReconnectBoatToTrack(loc2, flooredLocation);
                             break;
                         }
+                        loc2 = unk_F64E20;
                         if (tilePart <= COORDS_XY_HALF_TILE)
                         {
-                            curX = unk_F64E20.x + 1;
-                            curY = unk_F64E20.y;
+                            loc2.x += 1;
                         }
                         else
                         {
-                            curX = unk_F64E20.x - 1;
-                            curY = unk_F64E20.y;
+                            loc2.x -= 1;
                         }
                     }
 
                     // loc_6DA9D1:
                     remaining_distance = 0;
-                    if (!vehicle_update_motion_collision_detection(this, curX, curY, z, nullptr))
+                    if (!UpdateMotionCollisionDetection({ loc2, z }, nullptr))
                     {
-                        unk_F64E20.x = curX;
-                        unk_F64E20.y = curY;
+                        unk_F64E20.x = loc2.x;
+                        unk_F64E20.y = loc2.y;
                     }
                     break;
                 }
@@ -4568,8 +4514,8 @@ void Vehicle::UpdateMotionBoatHire()
             }
 
             remaining_distance -= Unk9A36C4[edi].distance;
-            unk_F64E20.x = curX;
-            unk_F64E20.y = curY;
+            unk_F64E20.x = loc2.x;
+            unk_F64E20.y = loc2.y;
             if (remaining_distance < 0x368A)
             {
                 break;
@@ -4620,7 +4566,7 @@ void Vehicle::UpdateMotionBoatHire()
  */
 void Vehicle::UpdateBoatLocation()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -4725,11 +4671,11 @@ static bool vehicle_boat_is_location_accessible(const CoordsXYZ& location)
  */
 void Vehicle::UpdateSwinging()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
-    auto rideEntry = get_ride_entry(ride_subtype);
+    auto rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
         return;
 
@@ -4802,7 +4748,7 @@ void Vehicle::UpdateFerrisWheelRotating()
     if (_vehicleBreakdown == 0)
         return;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -4920,11 +4866,11 @@ void Vehicle::UpdateRotating()
     if (_vehicleBreakdown == 0)
         return;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
-    auto rideEntry = get_ride_entry(ride_subtype);
+    auto rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
     {
         return;
@@ -5252,7 +5198,7 @@ static void ride_train_crash(Ride* ride, uint16_t numFatalities)
  */
 void Vehicle::KillAllPassengersInTrain()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -5277,7 +5223,7 @@ void Vehicle::KillPassengers(Ride* curRide)
     for (auto i = 0; i < num_peeps; i++)
     {
         Peep* curPeep = GET_PEEP(peep[i]);
-        if (curPeep->OutsideOfPark == 0)
+        if (!curPeep->OutsideOfPark)
         {
             decrement_guests_in_park();
             auto intent = Intent(INTENT_ACTION_UPDATE_GUEST_COUNT);
@@ -5293,7 +5239,7 @@ void Vehicle::KillPassengers(Ride* curRide)
 
 void Vehicle::CrashOnLand()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -5333,13 +5279,13 @@ void Vehicle::CrashOnLand()
     sub_state = 2;
     audio_play_sound_at_location(SoundId::Crash, { x, y, z });
 
-    sprite_misc_explosion_cloud_create(x, y, z);
-    sprite_misc_explosion_flare_create(x, y, z);
+    sprite_misc_explosion_cloud_create({ x, y, z });
+    sprite_misc_explosion_flare_create({ x, y, z });
 
     uint8_t numParticles = std::min(sprite_width, static_cast<uint8_t>(7));
 
     while (numParticles-- != 0)
-        crashed_vehicle_particle_create(colours, x, y, z);
+        crashed_vehicle_particle_create(colours, { x, y, z });
 
     flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
     animation_frame = 0;
@@ -5356,7 +5302,7 @@ void Vehicle::CrashOnLand()
 
 void Vehicle::CrashOnWater()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -5396,14 +5342,14 @@ void Vehicle::CrashOnWater()
     sub_state = 2;
     audio_play_sound_at_location(SoundId::Water1, { x, y, z });
 
-    crash_splash_create(x, y, z);
-    crash_splash_create(x - 8, y - 9, z);
-    crash_splash_create(x + 11, y - 9, z);
-    crash_splash_create(x + 11, y + 8, z);
-    crash_splash_create(x - 4, y + 8, z);
+    crash_splash_create({ x, y, z });
+    crash_splash_create({ x - 8, y - 9, z });
+    crash_splash_create({ x + 11, y - 9, z });
+    crash_splash_create({ x + 11, y + 8, z });
+    crash_splash_create({ x - 4, y + 8, z });
 
     for (int32_t i = 0; i < 10; ++i)
-        crashed_vehicle_particle_create(colours, x - 4, y + 8, z);
+        crashed_vehicle_particle_create(colours, { x - 4, y + 8, z });
 
     flags |= SPRITE_FLAGS_IS_CRASHED_VEHICLE_SPRITE;
     animation_frame = 0;
@@ -5436,9 +5382,9 @@ void Vehicle::UpdateCrash()
                 curVehicle->crash_z++;
                 if ((scenario_rand() & 0xFFFF) <= 0x1555)
                 {
-                    auto xOffset = (scenario_rand() & 2) - 1;
-                    auto yOffset = (scenario_rand() & 2) - 1;
-                    sprite_misc_explosion_cloud_create(curVehicle->x + xOffset, curVehicle->y + yOffset, curVehicle->z);
+                    int32_t xOffset = (scenario_rand() & 2) - 1;
+                    int32_t yOffset = (scenario_rand() & 2) - 1;
+                    sprite_misc_explosion_cloud_create({ curVehicle->x + xOffset, curVehicle->y + yOffset, curVehicle->z });
                 }
             }
             if (curVehicle->var_C8 + 7281 > 0xFFFF)
@@ -5520,11 +5466,11 @@ void Vehicle::UpdateSound()
     SoundId screamId = SoundId::Null;
     uint8_t screamVolume = 255;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
-    auto rideEntry = get_ride_entry(ride_subtype);
+    auto rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
         return;
 
@@ -5625,7 +5571,7 @@ void Vehicle::UpdateSound()
  */
 SoundId Vehicle::UpdateScreamSound()
 {
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
 
     rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
 
@@ -6238,7 +6184,7 @@ GForces Vehicle::GetGForces() const
 
 void Vehicle::SetMapToolbar() const
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide != nullptr)
     {
         const Vehicle* vehicle = GetHead();
@@ -6303,7 +6249,7 @@ int32_t Vehicle::UpdateMotionDodgems()
 {
     _vehicleMotionTrackFlags = 0;
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return _vehicleMotionTrackFlags;
 
@@ -6446,7 +6392,7 @@ int32_t Vehicle::UpdateMotionDodgems()
     edx >>= 5;
     eax += edx;
     eax /= mass;
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
 
     if (!(vehicleEntry->flags & VEHICLE_ENTRY_FLAG_POWERED))
@@ -6658,7 +6604,7 @@ void Vehicle::ApplyStopBlockBrake()
  */
 void Vehicle::CheckAndApplyBlockSectionStopSite()
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return;
 
@@ -7276,7 +7222,7 @@ void Vehicle::UpdateAdditionalAnimation()
                 ah &= 0x02;
                 if (al != ah)
                 {
-                    auto curRide = get_ride(ride);
+                    auto curRide = GetRide();
                     if (curRide != nullptr)
                     {
                         if (!ride_has_station_shelter(curRide)
@@ -7438,67 +7384,67 @@ static void play_scenery_door_close_sound(const CoordsXYZ& loc, WallElement* til
     }
 }
 
+template<bool isBackwards>
+static void AnimateSceneryDoor(const CoordsXYZD& doorLocation, const CoordsXYZ& trackLocation, bool isLastVehicle)
+{
+    auto door = map_get_wall_element_at(doorLocation);
+    if (door == nullptr)
+    {
+        return;
+    }
+
+    if (!isLastVehicle && (door->GetAnimationFrame() == 0))
+    {
+        door->SetAnimationIsBackwards(isBackwards);
+        door->SetAnimationFrame(1);
+        map_animation_create(MAP_ANIMATION_TYPE_WALL_DOOR, doorLocation);
+        play_scenery_door_open_sound(trackLocation, door);
+    }
+
+    if (isLastVehicle)
+    {
+        door->SetAnimationIsBackwards(isBackwards);
+        door->SetAnimationFrame(6);
+        play_scenery_door_close_sound(trackLocation, door);
+    }
+}
+
 /**
  *
  *  rct2: 0x006DEE93
  */
-static void vehicle_update_scenery_door(Vehicle* vehicle)
+void Vehicle::UpdateSceneryDoor() const
 {
-    int32_t trackType = vehicle->GetTrackType();
+    int32_t trackType = GetTrackType();
     const rct_preview_track* trackBlock = TrackBlocks[trackType];
     while ((trackBlock + 1)->index != 255)
     {
         trackBlock++;
     }
     const rct_track_coordinates* trackCoordinates = &TrackCoordinates[trackType];
-    auto wallCoords = CoordsXYZ{ vehicle->x, vehicle->y, vehicle->TrackLocation.z - trackBlock->z + trackCoordinates->z_end }
-                          .ToTileStart();
-    int32_t direction = (vehicle->track_direction + trackCoordinates->rotation_end) & 3;
+    auto wallCoords = CoordsXYZ{ x, y, TrackLocation.z - trackBlock->z + trackCoordinates->z_end }.ToTileStart();
+    int32_t direction = (track_direction + trackCoordinates->rotation_end) & 3;
 
-    auto tileElement = map_get_wall_element_at(CoordsXYZD{ wallCoords, static_cast<Direction>(direction) });
-    if (tileElement == nullptr)
-    {
-        return;
-    }
-
-    if ((vehicle->next_vehicle_on_train != SPRITE_INDEX_NULL) && (tileElement->GetAnimationFrame() == 0))
-    {
-        tileElement->SetAnimationIsBackwards(false);
-        tileElement->SetAnimationFrame(1);
-        map_animation_create(MAP_ANIMATION_TYPE_WALL_DOOR, wallCoords);
-        play_scenery_door_open_sound(vehicle->TrackLocation, tileElement);
-    }
-
-    if (vehicle->next_vehicle_on_train == SPRITE_INDEX_NULL)
-    {
-        tileElement->SetAnimationIsBackwards(false);
-        tileElement->SetAnimationFrame(6);
-        play_scenery_door_close_sound(vehicle->TrackLocation, tileElement);
-    }
+    AnimateSceneryDoor<false>(
+        { wallCoords, static_cast<Direction>(direction) }, TrackLocation, next_vehicle_on_train == SPRITE_INDEX_NULL);
 }
 
 /**
  *
  *  rct2: 0x006DB38B
  */
-static bool loc_6DB38B(Vehicle* vehicle, TileElement* tileElement)
+static PitchAndRoll PitchAndRollStart(bool useInvertedSprites, TileElement* tileElement)
 {
-    // Get bank
-    int32_t bankStart = track_get_actual_bank_3(vehicle, tileElement);
-
-    // Get vangle
-    int32_t trackType = tileElement->AsTrack()->GetTrackType();
-    int32_t vangleStart = TrackDefinitions[trackType].vangle_start;
-
-    return vangleStart == _vehicleVAngleEndF64E36 && bankStart == _vehicleBankEndF64E37;
+    auto trackType = tileElement->AsTrack()->GetTrackType();
+    return PitchAndRoll{ TrackDefinitions[trackType].vangle_start, track_get_actual_bank_3(useInvertedSprites, tileElement) };
 }
 
-static void VehicleUpdateGoKartAttemptSwitchLanes(Vehicle* vehicle)
+void Vehicle::UpdateGoKartAttemptSwitchLanes()
 {
     uint16_t probability = 0x8000;
-    if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_6))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_6))
     {
-        vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_6);
+        ClearUpdateFlag(VEHICLE_UPDATE_FLAG_6);
     }
     else
     {
@@ -7507,7 +7453,7 @@ static void VehicleUpdateGoKartAttemptSwitchLanes(Vehicle* vehicle)
     if ((scenario_rand() & 0xFFFF) <= probability)
     {
         // This changes "riding left" to "moving to right lane" and "riding right" to "moving to left lane".
-        vehicle->TrackSubposition += 2;
+        TrackSubposition += 2;
     }
 }
 
@@ -7526,35 +7472,17 @@ static void trigger_on_ride_photo(const CoordsXYZ& loc, TileElement* tileElement
  *
  *  rct2: 0x006DEDE8
  */
-static void vehicle_update_handle_scenery_door(Vehicle* vehicle)
+void Vehicle::UpdateSceneryDoorBackwards() const
 {
-    int32_t trackType = vehicle->GetTrackType();
+    int32_t trackType = GetTrackType();
     const rct_preview_track* trackBlock = TrackBlocks[trackType];
     const rct_track_coordinates* trackCoordinates = &TrackCoordinates[trackType];
-    auto wallCoords = CoordsXYZ{ vehicle->TrackLocation, vehicle->TrackLocation.z - trackBlock->z + trackCoordinates->z_begin };
-    int32_t direction = (vehicle->track_direction + trackCoordinates->rotation_begin) & 3;
+    auto wallCoords = CoordsXYZ{ TrackLocation, TrackLocation.z - trackBlock->z + trackCoordinates->z_begin };
+    int32_t direction = (track_direction + trackCoordinates->rotation_begin) & 3;
     direction = direction_reverse(direction);
 
-    auto tileElement = map_get_wall_element_at(CoordsXYZD{ wallCoords, static_cast<Direction>(direction) });
-    if (tileElement == nullptr)
-    {
-        return;
-    }
-
-    if ((vehicle->next_vehicle_on_train != SPRITE_INDEX_NULL) && (tileElement->GetAnimationFrame() == 0))
-    {
-        tileElement->SetAnimationIsBackwards(true);
-        tileElement->SetAnimationFrame(1);
-        map_animation_create(MAP_ANIMATION_TYPE_WALL_DOOR, wallCoords);
-        play_scenery_door_open_sound(vehicle->TrackLocation, tileElement);
-    }
-
-    if (vehicle->next_vehicle_on_train == SPRITE_INDEX_NULL)
-    {
-        tileElement->SetAnimationIsBackwards(true);
-        tileElement->SetAnimationFrame(6);
-        play_scenery_door_close_sound(vehicle->TrackLocation, tileElement);
-    }
+    AnimateSceneryDoor<true>(
+        { wallCoords, static_cast<Direction>(direction) }, TrackLocation, next_vehicle_on_train == SPRITE_INDEX_NULL);
 }
 
 static void vehicle_update_play_water_splash_sound()
@@ -7573,7 +7501,7 @@ static void vehicle_update_play_water_splash_sound()
  */
 void Vehicle::UpdateHandleWaterSplash() const
 {
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     int32_t trackType = GetTrackType();
 
     if (!(rideEntry->flags & RIDE_ENTRY_FLAG_PLAY_SPLASH_SOUND))
@@ -7625,7 +7553,7 @@ void Vehicle::UpdateHandleWaterSplash() const
  */
 void Vehicle::UpdateReverserCarBogies()
 {
-    const auto moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
+    const auto moveInfo = GetMoveInfo();
     MoveTo({ TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y, z });
 }
 
@@ -7638,13 +7566,12 @@ void Vehicle::UpdateReverserCarBogies()
  * @param z (dx)
  * @param otherVehicleIndex (bp)
  */
-static bool vehicle_update_motion_collision_detection(
-    Vehicle* vehicle, int16_t x, int16_t y, int16_t z, uint16_t* otherVehicleIndex)
+bool Vehicle::UpdateMotionCollisionDetection(const CoordsXYZ& loc, uint16_t* otherVehicleIndex)
 {
-    if (vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_1))
+    if (HasUpdateFlag(VEHICLE_UPDATE_FLAG_1))
         return false;
 
-    auto vehicleEntry = vehicle->Entry();
+    auto vehicleEntry = Entry();
     if (vehicleEntry == nullptr)
     {
         return false;
@@ -7652,7 +7579,7 @@ static bool vehicle_update_motion_collision_detection(
 
     if (!(vehicleEntry->flags & VEHICLE_ENTRY_FLAG_BOAT_HIRE_COLLISION_DETECTION))
     {
-        vehicle->var_C4 = 0;
+        var_C4 = 0;
 
         // If hacking boat hire rides you can end up here
         if (otherVehicleIndex == nullptr)
@@ -7660,32 +7587,32 @@ static bool vehicle_update_motion_collision_detection(
 
         Vehicle* collideVehicle = GET_VEHICLE(*otherVehicleIndex);
 
-        if (vehicle == collideVehicle)
+        if (this == collideVehicle)
             return false;
 
-        int32_t x_diff = abs(x - collideVehicle->x);
+        int32_t x_diff = abs(loc.x - collideVehicle->x);
         if (x_diff > 0x7FFF)
             return false;
 
-        int32_t y_diff = abs(y - collideVehicle->y);
+        int32_t y_diff = abs(loc.y - collideVehicle->y);
         if (y_diff > 0x7FFF)
             return false;
 
-        int32_t z_diff = abs(z - collideVehicle->z);
+        int32_t z_diff = abs(loc.z - collideVehicle->z);
         if (x_diff + y_diff + z_diff > 0xFFFF)
             return false;
 
-        uint16_t ecx = std::min(vehicle->var_44 + collideVehicle->var_44, 560);
+        uint16_t ecx = std::min(var_44 + collideVehicle->var_44, 560);
         ecx = ((ecx >> 1) * 30) >> 8;
 
         if (x_diff + y_diff + z_diff >= ecx)
             return false;
 
-        uint8_t direction = (vehicle->sprite_direction - collideVehicle->sprite_direction + 7) & 0x1F;
+        uint8_t direction = (sprite_direction - collideVehicle->sprite_direction + 7) & 0x1F;
         return direction < 0xF;
     }
 
-    auto location = CoordsXY{ x, y };
+    CoordsXY location = loc;
 
     bool mayCollide = false;
     Vehicle* collideVehicle = nullptr;
@@ -7695,9 +7622,10 @@ static bool vehicle_update_motion_collision_detection(
 
         for (auto vehicle2 : EntityTileList<Vehicle>(location))
         {
-            if (vehicle2 == vehicle)
+            if (vehicle2 == this)
                 continue;
-            int32_t z_diff = abs(vehicle2->z - z);
+
+            int32_t z_diff = abs(vehicle2->z - loc.z);
 
             if (z_diff > 16)
                 continue;
@@ -7712,23 +7640,23 @@ static bool vehicle_update_motion_collision_detection(
             if (!(collideVehicleEntry->flags & VEHICLE_ENTRY_FLAG_BOAT_HIRE_COLLISION_DETECTION))
                 continue;
 
-            uint32_t x_diff = abs(vehicle2->x - x);
+            uint32_t x_diff = abs(vehicle2->x - loc.x);
             if (x_diff > 0x7FFF)
                 continue;
 
-            uint32_t y_diff = abs(vehicle2->y - y);
+            uint32_t y_diff = abs(vehicle2->y - loc.y);
             if (y_diff > 0x7FFF)
                 continue;
 
-            uint8_t cl = std::min(vehicle->TrackSubposition, vehicle2->TrackSubposition);
-            uint8_t ch = std::max(vehicle->TrackSubposition, vehicle2->TrackSubposition);
+            uint8_t cl = std::min(TrackSubposition, vehicle2->TrackSubposition);
+            uint8_t ch = std::max(TrackSubposition, vehicle2->TrackSubposition);
             if (cl != ch)
             {
                 if (cl == VEHICLE_TRACK_SUBPOSITION_GO_KARTS_LEFT_LANE && ch == VEHICLE_TRACK_SUBPOSITION_GO_KARTS_RIGHT_LANE)
                     continue;
             }
 
-            uint32_t ecx = vehicle->var_44 + vehicle2->var_44;
+            uint32_t ecx = var_44 + vehicle2->var_44;
             ecx = ((ecx >> 1) * 30) >> 8;
 
             if (x_diff + y_diff >= ecx)
@@ -7741,15 +7669,15 @@ static bool vehicle_update_motion_collision_detection(
                 break;
             }
 
-            uint8_t direction = (vehicle->sprite_direction - vehicle2->sprite_direction - 6) & 0x1F;
+            uint8_t direction = (sprite_direction - vehicle2->sprite_direction - 6) & 0x1F;
 
             if (direction < 0x14)
                 continue;
 
-            uint32_t offsetSpriteDirection = (vehicle->sprite_direction + 4) & 31;
+            uint32_t offsetSpriteDirection = (sprite_direction + 4) & 31;
             uint32_t offsetDirection = offsetSpriteDirection >> 3;
-            uint32_t next_x_diff = abs(x + AvoidCollisionMoveOffset[offsetDirection].x - vehicle2->x);
-            uint32_t next_y_diff = abs(y + AvoidCollisionMoveOffset[offsetDirection].y - vehicle2->y);
+            uint32_t next_x_diff = abs(loc.x + AvoidCollisionMoveOffset[offsetDirection].x - vehicle2->x);
+            uint32_t next_y_diff = abs(loc.y + AvoidCollisionMoveOffset[offsetDirection].y - vehicle2->y);
 
             if (next_x_diff + next_y_diff < x_diff + y_diff)
             {
@@ -7766,14 +7694,14 @@ static bool vehicle_update_motion_collision_detection(
 
     if (!mayCollide)
     {
-        vehicle->var_C4 = 0;
+        var_C4 = 0;
         return false;
     }
 
-    vehicle->var_C4++;
-    if (vehicle->var_C4 < 200)
+    var_C4++;
+    if (var_C4 < 200)
     {
-        vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_6);
+        SetUpdateFlag(VEHICLE_UPDATE_FLAG_6);
         if (otherVehicleIndex != nullptr)
             *otherVehicleIndex = collideVehicle->sprite_index;
         return true;
@@ -7781,45 +7709,45 @@ static bool vehicle_update_motion_collision_detection(
 
     // TODO Is it possible for collideVehicle to be NULL?
 
-    if (vehicle->status == VEHICLE_STATUS_MOVING_TO_END_OF_STATION)
+    if (status == VEHICLE_STATUS_MOVING_TO_END_OF_STATION)
     {
-        if (vehicle->sprite_direction == 0)
+        if (sprite_direction == 0)
         {
-            if (vehicle->x <= collideVehicle->x)
+            if (x <= collideVehicle->x)
             {
                 return false;
             }
         }
-        else if (vehicle->sprite_direction == 8)
+        else if (sprite_direction == 8)
         {
-            if (vehicle->y >= collideVehicle->y)
+            if (y >= collideVehicle->y)
             {
                 return false;
             }
         }
-        else if (vehicle->sprite_direction == 16)
+        else if (sprite_direction == 16)
         {
-            if (vehicle->x >= collideVehicle->x)
+            if (x >= collideVehicle->x)
             {
                 return false;
             }
         }
-        else if (vehicle->sprite_direction == 24)
+        else if (sprite_direction == 24)
         {
-            if (vehicle->y <= collideVehicle->y)
+            if (y <= collideVehicle->y)
             {
                 return false;
             }
         }
     }
 
-    if (collideVehicle->status == VEHICLE_STATUS_TRAVELLING_BOAT && vehicle->status != VEHICLE_STATUS_ARRIVING
-        && vehicle->status != VEHICLE_STATUS_TRAVELLING)
+    if (collideVehicle->status == VEHICLE_STATUS_TRAVELLING_BOAT && status != VEHICLE_STATUS_ARRIVING
+        && status != VEHICLE_STATUS_TRAVELLING)
     {
         return false;
     }
 
-    vehicle->SetUpdateFlag(VEHICLE_UPDATE_FLAG_6);
+    SetUpdateFlag(VEHICLE_UPDATE_FLAG_6);
     if (otherVehicleIndex != nullptr)
         *otherVehicleIndex = collideVehicle->sprite_index;
     return true;
@@ -7848,17 +7776,17 @@ void Vehicle::ReverseReverserCar()
  *
  *  rct2: 0x006DBF3E
  */
-static void sub_6DBF3E(Vehicle* vehicle)
+void Vehicle::Sub6DBF3E()
 {
-    rct_ride_entry_vehicle* vehicleEntry = vehicle->Entry();
+    rct_ride_entry_vehicle* vehicleEntry = Entry();
 
-    vehicle->acceleration = vehicle->acceleration / _vehicleUnkF64E10;
-    if (vehicle->TrackSubposition == VEHICLE_TRACK_SUBPOSITION_CHAIRLIFT_GOING_BACK)
+    acceleration /= _vehicleUnkF64E10;
+    if (TrackSubposition == VEHICLE_TRACK_SUBPOSITION_CHAIRLIFT_GOING_BACK)
     {
         return;
     }
 
-    int32_t trackType = vehicle->GetTrackType();
+    int32_t trackType = GetTrackType();
     if (!(TrackSequenceProperties[trackType][0] & TRACK_SEQUENCE_FLAG_ORIGIN))
     {
         return;
@@ -7867,9 +7795,9 @@ static void sub_6DBF3E(Vehicle* vehicle)
     _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_3;
 
     TileElement* tileElement = nullptr;
-    if (map_is_location_valid(vehicle->TrackLocation))
+    if (map_is_location_valid(TrackLocation))
     {
-        tileElement = map_get_track_element_at_of_type_seq(vehicle->TrackLocation, trackType, 0);
+        tileElement = map_get_track_element_at_of_type_seq(TrackLocation, trackType, 0);
     }
 
     if (tileElement == nullptr)
@@ -7882,32 +7810,32 @@ static void sub_6DBF3E(Vehicle* vehicle)
         _vehicleStationIndex = tileElement->AsTrack()->GetStationIndex();
     }
 
-    if (trackType == TRACK_ELEM_TOWER_BASE && vehicle == gCurrentVehicle)
+    if (trackType == TRACK_ELEM_TOWER_BASE && this == gCurrentVehicle)
     {
-        if (vehicle->track_progress > 3 && !vehicle->HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
+        if (track_progress > 3 && !HasUpdateFlag(VEHICLE_UPDATE_FLAG_REVERSING_SHUTTLE))
         {
             CoordsXYE output;
             int32_t outputZ, outputDirection;
 
-            CoordsXYE input = { vehicle->TrackLocation, tileElement };
+            CoordsXYE input = { TrackLocation, tileElement };
             if (!track_block_get_next(&input, &output, &outputZ, &outputDirection))
             {
                 _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_12;
             }
         }
 
-        if (vehicle->track_progress <= 3)
+        if (track_progress <= 3)
         {
             _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_AT_STATION;
         }
     }
 
-    if (trackType != TRACK_ELEM_END_STATION || vehicle != gCurrentVehicle)
+    if (trackType != TRACK_ELEM_END_STATION || this != gCurrentVehicle)
     {
         return;
     }
 
-    uint16_t ax = vehicle->track_progress;
+    uint16_t ax = track_progress;
     if (_vehicleVelocityF64E08 < 0)
     {
         if (ax <= 22)
@@ -7927,7 +7855,7 @@ static void sub_6DBF3E(Vehicle* vehicle)
             // Determine the stop positions for the karts. If in left lane it's further along the track than the right lane.
             // Since it's not possible to overtake when the race has ended, this does not check for overtake states (7 and
             // 8).
-            cx = vehicle->TrackSubposition == VEHICLE_TRACK_SUBPOSITION_GO_KARTS_RIGHT_LANE ? 18 : 20;
+            cx = TrackSubposition == VEHICLE_TRACK_SUBPOSITION_GO_KARTS_RIGHT_LANE ? 18 : 20;
         }
 
         if (ax > cx)
@@ -7945,8 +7873,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
 {
     CoordsXYZD location = {};
 
-    _vehicleVAngleEndF64E36 = TrackDefinitions[trackType].vangle_end;
-    _vehicleBankEndF64E37 = TrackDefinitions[trackType].bank_end;
+    auto pitchAndRollEnd = TrackPitchAndRollEnd(trackType);
     TileElement* tileElement = map_get_track_element_at_of_type_seq(TrackLocation, trackType, 0);
 
     if (tileElement == nullptr)
@@ -7977,7 +7904,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
     }
 
     // Change from original: this used to check if the vehicle allowed doors.
-    vehicle_update_scenery_door(this);
+    UpdateSceneryDoor();
 
     bool isGoingBack = false;
     switch (TrackSubposition)
@@ -8034,7 +7961,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
             }
         }
 
-        if (!loc_6DB38B(this, tileElement))
+        if (PitchAndRollStart(HasUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES), tileElement) != pitchAndRollEnd)
         {
             return false;
         }
@@ -8065,16 +7992,10 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
         && TrackSubposition < VEHICLE_TRACK_SUBPOSITION_GO_KARTS_MOVING_TO_RIGHT_LANE)
     {
         trackType = tileElement->AsTrack()->GetTrackType();
-        if (trackType == TRACK_ELEM_FLAT)
+        if (trackType == TRACK_ELEM_FLAT
+            || ((curRide->lifecycle_flags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING) && tileElement->AsTrack()->IsStation()))
         {
-            VehicleUpdateGoKartAttemptSwitchLanes(this);
-        }
-        else if (curRide->lifecycle_flags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING)
-        {
-            if (tileElement->AsTrack()->IsStation())
-            {
-                VehicleUpdateGoKartAttemptSwitchLanes(this);
-            }
+            UpdateGoKartAttemptSwitchLanes();
         }
     }
 
@@ -8125,7 +8046,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
         }
     }
     // Change from original: this used to check if the vehicle allowed doors.
-    vehicle_update_handle_scenery_door(this);
+    UpdateSceneryDoorBackwards();
 
     return true;
 }
@@ -8230,10 +8151,8 @@ loc_6DAEB9:
 
     regs.ax = track_progress + 1;
 
-    const rct_vehicle_info* moveInfo = vehicle_get_move_info(TrackSubposition, track_type, 0);
-
     // Track Total Progress is in the two bytes before the move info list
-    uint16_t trackTotalProgress = vehicle_get_move_info_size(TrackSubposition, track_type);
+    uint16_t trackTotalProgress = GetTrackProgress();
     if (regs.ax >= trackTotalProgress)
     {
         UpdateCrossings();
@@ -8252,23 +8171,22 @@ loc_6DAEB9:
     UpdateHandleWaterSplash();
 
     // loc_6DB706
-    moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
+    const auto moveInfo = GetMoveInfo();
     trackType = GetTrackType();
     {
-        int16_t curX = TrackLocation.x + moveInfo->x;
-        int16_t curY = TrackLocation.y + moveInfo->y;
-        int16_t curZ = TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset;
+        auto loc = TrackLocation
+            + CoordsXYZ{ moveInfo->x, moveInfo->y, moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset };
 
         regs.ebx = 0;
-        if (curX != unk_F64E20.x)
+        if (loc.x != unk_F64E20.x)
         {
             regs.ebx |= 1;
         }
-        if (curY != unk_F64E20.y)
+        if (loc.y != unk_F64E20.y)
         {
             regs.ebx |= 2;
         }
-        if (curZ != unk_F64E20.z)
+        if (loc.z != unk_F64E20.z)
         {
             regs.ebx |= 4;
         }
@@ -8285,17 +8203,15 @@ loc_6DAEB9:
         {
             ReverseReverserCar();
 
-            const rct_vehicle_info* moveInfo2 = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
-            curX = x + moveInfo2->x;
-            curY = y + moveInfo2->y;
+            const rct_vehicle_info* moveInfo2 = GetMoveInfo();
+            loc.x = x + moveInfo2->x;
+            loc.y = y + moveInfo2->y;
         }
 
         // loc_6DB8A5
         regs.ebx = dword_9A2930[regs.ebx];
         remaining_distance -= regs.ebx;
-        unk_F64E20.x = curX;
-        unk_F64E20.y = curY;
-        unk_F64E20.z = curZ;
+        unk_F64E20 = loc;
         sprite_direction = moveInfo->direction;
         bank_rotation = moveInfo->bank_rotation;
         vehicle_sprite_type = moveInfo->vehicle_sprite_type;
@@ -8315,7 +8231,7 @@ loc_6DAEB9:
             if (_vehicleVelocityF64E08 >= 0)
             {
                 otherVehicleIndex = prev_vehicle_on_ride;
-                if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, &otherVehicleIndex))
+                if (UpdateMotionCollisionDetection(loc, &otherVehicleIndex))
                 {
                     goto loc_6DB967;
                 }
@@ -8367,14 +8283,20 @@ loc_6DB967:
     return false;
 }
 
+static PitchAndRoll PitchAndRollEnd(Ride* curRide, bool useInvertedSprites, uint16_t trackType, TileElement* tileElement)
+{
+    bool isInverted = useInvertedSprites ^ tileElement->AsTrack()->IsInverted();
+    return { TrackDefinitions[trackType].vangle_end,
+             track_get_actual_bank_2(curRide->type, isInverted, TrackDefinitions[trackType].bank_end) };
+}
+
 /**
  *
  *  rct2: 0x006DBAA6
  */
 bool Vehicle::UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* curRide, uint16_t* progress)
 {
-    _vehicleVAngleEndF64E36 = TrackDefinitions[trackType].vangle_start;
-    _vehicleBankEndF64E37 = TrackDefinitions[trackType].bank_start;
+    auto pitchAndRollStart = TrackPitchAndRollStart(trackType);
     TileElement* tileElement = map_get_track_element_at_of_type_seq(TrackLocation, trackType, 0);
 
     if (tileElement == nullptr)
@@ -8419,11 +8341,8 @@ bool Vehicle::UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* cu
             return false;
         }
 
-        bool isInverted = HasUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES) ^ tileElement->AsTrack()->IsInverted();
-        int32_t bank = TrackDefinitions[trackType].bank_end;
-        bank = track_get_actual_bank_2(curRide->type, isInverted, bank);
-        int32_t vAngle = TrackDefinitions[trackType].vangle_end;
-        if (_vehicleVAngleEndF64E36 != vAngle || _vehicleBankEndF64E37 != bank)
+        if (PitchAndRollEnd(curRide, HasUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES), trackType, tileElement)
+            != pitchAndRollStart)
         {
             return false;
         }
@@ -8518,7 +8437,7 @@ bool Vehicle::UpdateTrackMotionBackwardsGetNewTrack(uint16_t trackType, Ride* cu
     brake_speed = tileElement->AsTrack()->GetBrakeBoosterSpeed();
 
     // There are two bytes before the move info list
-    uint16_t trackTotalProgress = vehicle_get_move_info_size(TrackSubposition, track_type);
+    uint16_t trackTotalProgress = GetTrackProgress();
     *progress = trackTotalProgress - 1;
     return true;
 }
@@ -8579,29 +8498,26 @@ loc_6DBA33:;
     // loc_6DBD42
     track_progress = regs.ax;
     {
-        const rct_vehicle_info* moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
-        int16_t curX = TrackLocation.x + moveInfo->x;
-        int16_t curY = TrackLocation.y + moveInfo->y;
-        int16_t curZ = TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset;
+        const rct_vehicle_info* moveInfo = GetMoveInfo();
+        auto loc = TrackLocation
+            + CoordsXYZ{ moveInfo->x, moveInfo->y, moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset };
 
         regs.ebx = 0;
-        if (curX != unk_F64E20.x)
+        if (loc.x != unk_F64E20.x)
         {
             regs.ebx |= 1;
         }
-        if (curY != unk_F64E20.y)
+        if (loc.y != unk_F64E20.y)
         {
             regs.ebx |= 2;
         }
-        if (curZ != unk_F64E20.z)
+        if (loc.z != unk_F64E20.z)
         {
             regs.ebx |= 4;
         }
         remaining_distance += dword_9A2930[regs.ebx];
 
-        unk_F64E20.x = curX;
-        unk_F64E20.y = curY;
-        unk_F64E20.z = curZ;
+        unk_F64E20 = loc;
         sprite_direction = moveInfo->direction;
         bank_rotation = moveInfo->bank_rotation;
         regs.ebx = moveInfo->vehicle_sprite_type;
@@ -8619,7 +8535,7 @@ loc_6DBA33:;
             if (_vehicleVelocityF64E08 < 0)
             {
                 otherVehicleIndex = next_vehicle_on_ride;
-                if (vehicle_update_motion_collision_detection(this, curX, curY, curZ, &otherVehicleIndex))
+                if (UpdateMotionCollisionDetection(loc, &otherVehicleIndex))
                 {
                     goto loc_6DBE7F;
                 }
@@ -8779,15 +8695,9 @@ loc_6DC476:
         mini_golf_flags &= ~(1 << 3);
     }
 
-    // loc_6DC5B8
-    // Note: Line below was here as part of
-    // https://github.com/OpenRCT2/OpenRCT2/pull/2605/files#diff-e6c06ccf59b47239e1e220468e52497dR7736
-    // but it is not used and overridden later on.
-    // const rct_vehicle_info* moveInfo = vehicle_get_move_info(TrackSubposition, track_type, 0);
-
     // There are two bytes before the move info list
     {
-        uint16_t trackTotalProgress = vehicle_get_move_info_size(TrackSubposition, track_type);
+        uint16_t trackTotalProgress = GetTrackProgress();
         if (track_progress + 1 < trackTotalProgress)
         {
             track_progress += 1;
@@ -8795,12 +8705,7 @@ loc_6DC476:
         }
     }
 
-    {
-        uint16_t trackType = GetTrackType();
-        _vehicleVAngleEndF64E36 = TrackDefinitions[trackType].vangle_end;
-        _vehicleBankEndF64E37 = TrackDefinitions[trackType].bank_end;
-        tileElement = map_get_track_element_at_of_type_seq(TrackLocation, trackType, 0);
-    }
+    tileElement = map_get_track_element_at_of_type_seq(TrackLocation, GetTrackType(), 0);
     int32_t direction;
     {
         CoordsXYE output;
@@ -8815,7 +8720,8 @@ loc_6DC476:
         direction = outDirection;
     }
 
-    if (!loc_6DB38B(this, tileElement))
+    if (PitchAndRollStart(HasUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES), tileElement)
+        != TrackPitchAndRollEnd(GetTrackType()))
     {
         goto loc_6DC9BC;
     }
@@ -8861,7 +8767,7 @@ loc_6DC743:
     const rct_vehicle_info* moveInfo;
     for (;;)
     {
-        moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
+        moveInfo = GetMoveInfo();
         if (moveInfo->x != LOCATION_NULL)
         {
             break;
@@ -8975,7 +8881,7 @@ loc_6DC743:
         if (_vehicleVelocityF64E08 >= 0)
         {
             otherVehicleIndex = prev_vehicle_on_ride;
-            vehicle_update_motion_collision_detection(this, trackPos.x, trackPos.y, trackPos.z, &otherVehicleIndex);
+            UpdateMotionCollisionDetection(trackPos, &otherVehicleIndex);
         }
     }
     goto loc_6DC99A;
@@ -9009,13 +8915,7 @@ loc_6DCA9A:
         goto loc_6DCC2C;
     }
 
-    {
-        uint16_t trackType = GetTrackType();
-        _vehicleVAngleEndF64E36 = TrackDefinitions[trackType].vangle_end;
-        _vehicleBankEndF64E37 = TrackDefinitions[trackType].bank_end;
-
-        tileElement = map_get_track_element_at_of_type_seq(TrackLocation, trackType, 0);
-    }
+    tileElement = map_get_track_element_at_of_type_seq(TrackLocation, GetTrackType(), 0);
     {
         track_begin_end trackBeginEnd;
         if (!track_block_get_previous({ TrackLocation, tileElement }, &trackBeginEnd))
@@ -9027,7 +8927,8 @@ loc_6DCA9A:
         tileElement = trackBeginEnd.begin_element;
     }
 
-    if (!loc_6DB38B(this, tileElement))
+    if (PitchAndRollStart(HasUpdateFlag(VEHICLE_UPDATE_FLAG_USE_INVERTED_SPRITES), tileElement)
+        != TrackPitchAndRollEnd(GetTrackType()))
     {
         goto loc_6DCD4A;
     }
@@ -9062,10 +8963,10 @@ loc_6DCA9A:
     var_CF = tileElement->AsTrack()->GetSeatRotation() << 1;
 
     // There are two bytes before the move info list
-    track_progress = vehicle_get_move_info_size(TrackSubposition, track_type);
+    track_progress = GetTrackProgress();
 
 loc_6DCC2C:
-    moveInfo = vehicle_get_move_info(TrackSubposition, track_type, track_progress);
+    moveInfo = GetMoveInfo();
     trackPos = { TrackLocation.x + moveInfo->x, TrackLocation.y + moveInfo->y,
                  TrackLocation.z + moveInfo->z + RideTypeDescriptors[curRide->type].Heights.VehicleZOffset };
 
@@ -9095,7 +8996,7 @@ loc_6DCC2C:
         if (_vehicleVelocityF64E08 >= 0)
         {
             otherVehicleIndex = var_44;
-            if (vehicle_update_motion_collision_detection(this, trackPos.x, trackPos.y, trackPos.z, &otherVehicleIndex))
+            if (UpdateMotionCollisionDetection(trackPos, &otherVehicleIndex))
             {
                 goto loc_6DCD6B;
             }
@@ -9212,11 +9113,11 @@ static constexpr int32_t GetAccelerationDecrease2(const int32_t velocity, const 
 
 int32_t Vehicle::UpdateTrackMotionMiniGolf(int32_t* outStation)
 {
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return 0;
 
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     rct_ride_entry_vehicle* vehicleEntry = Entry();
 
     gCurrentVehicle = this;
@@ -9450,11 +9351,11 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
 {
     registers regs = {};
 
-    auto curRide = get_ride(ride);
+    auto curRide = GetRide();
     if (curRide == nullptr)
         return 0;
 
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     auto vehicleEntry = Entry();
 
     if (vehicleEntry == nullptr)
@@ -9569,7 +9470,7 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
         car->Invalidate();
 
     loc_6DBF3E:
-        sub_6DBF3E(car);
+        car->Sub6DBF3E();
 
         // loc_6DC0F7
         if (car->HasUpdateFlag(VEHICLE_UPDATE_FLAG_ON_LIFT_HILL))
@@ -9686,14 +9587,24 @@ int32_t Vehicle::UpdateTrackMotion(int32_t* outStation)
     return _vehicleMotionTrackFlags;
 }
 
+rct_ride_entry* Vehicle::GetRideEntry() const
+{
+    return get_ride_entry(ride_subtype);
+}
+
 rct_ride_entry_vehicle* Vehicle::Entry() const
 {
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     if (rideEntry == nullptr)
     {
         return nullptr;
     }
     return &rideEntry->vehicles[vehicle_type];
+}
+
+Ride* Vehicle::GetRide() const
+{
+    return get_ride(ride);
 }
 
 int32_t Vehicle::NumPeepsUntilTrainTail() const
@@ -9771,7 +9682,7 @@ void Vehicle::UpdateCrossings() const
         while (true)
         {
             auto* pathElement = map_get_path_element_at(TileCoordsXYZ(CoordsXYZ{ xyElement, xyElement.element->GetBaseZ() }));
-            auto curRide = get_ride(ride);
+            auto curRide = GetRide();
 
             // Many New Element parks have invisible rides hacked into the path.
             // Limit path blocking to rides actually supporting level crossings to prevent peeps getting stuck everywhere.
@@ -9853,7 +9764,7 @@ void Vehicle::UpdateCrossings() const
 
 void Vehicle::Claxon() const
 {
-    rct_ride_entry* rideEntry = get_ride_entry(ride_subtype);
+    rct_ride_entry* rideEntry = GetRideEntry();
     switch (rideEntry->vehicles[vehicle_type].sound_range)
     {
         case SOUND_RANGE_WHISTLE:
@@ -9899,6 +9810,6 @@ void Vehicle::SetState(VEHICLE_STATUS vehicleStatus, uint8_t subState)
 
 bool Vehicle::IsGhost() const
 {
-    auto r = get_ride(ride);
+    auto r = GetRide();
     return r != nullptr && r->status == RIDE_STATUS_SIMULATING;
 }

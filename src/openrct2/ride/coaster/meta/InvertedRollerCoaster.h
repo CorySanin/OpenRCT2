@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,28 @@ constexpr const RideTypeDescriptor InvertedRollerCoasterRTD =
     SET_FIELD(OperatingSettings, { 7, 27, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_INVERTED_ROLLER_COASTER, STR_RIDE_DESCRIPTION_INVERTED_ROLLER_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_INVERTED_ROLLER_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 38, 40, 29, 8, }),
     SET_FIELD(MaxMass, 27),
     SET_FIELD(LiftData, { SoundId::LiftBM, 5, 7 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_inverted_roller_coaster),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 40, 20, 80, 13, 3, 10 }),
     SET_FIELD(BuildCosts, { 110, 5, 50, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_TECHNO),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO2),
-    SET_FIELD(BonusValue, 100)
+    SET_FIELD(BonusValue, 100),
+    SET_FIELD(ColourPresets,TRACK_COLOUR_PRESETS(
+        { COLOUR_BORDEAUX_RED, COLOUR_BORDEAUX_RED, COLOUR_BLACK },
+        { COLOUR_WHITE, COLOUR_YELLOW, COLOUR_WHITE },
+        { COLOUR_SALMON_PINK, COLOUR_SALMON_PINK, COLOUR_GREY },
+        { COLOUR_BLACK, COLOUR_BRIGHT_RED, COLOUR_BLACK },
+        { COLOUR_SATURATED_BROWN, COLOUR_WHITE, COLOUR_SATURATED_BROWN },
+        { COLOUR_YELLOW, COLOUR_YELLOW, COLOUR_BLACK },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_INVERTED_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_INVERTED_ROLLER_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

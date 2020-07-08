@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -32,16 +33,24 @@ constexpr const RideTypeDescriptor FerrisWheelRTD =
     SET_FIELD(OperatingSettings, { 1, 3, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_FERRIS_WHEEL, STR_RIDE_DESCRIPTION_FERRIS_WHEEL }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_WHEEL, RIDE_COMPONENT_TYPE_STRUCTURE, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_FERRIS_WHEEL)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT)),
     SET_FIELD(Heights, { 16, 176, 3, 2, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_ferris_wheel),
     SET_FIELD(RatingsMultipliers, { 60, 20, 10 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 225, 2, 1, }),
     SET_FIELD(DefaultPrices, { 10, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_SUMMER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 45)
+    SET_FIELD(BonusValue, 45),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BLACK, COLOUR_BLACK, COLOUR_BLACK },
+        { COLOUR_GREY, COLOUR_GREY, COLOUR_GREY },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_FERRIS_WHEEL_TRACK, 0 }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

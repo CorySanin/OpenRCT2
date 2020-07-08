@@ -19,62 +19,62 @@ static void DrawText(rct_drawpixelinfo* dpi, int32_t x, int32_t y, TextPaint* pa
 
 StaticLayout::StaticLayout(utf8string source, TextPaint paint, int32_t width)
 {
-    _buffer = source;
-    _paint = paint;
+    Buffer = source;
+    Paint = paint;
 
     int32_t fontSpriteBase;
 
     gCurrentFontSpriteBase = paint.SpriteBase;
-    _maxWidth = gfx_wrap_string(_buffer, width, &_lineCount, &fontSpriteBase);
-    _lineCount += 1;
-    _lineHeight = font_get_line_height(fontSpriteBase);
+    MaxWidth = gfx_wrap_string(Buffer, width, &LineCount, &fontSpriteBase);
+    LineCount += 1;
+    LineHeight = font_get_line_height(fontSpriteBase);
 }
 
 void StaticLayout::Draw(rct_drawpixelinfo* dpi, int32_t x, int32_t y)
 {
     gCurrentFontFlags = 0;
-    gCurrentFontSpriteBase = _paint.SpriteBase;
+    gCurrentFontSpriteBase = Paint.SpriteBase;
 
-    TextPaint tempPaint = _paint;
+    TextPaint tempPaint = Paint;
 
     gCurrentFontFlags = 0;
     int32_t lineY = y;
     int32_t lineX = x;
-    switch (_paint.Alignment)
+    switch (Paint.Alignment)
     {
         case TextAlignment::LEFT:
             lineX = x;
             break;
         case TextAlignment::CENTRE:
-            lineX = x + _maxWidth / 2;
+            lineX = x + MaxWidth / 2;
             break;
         case TextAlignment::RIGHT:
-            lineX = x + _maxWidth;
+            lineX = x + MaxWidth;
             break;
     }
-    utf8* buffer = _buffer;
-    for (int32_t line = 0; line < _lineCount; ++line)
+    utf8* buffer = Buffer;
+    for (int32_t line = 0; line < LineCount; ++line)
     {
         DrawText(dpi, lineX, lineY, &tempPaint, buffer);
         tempPaint.Colour = TEXT_COLOUR_254;
         buffer = get_string_end(buffer) + 1;
-        lineY += _lineHeight;
+        lineY += LineHeight;
     }
 }
 
 int32_t StaticLayout::GetHeight()
 {
-    return _lineHeight * _lineCount;
+    return LineHeight * LineCount;
 }
 
 int32_t StaticLayout::GetWidth()
 {
-    return _maxWidth;
+    return MaxWidth;
 }
 
 int32_t StaticLayout::GetLineCount()
 {
-    return _lineCount;
+    return LineCount;
 }
 
 static void DrawText(rct_drawpixelinfo* dpi, int32_t x, int32_t y, TextPaint* paint, const_utf8string text)
@@ -93,7 +93,7 @@ static void DrawText(rct_drawpixelinfo* dpi, int32_t x, int32_t y, TextPaint* pa
             break;
     }
 
-    ttf_draw_string(dpi, text, paint->Colour, x, y);
+    ttf_draw_string(dpi, text, paint->Colour, { x, y });
 
     if (paint->UnderlineText)
     {
@@ -151,9 +151,10 @@ void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t co
 }
 
 // Basic
-void gfx_draw_string_left(rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y)
+void gfx_draw_string_left(
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords)
 {
-    DrawTextCompat(dpi, x, y, format, args, colour, TextAlignment::LEFT);
+    DrawTextCompat(dpi, coords.x, coords.y, format, args, colour, TextAlignment::LEFT);
 }
 
 void gfx_draw_string_centred(
@@ -206,12 +207,6 @@ void gfx_draw_string_right_clipped(
 }
 
 // Wrapping
-int32_t gfx_draw_string_left_wrapped(
-    rct_drawpixelinfo* dpi, void* args, int32_t x, int32_t y, int32_t width, rct_string_id format, uint8_t colour)
-{
-    return gfx_draw_string_left_wrapped(dpi, args, { x, y }, width, format, colour);
-}
-
 int32_t gfx_draw_string_left_wrapped(
     rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour)
 {

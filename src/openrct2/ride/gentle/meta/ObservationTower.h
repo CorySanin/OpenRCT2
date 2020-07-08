@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -32,16 +33,24 @@ constexpr const RideTypeDescriptor ObservationTowerRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_OBSERVATION_TOWER, STR_RIDE_DESCRIPTION_OBSERVATION_TOWER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CABIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_OBSERVATION_TOWER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION)),
     SET_FIELD(Heights, { 255, 32, 3, 2, }),
     SET_FIELD(MaxMass, 15),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_observation_tower),
     SET_FIELD(RatingsMultipliers, { 80, 10, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 20, 0, 10, 0, 0 }),
     SET_FIELD(BuildCosts, { 37, 0, 4, }),
     SET_FIELD(DefaultPrices, { 10, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_SUMMER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 45)
+    SET_FIELD(BonusValue, 45),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BRIGHT_RED, COLOUR_BLACK, COLOUR_GREY },
+        { COLOUR_LIGHT_BLUE, COLOUR_YELLOW, COLOUR_GREY },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_OBSERVATION_TOWER_TRACK, SPR_RIDE_DESIGN_PREVIEW_OBSERVATION_TOWER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

@@ -129,7 +129,7 @@ static int32_t window_track_place_get_base_z(const CoordsXY& loc);
 static void window_track_place_clear_mini_preview();
 static void window_track_place_draw_mini_preview(TrackDesign* td6);
 static void window_track_place_draw_mini_preview_track(
-    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY min, CoordsXY max);
+    TrackDesign* td6, int32_t pass, const CoordsXY& origin, CoordsXY min, CoordsXY max);
 static void window_track_place_draw_mini_preview_maze(
     TrackDesign* td6, int32_t pass, const CoordsXY& origin, CoordsXY min, CoordsXY max);
 static ScreenCoordsXY draw_mini_preview_get_pixel_position(const CoordsXY& location);
@@ -515,21 +515,21 @@ static void window_track_place_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
     // Draw mini tile preview
     rct_drawpixelinfo clippedDpi;
-    if (clip_drawpixelinfo(&clippedDpi, dpi, w->windowPos.x + 4, w->windowPos.y + 18, 168, 78))
+    if (clip_drawpixelinfo(&clippedDpi, dpi, w->windowPos + ScreenCoordsXY{ 4, 18 }, 168, 78))
     {
         rct_g1_element g1temp = {};
         g1temp.offset = _window_track_place_mini_preview.data();
         g1temp.width = TRACK_MINI_PREVIEW_WIDTH;
         g1temp.height = TRACK_MINI_PREVIEW_HEIGHT;
         gfx_set_g1_element(SPR_TEMP, &g1temp);
-        gfx_draw_sprite(&clippedDpi, SPR_TEMP | SPRITE_ID_PALETTE_COLOUR_1(NOT_TRANSLUCENT(w->colours[0])), 0, 0, 0);
+        gfx_draw_sprite(&clippedDpi, SPR_TEMP | SPRITE_ID_PALETTE_COLOUR_1(NOT_TRANSLUCENT(w->colours[0])), { 0, 0 }, 0);
     }
 
     // Price
     if (_window_track_place_last_cost != MONEY32_UNDEFINED && !(gParkFlags & PARK_FLAGS_NO_MONEY))
     {
         gfx_draw_string_centred(
-            dpi, STR_COST_LABEL, { w->windowPos.x + 88, w->windowPos.y + 94 }, COLOUR_BLACK, &_window_track_place_last_cost);
+            dpi, STR_COST_LABEL, w->windowPos + ScreenCoordsXY{ 88, 94 }, COLOUR_BLACK, &_window_track_place_last_cost);
     }
 }
 
@@ -565,12 +565,14 @@ static void window_track_place_draw_mini_preview(TrackDesign* td6)
 }
 
 static void window_track_place_draw_mini_preview_track(
-    TrackDesign* td6, int32_t pass, CoordsXY origin, CoordsXY min, CoordsXY max)
+    TrackDesign* td6, int32_t pass, const CoordsXY& origin, CoordsXY min, CoordsXY max)
 {
-    uint8_t rotation = (_currentTrackPieceDirection + get_current_rotation()) & 3;
+    const uint8_t rotation = (_currentTrackPieceDirection + get_current_rotation()) & 3;
 
     const rct_preview_track** trackBlockArray = (ride_type_has_flag(td6->type, RIDE_TYPE_FLAG_HAS_TRACK)) ? TrackBlocks
                                                                                                           : FlatRideTrackBlocks;
+    CoordsXY curTrackStart = origin;
+    uint8_t curTrackRotation = rotation;
     for (const auto& trackElement : td6->track_elements)
     {
         int32_t trackType = trackElement.type;
@@ -583,7 +585,7 @@ static void window_track_place_draw_mini_preview_track(
         const rct_preview_track* trackBlock = trackBlockArray[trackType];
         while (trackBlock->index != 255)
         {
-            auto rotatedAndOffsetTrackBlock = origin + CoordsXY{ trackBlock->x, trackBlock->y }.Rotate(rotation);
+            auto rotatedAndOffsetTrackBlock = curTrackStart + CoordsXY{ trackBlock->x, trackBlock->y }.Rotate(curTrackRotation);
 
             if (pass == 0)
             {
@@ -599,7 +601,7 @@ static void window_track_place_draw_mini_preview_track(
                 {
                     uint8_t* pixel = draw_mini_preview_get_pixel_ptr(pixelPosition);
 
-                    auto bits = trackBlock->var_08.Rotate(rotation & 3).GetBaseQuarterOccupied();
+                    auto bits = trackBlock->var_08.Rotate(curTrackRotation & 3).GetBaseQuarterOccupied();
 
                     // Station track is a lighter colour
                     uint8_t colour = (TrackSequenceProperties[trackType][0] & TRACK_SEQUENCE_FLAG_ORIGIN)
@@ -623,20 +625,19 @@ static void window_track_place_draw_mini_preview_track(
         }
 
         // Change rotation and next position based on track curvature
-        rotation &= 3;
+        curTrackRotation &= 3;
         const rct_track_coordinates* track_coordinate = &TrackCoordinates[trackType];
 
-        trackType *= 10;
-        auto rotatedAndOfffsetTrack = origin + CoordsXY{ track_coordinate->x, track_coordinate->y }.Rotate(rotation);
-        rotation += track_coordinate->rotation_end - track_coordinate->rotation_begin;
-        rotation &= 3;
+        curTrackStart += CoordsXY{ track_coordinate->x, track_coordinate->y }.Rotate(curTrackRotation);
+        curTrackRotation += track_coordinate->rotation_end - track_coordinate->rotation_begin;
+        curTrackRotation &= 3;
         if (track_coordinate->rotation_end & 4)
         {
-            rotation |= 4;
+            curTrackRotation |= 4;
         }
-        if (!(rotation & 4))
+        if (!(curTrackRotation & 4))
         {
-            origin = rotatedAndOfffsetTrack + CoordsDirectionDelta[rotation];
+            curTrackStart += CoordsDirectionDelta[curTrackRotation];
         }
     }
 

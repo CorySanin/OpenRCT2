@@ -731,8 +731,7 @@ static void window_loadsave_paint(rct_window* w, rct_drawpixelinfo* dpi)
     // Draw name button indicator.
     rct_widget sort_name_widget = window_loadsave_widgets[WIDX_SORT_NAME];
     gfx_draw_string_left(
-        dpi, STR_NAME, &id, COLOUR_GREY, w->windowPos.x + sort_name_widget.left + 11,
-        w->windowPos.y + sort_name_widget.top + 1);
+        dpi, STR_NAME, &id, COLOUR_GREY, w->windowPos + ScreenCoordsXY{ sort_name_widget.left + 11, sort_name_widget.top + 1 });
 
     // Date button text
     if (gConfigGeneral.load_save_sort == SORT_DATE_ASCENDING)
@@ -744,13 +743,13 @@ static void window_loadsave_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
     rct_widget sort_date_widget = window_loadsave_widgets[WIDX_SORT_DATE];
     gfx_draw_string_left(
-        dpi, STR_DATE, &id, COLOUR_GREY, w->windowPos.x + sort_date_widget.left + 5, w->windowPos.y + sort_date_widget.top + 1);
+        dpi, STR_DATE, &id, COLOUR_GREY, w->windowPos + ScreenCoordsXY{ sort_date_widget.left + 5, sort_date_widget.top + 1 });
 }
 
 static void window_loadsave_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t scrollIndex)
 {
     gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width - 1, dpi->y + dpi->height - 1, ColourMapA[w->colours[1]].mid_light);
-    const int32_t listWidth = w->widgets[WIDX_SCROLL].right - w->widgets[WIDX_SCROLL].left;
+    const int32_t listWidth = w->widgets[WIDX_SCROLL].width();
     const int32_t dateAnchor = w->widgets[WIDX_SORT_DATE].left + maxDateWidth + DATE_TIME_GAP;
 
     for (int32_t i = 0; i < w->no_list_items; i++)
@@ -775,14 +774,14 @@ static void window_loadsave_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, i
         {
             auto ft = Formatter::Common();
             ft.Add<rct_string_id>(STR_RIGHTGUILLEMET);
-            gfx_draw_string_left(dpi, stringId, gCommonFormatArgs, COLOUR_BLACK, 0, y);
+            gfx_draw_string_left(dpi, stringId, gCommonFormatArgs, COLOUR_BLACK, { 0, y });
         }
 
         // Print filename
         auto ft = Formatter::Common();
         ft.Add<rct_string_id>(STR_STRING);
         ft.Add<char*>(_listItems[i].name.c_str());
-        int32_t max_file_width = w->widgets[WIDX_SORT_NAME].right - w->widgets[WIDX_SORT_NAME].left - 10;
+        int32_t max_file_width = w->widgets[WIDX_SORT_NAME].width() - 10;
         gfx_draw_string_left_clipped(dpi, stringId, gCommonFormatArgs, COLOUR_BLACK, { 10, y }, max_file_width);
 
         // Print formatted modified date, if this is a file

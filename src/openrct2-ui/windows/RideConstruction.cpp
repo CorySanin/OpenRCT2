@@ -2303,7 +2303,9 @@ static void window_ride_construction_invalidate(rct_window* w)
     }
 
     // Set window title arguments
-    ride->FormatNameTo(gCommonFormatArgs + 4);
+    ft = Formatter::Common();
+    ft.Increment(4);
+    ride->FormatNameTo(ft);
 }
 
 /**
@@ -2330,16 +2332,16 @@ static void window_ride_construction_paint(rct_window* w, rct_drawpixelinfo* dpi
 
     // Draw track piece
     auto screenCoords = ScreenCoordsXY{ w->windowPos.x + widget->left + 1, w->windowPos.y + widget->top + 1 };
-    width = widget->right - widget->left - 1;
-    height = widget->bottom - widget->top - 1;
-    if (clip_drawpixelinfo(&clipdpi, dpi, screenCoords.x, screenCoords.y, width, height))
+    width = widget->width() - 1;
+    height = widget->height() - 1;
+    if (clip_drawpixelinfo(&clipdpi, dpi, screenCoords, width, height))
     {
         window_ride_construction_draw_track_piece(
             w, &clipdpi, rideIndex, trackType, trackDirection, liftHillAndInvertedState, width, height);
     }
 
     // Draw cost
-    screenCoords = { w->windowPos.x + (widget->left + widget->right) / 2, w->windowPos.y + widget->bottom - 23 };
+    screenCoords = { w->windowPos.x + widget->midX(), w->windowPos.y + widget->bottom - 23 };
     if (_rideConstructionState != RIDE_CONSTRUCTION_STATE_PLACE)
         gfx_draw_string_centred(dpi, STR_BUILD_THIS, screenCoords, COLOUR_BLACK, w);
 
@@ -3377,8 +3379,8 @@ static void window_ride_construction_show_special_track_dropdown(rct_window* w, 
     }
 
     window_dropdown_show_text_custom_width(
-        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1, w->colours[1], 0, 0,
-        _numCurrentPossibleRideConfigurations, widget->right - widget->left);
+        { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->height() + 1, w->colours[1], 0, 0,
+        _numCurrentPossibleRideConfigurations, widget->width());
 
     for (int32_t i = 0; i < 32; i++)
     {

@@ -375,19 +375,12 @@ void Peep::SetNextFlags(uint8_t next_direction, bool is_sloped, bool is_surface)
 
 Peep* try_get_guest(uint16_t spriteIndex)
 {
-    rct_sprite* sprite = try_get_sprite(spriteIndex);
-    if (sprite == nullptr)
-        return nullptr;
-    if (!sprite->generic.Is<Peep>())
-        return nullptr;
-    if (sprite->peep.AssignedPeepType != PEEP_TYPE_GUEST)
-        return nullptr;
-    return &sprite->peep;
+    return TryGetEntity<Guest>(spriteIndex);
 }
 
 int32_t peep_get_staff_count()
 {
-    auto list = EntityList<Staff>(SPRITE_LIST_PEEP);
+    auto list = EntityList<Staff>(EntityListId::Peep);
     auto count = std::distance(list.begin(), list.end());
 
     return count;
@@ -404,7 +397,7 @@ void peep_update_all()
 
     int32_t i = 0;
     // Warning this loop can delete peeps
-    for (auto peep : EntityList<Peep>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Peep>(EntityListId::Peep))
     {
         if (static_cast<uint32_t>(i & 0x7F) != (gCurrentTicks & 0x7F))
         {
@@ -653,7 +646,7 @@ std::optional<CoordsXY> Peep::UpdateAction(int16_t& xy_distance)
     WindowInvalidateFlags |= PEEP_INVALIDATE_PEEP_2;
 
     // Create sick at location
-    litter_create(x, y, z, sprite_direction, (sprite_index & 1) ? LITTER_TYPE_SICK_ALT : LITTER_TYPE_SICK);
+    litter_create({ x, y, z, sprite_direction }, (sprite_index & 1) ? LITTER_TYPE_SICK_ALT : LITTER_TYPE_SICK);
 
     SoundId coughs[4] = { SoundId::Cough1, SoundId::Cough2, SoundId::Cough3, SoundId::Cough4 };
     auto soundId = coughs[scenario_rand() & 3];
@@ -846,7 +839,7 @@ void Peep::Remove()
 {
     if (AssignedPeepType == PEEP_TYPE_GUEST)
     {
-        if (OutsideOfPark == 0)
+        if (!OutsideOfPark)
         {
             decrement_guests_in_park();
             auto intent = Intent(INTENT_ACTION_UPDATE_GUEST_COUNT);
@@ -1176,9 +1169,9 @@ void peep_problem_warnings_update()
              disgust_counter = 0, toilet_counter = 0, vandalism_counter = 0;
     uint8_t* warning_throttle = gPeepWarningThrottle;
 
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
-        if (peep->OutsideOfPark != 0 || peep->Thoughts[0].freshness > 5)
+        if (peep->OutsideOfPark || peep->Thoughts[0].freshness > 5)
             continue;
 
         switch (peep->Thoughts[0].type)
@@ -1188,7 +1181,7 @@ void peep_problem_warnings_update()
                 break;
 
             case PEEP_THOUGHT_TYPE_HUNGRY: // 0x14
-                if (peep->GuestHeadingToRideId == 0xFF)
+                if (peep->GuestHeadingToRideId == RIDE_ID_NULL)
                 {
                     hunger_counter++;
                     break;
@@ -1199,7 +1192,7 @@ void peep_problem_warnings_update()
                 break;
 
             case PEEP_THOUGHT_TYPE_THIRSTY:
-                if (peep->GuestHeadingToRideId == 0xFF)
+                if (peep->GuestHeadingToRideId == RIDE_ID_NULL)
                 {
                     thirst_counter++;
                     break;
@@ -1210,7 +1203,7 @@ void peep_problem_warnings_update()
                 break;
 
             case PEEP_THOUGHT_TYPE_TOILET:
-                if (peep->GuestHeadingToRideId == 0xFF)
+                if (peep->GuestHeadingToRideId == RIDE_ID_NULL)
                 {
                     toilet_counter++;
                     break;
@@ -1354,7 +1347,7 @@ void peep_update_crowd_noise()
     // Count the number of peeps visible
     auto visiblePeeps = 0;
 
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
         if (peep->sprite_left == LOCATION_NULL)
             continue;
@@ -1417,9 +1410,9 @@ void peep_update_crowd_noise()
  */
 void peep_applause()
 {
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
-        if (peep->OutsideOfPark != 0)
+        if (peep->OutsideOfPark)
             continue;
 
         // Release balloon
@@ -1445,9 +1438,9 @@ void peep_applause()
  */
 void peep_update_days_in_queue()
 {
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
-        if (peep->OutsideOfPark == 0 && peep->State == PEEP_STATE_QUEUING)
+        if (!peep->OutsideOfPark && peep->State == PEEP_STATE_QUEUING)
         {
             if (peep->DaysInQueue < 255)
             {
@@ -1587,13 +1580,13 @@ void Peep::InsertNewThought(PeepThoughtType thoughtType, uint8_t thoughtArgument
  */
 Peep* Peep::Generate(const CoordsXYZ& coords)
 {
-    if (gSpriteListCount[SPRITE_LIST_FREE] < 400)
+    if (GetEntityListCount(EntityListId::Free) < 400)
         return nullptr;
 
     Peep* peep = &create_sprite(SPRITE_IDENTIFIER_PEEP)->peep;
     peep->sprite_identifier = SPRITE_IDENTIFIER_PEEP;
     peep->SpriteType = PEEP_SPRITE_TYPE_NORMAL;
-    peep->OutsideOfPark = 1;
+    peep->OutsideOfPark = true;
     peep->State = PEEP_STATE_FALLING;
     peep->Action = PEEP_ACTION_NONE_2;
     peep->SpecialSprite = 0;
@@ -1762,12 +1755,6 @@ Peep* Peep::Generate(const CoordsXYZ& coords)
 
 void Peep::FormatActionTo(Formatter& ft) const
 {
-    FormatActionTo(ft.Buf());
-}
-
-void Peep::FormatActionTo(void* argsV) const
-{
-    Formatter ft(static_cast<uint8_t*>(argsV));
     switch (State)
     {
         case PEEP_STATE_FALLING:
@@ -1784,7 +1771,7 @@ void Peep::FormatActionTo(void* argsV) const
             if (ride != nullptr)
             {
                 ft.Add<rct_string_id>(ride_type_has_flag(ride->type, RIDE_TYPE_FLAG_IN_RIDE) ? STR_IN_RIDE : STR_ON_RIDE);
-                ride->FormatNameTo(ft.Buf());
+                ride->FormatNameTo(ft);
             }
             else
             {
@@ -1798,7 +1785,7 @@ void Peep::FormatActionTo(void* argsV) const
             auto ride = get_ride(CurrentRide);
             if (ride != nullptr)
             {
-                ride->FormatNameTo(ft.Buf());
+                ride->FormatNameTo(ft);
             }
             else
             {
@@ -1814,7 +1801,7 @@ void Peep::FormatActionTo(void* argsV) const
                 if (ride != nullptr)
                 {
                     ft.Add<rct_string_id>(STR_HEADING_FOR);
-                    ride->FormatNameTo(ft.Buf());
+                    ride->FormatNameTo(ft);
                 }
             }
             else
@@ -1829,7 +1816,7 @@ void Peep::FormatActionTo(void* argsV) const
             if (ride != nullptr)
             {
                 ft.Add<rct_string_id>(STR_QUEUING_FOR);
-                ride->FormatNameTo(ft.Buf());
+                ride->FormatNameTo(ft);
             }
             break;
         }
@@ -1843,7 +1830,7 @@ void Peep::FormatActionTo(void* argsV) const
                 if (ride != nullptr)
                 {
                     ft.Add<rct_string_id>((StandingFlags & 0x1) ? STR_WATCHING_CONSTRUCTION_OF : STR_WATCHING_RIDE);
-                    ride->FormatNameTo(ft.Buf());
+                    ride->FormatNameTo(ft);
                 }
             }
             else
@@ -1886,7 +1873,7 @@ void Peep::FormatActionTo(void* argsV) const
                 auto ride = get_ride(CurrentRide);
                 if (ride != nullptr)
                 {
-                    ride->FormatNameTo(ft.Buf());
+                    ride->FormatNameTo(ft);
                 }
                 else
                 {
@@ -1900,7 +1887,7 @@ void Peep::FormatActionTo(void* argsV) const
             auto ride = get_ride(CurrentRide);
             if (ride != nullptr)
             {
-                ride->FormatNameTo(ft.Buf());
+                ride->FormatNameTo(ft);
             }
             else
             {
@@ -1914,7 +1901,7 @@ void Peep::FormatActionTo(void* argsV) const
             auto ride = get_ride(CurrentRide);
             if (ride != nullptr)
             {
-                ride->FormatNameTo(ft.Buf());
+                ride->FormatNameTo(ft);
             }
             else
             {
@@ -1928,7 +1915,7 @@ void Peep::FormatActionTo(void* argsV) const
             auto ride = get_ride(CurrentRide);
             if (ride != nullptr)
             {
-                ride->FormatNameTo(ft.Buf());
+                ride->FormatNameTo(ft);
             }
             else
             {
@@ -1941,12 +1928,6 @@ void Peep::FormatActionTo(void* argsV) const
 
 void Peep::FormatNameTo(Formatter& ft) const
 {
-    ft.Increment(FormatNameTo(ft.Buf()));
-}
-
-size_t Peep::FormatNameTo(void* argsV) const
-{
-    Formatter ft(static_cast<uint8_t*>(argsV));
     if (Name == nullptr)
     {
         if (AssignedPeepType == PeepType::PEEP_TYPE_STAFF)
@@ -1966,28 +1947,29 @@ size_t Peep::FormatNameTo(void* argsV) const
 
             ft.Add<rct_string_id>(staffNames[staffNameIndex]);
             ft.Add<uint32_t>(Id);
-            return ft.NumBytes();
         }
         else if (gParkFlags & PARK_FLAGS_SHOW_REAL_GUEST_NAMES)
         {
             auto realNameStringId = get_real_name_string_id_from_id(Id);
-            return ft.Add<rct_string_id>(realNameStringId).NumBytes();
+            ft.Add<rct_string_id>(realNameStringId);
         }
         else
         {
-            return ft.Add<rct_string_id>(STR_GUEST_X).Add<uint32_t>(Id).NumBytes();
+            ft.Add<rct_string_id>(STR_GUEST_X).Add<uint32_t>(Id);
         }
     }
     else
     {
-        return ft.Add<rct_string_id>(STR_STRING).Add<const char*>(Name).NumBytes();
+        ft.Add<rct_string_id>(STR_STRING).Add<const char*>(Name);
     }
 }
 
 std::string Peep::GetName() const
 {
     uint8_t args[32]{};
-    FormatNameTo(args);
+
+    Formatter ft(args);
+    FormatNameTo(ft);
     return format_string(STR_STRINGID, args);
 }
 
@@ -2763,7 +2745,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
     int16_t z = tile_element->GetBaseZ();
     if (map_is_location_owned({ x, y, z }))
     {
-        if (peep->OutsideOfPark == 1)
+        if (peep->OutsideOfPark)
         {
             peep_return_to_centre_of_tile(peep);
             return;
@@ -2771,7 +2753,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
     }
     else
     {
-        if (peep->OutsideOfPark == 0)
+        if (!peep->OutsideOfPark)
         {
             peep_return_to_centre_of_tile(peep);
             return;
@@ -2958,7 +2940,7 @@ static bool peep_interact_with_shop(Peep* peep, int16_t x, int16_t y, TileElemen
     else
     {
         if (peep->GuestHeadingToRideId == rideIndex)
-            peep->GuestHeadingToRideId = 0xFF;
+            peep->GuestHeadingToRideId = RIDE_ID_NULL;
         peep->ActionSpriteImageOffset = _unk_F1AEF0;
         peep->SetState(PEEP_STATE_BUYING);
         peep->CurrentRide = rideIndex;
@@ -3054,7 +3036,7 @@ void Peep::PerformNextAction(uint8_t& pathing_result, TileElement*& tile_result)
 
     if (map_is_edge(newLoc))
     {
-        if (OutsideOfPark == 1)
+        if (OutsideOfPark)
         {
             pathing_result |= PATHING_OUTSIDE_PARK;
         }
@@ -3243,11 +3225,13 @@ int32_t peep_compare(const uint16_t sprite_index_a, const uint16_t sprite_index_
     uint8_t args[32]{};
 
     char nameA[256]{};
-    peep_a->FormatNameTo(args);
+    Formatter ft(args);
+    peep_a->FormatNameTo(ft);
     format_string(nameA, sizeof(nameA), STR_STRINGID, args);
 
     char nameB[256]{};
-    peep_b->FormatNameTo(args);
+    ft = Formatter(args);
+    peep_b->FormatNameTo(ft);
     format_string(nameB, sizeof(nameB), STR_STRINGID, args);
     return strlogicalcmp(nameA, nameB);
 }
@@ -3362,7 +3346,7 @@ static void peep_release_balloon(Guest* peep, int16_t spawn_height)
 
         if (peep->SpriteType == PEEP_SPRITE_TYPE_BALLOON && peep->x != LOCATION_NULL)
         {
-            create_balloon(peep->x, peep->y, spawn_height, peep->BalloonColour, false);
+            create_balloon({ peep->x, peep->y, spawn_height }, peep->BalloonColour, false);
             peep->WindowInvalidateFlags |= PEEP_INVALIDATE_PEEP_INVENTORY;
             peep->UpdateSpriteType();
         }

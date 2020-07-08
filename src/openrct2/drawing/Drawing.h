@@ -19,6 +19,8 @@
 struct ScreenCoordsXY;
 
 struct ScreenCoordsXY;
+struct ScreenLine;
+struct ScreenRect;
 namespace OpenRCT2
 {
     interface IPlatformEnvironment;
@@ -580,8 +582,8 @@ extern bool gTinyFontAntiAliased;
 extern rct_drawpixelinfo gScreenDPI;
 extern rct_drawpixelinfo gWindowDPI;
 
-//
-bool clip_drawpixelinfo(rct_drawpixelinfo* dst, rct_drawpixelinfo* src, int32_t x, int32_t y, int32_t width, int32_t height);
+bool clip_drawpixelinfo(
+    rct_drawpixelinfo* dst, rct_drawpixelinfo* src, const ScreenCoordsXY& coords, int32_t width, int32_t height);
 void gfx_set_dirty_blocks(int16_t left, int16_t top, int16_t right, int16_t bottom);
 void gfx_draw_all_dirty_blocks();
 void gfx_invalidate_screen();
@@ -592,8 +594,8 @@ void load_palette();
 
 // other
 void gfx_clear(rct_drawpixelinfo* dpi, uint8_t paletteIndex);
-void gfx_draw_pixel(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t colour);
-void gfx_filter_pixel(rct_drawpixelinfo* dpi, int32_t x, int32_t y, FILTER_PALETTE_ID palette);
+void gfx_draw_pixel(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, int32_t colour);
+void gfx_filter_pixel(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, FILTER_PALETTE_ID palette);
 void gfx_invalidate_pickedup_peep();
 void gfx_draw_pickedup_peep(rct_drawpixelinfo* dpi);
 
@@ -601,7 +603,7 @@ void gfx_draw_pickedup_peep(rct_drawpixelinfo* dpi);
 void gfx_draw_line(rct_drawpixelinfo* dpi, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t colour);
 void gfx_draw_line_software(rct_drawpixelinfo* dpi, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t colour);
 void gfx_draw_dashed_line(
-    rct_drawpixelinfo* dpi, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t dashedLineSegmentLength, int32_t colour);
+    rct_drawpixelinfo* dpi, const ScreenLine& screenLine, const int32_t dashedLineSegmentLength, const int32_t color);
 
 // rect
 void gfx_fill_rect(rct_drawpixelinfo* dpi, int32_t left, int32_t top, int32_t right, int32_t bottom, int32_t colour);
@@ -609,6 +611,7 @@ void gfx_fill_rect_inset(
     rct_drawpixelinfo* dpi, int16_t left, int16_t top, int16_t right, int16_t bottom, int32_t colour, uint8_t flags);
 void gfx_filter_rect(
     rct_drawpixelinfo* dpi, int32_t left, int32_t top, int32_t right, int32_t bottom, FILTER_PALETTE_ID palette);
+void gfx_filter_rect(rct_drawpixelinfo* dpi, const ScreenRect& rect, FILTER_PALETTE_ID palette);
 
 // sprite
 bool gfx_load_g1(const OpenRCT2::IPlatformEnvironment& env);
@@ -629,21 +632,24 @@ size_t ImageListGetMaximum();
 void FASTCALL gfx_sprite_to_buffer(DrawSpriteArgs& args);
 void FASTCALL gfx_bmp_sprite_to_buffer(DrawSpriteArgs& args);
 void FASTCALL gfx_rle_sprite_to_buffer(DrawSpriteArgs& args);
-void FASTCALL gfx_draw_sprite(rct_drawpixelinfo* dpi, int32_t image_id, int32_t x, int32_t y, uint32_t tertiary_colour);
-void FASTCALL gfx_draw_glyph(rct_drawpixelinfo* dpi, int32_t image_id, int32_t x, int32_t y, const PaletteMap& paletteMap);
-void FASTCALL gfx_draw_sprite_raw_masked(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t maskImage, int32_t colourImage);
-void FASTCALL gfx_draw_sprite_solid(rct_drawpixelinfo* dpi, int32_t image, int32_t x, int32_t y, uint8_t colour);
-
-void FASTCALL gfx_draw_sprite_software(rct_drawpixelinfo* dpi, ImageId imageId, int32_t x, int32_t y);
-void FASTCALL gfx_draw_sprite_palette_set_software(
-    rct_drawpixelinfo* dpi, ImageId imageId, int32_t x, int32_t y, const PaletteMap& paletteMap);
+void FASTCALL gfx_draw_sprite(rct_drawpixelinfo* dpi, int32_t image_id, const ScreenCoordsXY& coords, uint32_t tertiary_colour);
 void FASTCALL
-    gfx_draw_sprite_raw_masked_software(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t maskImage, int32_t colourImage);
+    gfx_draw_glyph(rct_drawpixelinfo* dpi, int32_t image_id, const ScreenCoordsXY& coords, const PaletteMap& paletteMap);
+void FASTCALL
+    gfx_draw_sprite_raw_masked(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, int32_t maskImage, int32_t colourImage);
+void FASTCALL gfx_draw_sprite_solid(rct_drawpixelinfo* dpi, int32_t image, const ScreenCoordsXY& coords, uint8_t colour);
+
+void FASTCALL gfx_draw_sprite_software(rct_drawpixelinfo* dpi, ImageId imageId, const ScreenCoordsXY& spriteCoords);
+void FASTCALL gfx_draw_sprite_palette_set_software(
+    rct_drawpixelinfo* dpi, ImageId imageId, const ScreenCoordsXY& coords, const PaletteMap& paletteMap);
+void FASTCALL gfx_draw_sprite_raw_masked_software(
+    rct_drawpixelinfo* dpi, const ScreenCoordsXY& scrCoords, int32_t maskImage, int32_t colourImage);
 
 // string
 void gfx_draw_string(rct_drawpixelinfo* dpi, const_utf8string buffer, uint8_t colour, const ScreenCoordsXY& coords);
 
-void gfx_draw_string_left(rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, int32_t x, int32_t y);
+void gfx_draw_string_left(
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords);
 void gfx_draw_string_centred(
     rct_drawpixelinfo* dpi, rct_string_id format, const ScreenCoordsXY& coords, uint8_t colour, const void* args);
 void gfx_draw_string_right(
@@ -664,20 +670,18 @@ void gfx_draw_string_right_clipped(
     rct_drawpixelinfo* dpi, rct_string_id format, void* args, uint8_t colour, const ScreenCoordsXY& coords, int32_t width);
 
 int32_t gfx_draw_string_left_wrapped(
-    rct_drawpixelinfo* dpi, void* args, int32_t x, int32_t y, int32_t width, rct_string_id format, uint8_t colour);
-int32_t gfx_draw_string_left_wrapped(
     rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour);
 int32_t gfx_draw_string_centred_wrapped(
     rct_drawpixelinfo* dpi, void* args, const ScreenCoordsXY& coords, int32_t width, rct_string_id format, uint8_t colour);
 
 void gfx_draw_string_left_centred(
-    rct_drawpixelinfo* dpi, rct_string_id format, void* args, int32_t colour, int32_t x, int32_t y);
-void draw_string_centred_raw(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t numLines, char* text);
+    rct_drawpixelinfo* dpi, rct_string_id format, void* args, int32_t colour, const ScreenCoordsXY& coords);
+void draw_string_centred_raw(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, int32_t numLines, char* text);
 void gfx_draw_string_centred_wrapped_partial(
-    rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t width, int32_t colour, rct_string_id format, void* args,
+    rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, int32_t width, int32_t colour, rct_string_id format, void* args,
     int32_t ticks);
 void gfx_draw_string_with_y_offsets(
-    rct_drawpixelinfo* dpi, const utf8* text, int32_t colour, int32_t x, int32_t y, const int8_t* yOffsets,
+    rct_drawpixelinfo* dpi, const utf8* text, int32_t colour, const ScreenCoordsXY& coords, const int8_t* yOffsets,
     bool forceSpriteFont);
 
 int32_t gfx_wrap_string(char* buffer, int32_t width, int32_t* num_lines, int32_t* font_height);
@@ -686,7 +690,7 @@ int32_t gfx_get_string_width_new_lined(char* buffer);
 int32_t string_get_height_raw(char* buffer);
 int32_t gfx_clip_string(char* buffer, int32_t width);
 void shorten_path(utf8* buffer, size_t bufferSize, const utf8* path, int32_t availableWidth);
-void ttf_draw_string(rct_drawpixelinfo* dpi, const_utf8string text, int32_t colour, int32_t x, int32_t y);
+void ttf_draw_string(rct_drawpixelinfo* dpi, const_utf8string text, int32_t colour, const ScreenCoordsXY& coords);
 
 // scrolling text
 void scrolling_text_initialise_bitmaps();

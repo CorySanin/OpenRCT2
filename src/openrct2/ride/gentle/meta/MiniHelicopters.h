@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -34,16 +35,27 @@ constexpr const RideTypeDescriptor MiniHelicoptersRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_MINI_HELICOPTERS, STR_RIDE_DESCRIPTION_MINI_HELICOPTERS }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CAR, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_MINI_HELICOPTERS)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION)),
     SET_FIELD(Heights, { 7, 24, 4, 7, }),
     SET_FIELD(MaxMass, 2),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_mini_helicopters),
     SET_FIELD(RatingsMultipliers, { 70, 10, 10 }),
     SET_FIELD(UpkeepCosts, { 70, 20, 0, 8, 3, 5 }),
     SET_FIELD(BuildCosts, { 25, 5, 30, }),
     SET_FIELD(DefaultPrices, { 15, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_SUMMER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 45)
+    SET_FIELD(BonusValue, 45),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_DARK_PURPLE, COLOUR_YELLOW, COLOUR_DARK_PURPLE },
+        { COLOUR_WHITE, COLOUR_WHITE, COLOUR_BRIGHT_RED },
+        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_YELLOW },
+        { COLOUR_BRIGHT_PINK, COLOUR_BRIGHT_PINK, COLOUR_WHITE },
+        { COLOUR_LIGHT_BLUE, COLOUR_LIGHT_BLUE, COLOUR_WHITE },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_MINI_HELICOPTERS_TRACK, SPR_RIDE_DESIGN_PREVIEW_MINI_HELICOPTERS_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

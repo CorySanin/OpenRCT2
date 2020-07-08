@@ -736,9 +736,8 @@ static void window_cheats_misc_mousedown(rct_window* w, rct_widgetindex widgetIn
                 gDropdownItemsArgs[i] = WeatherTypes[i];
             }
             window_dropdown_show_text_custom_width(
-                { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top },
-                dropdownWidget->bottom - dropdownWidget->top + 1, w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, 6,
-                dropdownWidget->right - dropdownWidget->left - 3);
+                { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top }, dropdownWidget->height() + 1,
+                w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, 6, dropdownWidget->width() - 3);
 
             currentWeather = gClimateCurrent.Weather;
             dropdown_set_checked(currentWeather, true);
@@ -757,9 +756,8 @@ static void window_cheats_misc_mousedown(rct_window* w, rct_widgetindex widgetIn
             }
 
             window_dropdown_show_text_custom_width(
-                { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top },
-                dropdownWidget->bottom - dropdownWidget->top + 1, w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, 3,
-                dropdownWidget->right - dropdownWidget->left - 3);
+                { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top }, dropdownWidget->height() + 1,
+                w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, 3, dropdownWidget->width() - 3);
             dropdown_set_checked(_selectedStaffSpeed, true);
         }
     }
@@ -1207,55 +1205,55 @@ static void window_cheats_paint(rct_window* w, rct_drawpixelinfo* dpi)
         }
         int32_t actual_month = _monthSpinnerValue - 1;
         gfx_draw_string_left(
-            dpi, STR_BOTTOM_TOOLBAR_CASH, gCommonFormatArgs, colour, w->windowPos.x + XPL(0) + TXTO,
-            w->windowPos.y + YPL(2) + TXTO);
+            dpi, STR_BOTTOM_TOOLBAR_CASH, gCommonFormatArgs, colour,
+            w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(2) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_YEAR, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(7) + TXTO);
+            dpi, STR_YEAR, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(7) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_MONTH, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(8) + TXTO);
+            dpi, STR_MONTH, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(8) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_DAY, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(9) + TXTO);
+            dpi, STR_DAY, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(9) + TXTO });
         gfx_draw_string_right(
             dpi, STR_FORMAT_INTEGER, &_yearSpinnerValue, w->colours[1],
-            { w->windowPos.x + WPL(1) - 34 - TXTO, w->windowPos.y + YPL(7) + TXTO });
+            w->windowPos + ScreenCoordsXY{ WPL(1) - 34 - TXTO, YPL(7) + TXTO });
         gfx_draw_string_right(
             dpi, STR_FORMAT_MONTH, &actual_month, w->colours[1],
-            { w->windowPos.x + WPL(1) - 34 - TXTO, w->windowPos.y + YPL(8) + TXTO });
+            w->windowPos + ScreenCoordsXY{ WPL(1) - 34 - TXTO, YPL(8) + TXTO });
         gfx_draw_string_right(
             dpi, STR_FORMAT_INTEGER, &_daySpinnerValue, w->colours[1],
-            { w->windowPos.x + WPL(1) - 34 - TXTO, w->windowPos.y + YPL(9) + TXTO });
+            w->windowPos + ScreenCoordsXY{ WPL(1) - 34 - TXTO, YPL(9) + TXTO });
     }
     else if (w->page == WINDOW_CHEATS_PAGE_MISC)
     {
         gfx_draw_string_left(
-            dpi, STR_CHEAT_STAFF_SPEED, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(17) + TXTO);
+            dpi, STR_CHEAT_STAFF_SPEED, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(17) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_FORCE_WEATHER, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(10) + TXTO);
+            dpi, STR_FORCE_WEATHER, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(10) + TXTO });
         gfx_draw_string_right(
             dpi, STR_FORMAT_INTEGER, &_parkRatingSpinnerValue, w->colours[1],
-            { w->windowPos.x + WPL(1) - 34 - TXTO, w->windowPos.y + YPL(5) + TXTO });
+            w->windowPos + ScreenCoordsXY{ WPL(1) - 34 - TXTO, YPL(5) + TXTO });
     }
     else if (w->page == WINDOW_CHEATS_PAGE_GUESTS)
     {
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_HAPPINESS, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO,
-            w->windowPos.y + YPL(1) + TXTO);
+            dpi, STR_CHEAT_GUEST_HAPPINESS, nullptr, COLOUR_BLACK,
+            w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(1) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_ENERGY, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(2) + TXTO);
+            dpi, STR_CHEAT_GUEST_ENERGY, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(2) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_HUNGER, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(3) + TXTO);
+            dpi, STR_CHEAT_GUEST_HUNGER, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(3) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_THIRST, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(4) + TXTO);
+            dpi, STR_CHEAT_GUEST_THIRST, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(4) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_NAUSEA, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(5) + TXTO);
+            dpi, STR_CHEAT_GUEST_NAUSEA, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(5) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_NAUSEA_TOLERANCE, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO,
-            w->windowPos.y + YPL(6) + TXTO);
+            dpi, STR_CHEAT_GUEST_NAUSEA_TOLERANCE, nullptr, COLOUR_BLACK,
+            w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(6) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_TOILET, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO, w->windowPos.y + YPL(7) + TXTO);
+            dpi, STR_CHEAT_GUEST_TOILET, nullptr, COLOUR_BLACK, w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(7) + TXTO });
         gfx_draw_string_left(
-            dpi, STR_CHEAT_GUEST_PREFERRED_INTENSITY, nullptr, COLOUR_BLACK, w->windowPos.x + XPL(0) + TXTO,
-            w->windowPos.y + YPL(8) + TXTO);
+            dpi, STR_CHEAT_GUEST_PREFERRED_INTENSITY, nullptr, COLOUR_BLACK,
+            w->windowPos + ScreenCoordsXY{ XPL(0) + TXTO, YPL(8) + TXTO });
     }
 }
 
@@ -1270,7 +1268,7 @@ static void window_cheats_draw_tab_images(rct_drawpixelinfo* dpi, rct_window* w)
         if (w->page == WINDOW_CHEATS_PAGE_MONEY)
             sprite_idx += (w->frame_no / 2) % 8;
         gfx_draw_sprite(
-            dpi, sprite_idx, w->windowPos.x + w->widgets[WIDX_TAB_1].left, w->windowPos.y + w->widgets[WIDX_TAB_1].top, 0);
+            dpi, sprite_idx, w->windowPos + ScreenCoordsXY{ w->widgets[WIDX_TAB_1].left, w->widgets[WIDX_TAB_1].top }, 0);
     }
 
     // Guests tab
@@ -1280,7 +1278,7 @@ static void window_cheats_draw_tab_images(rct_drawpixelinfo* dpi, rct_window* w)
         if (w->page == WINDOW_CHEATS_PAGE_GUESTS)
             sprite_idx += (w->frame_no / 3) % 8;
         gfx_draw_sprite(
-            dpi, sprite_idx, w->windowPos.x + w->widgets[WIDX_TAB_2].left, w->windowPos.y + w->widgets[WIDX_TAB_2].top, 0);
+            dpi, sprite_idx, w->windowPos + ScreenCoordsXY{ w->widgets[WIDX_TAB_2].left, w->widgets[WIDX_TAB_2].top }, 0);
     }
 
     // Misc tab
@@ -1288,7 +1286,7 @@ static void window_cheats_draw_tab_images(rct_drawpixelinfo* dpi, rct_window* w)
     {
         sprite_idx = SPR_TAB_PARK;
         gfx_draw_sprite(
-            dpi, sprite_idx, w->windowPos.x + w->widgets[WIDX_TAB_3].left, w->windowPos.y + w->widgets[WIDX_TAB_3].top, 0);
+            dpi, sprite_idx, w->windowPos + ScreenCoordsXY{ w->widgets[WIDX_TAB_3].left, w->widgets[WIDX_TAB_3].top }, 0);
     }
 
     // Rides tab
@@ -1298,7 +1296,7 @@ static void window_cheats_draw_tab_images(rct_drawpixelinfo* dpi, rct_window* w)
         if (w->page == WINDOW_CHEATS_PAGE_RIDES)
             sprite_idx += (w->frame_no / 4) % 16;
         gfx_draw_sprite(
-            dpi, sprite_idx, w->windowPos.x + w->widgets[WIDX_TAB_4].left, w->windowPos.y + w->widgets[WIDX_TAB_4].top, 0);
+            dpi, sprite_idx, w->windowPos + ScreenCoordsXY{ w->widgets[WIDX_TAB_4].left, w->widgets[WIDX_TAB_4].top }, 0);
     }
 }
 

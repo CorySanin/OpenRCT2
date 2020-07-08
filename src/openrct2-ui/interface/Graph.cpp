@@ -189,41 +189,6 @@ struct FinancialTooltipInfo
     const money32 money{};
 };
 
-struct ScreenRect
-{
-    const ScreenCoordsXY LeftTop;
-    const ScreenCoordsXY RightBottom;
-
-    int32_t GetLeft() const
-    {
-        return LeftTop.x;
-    }
-    int32_t GetTop() const
-    {
-        return LeftTop.y;
-    }
-    int32_t GetRight() const
-    {
-        return RightBottom.x;
-    }
-    int32_t GetBottom() const
-    {
-        return RightBottom.y;
-    }
-    int32_t GetWidth() const
-    {
-        return RightBottom.x - LeftTop.x;
-    }
-    int32_t GetHeight() const
-    {
-        return RightBottom.y - LeftTop.y;
-    }
-    bool Contains(const ScreenCoordsXY& coords) const
-    {
-        return coords.x >= GetLeft() && coords.x <= GetRight() && coords.y >= GetTop() && coords.y <= GetBottom();
-    }
-};
-
 static constexpr auto CHART_MAX_DATA_COUNT = 64;
 static constexpr auto CHART_MAX_INDEX = CHART_MAX_DATA_COUNT - 1;
 static constexpr auto CHART_DATA_WIDTH = 6;
@@ -283,13 +248,12 @@ static void graph_draw_hovered_value(
     {
         return;
     }
-
-    gfx_draw_dashed_line(dpi, info.coords.x, chartFrame.GetTop(), info.coords.x, info.coords.y, DEFAULT_DASHED_LENGTH, 0);
-    gfx_draw_dashed_line(dpi, chartFrame.GetLeft() - 10, info.coords.y, info.coords.x, info.coords.y, DEFAULT_DASHED_LENGTH, 0);
+    gfx_draw_dashed_line(dpi, { { info.coords.x, chartFrame.GetTop() }, info.coords }, DEFAULT_DASHED_LENGTH, 0);
+    gfx_draw_dashed_line(dpi, { { chartFrame.GetLeft() - 10, info.coords.y }, info.coords }, DEFAULT_DASHED_LENGTH, 0);
 
     if (cursorPosition.y > info.coords.y)
     {
-        gfx_draw_dashed_line(dpi, info.coords.x, info.coords.y, info.coords.x, cursorPosition.y, DEFAULT_DASHED_LENGTH, 0);
+        gfx_draw_dashed_line(dpi, { info.coords, { info.coords.x, cursorPosition.y } }, DEFAULT_DASHED_LENGTH, 0);
     }
 
     gfx_draw_string_centred(

@@ -316,8 +316,10 @@ static void window_themes_draw_tab_images(rct_drawpixelinfo* dpi, rct_window* w)
         if (_selected_tab == i)
             sprite_idx += w->frame_no / window_themes_tab_animation_divisor[_selected_tab];
         gfx_draw_sprite(
-            dpi, sprite_idx, w->windowPos.x + w->widgets[WIDX_THEMES_SETTINGS_TAB + i].left,
-            w->windowPos.y + w->widgets[WIDX_THEMES_SETTINGS_TAB + i].top, 0);
+            dpi, sprite_idx,
+            w->windowPos
+                + ScreenCoordsXY{ w->widgets[WIDX_THEMES_SETTINGS_TAB + i].left, w->widgets[WIDX_THEMES_SETTINGS_TAB + i].top },
+            0);
     }
 }
 
@@ -523,8 +525,8 @@ static void window_themes_mousedown(rct_window* w, rct_widgetindex widgetIndex, 
             }
 
             window_dropdown_show_text_custom_width(
-                { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1,
-                w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, num_items, widget->right - widget->left - 3);
+                { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->height() + 1, w->colours[1], 0,
+                DROPDOWN_FLAG_STAY_OPEN, num_items, widget->width() - 3);
 
             dropdown_set_checked(static_cast<int32_t>(theme_manager_get_active_available_theme_index()), true);
             break;
@@ -838,12 +840,13 @@ void window_themes_paint(rct_window* w, rct_drawpixelinfo* dpi)
         const utf8* activeThemeName = theme_manager_get_available_theme_name(activeAvailableThemeIndex);
         Formatter::Common().Add<const utf8*>(activeThemeName);
         gfx_draw_string_left(
-            dpi, STR_THEMES_LABEL_CURRENT_THEME, nullptr, w->colours[1], w->windowPos.x + 10,
-            w->windowPos.y + window_themes_widgets[WIDX_THEMES_PRESETS].top + 1);
+            dpi, STR_THEMES_LABEL_CURRENT_THEME, nullptr, w->colours[1],
+            w->windowPos + ScreenCoordsXY{ 10, window_themes_widgets[WIDX_THEMES_PRESETS].top + 1 });
         gfx_draw_string_left_clipped(
             dpi, STR_STRING, gCommonFormatArgs, w->colours[1],
-            { w->windowPos.x + window_themes_widgets[WIDX_THEMES_PRESETS].left + 1,
-              w->windowPos.y + window_themes_widgets[WIDX_THEMES_PRESETS].top },
+            w->windowPos
+                + ScreenCoordsXY{ window_themes_widgets[WIDX_THEMES_PRESETS].left + 1,
+                                  window_themes_widgets[WIDX_THEMES_PRESETS].top },
             w->windowPos.x + window_themes_widgets[WIDX_THEMES_PRESETS_DROPDOWN].left
                 - window_themes_widgets[WIDX_THEMES_PRESETS].left - 4);
     }
@@ -904,7 +907,7 @@ void window_themes_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t sc
             int32_t numColours = theme_desc_get_num_colours(wc);
             for (uint8_t j = 0; j < numColours; j++)
             {
-                gfx_draw_string_left(dpi, theme_desc_get_name(wc), nullptr, w->colours[1], 2, screenCoords.y + 4);
+                gfx_draw_string_left(dpi, theme_desc_get_name(wc), nullptr, w->colours[1], { 2, screenCoords.y + 4 });
 
                 uint8_t colour = theme_get_colour(wc, j);
                 uint32_t image = SPRITE_ID_PALETTE_COLOUR_1(colour & ~COLOUR_FLAG_TRANSLUCENT) | SPR_PALETTE_BTN;
@@ -912,7 +915,7 @@ void window_themes_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t sc
                 {
                     image = SPRITE_ID_PALETTE_COLOUR_1(colour & ~COLOUR_FLAG_TRANSLUCENT) | SPR_PALETTE_BTN_PRESSED;
                 }
-                gfx_draw_sprite(dpi, image, _button_offset_x + 12 * j, screenCoords.y + _button_offset_y, 0);
+                gfx_draw_sprite(dpi, image, { _button_offset_x + 12 * j, screenCoords.y + _button_offset_y }, 0);
 
                 gfx_fill_rect_inset(
                     dpi, _button_offset_x + 12 * j, screenCoords.y + _check_offset_y, _button_offset_x + 12 * j + 9,

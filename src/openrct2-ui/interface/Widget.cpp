@@ -116,8 +116,7 @@ static void widget_frame_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widgeti
     rct_widget* widget = &w->widgets[widgetIndex];
 
     // Resolve the absolute ltrb
-    int32_t l = w->windowPos.x + widget->left;
-    int32_t t = w->windowPos.y + widget->top;
+    auto leftTop = w->windowPos + ScreenCoordsXY{ widget->left, widget->top };
     int32_t r = w->windowPos.x + widget->right;
     int32_t b = w->windowPos.y + widget->bottom;
 
@@ -128,7 +127,7 @@ static void widget_frame_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widgeti
     uint8_t colour = w->colours[widget->colour];
 
     // Draw the frame
-    gfx_fill_rect_inset(dpi, l, t, r, b, colour, press);
+    gfx_fill_rect_inset(dpi, leftTop.x, leftTop.y, r, b, colour, press);
 
     // Check if the window can be resized
     if (!(w->flags & WF_RESIZABLE))
@@ -137,9 +136,8 @@ static void widget_frame_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widgeti
         return;
 
     // Draw the resize sprite at the bottom right corner
-    l = w->windowPos.x + widget->right - 18;
-    t = w->windowPos.y + widget->bottom - 18;
-    gfx_draw_sprite(dpi, SPR_RESIZE | IMAGE_TYPE_REMAP | ((colour & 0x7F) << 19), l, t, 0);
+    leftTop = w->windowPos + ScreenCoordsXY{ widget->right - 18, widget->bottom - 18 };
+    gfx_draw_sprite(dpi, SPR_RESIZE | IMAGE_TYPE_REMAP | ((colour & 0x7F) << 19), leftTop, 0);
 }
 
 /**
@@ -152,8 +150,7 @@ static void widget_resize_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widget
     rct_widget* widget = &w->widgets[widgetIndex];
 
     // Resolve the absolute ltrb
-    int32_t l = w->windowPos.x + widget->left;
-    int32_t t = w->windowPos.y + widget->top;
+    auto leftTop = w->windowPos + ScreenCoordsXY{ widget->left, widget->top };
     int32_t r = w->windowPos.x + widget->right;
     int32_t b = w->windowPos.y + widget->bottom;
 
@@ -161,7 +158,7 @@ static void widget_resize_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widget
     uint8_t colour = w->colours[widget->colour];
 
     // Draw the panel
-    gfx_fill_rect_inset(dpi, l, t, r, b, colour, 0);
+    gfx_fill_rect_inset(dpi, leftTop.x, leftTop.y, r, b, colour, 0);
 
     // Check if the window can be resized
     if (!(w->flags & WF_RESIZABLE))
@@ -170,9 +167,8 @@ static void widget_resize_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widget
         return;
 
     // Draw the resize sprite at the bottom right corner
-    l = w->windowPos.x + widget->right - 18;
-    t = w->windowPos.y + widget->bottom - 18;
-    gfx_draw_sprite(dpi, SPR_RESIZE | IMAGE_TYPE_REMAP | ((colour & 0x7F) << 19), l, t, 0);
+    leftTop = w->windowPos + ScreenCoordsXY{ widget->right - 18, widget->bottom - 18 };
+    gfx_draw_sprite(dpi, SPR_RESIZE | IMAGE_TYPE_REMAP | ((colour & 0x7F) << 19), leftTop, 0);
 }
 
 /**
@@ -240,15 +236,14 @@ static void widget_tab_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widgetind
     }
 
     // Resolve the absolute ltrb
-    int32_t l = w->windowPos.x + widget->left;
-    int32_t t = w->windowPos.y + widget->top;
+    auto leftTop = w->windowPos + ScreenCoordsXY{ widget->left, widget->top };
 
     // Get the colour and disabled image
     uint8_t colour = w->colours[widget->colour] & 0x7F;
     uint32_t image = widget->image + 2;
 
     // Draw disabled image
-    gfx_draw_sprite(dpi, image | (colour << 19), l, t, 0);
+    gfx_draw_sprite(dpi, image | (colour << 19), leftTop, 0);
 }
 
 /**
@@ -350,13 +345,7 @@ static void widget_text_centred(rct_drawpixelinfo* dpi, rct_window* w, rct_widge
     int32_t r = w->windowPos.x + widget->right;
 
     if (widget->type == WWT_BUTTON || widget->type == WWT_TABLE_HEADER)
-    {
-        int32_t height = (widget->bottom - widget->top);
-        if (height >= 10)
-            topLeft.y += std::max<int32_t>(widget->top, widget->top + (height / 2) - 5);
-        else
-            topLeft.y += widget->top - 1;
-    }
+        topLeft.y += widget->textTop();
     else
         topLeft.y += widget->top;
 
@@ -368,7 +357,7 @@ static void widget_text_centred(rct_drawpixelinfo* dpi, rct_window* w, rct_widge
         formatArgs = &widget->string;
     }
     gfx_draw_string_centred_clipped(
-        dpi, stringId, formatArgs, colour, { (topLeft.x + r + 1) / 2 - 1, topLeft.y }, widget->right - widget->left - 2);
+        dpi, stringId, formatArgs, colour, { (topLeft.x + r + 1) / 2 - 1, topLeft.y }, widget->width() - 2);
 }
 
 /**
@@ -396,11 +385,7 @@ static void widget_text(rct_drawpixelinfo* dpi, rct_window* w, rct_widgetindex w
     if (widget->type == WWT_BUTTON || widget->type == WWT_DROPDOWN || widget->type == WWT_SPINNER
         || widget->type == WWT_TABLE_HEADER)
     {
-        int32_t height = (widget->bottom - widget->top);
-        if (height >= 10)
-            t = w->windowPos.y + std::max<int32_t>(widget->top, widget->top + (height / 2) - 5);
-        else
-            t = w->windowPos.y + widget->top - 1;
+        t = w->windowPos.y + widget->textTop();
     }
     else
         t = w->windowPos.y + widget->top;
@@ -485,7 +470,7 @@ static void widget_groupbox_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widg
         uint8_t args[sizeof(uintptr_t)] = { 0 };
         format_string(buffer, sizeof(buffer), stringId, formatArgs);
         Formatter(args).Add<utf8*>(buffer);
-        gfx_draw_string_left(dpi, STR_STRING, args, colour, l, t);
+        gfx_draw_string_left(dpi, STR_STRING, args, colour, { l, t });
         textRight = l + gfx_get_string_width(buffer) + 1;
     }
 
@@ -553,7 +538,7 @@ static void widget_caption_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widge
         return;
 
     topLeft = w->windowPos + ScreenCoordsXY{ widget->left + 2, widget->top + 1 };
-    int32_t width = widget->right - widget->left - 4;
+    int32_t width = widget->width() - 4;
     if ((widget + 1)->type == WWT_CLOSEBOX)
     {
         width -= 10;
@@ -593,14 +578,12 @@ static void widget_closebox_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widg
     if (widget->text == STR_NONE)
         return;
 
-    topLeft = w->windowPos
-        + ScreenCoordsXY{ (widget->left + widget->right) / 2 - 1,
-                          std::max<int32_t>(widget->top, (widget->top + widget->bottom) / 2 - 5) };
+    topLeft = w->windowPos + ScreenCoordsXY{ widget->midX() - 1, std::max<int32_t>(widget->top, widget->midY() - 5) };
 
     if (widget_is_disabled(w, widgetIndex))
         colour |= COLOUR_FLAG_INSET;
 
-    gfx_draw_string_centred_clipped(dpi, widget->text, gCommonFormatArgs, colour, topLeft, widget->right - widget->left - 2);
+    gfx_draw_string_centred_clipped(dpi, widget->text, gCommonFormatArgs, colour, topLeft, widget->width() - 2);
 }
 
 /**
@@ -641,7 +624,7 @@ static void widget_checkbox_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widg
         return;
 
     auto [stringId, formatArgs] = widget_get_stringid_and_args(widget);
-    gfx_draw_string_left_centred(dpi, stringId, formatArgs, colour, l + 14, yMid);
+    gfx_draw_string_left_centred(dpi, stringId, formatArgs, colour, { l + 14, yMid });
 }
 
 /**
@@ -803,8 +786,7 @@ static void widget_draw_image(rct_drawpixelinfo* dpi, rct_window* w, rct_widgeti
         return;
 
     // Resolve the absolute ltrb
-    int32_t l = w->windowPos.x + widget->left;
-    int32_t t = w->windowPos.y + widget->top;
+    auto screenCoords = w->windowPos + ScreenCoordsXY{ widget->left, widget->top };
 
     // Get the colour
     uint8_t colour = NOT_TRANSLUCENT(w->colours[widget->colour]);
@@ -818,12 +800,12 @@ static void widget_draw_image(rct_drawpixelinfo* dpi, rct_window* w, rct_widgeti
         // Draw greyed out (light border bottom right shadow)
         colour = w->colours[widget->colour];
         colour = ColourMapA[NOT_TRANSLUCENT(colour)].lighter;
-        gfx_draw_sprite_solid(dpi, image, l + 1, t + 1, colour);
+        gfx_draw_sprite_solid(dpi, image, screenCoords + ScreenCoordsXY{ 1, 1 }, colour);
 
         // Draw greyed out (dark)
         colour = w->colours[widget->colour];
         colour = ColourMapA[NOT_TRANSLUCENT(colour)].mid_light;
-        gfx_draw_sprite_solid(dpi, image, l, t, colour);
+        gfx_draw_sprite_solid(dpi, image, screenCoords, colour);
     }
     else
     {
@@ -837,7 +819,7 @@ static void widget_draw_image(rct_drawpixelinfo* dpi, rct_window* w, rct_widgeti
         else
             image |= colour << 19;
 
-        gfx_draw_sprite(dpi, image, l, t, 0);
+        gfx_draw_sprite(dpi, image, screenCoords, 0);
     }
 }
 
@@ -1063,6 +1045,9 @@ static void widget_text_box_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widg
     gCurrentFontSpriteBase = FONT_SPRITE_BASE_MEDIUM;
     gCurrentFontFlags = 0;
 
+    // Figure out where the text should be positioned vertically.
+    t = w->windowPos.y + widget->textTop();
+
     if (!active || gTextInput == nullptr)
     {
         if (w->widgets[widgetIndex].text != 0)
@@ -1102,6 +1087,7 @@ static void widget_text_box_draw(rct_drawpixelinfo* dpi, rct_window* w, rct_widg
     if (gTextBoxFrameNo <= 15)
     {
         colour = ColourMapA[w->colours[1]].mid_light;
-        gfx_fill_rect(dpi, cur_x, t + 9, cur_x + width, t + 9, colour + 5);
+        auto y = t + (widget->height() - 1);
+        gfx_fill_rect(dpi, cur_x, y, cur_x + width, y, colour + 5);
     }
 }

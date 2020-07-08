@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,26 @@ constexpr const RideTypeDescriptor GigaCoasterRTD =
     SET_FIELD(OperatingSettings, { 10, 27, 30, 17, 68, 1 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_GIGA_COASTER, STR_RIDE_DESCRIPTION_GIGA_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_GIGA_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 86, 24, 9, 11, }),
     SET_FIELD(MaxMass, 31),
     SET_FIELD(LiftData, { SoundId::LiftClassic, 5, 8 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_giga_coaster),
     SET_FIELD(RatingsMultipliers, { 51, 32, 10 }),
     SET_FIELD(UpkeepCosts, { 10, 20, 80, 12, 3, 40 }),
     SET_FIELD(BuildCosts, { 120, 5, 55, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_ROCK_STYLE_3),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 120)
+    SET_FIELD(BonusValue, 120),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_WHITE },
+        { COLOUR_WHITE, COLOUR_WHITE, COLOUR_YELLOW },
+        { COLOUR_YELLOW, COLOUR_YELLOW, COLOUR_BORDEAUX_RED },
+        { COLOUR_LIGHT_BLUE, COLOUR_LIGHT_BLUE, COLOUR_BLACK },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_GIGA_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_GIGA_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

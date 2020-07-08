@@ -31,16 +31,21 @@ constexpr const RideTypeDescriptor DrinkStallRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_DRINK_STALL, STR_RIDE_DESCRIPTION_DRINK_STALL }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CAR, RIDE_COMPONENT_TYPE_BUILDING, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_DRINK_STALL)),
     SET_FIELD(AvailableBreakdowns, 0),
     SET_FIELD(Heights, { 12, 64, 0, 0, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_drink_stall),
     SET_FIELD(RatingsMultipliers, { 0, 0, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 500, 0, 1, }),
     SET_FIELD(DefaultPrices, { 0, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_GENTLE),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 15)
+    SET_FIELD(BonusValue, 15),
+    SET_FIELD(ColourPresets, DEFAULT_STALL_COLOUR_PRESET),
+    SET_FIELD(ColourPreview, { 0, 0 }),
+    SET_FIELD(ColourKey, RideColourKey::Drink),
 };
 // clang-format on

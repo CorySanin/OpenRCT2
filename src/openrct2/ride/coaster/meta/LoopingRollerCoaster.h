@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,29 @@ constexpr const RideTypeDescriptor LoopingRollerCoasterRTD =
     SET_FIELD(OperatingSettings, { 10, 27, 26, 18, 18, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_LOOPING_ROLLER_COASTER, STR_RIDE_DESCRIPTION_LOOPING_ROLLER_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_LOOPING_ROLLER_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 35, 24, 5, 7, }),
     SET_FIELD(MaxMass, 18),
     SET_FIELD(LiftData, { SoundId::LiftClassic, 4, 6 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_looping_roller_coaster),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 40, 20, 80, 10, 3, 10 }),
     SET_FIELD(BuildCosts, { 90, 5, 50, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_ROCK),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 95)
+    SET_FIELD(BonusValue, 95),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_LIGHT_BROWN, COLOUR_LIGHT_BROWN, COLOUR_BLACK },
+        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_BLACK },
+        { COLOUR_WHITE, COLOUR_WHITE, COLOUR_SATURATED_RED },
+        { COLOUR_BORDEAUX_RED, COLOUR_BORDEAUX_RED, COLOUR_WHITE },
+        { COLOUR_LIGHT_PURPLE, COLOUR_LIGHT_PURPLE, COLOUR_DARK_GREEN },
+        { COLOUR_OLIVE_GREEN, COLOUR_OLIVE_GREEN, COLOUR_LIGHT_BROWN },
+        { COLOUR_GREY, COLOUR_LIGHT_ORANGE, COLOUR_GREY },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_LOOPING_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_LOOPING_ROLLER_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

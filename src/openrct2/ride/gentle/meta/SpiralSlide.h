@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -32,16 +33,24 @@ constexpr const RideTypeDescriptor SpiralSlideRTD =
     SET_FIELD(OperatingSettings, { 1, 5, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_SPIRAL_SLIDE, STR_RIDE_DESCRIPTION_SPIRAL_SLIDE }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_BUILDING, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_SPIRAL_SLIDE)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT)),
     SET_FIELD(Heights, { 15, 128, 0, 2, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_spiral_slide),
     SET_FIELD(RatingsMultipliers, { 50, 10, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 165, 2, 1, }),
     SET_FIELD(DefaultPrices, { 15, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_SUMMER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 40)
+    SET_FIELD(BonusValue, 40),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BRIGHT_RED, COLOUR_YELLOW, COLOUR_DARK_BROWN },
+        { COLOUR_LIGHT_BLUE, COLOUR_BRIGHT_PINK, COLOUR_LIGHT_PURPLE },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_SPIRAL_SLIDE_TRACK, 0 }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

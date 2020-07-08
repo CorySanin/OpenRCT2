@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,27 @@ constexpr const RideTypeDescriptor TwisterRollerCoasterRTD =
     SET_FIELD(OperatingSettings, { 10, 27, 30, 17, 68, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_TWISTER_ROLLER_COASTER, STR_RIDE_DESCRIPTION_TWISTER_ROLLER_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_TWISTER_ROLLER_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 54, 24, 8, 9, }),
     SET_FIELD(MaxMass, 31),
     SET_FIELD(LiftData, { SoundId::LiftBM, 5, 8 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_twister_roller_coaster),
     SET_FIELD(RatingsMultipliers, { 52, 36, 10 }),
     SET_FIELD(UpkeepCosts, { 43, 20, 80, 11, 3, 10 }),
     SET_FIELD(BuildCosts, { 120, 5, 55, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_ROCK),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 120)
+    SET_FIELD(BonusValue, 120),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_YELLOW, COLOUR_YELLOW, COLOUR_BORDEAUX_RED },
+        { COLOUR_AQUAMARINE, COLOUR_AQUAMARINE, COLOUR_DARK_PURPLE },
+        { COLOUR_WHITE, COLOUR_WHITE, COLOUR_LIGHT_BLUE },
+        { COLOUR_DARK_GREEN, COLOUR_MOSS_GREEN, COLOUR_DARK_BROWN },
+        { COLOUR_BORDEAUX_RED, COLOUR_LIGHT_ORANGE, COLOUR_WHITE },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_TWISTER_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_TWISTER_ROLLER_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

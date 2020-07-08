@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -32,16 +33,21 @@ constexpr const RideTypeDescriptor SpaceRingsRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_SPACE_RINGS, STR_RIDE_DESCRIPTION_SPACE_RINGS }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_RING, RIDE_COMPONENT_TYPE_STRUCTURE, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_SPACE_RINGS)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT)),
     SET_FIELD(Heights, { 16, 48, 3, 2, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_space_rings),
     SET_FIELD(RatingsMultipliers, { 12, 4, 4 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 72, 2, 1, }),
     SET_FIELD(DefaultPrices, { 5, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_GENTLE),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 30)
+    SET_FIELD(BonusValue, 30),
+    SET_FIELD(ColourPresets, DEFAULT_FLAT_RIDE_COLOUR_PRESET),
+    SET_FIELD(ColourPreview, { 0, 0 }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

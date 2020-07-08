@@ -659,7 +659,7 @@ static void window_new_ride_draw_tab_image(rct_drawpixelinfo* dpi, rct_window* w
         spriteIndex |= w->colours[1] << 19;
 
         gfx_draw_sprite(
-            dpi, spriteIndex, w->windowPos.x + w->widgets[widgetIndex].left, w->windowPos.y + w->widgets[widgetIndex].top, 0);
+            dpi, spriteIndex, w->windowPos + ScreenCoordsXY{ w->widgets[widgetIndex].left, w->widgets[widgetIndex].top }, 0);
     }
 }
 
@@ -867,7 +867,7 @@ static void window_new_ride_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, i
                 imageId++;
         }
 
-        gfx_draw_sprite_raw_masked(dpi, x + 2, y + 2, SPR_NEW_RIDE_MASK, imageId);
+        gfx_draw_sprite_raw_masked(dpi, { x + 2, y + 2 }, SPR_NEW_RIDE_MASK, imageId);
 
         // Next position
         x += 116;
@@ -986,7 +986,7 @@ static void window_new_ride_paint_ride_information(
             break;
     }
 
-    gfx_draw_string_left(dpi, designCountStringId, &_lastTrackDesignCount, COLOUR_BLACK, screenPos.x, screenPos.y + 51);
+    gfx_draw_string_left(dpi, designCountStringId, &_lastTrackDesignCount, COLOUR_BLACK, screenPos + ScreenCoordsXY{ 0, 51 });
 
     // Price
     if (!(gParkFlags & PARK_FLAGS_NO_MONEY))

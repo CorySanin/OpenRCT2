@@ -10,13 +10,25 @@
 #ifndef _RIDE_DATA_H_
 #define _RIDE_DATA_H_
 
+#define TRACK_COLOUR_PRESETS(...)                                                                                              \
+    {                                                                                                                          \
+        static_cast<uint8_t>(std::size<TrackColour>({ __VA_ARGS__ })),                                                         \
+        {                                                                                                                      \
+            __VA_ARGS__                                                                                                        \
+        }                                                                                                                      \
+    }
+#define DEFAULT_FLAT_RIDE_COLOUR_PRESET TRACK_COLOUR_PRESETS({ COLOUR_BRIGHT_RED, COLOUR_LIGHT_BLUE, COLOUR_YELLOW })
+#define DEFAULT_STALL_COLOUR_PRESET TRACK_COLOUR_PRESETS({ COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED })
+
 #include "../common.h"
 #include "../localisation/StringIds.h"
+#include "../sprites.h"
 #include "Ride.h"
 #include "ShopItem.h"
 #include "Track.h"
 #include "TrackPaint.h"
 
+using ride_ratings_calculation = void (*)(Ride* ride);
 struct RideComponentName
 {
     rct_string_id singular;
@@ -47,6 +59,18 @@ enum RIDE_COMPONENT_TYPE
     RIDE_COMPONENT_TYPE_COUNT
 };
 
+enum class RideColourKey : uint8_t
+{
+    Ride,
+    Food,
+    Drink,
+    Shop,
+    InfoKiosk,
+    FirstAid,
+    CashMachine,
+    Toilets
+};
+
 struct RideNameConvention
 {
     RIDE_COMPONENT_TYPE vehicle;
@@ -74,6 +98,12 @@ struct rct_ride_lift_data
     SoundId sound_id;
     uint8_t minimum_speed;
     uint8_t maximum_speed;
+};
+
+struct RideColourPreview
+{
+    uint32_t Track;
+    uint32_t Supports;
 };
 
 struct UpkeepCostsDescriptor
@@ -118,12 +148,15 @@ struct RideTypeDescriptor
     RideOperatingSettings OperatingSettings;
     RideNaming Naming;
     RideNameConvention NameConvention;
+    const char* EnumName;
     uint8_t AvailableBreakdowns;
     /** rct2: 0x0097D218 */
     RideHeights Heights;
     uint8_t MaxMass;
     /** rct2: 0x0097D7C8, 0x0097D7C9, 0x0097D7CA */
     rct_ride_lift_data LiftData;
+    // rct2: 0x0097E050
+    ride_ratings_calculation RatingsCalculationFunction;
     // rct2: 0x0097CD1E
     RatingTuple RatingsMultipliers;
     UpkeepCostsDescriptor UpkeepCosts;
@@ -132,9 +165,12 @@ struct RideTypeDescriptor
     money16 DefaultPrices[NUM_SHOP_ITEMS_PER_RIDE];
     uint8_t DefaultMusic;
     /** rct2: 0x0097D7CB */
-    uint8_t PhotoItem;
+    ShopItemIndex PhotoItem;
     /** rct2: 0x0097D21E */
     uint8_t BonusValue;
+    track_colour_preset_list ColourPresets;
+    RideColourPreview ColourPreview;
+    RideColourKey ColourKey;
 
     bool HasFlag(uint64_t flag) const;
     uint64_t GetAvailableTrackPieces() const;
@@ -273,8 +309,6 @@ extern const rct_ride_entry_vehicle CableLiftVehicle;
 
 extern const uint16_t RideFilmLength[3];
 
-extern const track_colour_preset_list RideColourPresets[RIDE_TYPE_COUNT];
-
 extern const rct_string_id RideModeNames[RIDE_MODE_COUNT];
 
 // clang-format off
@@ -293,17 +327,22 @@ constexpr const RideTypeDescriptor DummyRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_UNKNOWN_RIDE, STR_RIDE_DESCRIPTION_UNKNOWN }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, "(INVALID)"),
     SET_FIELD(AvailableBreakdowns, 0),
     SET_FIELD(Heights, { 12, 64, 0, 0, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, nullptr),
     SET_FIELD(RatingsMultipliers, { 0, 0, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 0, 0, 1 }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_GENTLE),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 0)
+    SET_FIELD(BonusValue, 0),
+    SET_FIELD(ColourPresets, DEFAULT_FLAT_RIDE_COLOUR_PRESET),
+    SET_FIELD(ColourPreview, { static_cast<uint32_t>(SPR_NONE), static_cast<uint32_t>(SPR_NONE) }),
+    SET_FIELD(ColourKey, RideColourKey::Ride)
 };
 // clang-format on
 

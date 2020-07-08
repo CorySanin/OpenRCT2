@@ -151,10 +151,8 @@ void S6Exporter::Save(IStream* stream, bool isScenario)
 
 void S6Exporter::Export()
 {
-    int32_t spatial_cycle = check_for_spatial_index_cycles(false);
     int32_t regular_cycle = check_for_sprite_list_cycles(false);
     int32_t disjoint_sprites_count = fix_disjoint_sprites();
-    openrct2_assert(spatial_cycle == -1, "Sprite cycle exists in spatial list %d", spatial_cycle);
     openrct2_assert(regular_cycle == -1, "Sprite cycle exists in regular list %d", regular_cycle);
     // This one is less harmful, no need to assert for it ~janisozaur
     if (disjoint_sprites_count > 0)
@@ -948,7 +946,7 @@ void S6Exporter::ExportSprites()
         ExportSprite(&_s6.sprites[i], reinterpret_cast<const rct_sprite*>(GetEntity(i)));
     }
 
-    for (int32_t i = 0; i < SPRITE_LIST_COUNT; i++)
+    for (int32_t i = 0; i < static_cast<uint8_t>(EntityListId::Count); i++)
     {
         _s6.sprite_lists_head[i] = gSpriteListHead[i];
         _s6.sprite_lists_count[i] = gSpriteListCount[i];
@@ -989,7 +987,7 @@ void S6Exporter::ExportSpriteCommonProperties(RCT12SpriteBase* dst, const Sprite
     dst->next_in_quadrant = src->next_in_quadrant;
     dst->next = src->next;
     dst->previous = src->previous;
-    dst->linked_list_type_offset = src->linked_list_index * 2;
+    dst->linked_list_type_offset = static_cast<uint8_t>(src->linked_list_index) * 2;
     dst->sprite_height_negative = src->sprite_height_negative;
     dst->sprite_index = src->sprite_index;
     dst->flags = src->flags;
@@ -1007,7 +1005,7 @@ void S6Exporter::ExportSpriteCommonProperties(RCT12SpriteBase* dst, const Sprite
 
 void S6Exporter::ExportSpriteVehicle(RCT2SpriteVehicle* dst, const Vehicle* src)
 {
-    const auto* ride = get_ride(src->ride);
+    const auto* ride = src->GetRide();
 
     ExportSpriteCommonProperties(dst, static_cast<const SpriteBase*>(src));
     dst->vehicle_sprite_type = src->vehicle_sprite_type;
@@ -1137,7 +1135,7 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
     dst->next_y = src->NextLoc.y;
     dst->next_z = src->NextLoc.z / COORDS_Z_STEP;
     dst->next_flags = src->NextFlags;
-    dst->outside_of_park = src->OutsideOfPark;
+    dst->outside_of_park = static_cast<uint8_t>(src->OutsideOfPark);
     dst->state = static_cast<uint8_t>(src->State);
     dst->sub_state = src->SubState;
     dst->sprite_type = static_cast<uint8_t>(src->SpriteType);
@@ -1230,7 +1228,7 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
     dst->no_of_souvenirs = src->AmountOfSouvenirs;
     dst->vandalism_seen = src->VandalismSeen;
     dst->voucher_type = src->VoucherType;
-    dst->voucher_arguments = src->VoucherArguments;
+    dst->voucher_arguments = src->VoucherRideId;
     dst->surroundings_thought_timeout = src->SurroundingsThoughtTimeout;
     dst->angriness = src->Angriness;
     dst->time_lost = src->TimeLost;

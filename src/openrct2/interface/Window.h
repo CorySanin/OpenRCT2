@@ -98,6 +98,34 @@ struct rct_widget
     // New properties
     WidgetFlags flags{};
     utf8* sztooltip{};
+
+    int16_t width() const
+    {
+        return right - left;
+    }
+
+    int16_t height() const
+    {
+        return bottom - top;
+    }
+
+    int16_t midX() const
+    {
+        return (left + right) / 2;
+    }
+
+    int16_t midY() const
+    {
+        return (top + bottom) / 2;
+    }
+
+    int16_t textTop() const
+    {
+        if (height() >= 10)
+            return std::max<int32_t>(top, top + (height() / 2) - 5);
+        else
+            return top - 1;
+    }
 };
 
 /**

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,25 @@ constexpr const RideTypeDescriptor MiniRollerCoasterRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 68, 1 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_MINI_ROLLER_COASTER, STR_RIDE_DESCRIPTION_MINI_ROLLER_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CAR, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_MINI_ROLLER_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 16, 24, 9, 11, }),
     SET_FIELD(MaxMass, 10),
     SET_FIELD(LiftData, { SoundId::LiftClassic, 4, 6 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_mini_roller_coaster),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 35, 20, 80, 8, 3, 10 }),
     SET_FIELD(BuildCosts, { 65, 4, 40, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_SUMMER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 60)
+    SET_FIELD(BonusValue, 60),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_GREY, COLOUR_GREY, COLOUR_DARK_BROWN },
+        { COLOUR_MOSS_GREEN, COLOUR_MOSS_GREEN, COLOUR_DARK_BROWN },
+        { COLOUR_SALMON_PINK, COLOUR_SALMON_PINK, COLOUR_BORDEAUX_RED },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_MINI_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_MINI_ROLLER_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

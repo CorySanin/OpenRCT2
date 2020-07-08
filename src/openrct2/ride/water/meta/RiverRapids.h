@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -35,16 +36,23 @@ constexpr const RideTypeDescriptor RiverRapidsRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_RIVER_RAPIDS, STR_RIDE_DESCRIPTION_RIVER_RAPIDS }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_BOAT, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_RIVER_RAPIDS)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_CONTROL_FAILURE)),
     SET_FIELD(Heights, { 9, 32, 14, 15, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_river_rapids),
     SET_FIELD(RatingsMultipliers, { 72, 26, 6 }),
     SET_FIELD(UpkeepCosts, { 82, 20, 0, 10, 0, 10 }),
     SET_FIELD(BuildCosts, { 62, 6, 40, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_WATER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO4),
-    SET_FIELD(BonusValue, 70)
+    SET_FIELD(BonusValue, 70),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_WHITE, COLOUR_BLACK, COLOUR_DARK_BROWN },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_RIVER_RAPIDS_TRACK, SPR_RIDE_DESIGN_PREVIEW_RIVER_RAPIDS_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

@@ -602,8 +602,7 @@ static void peep_pathfind_heuristic_search(
     uint8_t searchResult = PATH_SEARCH_FAILED;
 
     bool currentElementIsWide
-        = (currentTileElement->AsPath()->IsWide()
-           && !staff_can_ignore_wide_flag(peep, loc.x * 32, loc.y * 32, loc.z, currentTileElement));
+        = (currentTileElement->AsPath()->IsWide() && !staff_can_ignore_wide_flag(peep, loc.ToCoordsXYZ(), currentTileElement));
 
     loc += TileDirectionDelta[test_edge];
 
@@ -737,7 +736,7 @@ static void peep_pathfind_heuristic_search(
                 if (tileElement->AsPath()->IsWide())
                 {
                     /* Check if staff can ignore this wide flag. */
-                    if (!staff_can_ignore_wide_flag(peep, loc.x * 32, loc.y * 32, loc.z, tileElement))
+                    if (!staff_can_ignore_wide_flag(peep, loc.ToCoordsXYZ(), tileElement))
                     {
                         searchResult = PATH_SEARCH_WIDE;
                         found = true;
@@ -1646,15 +1645,15 @@ static int32_t guest_path_find_leaving_park(Peep* peep, uint8_t edges)
 static int32_t guest_path_find_park_entrance(Peep* peep, uint8_t edges)
 {
     // If entrance no longer exists, choose a new one
-    if ((peep->PeepFlags & PEEP_FLAGS_PARK_ENTRANCE_CHOSEN) && peep->CurrentRide >= gParkEntrances.size())
+    if ((peep->PeepFlags & PEEP_FLAGS_PARK_ENTRANCE_CHOSEN) && peep->ChosenParkEntrance >= gParkEntrances.size())
     {
-        peep->CurrentRide = RIDE_ID_NULL;
+        peep->ChosenParkEntrance = PARK_ENTRANCE_INDEX_NULL;
         peep->PeepFlags &= ~(PEEP_FLAGS_PARK_ENTRANCE_CHOSEN);
     }
 
     if (!(peep->PeepFlags & PEEP_FLAGS_PARK_ENTRANCE_CHOSEN))
     {
-        uint8_t chosenEntrance = 0xFF;
+        uint8_t chosenEntrance = PARK_ENTRANCE_INDEX_NULL;
         uint16_t nearestDist = 0xFFFF;
         uint8_t entranceNum = 0;
         for (const auto& entrance : gParkEntrances)
@@ -1671,11 +1670,11 @@ static int32_t guest_path_find_park_entrance(Peep* peep, uint8_t edges)
         if (chosenEntrance == 0xFF)
             return guest_path_find_aimless(peep, edges);
 
-        peep->CurrentRide = chosenEntrance;
+        peep->ChosenParkEntrance = chosenEntrance;
         peep->PeepFlags |= PEEP_FLAGS_PARK_ENTRANCE_CHOSEN;
     }
 
-    const auto& entrance = gParkEntrances[peep->CurrentRide];
+    const auto& entrance = gParkEntrances[peep->ChosenParkEntrance];
 
     gPeepPathFindGoalPosition = TileCoordsXYZ(entrance);
     gPeepPathFindIgnoreForeignQueues = true;
@@ -1913,7 +1912,7 @@ int32_t guest_path_finding(Guest* peep)
         return guest_surface_path_finding(peep);
     }
 
-    if (peep->OutsideOfPark == 0 && peep->HeadingForRideOrParkExit())
+    if (!peep->OutsideOfPark && peep->HeadingForRideOrParkExit())
     {
         /* If this tileElement is adjacent to any non-wide paths,
          * remove all of the edges to wide paths. */
@@ -1971,7 +1970,7 @@ int32_t guest_path_finding(Guest* peep)
 
     // Peep is outside the park.
     // loc_694F19:
-    if (peep->OutsideOfPark != 0)
+    if (peep->OutsideOfPark)
     {
 #if defined(DEBUG_LEVEL_1) && DEBUG_LEVEL_1
         if (gPathFindDebug)
@@ -2053,7 +2052,7 @@ int32_t guest_path_finding(Guest* peep)
         return guest_path_find_park_entrance(peep, edges);
     }
 
-    if (peep->GuestHeadingToRideId == 0xFF)
+    if (peep->GuestHeadingToRideId == RIDE_ID_NULL)
     {
 #if defined(DEBUG_LEVEL_1) && DEBUG_LEVEL_1
         if (gPathFindDebug)

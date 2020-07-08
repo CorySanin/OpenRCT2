@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -33,16 +34,23 @@ constexpr const RideTypeDescriptor SwingingShipRTD =
     SET_FIELD(OperatingSettings, { 7, 25, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_PIRATE_SHIP, STR_RIDE_DESCRIPTION_PIRATE_SHIP }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_SHIP, RIDE_COMPONENT_TYPE_STRUCTURE, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_SWINGING_SHIP)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT)),
     SET_FIELD(Heights, { 12, 112, 7, 11, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_pirate_ship),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 155, 2, 1, }),
     SET_FIELD(DefaultPrices, { 15, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_PIRATES),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 35)
+    SET_FIELD(BonusValue, 35),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_DARK_BROWN, COLOUR_DARK_BROWN, COLOUR_BLACK },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_SUSPENDED_SWINGING_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_SUSPENDED_SWINGING_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

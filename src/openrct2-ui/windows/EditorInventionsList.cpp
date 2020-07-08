@@ -552,17 +552,17 @@ static void window_editor_inventions_list_paint(rct_window* w, rct_drawpixelinfo
 
     // Tab image
     auto screenPos = w->windowPos + ScreenCoordsXY{ w->widgets[WIDX_TAB_1].left, w->widgets[WIDX_TAB_1].top };
-    gfx_draw_sprite(dpi, SPR_TAB_FINANCES_RESEARCH_0 + (w->frame_no / 2) % 8, screenPos.x, screenPos.y, 0);
+    gfx_draw_sprite(dpi, SPR_TAB_FINANCES_RESEARCH_0 + (w->frame_no / 2) % 8, screenPos, 0);
 
     // Pre-researched items label
     screenPos = w->windowPos
         + ScreenCoordsXY{ w->widgets[WIDX_PRE_RESEARCHED_SCROLL].left, w->widgets[WIDX_PRE_RESEARCHED_SCROLL].top - 11 };
-    gfx_draw_string_left(dpi, STR_INVENTION_PREINVENTED_ITEMS, nullptr, COLOUR_BLACK, screenPos.x, screenPos.y - 1);
+    gfx_draw_string_left(dpi, STR_INVENTION_PREINVENTED_ITEMS, nullptr, COLOUR_BLACK, screenPos - ScreenCoordsXY{ 0, 1 });
 
     // Research order label
     screenPos = w->windowPos
         + ScreenCoordsXY{ w->widgets[WIDX_RESEARCH_ORDER_SCROLL].left, w->widgets[WIDX_RESEARCH_ORDER_SCROLL].top - 11 };
-    gfx_draw_string_left(dpi, STR_INVENTION_TO_BE_INVENTED_ITEMS, nullptr, COLOUR_BLACK, screenPos.x, screenPos.y - 1);
+    gfx_draw_string_left(dpi, STR_INVENTION_TO_BE_INVENTED_ITEMS, nullptr, COLOUR_BLACK, screenPos - ScreenCoordsXY{ 0, 1 });
 
     // Preview background
     widget = &w->widgets[WIDX_PREVIEW];
@@ -596,16 +596,16 @@ static void window_editor_inventions_list_paint(rct_window* w, rct_drawpixelinfo
     {
         rct_drawpixelinfo clipDPI;
         screenPos = w->windowPos + ScreenCoordsXY{ widget->left + 1, widget->top + 1 };
-        width = widget->right - widget->left - 1;
-        int32_t height = widget->bottom - widget->top - 1;
-        if (clip_drawpixelinfo(&clipDPI, dpi, screenPos.x, screenPos.y, width, height))
+        width = widget->width() - 1;
+        int32_t height = widget->height() - 1;
+        if (clip_drawpixelinfo(&clipDPI, dpi, screenPos, width, height))
         {
             object_draw_preview(object, &clipDPI, width, height);
         }
     }
 
     // Item name
-    screenPos = w->windowPos + ScreenCoordsXY{ ((widget->left + widget->right) / 2) + 1, widget->bottom + 3 };
+    screenPos = w->windowPos + ScreenCoordsXY{ widget->midX() + 1, widget->bottom + 3 };
     width = w->width - w->widgets[WIDX_RESEARCH_ORDER_SCROLL].right - 6;
 
     rct_string_id drawString = window_editor_inventions_list_prepare_name(researchItem, false);
@@ -615,7 +615,7 @@ static void window_editor_inventions_list_paint(rct_window* w, rct_drawpixelinfo
     // Item category
     screenPos.x = w->windowPos.x + w->widgets[WIDX_RESEARCH_ORDER_SCROLL].right + 4;
     stringId = EditorInventionsResearchCategories[researchItem->category];
-    gfx_draw_string_left(dpi, STR_INVENTION_RESEARCH_GROUP, &stringId, COLOUR_BLACK, screenPos.x, screenPos.y);
+    gfx_draw_string_left(dpi, STR_INVENTION_RESEARCH_GROUP, &stringId, COLOUR_BLACK, screenPos);
 }
 
 /**
@@ -628,7 +628,7 @@ static void window_editor_inventions_list_scrollpaint(rct_window* w, rct_drawpix
     uint8_t paletteIndex = ColourMapA[w->colours[1]].mid_light;
     gfx_clear(dpi, paletteIndex);
 
-    int16_t boxWidth = (w->widgets[WIDX_RESEARCH_ORDER_SCROLL].right - w->widgets[WIDX_RESEARCH_ORDER_SCROLL].left);
+    int16_t boxWidth = w->widgets[WIDX_RESEARCH_ORDER_SCROLL].width();
     int16_t columnSplitOffset = boxWidth / 2;
     int32_t itemY = -SCROLLABLE_ROW_HEIGHT;
 
@@ -815,12 +815,10 @@ static void window_editor_inventions_list_drag_moved(rct_window* w, const Screen
 static void window_editor_inventions_list_drag_paint(rct_window* w, rct_drawpixelinfo* dpi)
 {
     rct_string_id drawString;
-    int32_t x, y;
+    auto screenCoords = w->windowPos + ScreenCoordsXY{ 0, 2 };
 
-    x = w->windowPos.x;
-    y = w->windowPos.y + 2;
     drawString = window_editor_inventions_list_prepare_name(&_editorInventionsListDraggedItem, true);
-    gfx_draw_string_left(dpi, drawString, gCommonFormatArgs, COLOUR_BLACK | COLOUR_FLAG_OUTLINE, x, y);
+    gfx_draw_string_left(dpi, drawString, gCommonFormatArgs, COLOUR_BLACK | COLOUR_FLAG_OUTLINE, screenCoords);
 }
 
 static rct_string_id window_editor_inventions_list_prepare_name(const ResearchItem* researchItem, bool withGap)

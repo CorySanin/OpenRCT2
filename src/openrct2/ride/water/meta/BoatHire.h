@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,26 @@ constexpr const RideTypeDescriptor BoatHireRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_BOAT_HIRE, STR_RIDE_DESCRIPTION_BOAT_HIRE }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_BOAT, RIDE_COMPONENT_TYPE_DOCKING_PLATFORM, RIDE_COMPONENT_TYPE_DOCKING_PLATFORM }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_BOAT_HIRE)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_VEHICLE_MALFUNCTION)),
     SET_FIELD(Heights, { 255, 16, 0, 3, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_boat_hire),
     SET_FIELD(RatingsMultipliers, { 70, 6, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 4, 0, 0 }),
     SET_FIELD(BuildCosts, { 55, 5, 5, }),
     SET_FIELD(DefaultPrices, { 10, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_WATER),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 40)
+    SET_FIELD(BonusValue, 40),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_MOSS_GREEN, COLOUR_MOSS_GREEN, COLOUR_WHITE },
+        { COLOUR_BLACK, COLOUR_BLACK, COLOUR_DARK_GREEN },
+        { COLOUR_LIGHT_BROWN, COLOUR_LIGHT_BROWN, COLOUR_YELLOW },
+        { COLOUR_BORDEAUX_RED, COLOUR_BORDEAUX_RED, COLOUR_BORDEAUX_RED },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_BOAT_HIRE_TRACK, SPR_RIDE_DESIGN_PREVIEW_BOAT_HIRE_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

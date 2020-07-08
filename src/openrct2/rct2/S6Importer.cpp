@@ -465,7 +465,6 @@ public:
 
         // We try to fix the cycles on import, hence the 'true' parameter
         check_for_sprite_list_cycles(true);
-        check_for_spatial_index_cycles(true);
         int32_t disjoint_sprites_count = fix_disjoint_sprites();
         // This one is less harmful, no need to assert for it ~janisozaur
         if (disjoint_sprites_count > 0)
@@ -487,6 +486,8 @@ public:
                 OWNERSHIP_OWNED);
             // clang-format on
         }
+
+        research_determine_first_of_type();
     }
 
     void ImportRides()
@@ -1286,13 +1287,13 @@ public:
             ImportSprite(reinterpret_cast<rct_sprite*>(dst), src);
         }
 
-        for (int32_t i = 0; i < SPRITE_LIST_COUNT; i++)
+        for (int32_t i = 0; i < static_cast<uint8_t>(EntityListId::Count); i++)
         {
             gSpriteListHead[i] = _s6.sprite_lists_head[i];
             gSpriteListCount[i] = _s6.sprite_lists_count[i];
         }
         // This list contains the number of free slots. Increase it according to our own sprite limit.
-        gSpriteListCount[SPRITE_LIST_FREE] += (MAX_SPRITES - RCT2_MAX_SPRITES);
+        gSpriteListCount[static_cast<uint8_t>(EntityListId::Free)] += (MAX_SPRITES - RCT2_MAX_SPRITES);
     }
 
     void ImportSprite(rct_sprite* dst, const RCT2Sprite* src)
@@ -1416,7 +1417,7 @@ public:
         }
         dst->NextLoc = { src->next_x, src->next_y, src->next_z * COORDS_Z_STEP };
         dst->NextFlags = src->next_flags;
-        dst->OutsideOfPark = src->outside_of_park;
+        dst->OutsideOfPark = static_cast<bool>(src->outside_of_park);
         dst->State = static_cast<PeepState>(src->state);
         dst->SubState = src->sub_state;
         dst->SpriteType = static_cast<PeepSpriteType>(src->sprite_type);
@@ -1509,7 +1510,7 @@ public:
         dst->AmountOfSouvenirs = src->no_of_souvenirs;
         dst->VandalismSeen = src->vandalism_seen;
         dst->VoucherType = src->voucher_type;
-        dst->VoucherArguments = src->voucher_arguments;
+        dst->VoucherRideId = src->voucher_arguments;
         dst->SurroundingsThoughtTimeout = src->surroundings_thought_timeout;
         dst->Angriness = src->angriness;
         dst->TimeLost = src->time_lost;
@@ -1626,7 +1627,7 @@ public:
         dst->next_in_quadrant = src->next_in_quadrant;
         dst->next = src->next;
         dst->previous = src->previous;
-        dst->linked_list_index = src->linked_list_type_offset >> 1;
+        dst->linked_list_index = static_cast<EntityListId>(src->linked_list_type_offset >> 1);
         dst->sprite_height_negative = src->sprite_height_negative;
         dst->sprite_index = src->sprite_index;
         dst->flags = src->flags;

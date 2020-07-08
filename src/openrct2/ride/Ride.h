@@ -423,7 +423,6 @@ public:
     void SetNameToDefault();
     std::string GetName() const;
     void FormatNameTo(Formatter&) const;
-    size_t FormatNameTo(void* args) const;
     void FormatStatusTo(Formatter&) const;
     size_t FormatStatusTo(void* args) const;
 
@@ -1208,8 +1207,6 @@ TileElement* get_station_platform(int32_t x, int32_t y, int32_t z, int32_t z_tol
 bool ride_has_adjacent_station(Ride* ride);
 bool ride_has_station_shelter(Ride* ride);
 bool ride_has_ratings(const Ride* ride);
-
-const char* ride_type_get_enum_name(int32_t rideType);
 
 uint8_t ride_entry_get_first_non_null_ride_type(const rct_ride_entry* rideEntry);
 int32_t get_booster_speed(uint8_t rideType, int32_t rawSpeed);

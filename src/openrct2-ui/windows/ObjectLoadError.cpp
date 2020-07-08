@@ -561,7 +561,7 @@ static void window_object_load_error_paint(rct_window* w, rct_drawpixelinfo* dpi
     auto ft = Formatter::Common();
     ft.Add<rct_string_id>(STR_OBJECT_ERROR_WINDOW_EXPLANATION);
     gfx_draw_string_left_wrapped(
-        dpi, gCommonFormatArgs, { w->windowPos.x + 5, w->windowPos.y + 18 }, WW - 10, STR_BLACK_STRING, COLOUR_BLACK);
+        dpi, gCommonFormatArgs, w->windowPos + ScreenCoordsXY{ 5, 18 }, WW - 10, STR_BLACK_STRING, COLOUR_BLACK);
 
     // Draw file name
     ft = Formatter::Common();
@@ -574,7 +574,7 @@ static void window_object_load_error_paint(rct_window* w, rct_drawpixelinfo* dpi
 static void window_object_load_error_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t scrollIndex)
 {
     gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width - 1, dpi->y + dpi->height - 1, ColourMapA[w->colours[1]].mid_light);
-    const int32_t list_width = w->widgets[WIDX_SCROLL].right - w->widgets[WIDX_SCROLL].left;
+    const int32_t list_width = w->widgets[WIDX_SCROLL].width();
 
     for (int32_t i = 0; i < w->no_list_items; i++)
     {
@@ -607,11 +607,11 @@ static void window_object_load_error_scrollpaint(rct_window* w, rct_drawpixelinf
         // ... source game ...
         rct_string_id sourceStringId = object_manager_get_source_game_string(
             object_entry_get_source_game_legacy(&_invalid_entries[i]));
-        gfx_draw_string_left(dpi, sourceStringId, nullptr, COLOUR_DARK_GREEN, SOURCE_COL_LEFT - 3, screenCoords.y);
+        gfx_draw_string_left(dpi, sourceStringId, nullptr, COLOUR_DARK_GREEN, { SOURCE_COL_LEFT - 3, screenCoords.y });
 
         // ... and type
         rct_string_id type = get_object_type_string(&_invalid_entries[i]);
-        gfx_draw_string_left(dpi, type, nullptr, COLOUR_DARK_GREEN, TYPE_COL_LEFT - 3, screenCoords.y);
+        gfx_draw_string_left(dpi, type, nullptr, COLOUR_DARK_GREEN, { TYPE_COL_LEFT - 3, screenCoords.y });
     }
 }
 

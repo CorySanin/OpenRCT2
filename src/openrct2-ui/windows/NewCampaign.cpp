@@ -249,8 +249,8 @@ static void window_new_campaign_mousedown(rct_window* w, rct_widgetindex widgetI
 
                     window_dropdown_show_text_custom_width(
                         { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top },
-                        dropdownWidget->bottom - dropdownWidget->top + 1, w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, numItems,
-                        dropdownWidget->right - dropdownWidget->left - 3);
+                        dropdownWidget->height() + 1, w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, numItems,
+                        dropdownWidget->width() - 3);
                 }
             }
             else
@@ -266,7 +266,7 @@ static void window_new_campaign_mousedown(rct_window* w, rct_widgetindex widgetI
                         Formatter ft(reinterpret_cast<uint8_t*>(&gDropdownItemsArgs[numItems]));
                         if (ride->custom_name.empty())
                         {
-                            ride->FormatNameTo(ft.Buf());
+                            ride->FormatNameTo(ft);
                         }
                         else
                         {
@@ -279,8 +279,8 @@ static void window_new_campaign_mousedown(rct_window* w, rct_widgetindex widgetI
 
                 window_dropdown_show_text_custom_width(
                     { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top },
-                    dropdownWidget->bottom - dropdownWidget->top + 1, w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, numItems,
-                    dropdownWidget->right - dropdownWidget->left - 3);
+                    dropdownWidget->height() + 1, w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, numItems,
+                    dropdownWidget->width() - 3);
             }
             break;
         // In RCT2, the maximum was 6 weeks
@@ -343,7 +343,9 @@ static void window_new_campaign_invalidate(rct_window* w)
                 if (ride != nullptr)
                 {
                     window_new_campaign_widgets[WIDX_RIDE_DROPDOWN].text = STR_STRINGID;
-                    ride->FormatNameTo(gCommonFormatArgs);
+
+                    auto ft = Formatter::Common();
+                    ride->FormatNameTo(ft);
                 }
             }
             break;
@@ -374,7 +376,7 @@ static void window_new_campaign_invalidate(rct_window* w)
  */
 static void window_new_campaign_paint(rct_window* w, rct_drawpixelinfo* dpi)
 {
-    int32_t x, y;
+    ScreenCoordsXY screenCoords{};
 
     window_draw_widgets(w, dpi);
 
@@ -382,19 +384,18 @@ static void window_new_campaign_paint(rct_window* w, rct_drawpixelinfo* dpi)
     rct_widget* spinnerWidget = &window_new_campaign_widgets[WIDX_WEEKS_SPINNER];
     gfx_draw_string_left(
         dpi, w->campaign.no_weeks == 1 ? STR_MARKETING_1_WEEK : STR_X_WEEKS, &w->campaign.no_weeks, w->colours[0],
-        w->windowPos.x + spinnerWidget->left + 1, w->windowPos.y + spinnerWidget->top);
+        w->windowPos + ScreenCoordsXY{ spinnerWidget->left + 1, spinnerWidget->top });
 
-    x = w->windowPos.x + 14;
-    y = w->windowPos.y + 60;
+    screenCoords = w->windowPos + ScreenCoordsXY{ 14, 60 };
 
     // Price per week
     money32 pricePerWeek = AdvertisingCampaignPricePerWeek[w->campaign.campaign_type];
-    gfx_draw_string_left(dpi, STR_MARKETING_COST_PER_WEEK, &pricePerWeek, COLOUR_BLACK, x, y);
-    y += 13;
+    gfx_draw_string_left(dpi, STR_MARKETING_COST_PER_WEEK, &pricePerWeek, COLOUR_BLACK, screenCoords);
+    screenCoords.y += 13;
 
     // Total price
     money32 totalPrice = AdvertisingCampaignPricePerWeek[w->campaign.campaign_type] * w->campaign.no_weeks;
-    gfx_draw_string_left(dpi, STR_MARKETING_TOTAL_COST, &totalPrice, COLOUR_BLACK, x, y);
+    gfx_draw_string_left(dpi, STR_MARKETING_TOTAL_COST, &totalPrice, COLOUR_BLACK, screenCoords);
 }
 
 void WindowCampaignRefreshRides()

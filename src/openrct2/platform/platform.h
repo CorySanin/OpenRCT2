@@ -88,11 +88,8 @@ void platform_toggle_windowed_mode();
 void platform_refresh_video(bool recreate_window);
 void platform_get_date_utc(rct2_date* out_date);
 void platform_get_time_utc(rct2_time* out_time);
-void platform_get_date_local(rct2_date* out_date);
-void platform_get_time_local(rct2_time* out_time);
 
 // Platform specific definitions
-bool platform_file_exists(const utf8* path);
 bool platform_directory_exists(const utf8* path);
 bool platform_original_game_data_exists(const utf8* path);
 time_t platform_file_get_modified_time(const utf8* path);
@@ -151,7 +148,6 @@ void core_init();
 #    undef CreateWindow
 #    undef GetMessage
 
-void platform_setup_file_associations();
 void platform_remove_file_associations();
 bool platform_setup_uri_protocol();
 // This function cannot be marked as 'static', even though it may seem to be,

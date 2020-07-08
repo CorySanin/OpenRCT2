@@ -355,7 +355,7 @@ void ride_update_favourited_stat()
     for (auto& ride : GetRideManager())
         ride.guests_favourite = 0;
 
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
         if (peep->FavouriteRide != RIDE_ID_NULL)
         {
@@ -942,14 +942,18 @@ static int32_t ride_check_if_construction_allowed(Ride* ride)
     }
     if (ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN)
     {
-        ride->FormatNameTo(gCommonFormatArgs + 6);
+        auto ft = Formatter::Common();
+        ft.Increment(6);
+        ride->FormatNameTo(ft);
         context_show_error(STR_CANT_START_CONSTRUCTION_ON, STR_HAS_BROKEN_DOWN_AND_REQUIRES_FIXING);
         return 0;
     }
 
     if (ride->status != RIDE_STATUS_CLOSED && ride->status != RIDE_STATUS_SIMULATING)
     {
-        ride->FormatNameTo(gCommonFormatArgs + 6);
+        auto ft = Formatter::Common();
+        ft.Increment(6);
+        ride->FormatNameTo(ft);
         context_show_error(STR_CANT_START_CONSTRUCTION_ON, STR_MUST_BE_CLOSED_FIRST);
         return 0;
     }
@@ -1095,7 +1099,7 @@ void ride_remove_peeps(Ride* ride)
     }
 
     // Place all the peeps at exit
-    for (auto peep : EntityList<Peep>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Peep>(EntityListId::Peep))
     {
         if (peep->State == PEEP_STATE_QUEUING_FRONT || peep->State == PEEP_STATE_ENTERING_RIDE
             || peep->State == PEEP_STATE_LEAVING_RIDE || peep->State == PEEP_STATE_ON_RIDE)
@@ -1807,7 +1811,9 @@ bool ride_modify(CoordsXYE* input)
 
     if (ride->lifecycle_flags & RIDE_LIFECYCLE_INDESTRUCTIBLE)
     {
-        ride->FormatNameTo(gCommonFormatArgs + 6);
+        auto ft = Formatter::Common();
+        ft.Increment(6);
+        ride->FormatNameTo(ft);
         context_show_error(
             STR_CANT_START_CONSTRUCTION_ON, STR_LOCAL_AUTHORITY_FORBIDS_DEMOLITION_OR_MODIFICATIONS_TO_THIS_RIDE);
         return false;
@@ -2516,7 +2522,8 @@ void ride_prepare_breakdown(Ride* ride, int32_t breakdownReason)
  */
 void ride_breakdown_add_news_item(Ride* ride)
 {
-    ride->FormatNameTo(gCommonFormatArgs);
+    auto ft = Formatter::Common();
+    ride->FormatNameTo(ft);
     if (gConfigNotifications.ride_broken_down)
     {
         news_item_add_to_queue(NEWS_ITEM_RIDE, STR_RIDE_IS_BROKEN_DOWN, ride->id);
@@ -2542,7 +2549,8 @@ static void ride_breakdown_status_update(Ride* ride)
         if (!(ride->not_fixed_timeout & 15) && ride->mechanic_status != RIDE_MECHANIC_STATUS_FIXING
             && ride->mechanic_status != RIDE_MECHANIC_STATUS_HAS_FIXED_STATION_BRAKES)
         {
-            ride->FormatNameTo(gCommonFormatArgs);
+            auto ft = Formatter::Common();
+            ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
                 news_item_add_to_queue(NEWS_ITEM_RIDE, STR_RIDE_IS_STILL_NOT_FIXED, ride->id);
@@ -2683,7 +2691,7 @@ Peep* find_closest_mechanic(int32_t x, int32_t y, int32_t forInspection)
     Peep* closestMechanic = nullptr;
     uint32_t closestDistance = std::numeric_limits<uint32_t>::max();
 
-    for (auto peep : EntityList<Staff>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Staff>(EntityListId::Peep))
     {
         if (peep->StaffType != STAFF_TYPE_MECHANIC)
             continue;
@@ -3192,7 +3200,8 @@ static void ride_entrance_exit_connected(Ride* ride)
         if (!entrance.isNull() && !ride_entrance_exit_is_reachable(entrance))
         {
             // name of ride is parameter of the format string
-            ride->FormatNameTo(gCommonFormatArgs);
+            auto ft = Formatter::Common();
+            ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
                 news_item_add_to_queue(1, STR_ENTRANCE_NOT_CONNECTED, ride->id);
@@ -3203,7 +3212,8 @@ static void ride_entrance_exit_connected(Ride* ride)
         if (!exit.isNull() && !ride_entrance_exit_is_reachable(exit))
         {
             // name of ride is parameter of the format string
-            ride->FormatNameTo(gCommonFormatArgs);
+            auto ft = Formatter::Common();
+            ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
                 news_item_add_to_queue(1, STR_EXIT_NOT_CONNECTED, ride->id);
@@ -3278,7 +3288,8 @@ static void ride_shop_connected(Ride* ride)
     }
 
     // Name of ride is parameter of the format string
-    ride->FormatNameTo(gCommonFormatArgs);
+    auto ft = Formatter::Common();
+    ride->FormatNameTo(ft);
     if (gConfigNotifications.ride_warnings)
     {
         news_item_add_to_queue(1, STR_ENTRANCE_NOT_CONNECTED, ride->id);
@@ -4288,8 +4299,8 @@ static void ride_set_start_finish_points(ride_id_t rideIndex, CoordsXYE* startEl
  */
 static int32_t count_free_misc_sprite_slots()
 {
-    int32_t miscSpriteCount = gSpriteListCount[SPRITE_LIST_MISC];
-    int32_t remainingSpriteCount = gSpriteListCount[SPRITE_LIST_FREE];
+    int32_t miscSpriteCount = GetEntityListCount(EntityListId::Misc);
+    int32_t remainingSpriteCount = GetEntityListCount(EntityListId::Free);
     return std::max(0, miscSpriteCount + remainingSpriteCount - 300);
 }
 
@@ -4331,7 +4342,7 @@ static Vehicle* vehicle_create_car(
         return nullptr;
 
     auto vehicleEntry = &rideEntry->vehicles[vehicleEntryIndex];
-    auto vehicle = &create_sprite(SPRITE_IDENTIFIER_VEHICLE, carIndex == 0 ? SPRITE_LIST_TRAIN_HEAD : SPRITE_LIST_VEHICLE)
+    auto vehicle = &create_sprite(SPRITE_IDENTIFIER_VEHICLE, carIndex == 0 ? EntityListId::TrainHead : EntityListId::Vehicle)
                         ->vehicle;
     if (vehicle == nullptr)
         return nullptr;
@@ -5478,7 +5489,7 @@ int32_t ride_get_refund_price(const Ride* ride)
  */
 void Ride::StopGuestsQueuing()
 {
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
         if (peep->State != PEEP_STATE_QUEUING)
             continue;
@@ -5516,13 +5527,14 @@ static bool ride_with_colour_config_exists(uint8_t ride_type, const TrackColour*
 bool Ride::NameExists(const std::string_view& name, ride_id_t excludeRideId)
 {
     char buffer[256]{};
-    uint32_t formatArgs[32]{};
+    uint8_t formatArgs[32]{};
 
     for (auto& ride : GetRideManager())
     {
         if (ride.id != excludeRideId)
         {
-            ride.FormatNameTo(formatArgs);
+            Formatter ft(formatArgs);
+            ride.FormatNameTo(ft);
             format_string(buffer, 256, STR_STRINGID, formatArgs);
             if (std::string_view(buffer) == name && ride_has_any_track_elements(&ride))
             {
@@ -5539,12 +5551,12 @@ bool Ride::NameExists(const std::string_view& name, ride_id_t excludeRideId)
  */
 int32_t ride_get_random_colour_preset_index(uint8_t ride_type)
 {
-    if (ride_type >= std::size(RideColourPresets))
+    if (ride_type >= std::size(RideTypeDescriptors))
     {
         return 0;
     }
 
-    const track_colour_preset_list* colourPresets = &RideColourPresets[ride_type];
+    const track_colour_preset_list* colourPresets = &RideTypeDescriptors[ride_type].ColourPresets;
 
     // 200 attempts to find a colour preset that hasn't already been used in the park for this ride type
     for (int32_t i = 0; i < 200; i++)
@@ -5566,7 +5578,7 @@ int32_t ride_get_random_colour_preset_index(uint8_t ride_type)
  */
 void Ride::SetColourPreset(uint8_t index)
 {
-    const track_colour_preset_list* colourPresets = &RideColourPresets[type];
+    const track_colour_preset_list* colourPresets = &RideTypeDescriptors[type].ColourPresets;
     TrackColour colours = { COLOUR_BLACK, COLOUR_BLACK, COLOUR_BLACK };
     // Stalls save their default colour in the vehicle settings (since they share a common ride type)
     if (!IsRide())
@@ -5615,7 +5627,8 @@ void Ride::SetNameToDefault()
     do
     {
         default_name_number++;
-        FormatNameTo(rideNameArgs);
+        Formatter ft(rideNameArgs);
+        FormatNameTo(ft);
         format_string(rideNameBuffer, 256, STR_STRINGID, &rideNameArgs);
     } while (Ride::NameExists(rideNameBuffer, id));
 }
@@ -5934,7 +5947,7 @@ void set_vehicle_type_image_max_sizes(rct_ride_entry_vehicle* vehicle_type, int3
 
     for (int32_t i = 0; i < num_images; ++i)
     {
-        gfx_draw_sprite_software(&dpi, ImageId::FromUInt32(vehicle_type->base_image_id + i), 0, 0);
+        gfx_draw_sprite_software(&dpi, ImageId::FromUInt32(vehicle_type->base_image_id + i), { 0, 0 });
     }
     int32_t al = -1;
     for (int32_t i = 99; i != 0; --i)
@@ -7087,7 +7100,8 @@ void Ride::Crash(uint8_t vehicleIndex)
         }
     }
 
-    FormatNameTo(gCommonFormatArgs);
+    auto ft = Formatter::Common();
+    FormatNameTo(ft);
     if (gConfigNotifications.ride_crashed)
     {
         news_item_add_to_queue(NEWS_ITEM_RIDE, STR_RIDE_HAS_CRASHED, id);
@@ -7315,105 +7329,6 @@ bool ride_has_station_shelter(Ride* ride)
 bool ride_has_ratings(const Ride* ride)
 {
     return ride->excitement != RIDE_RATING_UNDEFINED;
-}
-
-const char* ride_type_get_enum_name(int32_t rideType)
-{
-    static constexpr const char* RideTypeEnumNames[RIDE_TYPE_COUNT] = {
-        nameof(RIDE_TYPE_SPIRAL_ROLLER_COASTER),
-        nameof(RIDE_TYPE_STAND_UP_ROLLER_COASTER),
-        nameof(RIDE_TYPE_SUSPENDED_SWINGING_COASTER),
-        nameof(RIDE_TYPE_INVERTED_ROLLER_COASTER),
-        nameof(RIDE_TYPE_JUNIOR_ROLLER_COASTER),
-        nameof(RIDE_TYPE_MINIATURE_RAILWAY),
-        nameof(RIDE_TYPE_MONORAIL),
-        nameof(RIDE_TYPE_MINI_SUSPENDED_COASTER),
-        nameof(RIDE_TYPE_BOAT_HIRE),
-        nameof(RIDE_TYPE_WOODEN_WILD_MOUSE),
-        nameof(RIDE_TYPE_STEEPLECHASE),
-        nameof(RIDE_TYPE_CAR_RIDE),
-        nameof(RIDE_TYPE_LAUNCHED_FREEFALL),
-        nameof(RIDE_TYPE_BOBSLEIGH_COASTER),
-        nameof(RIDE_TYPE_OBSERVATION_TOWER),
-        nameof(RIDE_TYPE_LOOPING_ROLLER_COASTER),
-        nameof(RIDE_TYPE_DINGHY_SLIDE),
-        nameof(RIDE_TYPE_MINE_TRAIN_COASTER),
-        nameof(RIDE_TYPE_CHAIRLIFT),
-        nameof(RIDE_TYPE_CORKSCREW_ROLLER_COASTER),
-        nameof(RIDE_TYPE_MAZE),
-        nameof(RIDE_TYPE_SPIRAL_SLIDE),
-        nameof(RIDE_TYPE_GO_KARTS),
-        nameof(RIDE_TYPE_LOG_FLUME),
-        nameof(RIDE_TYPE_RIVER_RAPIDS),
-        nameof(RIDE_TYPE_DODGEMS),
-        nameof(RIDE_TYPE_SWINGING_SHIP),
-        nameof(RIDE_TYPE_SWINGING_INVERTER_SHIP),
-        nameof(RIDE_TYPE_FOOD_STALL),
-        nameof(RIDE_TYPE_1D),
-        nameof(RIDE_TYPE_DRINK_STALL),
-        nameof(RIDE_TYPE_1F),
-        nameof(RIDE_TYPE_SHOP),
-        nameof(RIDE_TYPE_MERRY_GO_ROUND),
-        nameof(RIDE_TYPE_22),
-        nameof(RIDE_TYPE_INFORMATION_KIOSK),
-        nameof(RIDE_TYPE_TOILETS),
-        nameof(RIDE_TYPE_FERRIS_WHEEL),
-        nameof(RIDE_TYPE_MOTION_SIMULATOR),
-        nameof(RIDE_TYPE_3D_CINEMA),
-        nameof(RIDE_TYPE_TOP_SPIN),
-        nameof(RIDE_TYPE_SPACE_RINGS),
-        nameof(RIDE_TYPE_REVERSE_FREEFALL_COASTER),
-        nameof(RIDE_TYPE_LIFT),
-        nameof(RIDE_TYPE_VERTICAL_DROP_ROLLER_COASTER),
-        nameof(RIDE_TYPE_CASH_MACHINE),
-        nameof(RIDE_TYPE_TWIST),
-        nameof(RIDE_TYPE_HAUNTED_HOUSE),
-        nameof(RIDE_TYPE_FIRST_AID),
-        nameof(RIDE_TYPE_CIRCUS),
-        nameof(RIDE_TYPE_GHOST_TRAIN),
-        nameof(RIDE_TYPE_TWISTER_ROLLER_COASTER),
-        nameof(RIDE_TYPE_WOODEN_ROLLER_COASTER),
-        nameof(RIDE_TYPE_SIDE_FRICTION_ROLLER_COASTER),
-        nameof(RIDE_TYPE_STEEL_WILD_MOUSE),
-        nameof(RIDE_TYPE_MULTI_DIMENSION_ROLLER_COASTER),
-        nameof(RIDE_TYPE_MULTI_DIMENSION_ROLLER_COASTER_ALT),
-        nameof(RIDE_TYPE_FLYING_ROLLER_COASTER),
-        nameof(RIDE_TYPE_FLYING_ROLLER_COASTER_ALT),
-        nameof(RIDE_TYPE_VIRGINIA_REEL),
-        nameof(RIDE_TYPE_SPLASH_BOATS),
-        nameof(RIDE_TYPE_MINI_HELICOPTERS),
-        nameof(RIDE_TYPE_LAY_DOWN_ROLLER_COASTER),
-        nameof(RIDE_TYPE_SUSPENDED_MONORAIL),
-        nameof(RIDE_TYPE_LAY_DOWN_ROLLER_COASTER_ALT),
-        nameof(RIDE_TYPE_REVERSER_ROLLER_COASTER),
-        nameof(RIDE_TYPE_HEARTLINE_TWISTER_COASTER),
-        nameof(RIDE_TYPE_MINI_GOLF),
-        nameof(RIDE_TYPE_GIGA_COASTER),
-        nameof(RIDE_TYPE_ROTO_DROP),
-        nameof(RIDE_TYPE_FLYING_SAUCERS),
-        nameof(RIDE_TYPE_CROOKED_HOUSE),
-        nameof(RIDE_TYPE_MONORAIL_CYCLES),
-        nameof(RIDE_TYPE_COMPACT_INVERTED_COASTER),
-        nameof(RIDE_TYPE_WATER_COASTER),
-        nameof(RIDE_TYPE_AIR_POWERED_VERTICAL_COASTER),
-        nameof(RIDE_TYPE_INVERTED_HAIRPIN_COASTER),
-        nameof(RIDE_TYPE_MAGIC_CARPET),
-        nameof(RIDE_TYPE_SUBMARINE_RIDE),
-        nameof(RIDE_TYPE_RIVER_RAFTS),
-        nameof(RIDE_TYPE_50),
-        nameof(RIDE_TYPE_ENTERPRISE),
-        nameof(RIDE_TYPE_52),
-        nameof(RIDE_TYPE_53),
-        nameof(RIDE_TYPE_54),
-        nameof(RIDE_TYPE_55),
-        nameof(RIDE_TYPE_INVERTED_IMPULSE_COASTER),
-        nameof(RIDE_TYPE_MINI_ROLLER_COASTER),
-        nameof(RIDE_TYPE_MINE_RIDE),
-        nameof(RIDE_TYPE_59),
-        nameof(RIDE_TYPE_LIM_LAUNCHED_ROLLER_COASTER),
-    };
-
-    return RideTypeEnumNames[rideType];
 }
 
 /**
@@ -7709,24 +7624,19 @@ void ride_clear_leftover_entrances(Ride* ride)
 std::string Ride::GetName() const
 {
     uint8_t args[32]{};
-    FormatNameTo(args);
+
+    Formatter ft(args);
+    FormatNameTo(ft);
     return format_string(STR_STRINGID, args);
 }
 
 void Ride::FormatNameTo(Formatter& ft) const
 {
-    ft.Increment(FormatNameTo(ft.Buf()));
-}
-
-size_t Ride::FormatNameTo(void* argsV) const
-{
-    Formatter ft(static_cast<uint8_t*>(argsV));
     if (!custom_name.empty())
     {
         auto str = custom_name.c_str();
         ft.Add<rct_string_id>(STR_STRING);
         ft.Add<void*>(str);
-        return ft.NumBytes();
     }
     else
     {
@@ -7752,7 +7662,6 @@ size_t Ride::FormatNameTo(void* argsV) const
             }
         }
         ft.Add<rct_string_id>(1).Add<rct_string_id>(rideTypeName).Add<uint16_t>(default_name_number);
-        return ft.NumBytes();
     }
 }
 

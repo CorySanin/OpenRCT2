@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -32,16 +33,25 @@ constexpr const RideTypeDescriptor DodgemsRTD =
     SET_FIELD(OperatingSettings, { 20, 180, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_DODGEMS, STR_RIDE_DESCRIPTION_DODGEMS }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CAR, RIDE_COMPONENT_TYPE_BUILDING, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_DODGEMS)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT)),
     SET_FIELD(Heights, { 9, 48, 2, 2, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_dodgems),
     SET_FIELD(RatingsMultipliers, { 40, 20, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 1, 0, 5, 0, 0 }),
     SET_FIELD(BuildCosts, { 55, 2, 1, }),
     SET_FIELD(DefaultPrices, { 15, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_DODGEMS_BEAT),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 35)
+    SET_FIELD(BonusValue, 35),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BRIGHT_RED, COLOUR_SATURATED_BROWN, COLOUR_SATURATED_BROWN },
+        { COLOUR_LIGHT_BLUE, COLOUR_GREY, COLOUR_GREY },
+        { COLOUR_DARK_GREEN, COLOUR_BLACK, COLOUR_DARK_GREEN },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_DODGEMS_TRACK, SPR_RIDE_DESIGN_PREVIEW_DODGEMS_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

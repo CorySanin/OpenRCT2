@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -32,16 +33,23 @@ constexpr const RideTypeDescriptor CrookedHouseRTD =
     SET_FIELD(OperatingSettings, { 0, 0, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_CROOKED_HOUSE, STR_RIDE_DESCRIPTION_CROOKED_HOUSE }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_BUILDING, RIDE_COMPONENT_TYPE_STRUCTURE, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_CROOKED_HOUSE)),
     SET_FIELD(AvailableBreakdowns, 0),
     SET_FIELD(Heights, { 16, 96, 3, 2, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_crooked_house),
     SET_FIELD(RatingsMultipliers, { 15, 8, 0 }),
     SET_FIELD(UpkeepCosts, { 30, 1, 0, 0, 0, 0 }),
     SET_FIELD(BuildCosts, { 65, 2, 1, }),
     SET_FIELD(DefaultPrices, { 10, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_GENTLE),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 22)
+    SET_FIELD(BonusValue, 22),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BRIGHT_RED, COLOUR_BLACK, COLOUR_GREY },
+    )),
+    SET_FIELD(ColourPreview, { 0, 0 }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

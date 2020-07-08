@@ -38,7 +38,7 @@
 #include "object/ObjectList.h"
 #include "peep/Peep.h"
 #include "peep/Staff.h"
-#include "platform/platform.h"
+#include "platform/Platform2.h"
 #include "rct1/RCT1.h"
 #include "ride/Ride.h"
 #include "ride/RideRatings.h"
@@ -434,7 +434,7 @@ void game_fix_save_vars()
     // Recalculates peep count after loading a save to fix corrupted files
     uint32_t guestCount = 0;
     {
-        for (auto guest : EntityList<Guest>(SPRITE_LIST_PEEP))
+        for (auto guest : EntityList<Guest>(EntityListId::Peep))
         {
             if (!guest->OutsideOfPark)
             {
@@ -449,12 +449,12 @@ void game_fix_save_vars()
     std::vector<Peep*> peepsToRemove;
 
     // Fix possibly invalid field values
-    for (auto peep : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Guest>(EntityListId::Peep))
     {
         if (peep->CurrentRideStation >= MAX_STATIONS)
         {
-            const uint8_t srcStation = peep->CurrentRideStation;
-            const uint8_t rideIdx = peep->CurrentRide;
+            const auto srcStation = peep->CurrentRideStation;
+            const auto rideIdx = peep->CurrentRide;
             if (rideIdx == RIDE_ID_NULL)
             {
                 continue;
@@ -618,7 +618,7 @@ void reset_all_sprite_quadrant_placements()
     for (size_t i = 0; i < MAX_SPRITES; i++)
     {
         auto* spr = GetEntity(i);
-        if (spr->sprite_identifier != SPRITE_IDENTIFIER_NULL)
+        if (spr != nullptr && spr->sprite_identifier != SPRITE_IDENTIFIER_NULL)
         {
             spr->MoveTo({ spr->x, spr->y, spr->z });
         }
@@ -684,20 +684,12 @@ void save_game_as()
     delete intent;
 }
 
-static int32_t compare_autosave_file_paths(const void* a, const void* b)
-{
-    return strcmp(static_cast<const char*>(a), static_cast<const char*>(b));
-}
-
 static void limit_autosave_count(const size_t numberOfFilesToKeep, bool processLandscapeFolder)
 {
     size_t autosavesCount = 0;
     size_t numAutosavesToDelete = 0;
 
     utf8 filter[MAX_PATH];
-
-    utf8** autosaveFiles = nullptr;
-
     if (processLandscapeFolder)
     {
         platform_get_user_directory(filter, "landscape", sizeof(filter));
@@ -726,47 +718,39 @@ static void limit_autosave_count(const size_t numberOfFilesToKeep, bool processL
         return;
     }
 
-    autosaveFiles = static_cast<utf8**>(malloc(sizeof(utf8*) * autosavesCount));
-
+    auto autosaveFiles = std::vector<std::string>(autosavesCount);
     {
         auto scanner = std::unique_ptr<IFileScanner>(Path::ScanDirectory(filter, false));
         for (size_t i = 0; i < autosavesCount; i++)
         {
-            autosaveFiles[i] = static_cast<utf8*>(malloc(sizeof(utf8) * MAX_PATH));
-            std::memset(autosaveFiles[i], 0, sizeof(utf8) * MAX_PATH);
-
+            autosaveFiles[i].resize(MAX_PATH, 0);
             if (scanner->Next())
             {
                 if (processLandscapeFolder)
                 {
-                    platform_get_user_directory(autosaveFiles[i], "landscape", sizeof(utf8) * MAX_PATH);
+                    platform_get_user_directory(autosaveFiles[i].data(), "landscape", sizeof(utf8) * MAX_PATH);
                 }
                 else
                 {
-                    platform_get_user_directory(autosaveFiles[i], "save", sizeof(utf8) * MAX_PATH);
+                    platform_get_user_directory(autosaveFiles[i].data(), "save", sizeof(utf8) * MAX_PATH);
                 }
-                safe_strcat_path(autosaveFiles[i], "autosave", sizeof(utf8) * MAX_PATH);
-                safe_strcat_path(autosaveFiles[i], scanner->GetPathRelative(), sizeof(utf8) * MAX_PATH);
+                safe_strcat_path(autosaveFiles[i].data(), "autosave", sizeof(utf8) * MAX_PATH);
+                safe_strcat_path(autosaveFiles[i].data(), scanner->GetPathRelative(), sizeof(utf8) * MAX_PATH);
             }
         }
     }
 
-    qsort(autosaveFiles, autosavesCount, sizeof(char*), compare_autosave_file_paths);
+    std::sort(autosaveFiles.begin(), autosaveFiles.end(), [](const auto& saveFile0, const auto& saveFile1) {
+        return saveFile0.compare(saveFile1) < 0;
+    });
 
     // Calculate how many saves we need to delete.
     numAutosavesToDelete = autosavesCount - numberOfFilesToKeep;
 
     for (size_t i = 0; numAutosavesToDelete > 0; i++, numAutosavesToDelete--)
     {
-        platform_file_delete(autosaveFiles[i]);
+        platform_file_delete(autosaveFiles[i].data());
     }
-
-    for (size_t i = 0; i < autosavesCount; i++)
-    {
-        free(autosaveFiles[i]);
-    }
-
-    free(autosaveFiles);
 }
 
 void game_autosave()
@@ -782,10 +766,8 @@ void game_autosave()
     }
 
     // Retrieve current time
-    rct2_date currentDate;
-    platform_get_date_local(&currentDate);
-    rct2_time currentTime;
-    platform_get_time_local(&currentTime);
+    auto currentDate = Platform::GetDateLocal();
+    auto currentTime = Platform::GetTimeLocal();
 
     utf8 timeName[44];
     snprintf(
@@ -806,7 +788,7 @@ void game_autosave()
     safe_strcat(backupPath, fileExtension, sizeof(backupPath));
     safe_strcat(backupPath, ".bak", sizeof(backupPath));
 
-    if (platform_file_exists(path))
+    if (Platform::FileExists(path))
     {
         platform_file_copy(path, backupPath, true);
     }

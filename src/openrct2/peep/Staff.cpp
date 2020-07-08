@@ -156,7 +156,7 @@ void staff_update_greyed_patrol_areas()
             gStaffPatrolAreas[staffPatrolOffset + i] = 0;
         }
 
-        for (auto peep : EntityList<Staff>(SPRITE_LIST_PEEP))
+        for (auto peep : EntityList<Staff>(EntityListId::Peep))
         {
             if (peep->StaffType == staff_type)
             {
@@ -187,7 +187,7 @@ bool Staff::IsLocationInPatrol(const CoordsXY& loc) const
     return IsPatrolAreaSet(loc);
 }
 
-bool staff_is_location_on_patrol_edge(Peep* mechanic, int32_t x, int32_t y)
+bool staff_is_location_on_patrol_edge(Peep* mechanic, const CoordsXY& loc)
 {
     // Check whether the location x,y is inside and on the edge of the
     // patrol zone for mechanic.
@@ -195,15 +195,14 @@ bool staff_is_location_on_patrol_edge(Peep* mechanic, int32_t x, int32_t y)
     int32_t neighbourDir = 0;
     while (!onZoneEdge && neighbourDir <= 7)
     {
-        int32_t neighbourX = x + CoordsDirectionDelta[neighbourDir].x;
-        int32_t neighbourY = y + CoordsDirectionDelta[neighbourDir].y;
-        onZoneEdge = !mechanic->AsStaff()->IsLocationInPatrol({ neighbourX, neighbourY });
+        auto neighbourPos = loc + CoordsDirectionDelta[neighbourDir];
+        onZoneEdge = !mechanic->AsStaff()->IsLocationInPatrol(neighbourPos);
         neighbourDir++;
     }
     return onZoneEdge;
 }
 
-bool staff_can_ignore_wide_flag(Peep* staff, int32_t x, int32_t y, uint8_t z, TileElement* path)
+bool staff_can_ignore_wide_flag(Peep* staff, const CoordsXYZ& staffPos, TileElement* path)
 {
     /* Wide flags can potentially wall off parts of a staff patrol zone
      * for the heuristic search.
@@ -229,7 +228,7 @@ bool staff_can_ignore_wide_flag(Peep* staff, int32_t x, int32_t y, uint8_t z, Ti
     if (staff->AssignedPeepType != PEEP_TYPE_STAFF)
         return false;
 
-    if (!staff_is_location_on_patrol_edge(staff, x, y))
+    if (!staff_is_location_on_patrol_edge(staff, staffPos))
     {
         return false;
     }
@@ -241,16 +240,14 @@ bool staff_can_ignore_wide_flag(Peep* staff, int32_t x, int32_t y, uint8_t z, Ti
     uint8_t widecount = 0;
     for (Direction adjac_dir : ALL_DIRECTIONS)
     {
-        int32_t adjac_x = x + CoordsDirectionDelta[adjac_dir].x;
-        int32_t adjac_y = y + CoordsDirectionDelta[adjac_dir].y;
-        uint8_t adjac_z = z;
+        auto adjacPos = staffPos + CoordsXYZ{ CoordsDirectionDelta[adjac_dir].x, CoordsDirectionDelta[adjac_dir].y, 0 };
 
         /* Ignore adjacent tiles outside the patrol zone. */
-        if (!staff->AsStaff()->IsLocationInPatrol({ adjac_x, adjac_y }))
+        if (!staff->AsStaff()->IsLocationInPatrol(adjacPos))
             continue;
 
         /* Ignore adjacent tiles on the patrol zone edge. */
-        if (staff_is_location_on_patrol_edge(staff, adjac_x, adjac_y))
+        if (staff_is_location_on_patrol_edge(staff, adjacPos))
             continue;
 
         /* Adjacent tile is inside the patrol zone but not on the
@@ -267,12 +264,12 @@ bool staff_can_ignore_wide_flag(Peep* staff, int32_t x, int32_t y, uint8_t z, Ti
         {
             if (path->AsPath()->GetSlopeDirection() == adjac_dir)
             {
-                adjac_z = z + 2;
+                adjacPos.z += PATH_HEIGHT_STEP;
             }
         }
 
         /* Search through all adjacent map elements */
-        TileElement* test_element = map_get_first_element_at({ adjac_x, adjac_y });
+        TileElement* test_element = map_get_first_element_at(adjacPos);
         if (test_element == nullptr)
             return false;
         bool pathfound = false;
@@ -285,7 +282,7 @@ bool staff_can_ignore_wide_flag(Peep* staff, int32_t x, int32_t y, uint8_t z, Ti
             }
 
             /* test_element is a path */
-            if (!is_valid_path_z_and_direction(test_element, adjac_z, adjac_dir))
+            if (!is_valid_path_z_and_direction(test_element, adjacPos.z / COORDS_Z_STEP, adjac_dir))
                 continue;
 
             /* test_element is a connected path */
@@ -364,7 +361,7 @@ static uint8_t staff_get_valid_patrol_directions(Staff* staff, const CoordsXY& l
  */
 void staff_reset_stats()
 {
-    for (auto peep : EntityList<Staff>(SPRITE_LIST_PEEP))
+    for (auto peep : EntityList<Staff>(EntityListId::Peep))
     {
         peep->TimeInPark = gDateMonthsElapsed;
         peep->StaffLawnsMown = 0;
@@ -443,7 +440,7 @@ static uint8_t staff_handyman_direction_to_nearest_litter(Peep* peep)
 {
     uint16_t nearestLitterDist = 0xFFFF;
     Litter* nearestLitter = nullptr;
-    for (auto litter : EntityList<Litter>(SPRITE_LIST_LITTER))
+    for (auto litter : EntityList<Litter>(EntityListId::Litter))
     {
         uint16_t distance = abs(litter->x - peep->x) + abs(litter->y - peep->y) + abs(litter->z - peep->z) * 4;
 
@@ -1014,7 +1011,7 @@ bool Staff::DoMiscPathFinding()
  */
 static void staff_entertainer_update_nearby_peeps(Peep* peep)
 {
-    for (auto guest : EntityList<Guest>(SPRITE_LIST_PEEP))
+    for (auto guest : EntityList<Guest>(EntityListId::Peep))
     {
         if (guest->x == LOCATION_NULL)
             continue;
@@ -1386,7 +1383,7 @@ void Staff::UpdateSweeping()
     if (Action == PEEP_ACTION_STAFF_SWEEP && ActionFrame == 8)
     {
         // Remove sick at this location
-        litter_remove_at(x, y, z);
+        litter_remove_at({ x, y, z });
         StaffLitterSwept++;
         WindowInvalidateFlags |= PEEP_INVALIDATE_STAFF_STATS;
     }

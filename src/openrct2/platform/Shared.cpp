@@ -20,13 +20,14 @@
 #include "../Game.h"
 #include "../OpenRCT2.h"
 #include "../config/Config.h"
+#include "../core/FileSystem.hpp"
 #include "../drawing/Drawing.h"
 #include "../drawing/LightFX.h"
 #include "../localisation/Currency.h"
 #include "../localisation/Localisation.h"
 #include "../util/Util.h"
 #include "../world/Climate.h"
-#include "platform.h"
+#include "Platform2.h"
 
 #include <algorithm>
 #include <stdlib.h>
@@ -63,6 +64,40 @@ char* strndup(const char* src, size_t size)
 static uint32_t _frequency = 0;
 static LARGE_INTEGER _entryTimestamp;
 #endif // _WIN32
+
+namespace Platform
+{
+    rct2_date GetDateLocal()
+    {
+        auto time = std::time(nullptr);
+        auto localTime = std::localtime(&time);
+
+        rct2_date outDate;
+        outDate.day = localTime->tm_mday;
+        outDate.day_of_week = localTime->tm_wday;
+        outDate.month = localTime->tm_mon;
+        outDate.year = localTime->tm_year;
+        return outDate;
+    }
+
+    rct2_time GetTimeLocal()
+    {
+        auto time = std::time(nullptr);
+        auto localTime = std::localtime(&time);
+
+        rct2_time outTime;
+        outTime.hour = localTime->tm_hour;
+        outTime.minute = localTime->tm_min;
+        outTime.second = localTime->tm_sec;
+        return outTime;
+    }
+
+    bool FileExists(const std::string path)
+    {
+        fs::path file = path;
+        return fs::exists(file);
+    }
+} // namespace Platform
 
 using update_palette_func = void (*)(const uint8_t*, int32_t, int32_t);
 

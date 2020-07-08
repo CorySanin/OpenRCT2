@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -33,17 +34,26 @@ constexpr const RideTypeDescriptor FlyingRollerCoasterRTD =
     SET_FIELD(OperatingSettings, { 10, 27, 30, 25, 25, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_FLYING_ROLLER_COASTER, STR_RIDE_DESCRIPTION_FLYING_ROLLER_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_FLYING_ROLLER_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 30, 24, 8, 11, }),
     SET_FIELD(MaxMass, 35),
     SET_FIELD(LiftData, { SoundId::LiftBM, 4, 6 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_flying_roller_coaster),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 49, 20, 90, 11, 3, 15 }),
     SET_FIELD(BuildCosts, { 125, 5, 50, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_ROCK),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO2),
-    SET_FIELD(BonusValue, 100)
+    SET_FIELD(BonusValue, 100),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_OLIVE_GREEN, COLOUR_OLIVE_GREEN, COLOUR_TEAL },
+        { COLOUR_TEAL, COLOUR_TEAL, COLOUR_BORDEAUX_RED },
+        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_DARK_PURPLE },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_FLYING_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_FLYING_ROLLER_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 
 // Inverted variant
@@ -64,16 +74,25 @@ constexpr const RideTypeDescriptor FlyingRollerCoasterAltRTD =
     SET_FIELD(OperatingSettings, { 10, 27, 30, 25, 25, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_3A, STR_RIDE_DESCRIPTION_UNKNOWN }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_FLYING_ROLLER_COASTER_ALT)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 30, 24, 8, 11, }),
     SET_FIELD(MaxMass, 35),
     SET_FIELD(LiftData, { SoundId::LiftBM, 4, 6 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_flying_roller_coaster),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 49, 20, 90, 11, 3, 15 }),
     SET_FIELD(BuildCosts, { 125, 5, 50, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_ROCK),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO2),
-    SET_FIELD(BonusValue, 100)
+    SET_FIELD(BonusValue, 100),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_OLIVE_GREEN, COLOUR_OLIVE_GREEN, COLOUR_TEAL },
+        { COLOUR_TEAL, COLOUR_TEAL, COLOUR_BORDEAUX_RED },
+        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_DARK_PURPLE },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_FLYING_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_FLYING_ROLLER_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

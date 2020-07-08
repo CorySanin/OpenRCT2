@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -33,16 +34,24 @@ constexpr const RideTypeDescriptor FlyingSaucersRTD =
     SET_FIELD(OperatingSettings, { 20, 180, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_FLYING_SAUCERS, STR_RIDE_DESCRIPTION_FLYING_SAUCERS }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CAR, RIDE_COMPONENT_TYPE_BUILDING, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_FLYING_SAUCERS)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT)),
     SET_FIELD(Heights, { 9, 48, 2, 2, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_flying_saucers),
     SET_FIELD(RatingsMultipliers, { 50, 25, 0 }),
     SET_FIELD(UpkeepCosts, { 90, 1, 0, 5, 0, 0 }),
     SET_FIELD(BuildCosts, { 70, 4, 1, }),
     SET_FIELD(DefaultPrices, { 15, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_ROCK),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 35)
+    SET_FIELD(BonusValue, 35),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_DARK_PURPLE, COLOUR_GREY, COLOUR_BLACK },
+        { COLOUR_BLACK, COLOUR_YELLOW, COLOUR_BLACK },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_FLYING_SAUCERS_TRACK, 0 }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

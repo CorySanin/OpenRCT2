@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,26 @@ constexpr const RideTypeDescriptor CompactInvertedCoasterRTD =
     SET_FIELD(OperatingSettings, { 7, 27, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_COMPACT_INVERTED_COASTER, STR_RIDE_DESCRIPTION_COMPACT_INVERTED_COASTER }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_TRAIN, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_COMPACT_INVERTED_COASTER)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_RESTRAINTS_STUCK_CLOSED) | (1 << BREAKDOWN_RESTRAINTS_STUCK_OPEN) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE)),
     SET_FIELD(Heights, { 27, 40, 29, 8, }),
     SET_FIELD(MaxMass, 18),
     SET_FIELD(LiftData, { SoundId::LiftFrictionWheels, 4, 6 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_compact_inverted_coaster),
     SET_FIELD(RatingsMultipliers, { 50, 30, 10 }),
     SET_FIELD(UpkeepCosts, { 40, 20, 80, 13, 3, 10 }),
     SET_FIELD(BuildCosts, { 100, 5, 50, }),
     SET_FIELD(DefaultPrices, { 20, 20 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_TECHNO),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO2),
-    SET_FIELD(BonusValue, 80)
+    SET_FIELD(BonusValue, 80),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BRIGHT_YELLOW, COLOUR_BRIGHT_YELLOW, COLOUR_BRIGHT_RED },
+        { COLOUR_ICY_BLUE, COLOUR_ICY_BLUE, COLOUR_DARK_GREEN },
+        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_BRIGHT_YELLOW },
+        { COLOUR_WHITE, COLOUR_WHITE, COLOUR_DARK_GREEN },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_COMPACT_INVERTED_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_COMPACT_INVERTED_COASTER_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

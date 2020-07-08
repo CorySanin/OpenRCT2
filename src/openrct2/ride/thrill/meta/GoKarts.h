@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../../../sprites.h"
 #include "../../RideData.h"
 #include "../../ShopItem.h"
 #include "../../Track.h"
@@ -31,16 +32,26 @@ constexpr const RideTypeDescriptor GoKartsRTD =
     SET_FIELD(OperatingSettings, { 1, 10, 0, 0, 0, 0 }),
     SET_FIELD(Naming, { STR_RIDE_NAME_GO_KARTS, STR_RIDE_DESCRIPTION_GO_KARTS }),
     SET_FIELD(NameConvention, { RIDE_COMPONENT_TYPE_CAR, RIDE_COMPONENT_TYPE_TRACK, RIDE_COMPONENT_TYPE_STATION }),
+    SET_FIELD(EnumName, nameof(RIDE_TYPE_GO_KARTS)),
     SET_FIELD(AvailableBreakdowns, (1 << BREAKDOWN_VEHICLE_MALFUNCTION)),
     SET_FIELD(Heights, { 7, 24, 2, 1, }),
     SET_FIELD(MaxMass, 255),
     SET_FIELD(LiftData, { SoundId::Null, 5, 5 }),
+    SET_FIELD(RatingsCalculationFunction, ride_ratings_calculate_go_karts),
     SET_FIELD(RatingsMultipliers, { 120, 20, 0 }),
     SET_FIELD(UpkeepCosts, { 50, 20, 0, 8, 0, 0 }),
     SET_FIELD(BuildCosts, { 62, 4, 20, }),
     SET_FIELD(DefaultPrices, { 20, 0 }),
     SET_FIELD(DefaultMusic, MUSIC_STYLE_TECHNO),
     SET_FIELD(PhotoItem, SHOP_ITEM_PHOTO),
-    SET_FIELD(BonusValue, 55)
+    SET_FIELD(BonusValue, 55),
+    SET_FIELD(ColourPresets, TRACK_COLOUR_PRESETS(
+        { COLOUR_BORDEAUX_RED, COLOUR_BORDEAUX_RED, COLOUR_DARK_BROWN },
+        { COLOUR_YELLOW, COLOUR_YELLOW, COLOUR_BORDEAUX_RED },
+        { COLOUR_DARK_GREEN, COLOUR_DARK_GREEN, COLOUR_DARK_GREEN },
+        { COLOUR_DARK_BROWN, COLOUR_DARK_BROWN, COLOUR_BLACK },
+    )),
+    SET_FIELD(ColourPreview, { SPR_RIDE_DESIGN_PREVIEW_GO_KARTS_TRACK, SPR_RIDE_DESIGN_PREVIEW_GO_KARTS_SUPPORTS }),
+    SET_FIELD(ColourKey, RideColourKey::Ride),
 };
 // clang-format on

@@ -562,8 +562,8 @@ static void window_title_editor_mousedown(rct_window* w, rct_widgetindex widgetI
 
                 widget--;
                 window_dropdown_show_text_custom_width(
-                    { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->bottom - widget->top + 1,
-                    w->colours[1], 0, DROPDOWN_FLAG_STAY_OPEN, numItems, widget->right - widget->left - 3);
+                    { w->windowPos.x + widget->left, w->windowPos.y + widget->top }, widget->height() + 1, w->colours[1], 0,
+                    DROPDOWN_FLAG_STAY_OPEN, numItems, widget->width() - 3);
                 dropdown_set_checked(static_cast<int32_t>(_selectedTitleSequence), true);
             }
             break;
@@ -836,8 +836,8 @@ static void window_title_editor_paint(rct_window* w, rct_drawpixelinfo* dpi)
             auto ft = Formatter::Common();
             ft.Add<const char*>(_sequenceName);
             gfx_draw_string_left(
-                dpi, STR_TITLE_SEQUENCE, nullptr, w->colours[1], w->windowPos.x + 10,
-                w->windowPos.y + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].top + 1);
+                dpi, STR_TITLE_SEQUENCE, nullptr, w->colours[1],
+                w->windowPos + ScreenCoordsXY{ 10, window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].top + 1 });
             gfx_draw_string_left_clipped(
                 dpi, STR_STRING, gCommonFormatArgs, w->colours[1],
                 { w->windowPos.x + window_title_editor_widgets[WIDX_TITLE_EDITOR_PRESETS].left + 1,
@@ -870,30 +870,33 @@ static void window_title_editor_scrollpaint(rct_window* w, rct_drawpixelinfo* dp
 static void window_title_editor_scrollpaint_saves(rct_window* w, rct_drawpixelinfo* dpi)
 {
     int32_t currentSaveIndex = -1;
-    int32_t x = 0;
-    int32_t y = 0;
+    auto screenCoords = ScreenCoordsXY{ 0, 0 };
     if (_editingTitleSequence == nullptr)
         return;
 
-    for (int32_t i = 0; i < static_cast<int32_t>(_editingTitleSequence->NumSaves); i++, y += SCROLLABLE_ROW_HEIGHT)
+    for (int32_t i = 0; i < static_cast<int32_t>(_editingTitleSequence->NumSaves); i++, screenCoords.y += SCROLLABLE_ROW_HEIGHT)
     {
         bool selected = false;
         bool hover = false;
         if (i == w->selected_list_item)
         {
             selected = true;
-            gfx_fill_rect(dpi, x, y, x + SCROLL_WIDTH + 100, y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].dark);
+            gfx_fill_rect(
+                dpi, screenCoords.x, screenCoords.y, screenCoords.x + SCROLL_WIDTH + 100,
+                screenCoords.y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].dark);
         }
         else if (i == _window_title_editor_highlighted_index || i == currentSaveIndex)
         {
             hover = true;
-            gfx_fill_rect(dpi, x, y, x + SCROLL_WIDTH + 100, y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].mid_dark);
+            gfx_fill_rect(
+                dpi, screenCoords.x, screenCoords.y, screenCoords.x + SCROLL_WIDTH + 100,
+                screenCoords.y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].mid_dark);
         }
         else if (i & 1)
         {
             gfx_fill_rect(
-                dpi, x, y, x + SCROLL_WIDTH + 100, y + SCROLLABLE_ROW_HEIGHT - 1,
-                ColourMapA[w->colours[1]].lighter | 0x1000000);
+                dpi, screenCoords.x, screenCoords.y, screenCoords.x + SCROLL_WIDTH + 100,
+                screenCoords.y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].lighter | 0x1000000);
         }
 
         char buffer[256];
@@ -910,7 +913,7 @@ static void window_title_editor_scrollpaint_saves(rct_window* w, rct_drawpixelin
         }
         ft = Formatter::Common();
         ft.Add<const char*>(&buffer);
-        gfx_draw_string_left(dpi, STR_STRING, gCommonFormatArgs, w->colours[1], x + 5, y);
+        gfx_draw_string_left(dpi, STR_STRING, gCommonFormatArgs, w->colours[1], screenCoords + ScreenCoordsXY{ 5, 0 });
     }
 }
 
@@ -923,9 +926,9 @@ static void window_title_editor_scrollpaint_commands(rct_window* w, rct_drawpixe
         position = player->GetCurrentPosition();
     }
 
-    int32_t x = 0;
-    int32_t y = 0;
-    for (int32_t i = 0; i < static_cast<int32_t>(_editingTitleSequence->NumCommands); i++, y += SCROLLABLE_ROW_HEIGHT)
+    auto screenCoords = ScreenCoordsXY{ 0, 0 };
+    for (int32_t i = 0; i < static_cast<int32_t>(_editingTitleSequence->NumCommands);
+         i++, screenCoords.y += SCROLLABLE_ROW_HEIGHT)
     {
         TitleCommand* command = &_editingTitleSequence->Commands[i];
         bool selected = false;
@@ -934,18 +937,22 @@ static void window_title_editor_scrollpaint_commands(rct_window* w, rct_drawpixe
         if (i == w->selected_list_item)
         {
             selected = true;
-            gfx_fill_rect(dpi, x, y, x + SCROLL_WIDTH + 100, y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].dark);
+            gfx_fill_rect(
+                dpi, screenCoords.x, screenCoords.y, screenCoords.x + SCROLL_WIDTH + 100,
+                screenCoords.y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].dark);
         }
         else if (i == static_cast<int32_t>(_window_title_editor_highlighted_index) || i == position)
         {
             hover = true;
-            gfx_fill_rect(dpi, x, y, x + SCROLL_WIDTH + 100, y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].mid_dark);
+            gfx_fill_rect(
+                dpi, screenCoords.x, screenCoords.y, screenCoords.x + SCROLL_WIDTH + 100,
+                screenCoords.y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].mid_dark);
         }
         else if (i & 1)
         {
             gfx_fill_rect(
-                dpi, x, y, x + SCROLL_WIDTH + 100, y + SCROLLABLE_ROW_HEIGHT - 1,
-                ColourMapA[w->colours[1]].lighter | 0x1000000);
+                dpi, screenCoords.x, screenCoords.y, screenCoords.x + SCROLL_WIDTH + 100,
+                screenCoords.y + SCROLLABLE_ROW_HEIGHT - 1, ColourMapA[w->colours[1]].lighter | 0x1000000);
         }
 
         auto ft = Formatter::Common();
@@ -1038,7 +1045,7 @@ static void window_title_editor_scrollpaint_commands(rct_window* w, rct_drawpixe
         }
         ft = Formatter::Common();
         ft.Add<const char*>(&buffer);
-        gfx_draw_string_left(dpi, STR_STRING, gCommonFormatArgs, w->colours[1], x + 5, y);
+        gfx_draw_string_left(dpi, STR_STRING, gCommonFormatArgs, w->colours[1], screenCoords + ScreenCoordsXY{ 5, 0 });
     }
 }
 
@@ -1046,8 +1053,7 @@ static void window_title_editor_draw_tab_images(rct_drawpixelinfo* dpi, rct_wind
 {
     for (int32_t i = 0; i < WINDOW_TITLE_EDITOR_TAB_COUNT; i++)
     {
-        int32_t x = 0;
-        int32_t y = 0;
+        auto screenCoords = ScreenCoordsXY{ 0, 0 };
         int32_t spriteId = window_title_editor_tab_sprites[i];
         if (w->selected_tab == i)
         {
@@ -1055,12 +1061,14 @@ static void window_title_editor_draw_tab_images(rct_drawpixelinfo* dpi, rct_wind
         }
         if (i == 1)
         {
-            x = 4;
-            y = 1;
+            screenCoords = ScreenCoordsXY{ 4, 1 };
         }
         gfx_draw_sprite(
-            dpi, spriteId, w->windowPos.x + w->widgets[WIDX_TITLE_EDITOR_PRESETS_TAB + i].left + x,
-            w->windowPos.y + w->widgets[WIDX_TITLE_EDITOR_PRESETS_TAB + i].top + y, 0);
+            dpi, spriteId,
+            w->windowPos + screenCoords
+                + ScreenCoordsXY{ w->widgets[WIDX_TITLE_EDITOR_PRESETS_TAB + i].left,
+                                  w->widgets[WIDX_TITLE_EDITOR_PRESETS_TAB + i].top },
+            0);
     }
 }
 

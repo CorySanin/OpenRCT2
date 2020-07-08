@@ -18,7 +18,7 @@
 #include "../actions/NetworkModifyGroupAction.hpp"
 #include "../actions/PeepPickupAction.hpp"
 #include "../core/Guard.hpp"
-#include "../platform/platform.h"
+#include "../platform/Platform2.h"
 #include "../scripting/ScriptEngine.h"
 #include "../ui/UiContext.h"
 #include "../ui/WindowManager.h"
@@ -32,7 +32,7 @@
 // This string specifies which version of network stream current build uses.
 // It is used for making sure only compatible builds get connected, even within
 // single OpenRCT2 version.
-#define NETWORK_STREAM_VERSION "19"
+#define NETWORK_STREAM_VERSION "20"
 #define NETWORK_STREAM_ID OPENRCT2_VERSION "-" NETWORK_STREAM_VERSION
 
 static Peep* _pickup_peep = nullptr;
@@ -503,7 +503,7 @@ bool Network::BeginClient(const std::string& host, uint16_t port)
 
     utf8 keyPath[MAX_PATH];
     network_get_private_key_path(keyPath, sizeof(keyPath), gConfigNetwork.player_name);
-    if (!platform_file_exists(keyPath))
+    if (!Platform::FileExists(keyPath))
     {
         Console::WriteLine("Generating key... This may take a while");
         Console::WriteLine("Need to collect enough entropy from the system");
@@ -1242,7 +1242,7 @@ void Network::LoadGroups()
     safe_strcat_path(path, "groups.json", sizeof(path));
 
     json_t* json = nullptr;
-    if (platform_file_exists(path))
+    if (Platform::FileExists(path))
     {
         try
         {
@@ -1625,9 +1625,10 @@ uint8_t* Network::save_for_network(size_t& out_size, const std::vector<const Obj
     const void* data = ms.GetData();
     int32_t size = ms.GetLength();
 
-    uint8_t* compressed = util_zlib_deflate(static_cast<const uint8_t*>(data), size, &out_size);
-    if (compressed != nullptr)
+    auto compressed = util_zlib_deflate(static_cast<const uint8_t*>(data), size);
+    if (compressed != std::nullopt)
     {
+        out_size = compressed->size();
         header = reinterpret_cast<uint8_t*>(_strdup("open2_sv6_zlib"));
         size_t header_len = strlen(reinterpret_cast<char*>(header)) + 1; // account for null terminator
         header = static_cast<uint8_t*>(realloc(header, header_len + out_size));
@@ -1637,11 +1638,10 @@ uint8_t* Network::save_for_network(size_t& out_size, const std::vector<const Obj
         }
         else
         {
-            std::memcpy(&header[header_len], compressed, out_size);
+            std::memcpy(&header[header_len], compressed->data(), out_size);
             out_size += header_len;
             log_verbose("Sending map of size %u bytes, compressed to %u bytes", size, out_size);
         }
-        free(compressed);
     }
     else
     {
@@ -2356,7 +2356,7 @@ void Network::Client_Handle_TOKEN(NetworkConnection& connection, NetworkPacket& 
 {
     utf8 keyPath[MAX_PATH];
     network_get_private_key_path(keyPath, sizeof(keyPath), gConfigNetwork.player_name);
-    if (!platform_file_exists(keyPath))
+    if (!Platform::FileExists(keyPath))
     {
         log_error("Key file (%s) was not found. Restart client to re-generate it.", keyPath);
         return;
@@ -4056,7 +4056,7 @@ void network_send_password(const std::string& password)
 {
     utf8 keyPath[MAX_PATH];
     network_get_private_key_path(keyPath, sizeof(keyPath), gConfigNetwork.player_name);
-    if (!platform_file_exists(keyPath))
+    if (!Platform::FileExists(keyPath))
     {
         log_error("Private key %s missing! Restart the game to generate it.", keyPath);
         return;
