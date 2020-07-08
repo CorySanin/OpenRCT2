@@ -580,7 +580,7 @@ void mask_init()
 
 void gfx_draw_pixel(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, int32_t colour)
 {
-    gfx_fill_rect(dpi, coords.x, coords.y, coords.x, coords.y, colour);
+    gfx_fill_rect(dpi, { coords, coords }, colour);
 }
 
 void gfx_filter_pixel(rct_drawpixelinfo* dpi, const ScreenCoordsXY& coords, FILTER_PALETTE_ID palette)
@@ -663,7 +663,7 @@ void load_palette()
  */
 void gfx_invalidate_screen()
 {
-    gfx_set_dirty_blocks(0, 0, context_get_width(), context_get_height());
+    gfx_set_dirty_blocks({ { 0, 0 }, { context_get_width(), context_get_height() } });
 }
 
 /*
@@ -737,7 +737,7 @@ void gfx_invalidate_pickedup_peep()
             int32_t top = gPickupPeepY + g1->y_offset;
             int32_t right = left + g1->width;
             int32_t bottom = top + g1->height;
-            gfx_set_dirty_blocks(left, top, right, bottom);
+            gfx_set_dirty_blocks({ { left, top }, { right, bottom } });
         }
     }
 }

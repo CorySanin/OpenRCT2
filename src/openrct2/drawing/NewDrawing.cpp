@@ -16,6 +16,7 @@
 #include "../localisation/StringIds.h"
 #include "../paint/Painter.h"
 #include "../ui/UiContext.h"
+#include "../world/Location.hpp"
 #include "IDrawingContext.h"
 #include "IDrawingEngine.h"
 
@@ -157,12 +158,12 @@ void drawing_engine_set_vsync(bool vsync)
     }
 }
 
-void gfx_set_dirty_blocks(int16_t left, int16_t top, int16_t right, int16_t bottom)
+void gfx_set_dirty_blocks(const ScreenRect& rect)
 {
     auto drawingEngine = GetDrawingEngine();
     if (drawingEngine != nullptr)
     {
-        drawingEngine->Invalidate(left, top, right, bottom);
+        drawingEngine->Invalidate(rect.GetLeft(), rect.GetTop(), rect.GetRight(), rect.GetBottom());
     }
 }
 
@@ -182,11 +183,16 @@ void gfx_clear(rct_drawpixelinfo* dpi, uint8_t paletteIndex)
 
 void gfx_fill_rect(rct_drawpixelinfo* dpi, int32_t left, int32_t top, int32_t right, int32_t bottom, int32_t colour)
 {
+    gfx_fill_rect(dpi, { { left, top }, { right, bottom } }, colour);
+}
+
+void gfx_fill_rect(rct_drawpixelinfo* dpi, const ScreenRect& rect, int32_t colour)
+{
     auto drawingEngine = dpi->DrawingEngine;
     if (drawingEngine != nullptr)
     {
         IDrawingContext* dc = drawingEngine->GetDrawingContext(dpi);
-        dc->FillRect(colour, left, top, right, bottom);
+        dc->FillRect(colour, rect.GetLeft(), rect.GetTop(), rect.GetRight(), rect.GetBottom());
     }
 }
 
