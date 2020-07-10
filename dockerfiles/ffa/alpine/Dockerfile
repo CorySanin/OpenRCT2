@@ -2,7 +2,7 @@
 FROM alpine:edge AS build-env
 RUN apk update \
  && apk add git gcc g++ make cmake jansson-dev libzip-dev curl-dev libressl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers \
- && apk add duktape-dev --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/
+ && apk add duktape-dev --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
 WORKDIR /openrct2
 COPY . .
 RUN mkdir build \
@@ -12,18 +12,15 @@ RUN mkdir build \
 
 # Build runtime image
 FROM alpine:edge
-RUN apk update
-RUN apk upgrade
-RUN apk add rsync ca-certificates jansson libpng libzip libcurl freetype fontconfig icu \
- && apk add duktape --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/
-
 COPY --from=build-env /openrct2-install /openrct2-install
-RUN rsync -a /openrct2-install/* / \
+RUN apk update && apk upgrade \
+ && apk add rsync ca-certificates jansson libpng libzip libcurl freetype fontconfig icu \
+ && apk add duktape --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
+ && rsync -a /openrct2-install/* / \
  && rm -rf /openrct2-install \
- && openrct2-cli --version
-
+ && openrct2-cli --version \
 # Set up ordinary user
-RUN addgroup -S openrct2 && adduser -S openrct2 -G openrct2
+ && addgroup -S openrct2 && adduser -S openrct2 -G openrct2
 USER openrct2
 WORKDIR /home/openrct2
 EXPOSE 11753
