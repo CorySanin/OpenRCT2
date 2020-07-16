@@ -150,7 +150,7 @@ static std::vector<LoadSaveListItem> _listItems;
 static char _directory[MAX_PATH];
 static char _shortenedDirectory[MAX_PATH];
 static char _parentDirectory[MAX_PATH];
-static char _extension[32];
+static char _extension[256];
 static char _defaultName[MAX_PATH];
 static int32_t _type;
 
@@ -218,10 +218,10 @@ static const char* getFilterPatternByType(const int32_t type, const bool isSave)
     switch (type & 0x0E)
     {
         case LOADSAVETYPE_GAME:
-            return isSave ? "*.sv6" : "*.sv6;*.sc6;*.sc4;*.sv4;*.sv7";
+            return isSave ? "*.sv6" : "*.sv6;*.sc6;*.sc4;*.sv4;*.sv7;*.sea;";
 
         case LOADSAVETYPE_LANDSCAPE:
-            return isSave ? "*.sc6" : "*.sc6;*.sv6;*.sc4;*.sv4;*.sv7";
+            return isSave ? "*.sc6" : "*.sc6;*.sv6;*.sc4;*.sv4;*.sv7;*.sea;";
 
         case LOADSAVETYPE_SCENARIO:
             return "*.sc6";
@@ -717,7 +717,7 @@ static void window_loadsave_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
     // Draw path text
     auto ft = Formatter::Common();
-    ft.Add<uintptr_t>(Platform::StrDecompToPrecomp(buffer));
+    ft.Add<utf8*>(Platform::StrDecompToPrecomp(buffer));
     gfx_draw_string_left_clipped(
         dpi, STR_STRING, gCommonFormatArgs, COLOUR_BLACK, { w->windowPos.x + 4, w->windowPos.y + 20 }, w->width - 8);
 
@@ -748,7 +748,9 @@ static void window_loadsave_paint(rct_window* w, rct_drawpixelinfo* dpi)
 
 static void window_loadsave_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t scrollIndex)
 {
-    gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width - 1, dpi->y + dpi->height - 1, ColourMapA[w->colours[1]].mid_light);
+    gfx_fill_rect(
+        dpi, { { dpi->x, dpi->y }, { dpi->x + dpi->width - 1, dpi->y + dpi->height - 1 } },
+        ColourMapA[w->colours[1]].mid_light);
     const int32_t listWidth = w->widgets[WIDX_SCROLL].width();
     const int32_t dateAnchor = w->widgets[WIDX_SORT_DATE].left + maxDateWidth + DATE_TIME_GAP;
 

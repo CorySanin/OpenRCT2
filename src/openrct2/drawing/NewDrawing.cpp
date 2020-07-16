@@ -181,11 +181,6 @@ void gfx_clear(rct_drawpixelinfo* dpi, uint8_t paletteIndex)
     }
 }
 
-void gfx_fill_rect(rct_drawpixelinfo* dpi, int32_t left, int32_t top, int32_t right, int32_t bottom, int32_t colour)
-{
-    gfx_fill_rect(dpi, { { left, top }, { right, bottom } }, colour);
-}
-
 void gfx_fill_rect(rct_drawpixelinfo* dpi, const ScreenRect& rect, int32_t colour)
 {
     auto drawingEngine = dpi->DrawingEngine;
@@ -212,13 +207,13 @@ void gfx_filter_rect(rct_drawpixelinfo* dpi, const ScreenRect& rect, FILTER_PALE
     }
 }
 
-void gfx_draw_line(rct_drawpixelinfo* dpi, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t colour)
+void gfx_draw_line(rct_drawpixelinfo* dpi, const ScreenLine& line, int32_t colour)
 {
     auto drawingEngine = dpi->DrawingEngine;
     if (drawingEngine != nullptr)
     {
         IDrawingContext* dc = drawingEngine->GetDrawingContext(dpi);
-        dc->DrawLine(colour, x1, y1, x2, y2);
+        dc->DrawLine(colour, line.GetX1(), line.GetY1(), line.GetX2(), line.GetY2());
     }
 }
 

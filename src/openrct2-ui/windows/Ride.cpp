@@ -2474,9 +2474,10 @@ static void window_ride_main_update(rct_window* w)
                     return;
 
                 Vehicle* vehicle = GetEntity<Vehicle>(vehicleSpriteIndex);
-                if (vehicle->status != VEHICLE_STATUS_TRAVELLING && vehicle->status != VEHICLE_STATUS_TRAVELLING_CABLE_LIFT
-                    && vehicle->status != VEHICLE_STATUS_TRAVELLING_DODGEMS
-                    && vehicle->status != VEHICLE_STATUS_TRAVELLING_BOAT)
+                if (vehicle == nullptr
+                    || (vehicle->status != VEHICLE_STATUS_TRAVELLING && vehicle->status != VEHICLE_STATUS_TRAVELLING_CABLE_LIFT
+                        && vehicle->status != VEHICLE_STATUS_TRAVELLING_DODGEMS
+                        && vehicle->status != VEHICLE_STATUS_TRAVELLING_BOAT))
                 {
                     return;
                 }
@@ -2664,7 +2665,8 @@ static rct_string_id window_ride_get_status_overall_view(rct_window* w, void* ar
     auto ride = get_ride(w->number);
     if (ride != nullptr)
     {
-        ride->FormatStatusTo(arguments);
+        auto ft = Formatter(static_cast<uint8_t*>(arguments));
+        ride->FormatStatusTo(ft);
         stringId = STR_BLACK_STRING;
         if ((ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN) || (ride->lifecycle_flags & RIDE_LIFECYCLE_CRASHED))
         {
@@ -2682,14 +2684,17 @@ static rct_string_id window_ride_get_status_vehicle(rct_window* w, void* argumen
 {
     auto ride = get_ride(w->number);
     if (ride == nullptr)
-        return 0;
+        return STR_EMPTY;
 
     auto vehicleIndex = w->ride.view - 1;
     auto vehicleSpriteIndex = ride->vehicles[vehicleIndex];
     if (vehicleSpriteIndex == SPRITE_INDEX_NULL)
-        return 0;
+        return STR_EMPTY;
 
     auto vehicle = GetEntity<Vehicle>(vehicleSpriteIndex);
+    if (vehicle == nullptr)
+        return STR_EMPTY;
+
     if (vehicle->status != VEHICLE_STATUS_CRASHING && vehicle->status != VEHICLE_STATUS_CRASHED)
     {
         int32_t trackType = vehicle->GetTrackType();
@@ -3149,7 +3154,7 @@ static void window_ride_vehicle_scrollpaint(rct_window* w, rct_drawpixelinfo* dp
     rct_ride_entry* rideEntry = ride->GetRideEntry();
 
     // Background
-    gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width, dpi->y + dpi->height, PALETTE_INDEX_12);
+    gfx_fill_rect(dpi, { { dpi->x, dpi->y }, { dpi->x + dpi->width, dpi->y + dpi->height } }, PALETTE_INDEX_12);
 
     rct_widget* widget = &window_ride_vehicle_widgets[WIDX_VEHICLE_TRAINS_PREVIEW];
     int32_t startX = std::max(2, (widget->width() - ((ride->num_vehicles - 1) * 36)) / 2 - 25);
@@ -4062,7 +4067,11 @@ static void window_ride_maintenance_dropdown(rct_window* w, rct_widgetindex widg
                             uint16_t spriteId = ride->vehicles[i];
                             while (spriteId != SPRITE_INDEX_NULL)
                             {
-                                vehicle = GET_VEHICLE(spriteId);
+                                vehicle = GetEntity<Vehicle>(spriteId);
+                                if (vehicle == nullptr)
+                                {
+                                    break;
+                                }
                                 vehicle->ClearUpdateFlag(
                                     VEHICLE_UPDATE_FLAG_BROKEN_CAR | VEHICLE_UPDATE_FLAG_ZERO_VELOCITY
                                     | VEHICLE_UPDATE_FLAG_BROKEN_TRAIN);
@@ -4075,11 +4084,17 @@ static void window_ride_maintenance_dropdown(rct_window* w, rct_widgetindex widg
                     case BREAKDOWN_DOORS_STUCK_CLOSED:
                     case BREAKDOWN_DOORS_STUCK_OPEN:
                         vehicle = GetEntity<Vehicle>(ride->vehicles[ride->broken_vehicle]);
-                        vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR);
+                        if (vehicle != nullptr)
+                        {
+                            vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_CAR);
+                        }
                         break;
                     case BREAKDOWN_VEHICLE_MALFUNCTION:
                         vehicle = GetEntity<Vehicle>(ride->vehicles[ride->broken_vehicle]);
-                        vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN);
+                        if (vehicle != nullptr)
+                        {
+                            vehicle->ClearUpdateFlag(VEHICLE_UPDATE_FLAG_BROKEN_TRAIN);
+                        }
                         break;
                 }
                 ride->lifecycle_flags &= ~(RIDE_LIFECYCLE_BREAKDOWN_PENDING | RIDE_LIFECYCLE_BROKEN_DOWN);
@@ -4951,8 +4966,10 @@ static void window_ride_colour_paint(rct_window* w, rct_drawpixelinfo* dpi)
     widget = &window_ride_colour_widgets[WIDX_TRACK_PREVIEW];
     if (widget->type != WWT_EMPTY)
         gfx_fill_rect(
-            dpi, w->windowPos.x + widget->left + 1, w->windowPos.y + widget->top + 1, w->windowPos.x + widget->right - 1,
-            w->windowPos.y + widget->bottom - 1, PALETTE_INDEX_12);
+            dpi,
+            { { w->windowPos + ScreenCoordsXY{ widget->left + 1, widget->top + 1 } },
+              { w->windowPos + ScreenCoordsXY{ widget->right - 1, widget->bottom - 1 } } },
+            PALETTE_INDEX_12);
 
     auto trackColour = ride_get_track_colour(ride, w->ride_colour);
 
@@ -5057,7 +5074,7 @@ static void window_ride_colour_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi
     auto vehicleColour = ride_get_vehicle_colour(ride, w->vehicleIndex);
 
     // Background colour
-    gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width - 1, dpi->y + dpi->height - 1, PALETTE_INDEX_12);
+    gfx_fill_rect(dpi, { { dpi->x, dpi->y }, { dpi->x + dpi->width - 1, dpi->y + dpi->height - 1 } }, PALETTE_INDEX_12);
 
     // ?
     auto screenCoords = ScreenCoordsXY{ vehiclePreviewWidget->width() / 2, vehiclePreviewWidget->height() - 15 };
@@ -6167,11 +6184,13 @@ static void window_ride_graphs_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi
     {
         if (x + 80 >= dpi->x)
         {
-            gfx_fill_rect(dpi, x + 0, dpi->y, x + 0, dpi->y + dpi->height - 1, lightColour);
-            gfx_fill_rect(dpi, x + 16, dpi->y, x + 16, dpi->y + dpi->height - 1, darkColour);
-            gfx_fill_rect(dpi, x + 32, dpi->y, x + 32, dpi->y + dpi->height - 1, darkColour);
-            gfx_fill_rect(dpi, x + 48, dpi->y, x + 48, dpi->y + dpi->height - 1, darkColour);
-            gfx_fill_rect(dpi, x + 64, dpi->y, x + 64, dpi->y + dpi->height - 1, darkColour);
+            auto coord1 = ScreenCoordsXY{ x, dpi->y };
+            auto coord2 = ScreenCoordsXY{ x, dpi->y + dpi->height - 1 };
+            gfx_fill_rect(dpi, { coord1, coord2 }, lightColour);
+            gfx_fill_rect(dpi, { coord1 + ScreenCoordsXY{ 16, 0 }, coord2 + ScreenCoordsXY{ 16, 0 } }, darkColour);
+            gfx_fill_rect(dpi, { coord1 + ScreenCoordsXY{ 32, 0 }, coord2 + ScreenCoordsXY{ 32, 0 } }, darkColour);
+            gfx_fill_rect(dpi, { coord1 + ScreenCoordsXY{ 48, 0 }, coord2 + ScreenCoordsXY{ 48, 0 } }, darkColour);
+            gfx_fill_rect(dpi, { coord1 + ScreenCoordsXY{ 64, 0 }, coord2 + ScreenCoordsXY{ 64, 0 } }, darkColour);
         }
         time += 5;
     }
@@ -6193,7 +6212,7 @@ static void window_ride_graphs_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi
     {
         // Minor / major line
         int32_t colour = yUnit == 0 ? lightColour : darkColour;
-        gfx_fill_rect(dpi, dpi->x, y, dpi->x + dpi->width - 1, y, colour);
+        gfx_fill_rect(dpi, { { dpi->x, y }, { dpi->x + dpi->width - 1, y } }, colour);
 
         int16_t scaled_yUnit = yUnit;
         // Scale modifier
@@ -6269,7 +6288,7 @@ static void window_ride_graphs_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi
         const bool previousMeasurement = x > measurement->current_item;
 
         // Draw the current line in gray.
-        gfx_fill_rect(dpi, x, top, x, bottom, previousMeasurement ? PALETTE_INDEX_17 : PALETTE_INDEX_21);
+        gfx_fill_rect(dpi, { { x, top }, { x, bottom } }, previousMeasurement ? PALETTE_INDEX_17 : PALETTE_INDEX_21);
 
         // Draw red over extreme values (if supported by graph type).
         if (listType == GRAPH_VERTICAL || listType == GRAPH_LATERAL)
@@ -6279,17 +6298,17 @@ static void window_ride_graphs_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi
             // Line exceeds negative threshold (at bottom of graph).
             if (bottom >= intensityThresholdNegative)
             {
-                const auto redLineTop = std::max(top, intensityThresholdNegative);
-                const auto redLineBottom = std::max(bottom, intensityThresholdNegative);
-                gfx_fill_rect(dpi, x, redLineTop, x, redLineBottom, redLineColour);
+                const auto redLineTop = ScreenCoordsXY{ x, std::max(top, intensityThresholdNegative) };
+                const auto redLineBottom = ScreenCoordsXY{ x, std::max(bottom, intensityThresholdNegative) };
+                gfx_fill_rect(dpi, { redLineTop, redLineBottom }, redLineColour);
             }
 
             // Line exceeds positive threshold (at top of graph).
             if (top <= intensityThresholdPositive)
             {
-                const auto redLineTop = std::min(top, intensityThresholdPositive);
-                const auto redLineBottom = std::min(bottom, intensityThresholdPositive);
-                gfx_fill_rect(dpi, x, redLineTop, x, redLineBottom, redLineColour);
+                const auto redLineTop = ScreenCoordsXY{ x, std::min(top, intensityThresholdPositive) };
+                const auto redLineBottom = ScreenCoordsXY{ x, std::min(bottom, intensityThresholdPositive) };
+                gfx_fill_rect(dpi, { redLineTop, redLineBottom }, redLineColour);
             }
         }
     }

@@ -301,7 +301,8 @@ static void window_network_information_invalidate(rct_window* w)
 
 static void graph_draw_bar(rct_drawpixelinfo* dpi, int32_t x, int32_t y, int32_t height, int32_t width, int32_t colour)
 {
-    gfx_fill_rect(dpi, x, y, x + width, y + height, colour);
+    auto coords = ScreenCoordsXY{ x, y };
+    gfx_fill_rect(dpi, { coords, coords + ScreenCoordsXY{ width, height } }, colour);
 }
 
 static void window_network_draw_graph(
@@ -310,11 +311,21 @@ static void window_network_draw_graph(
     float dataMax = received ? _graphMaxIn : _graphMaxOut;
 
     // Draw box.
-    gfx_draw_line(dpi, x, y, x, y + height, COLOUR_BLACK);
-    gfx_draw_line(dpi, x, y + height, x + width, y + height, COLOUR_BLACK);
+    auto right1 = ScreenCoordsXY{ x, y };
+    auto right2 = ScreenCoordsXY{ x, y + height };
+    gfx_draw_line(dpi, { right1, right2 }, COLOUR_BLACK);
 
-    gfx_draw_line(dpi, x, y, x + width, y, COLOUR_BLACK);
-    gfx_draw_line(dpi, x + width, y, x + width, y + height, COLOUR_BLACK);
+    auto left1 = ScreenCoordsXY{ x, y + height };
+    auto left2 = ScreenCoordsXY{ x + width, y + height };
+    gfx_draw_line(dpi, { left1, left2 }, COLOUR_BLACK);
+
+    auto bottom1 = ScreenCoordsXY{ x, y };
+    auto bottom2 = ScreenCoordsXY{ x + width, y };
+    gfx_draw_line(dpi, { bottom1, bottom2 }, COLOUR_BLACK);
+
+    auto top1 = ScreenCoordsXY{ x + width, y };
+    auto top2 = ScreenCoordsXY{ x + width, y + height };
+    gfx_draw_line(dpi, { top1, top2 }, COLOUR_BLACK);
 
     // Draw graph inside box
     x = x + 1;
@@ -443,7 +454,7 @@ static void window_network_information_paint(rct_window* w, rct_drawpixelinfo* d
 
                 // Draw color stripe.
                 gfx_fill_rect(
-                    dpi, screenCoords.x, screenCoords.y + 4, screenCoords.x + 4, screenCoords.y + 6,
+                    dpi, { screenCoords + ScreenCoordsXY{ 0, 4 }, screenCoords + ScreenCoordsXY{ 4, 6 } },
                     NetworkTrafficGroupColors[i]);
 
                 // Draw text.

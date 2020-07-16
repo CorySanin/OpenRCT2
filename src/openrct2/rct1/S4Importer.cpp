@@ -1619,7 +1619,7 @@ private:
                 x <<= 7;
                 int32_t y = val & 0x3E0;
                 y <<= 2;
-                staff_set_patrol_area(staffmember->StaffId, x, y, true);
+                staff_set_patrol_area(staffmember->StaffId, { x, y }, true);
             }
         }
     }
@@ -1765,7 +1765,7 @@ private:
         gPeepSpawns.clear();
         for (size_t i = 0; i < RCT12_MAX_PEEP_SPAWNS; i++)
         {
-            if (_s4.peep_spawn[i].x != PEEP_SPAWN_UNDEFINED)
+            if (_s4.peep_spawn[i].x != RCT12_PEEP_SPAWN_UNDEFINED)
             {
                 PeepSpawn spawn = { _s4.peep_spawn[i].x, _s4.peep_spawn[i].y, _s4.peep_spawn[i].z * 16,
                                     _s4.peep_spawn[i].direction };

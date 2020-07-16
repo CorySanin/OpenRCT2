@@ -568,14 +568,13 @@ static void window_map_scrollgetsize(rct_window* w, int32_t scrollIndex, int32_t
 static void window_map_scrollmousedown(rct_window* w, int32_t scrollIndex, const ScreenCoordsXY& screenCoords)
 {
     CoordsXY c = map_window_screen_to_map(screenCoords);
-    int32_t mapX = std::clamp(c.x, 0, MAXIMUM_MAP_SIZE_BIG - 1);
-    int32_t mapY = std::clamp(c.y, 0, MAXIMUM_MAP_SIZE_BIG - 1);
-    int32_t mapZ = tile_element_height({ mapX, mapY });
+    auto mapCoords = CoordsXY{ std::clamp(c.x, 0, MAXIMUM_MAP_SIZE_BIG - 1), std::clamp(c.y, 0, MAXIMUM_MAP_SIZE_BIG - 1) };
+    auto mapZ = tile_element_height(mapCoords);
 
     rct_window* mainWindow = window_get_main();
     if (mainWindow != nullptr)
     {
-        window_scroll_to_location(mainWindow, mapX, mapY, mapZ);
+        window_scroll_to_location(mainWindow, { mapCoords, mapZ });
     }
 
     if (land_tool_is_active())
@@ -584,16 +583,13 @@ static void window_map_scrollmousedown(rct_window* w, int32_t scrollIndex, const
         int32_t landToolSize = std::max<int32_t>(1, gLandToolSize);
         int32_t size = (landToolSize * 32) - 32;
         int32_t radius = (landToolSize * 16) - 16;
-        mapX = (mapX - radius) & 0xFFE0;
-        mapY = (mapY - radius) & 0xFFE0;
 
+        mapCoords = (mapCoords - CoordsXY{ radius, radius }).ToTileStart();
         map_invalidate_selection_rect();
         gMapSelectFlags |= MAP_SELECT_FLAG_ENABLE;
         gMapSelectType = MAP_SELECT_TYPE_FULL;
-        gMapSelectPositionA.x = mapX;
-        gMapSelectPositionA.y = mapY;
-        gMapSelectPositionB.x = mapX + size;
-        gMapSelectPositionB.y = mapY + size;
+        gMapSelectPositionA = mapCoords;
+        gMapSelectPositionB = mapCoords + CoordsXY{ size, size };
         map_invalidate_selection_rect();
 
         auto surfaceSetStyleAction = SurfaceSetStyleAction(
@@ -607,16 +603,13 @@ static void window_map_scrollmousedown(rct_window* w, int32_t scrollIndex, const
         int32_t landRightsToolSize = std::max<int32_t>(1, _landRightsToolSize);
         int32_t size = (landRightsToolSize * 32) - 32;
         int32_t radius = (landRightsToolSize * 16) - 16;
-        mapX = (mapX - radius) & 0xFFE0;
-        mapY = (mapY - radius) & 0xFFE0;
+        mapCoords = (mapCoords - CoordsXY{ radius, radius }).ToTileStart();
 
         map_invalidate_selection_rect();
         gMapSelectFlags |= MAP_SELECT_FLAG_ENABLE;
         gMapSelectType = MAP_SELECT_TYPE_FULL;
-        gMapSelectPositionA.x = mapX;
-        gMapSelectPositionA.y = mapY;
-        gMapSelectPositionB.x = mapX + size;
-        gMapSelectPositionB.y = mapY + size;
+        gMapSelectPositionA = mapCoords;
+        gMapSelectPositionB = mapCoords + CoordsXY{ size, size };
         map_invalidate_selection_rect();
 
         auto landSetRightsAction = LandSetRightsAction(
@@ -851,7 +844,7 @@ static void window_map_paint(rct_window* w, rct_drawpixelinfo* dpi)
             for (uint32_t i = 0; i < std::size(RideKeyColours); i++)
             {
                 gfx_fill_rect(
-                    dpi, screenCoords.x, screenCoords.y + 2, screenCoords.x + 6, screenCoords.y + 8, RideKeyColours[i]);
+                    dpi, { screenCoords + ScreenCoordsXY{ 0, 2 }, screenCoords + ScreenCoordsXY{ 6, 8 } }, RideKeyColours[i]);
                 gfx_draw_string_left(dpi, mapLabels[i], w, COLOUR_BLACK, screenCoords + ScreenCoordsXY{ LIST_ROW_HEIGHT, 0 });
                 screenCoords.y += LIST_ROW_HEIGHT;
                 if (i == 3)
@@ -1060,11 +1053,8 @@ static void window_map_paint_peep_overlay(rct_drawpixelinfo* dpi)
             continue;
 
         MapCoordsXY c = window_map_transform_to_map_coords({ peep->x, peep->y });
-        int16_t left = c.x;
-        int16_t top = c.y;
-
-        int16_t right = left;
-        int16_t bottom = top;
+        auto leftTop = ScreenCoordsXY{ c.x, c.y };
+        auto rightBottom = leftTop;
 
         int16_t colour = PALETTE_INDEX_20;
 
@@ -1075,7 +1065,7 @@ static void window_map_paint_peep_overlay(rct_drawpixelinfo* dpi)
                 if ((gWindowMapFlashingFlags & (1 << 3)) != 0)
                 {
                     colour = PALETTE_INDEX_138;
-                    left--;
+                    leftTop.x--;
                     if ((gWindowMapFlashingFlags & (1 << 15)) == 0)
                         colour = PALETTE_INDEX_10;
                 }
@@ -1085,13 +1075,13 @@ static void window_map_paint_peep_overlay(rct_drawpixelinfo* dpi)
                 if ((gWindowMapFlashingFlags & (1 << 1)) != 0)
                 {
                     colour = PALETTE_INDEX_172;
-                    left--;
+                    leftTop.x--;
                     if ((gWindowMapFlashingFlags & (1 << 15)) == 0)
                         colour = PALETTE_INDEX_21;
                 }
             }
         }
-        gfx_fill_rect(dpi, left, top, right, bottom, colour);
+        gfx_fill_rect(dpi, { leftTop, rightBottom }, colour);
     }
 }
 
@@ -1113,7 +1103,7 @@ static void window_map_paint_train_overlay(rct_drawpixelinfo* dpi)
 
             MapCoordsXY c = window_map_transform_to_map_coords({ vehicle->x, vehicle->y });
 
-            gfx_fill_rect(dpi, c.x, c.y, c.x, c.y, PALETTE_INDEX_171);
+            gfx_fill_rect(dpi, { { c.x, c.y }, { c.x, c.y } }, PALETTE_INDEX_171);
         }
     }
 }
@@ -1135,26 +1125,27 @@ static void window_map_paint_hud_rectangle(rct_drawpixelinfo* dpi)
         return;
 
     auto offset = MiniMapOffsets[get_current_rotation()];
-    int16_t left = (viewport->viewPos.x >> 5) + offset.x;
-    int16_t right = ((viewport->viewPos.x + viewport->view_width) >> 5) + offset.x;
-    int16_t top = (viewport->viewPos.y >> 4) + offset.y;
-    int16_t bottom = ((viewport->viewPos.y + viewport->view_height) >> 4) + offset.y;
+    auto leftTop = ScreenCoordsXY{ (viewport->viewPos.x >> 5) + offset.x, (viewport->viewPos.y >> 4) + offset.y };
+    auto rightBottom = ScreenCoordsXY{ ((viewport->viewPos.x + viewport->view_width) >> 5) + offset.x,
+                                       ((viewport->viewPos.y + viewport->view_height) >> 4) + offset.y };
+    auto rightTop = ScreenCoordsXY{ rightBottom.x, leftTop.y };
+    auto leftBottom = ScreenCoordsXY{ leftTop.x, rightBottom.y };
 
     // top horizontal lines
-    gfx_fill_rect(dpi, left, top, left + 3, top, PALETTE_INDEX_56);
-    gfx_fill_rect(dpi, right - 3, top, right, top, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { leftTop, leftTop + ScreenCoordsXY{ 3, 0 } }, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { rightTop - ScreenCoordsXY{ 3, 0 }, rightTop }, PALETTE_INDEX_56);
 
     // left vertical lines
-    gfx_fill_rect(dpi, left, top, left, top + 3, PALETTE_INDEX_56);
-    gfx_fill_rect(dpi, left, bottom - 3, left, bottom, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { leftTop, leftTop + ScreenCoordsXY{ 0, 3 } }, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { leftBottom - ScreenCoordsXY{ 0, 3 }, leftBottom }, PALETTE_INDEX_56);
 
     // bottom horizontal lines
-    gfx_fill_rect(dpi, left, bottom, left + 3, bottom, PALETTE_INDEX_56);
-    gfx_fill_rect(dpi, right - 3, bottom, right, bottom, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { leftBottom, leftBottom + ScreenCoordsXY{ 3, 0 } }, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { rightBottom - ScreenCoordsXY{ 3, 0 }, rightBottom }, PALETTE_INDEX_56);
 
     // right vertical lines
-    gfx_fill_rect(dpi, right, top, right, top + 3, PALETTE_INDEX_56);
-    gfx_fill_rect(dpi, right, bottom - 3, right, bottom, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { rightTop, rightTop + ScreenCoordsXY{ 0, 3 } }, PALETTE_INDEX_56);
+    gfx_fill_rect(dpi, { rightBottom - ScreenCoordsXY{ 0, 3 }, rightBottom }, PALETTE_INDEX_56);
 }
 
 /**

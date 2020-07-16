@@ -2690,15 +2690,15 @@ static rct_synchronised_vehicle* _lastSynchronisedVehicle = nullptr;
  * to synchronise to the vehicle synchronisation list.
  *  rct2: 0x006DE1A4
  */
-static bool try_add_synchronised_station(int32_t x, int32_t y, int32_t z)
+static bool try_add_synchronised_station(const CoordsXYZ& coords)
 {
     // make sure we are in map bounds
-    if (!map_is_location_valid({ x, y }))
+    if (!map_is_location_valid(coords))
     {
         return false;
     }
 
-    TileElement* tileElement = get_station_platform(x, y, z, 2);
+    TileElement* tileElement = get_station_platform({ coords, coords.z + 2 * COORDS_Z_STEP });
     if (tileElement == nullptr)
     {
         /* No station platform element found,
@@ -2792,9 +2792,6 @@ static bool try_add_synchronised_station(int32_t x, int32_t y, int32_t z)
 static bool ride_station_can_depart_synchronised(const Ride& ride, StationIndex station)
 {
     auto location = ride.stations[station].GetStart();
-    int32_t x = location.x;
-    int32_t y = location.y;
-    int32_t z = ride.stations[station].Height;
 
     auto tileElement = map_get_track_element_at(location);
     if (tileElement == nullptr)
@@ -2817,9 +2814,7 @@ static bool ride_station_can_depart_synchronised(const Ride& ride, StationIndex 
     spaceBetween = maxCheckDistance;
     while (_lastSynchronisedVehicle < &_synchronisedVehicles[SYNCHRONISED_VEHICLE_COUNT - 1])
     {
-        x += CoordsDirectionDelta[direction].x;
-        y += CoordsDirectionDelta[direction].y;
-        if (try_add_synchronised_station(x, y, z))
+        if (try_add_synchronised_station(location + CoordsXYZ{ CoordsDirectionDelta[direction], 0 }))
         {
             spaceBetween = maxCheckDistance;
             continue;
@@ -2830,18 +2825,12 @@ static bool ride_station_can_depart_synchronised(const Ride& ride, StationIndex 
         }
     }
 
-    // Reset back to starting tile.
-    x = location.x;
-    y = location.y;
-
     // Other search direction.
     direction = direction_reverse(direction) & 3;
     spaceBetween = maxCheckDistance;
     while (_lastSynchronisedVehicle < &_synchronisedVehicles[SYNCHRONISED_VEHICLE_COUNT - 1])
     {
-        x += CoordsDirectionDelta[direction].x;
-        y += CoordsDirectionDelta[direction].y;
-        if (try_add_synchronised_station(x, y, z))
+        if (try_add_synchronised_station(location + CoordsXYZ{ CoordsDirectionDelta[direction], 0 }))
         {
             spaceBetween = maxCheckDistance;
             continue;
@@ -5130,34 +5119,34 @@ void Vehicle::UpdateDoingCircusShow()
  *  rct2: 0x0068B8BD
  * @returns the map element that the vehicle will collide with or NULL if no collisions.
  */
-static TileElement* vehicle_check_collision(int16_t x, int16_t y, int16_t z)
+static TileElement* vehicle_check_collision(const CoordsXYZ& vehiclePosition)
 {
-    TileElement* tileElement = map_get_first_element_at({ x, y });
+    TileElement* tileElement = map_get_first_element_at(vehiclePosition);
     if (tileElement == nullptr)
     {
         return nullptr;
     }
 
     uint8_t quadrant;
-    if ((x & 0x1F) >= 16)
+    if ((vehiclePosition.x & 0x1F) >= 16)
     {
         quadrant = 1;
-        if ((y & 0x1F) < 16)
+        if ((vehiclePosition.y & 0x1F) < 16)
             quadrant = 2;
     }
     else
     {
         quadrant = 4;
-        if ((y & 0x1F) >= 16)
+        if ((vehiclePosition.y & 0x1F) >= 16)
             quadrant = 8;
     }
 
     do
     {
-        if (z < tileElement->GetBaseZ())
+        if (vehiclePosition.z < tileElement->GetBaseZ())
             continue;
 
-        if (z >= tileElement->GetClearanceZ())
+        if (vehiclePosition.z >= tileElement->GetClearanceZ())
             continue;
 
         if (tileElement->GetOccupiedQuadrants() & quadrant)
@@ -5398,7 +5387,7 @@ void Vehicle::UpdateCrash()
             continue;
         }
 
-        TileElement* collideElement = vehicle_check_collision(curVehicle->x, curVehicle->y, curVehicle->z);
+        TileElement* collideElement = vehicle_check_collision({ curVehicle->x, curVehicle->y, curVehicle->z });
         if (collideElement == nullptr)
         {
             curVehicle->sub_state = 1;
@@ -5571,10 +5560,6 @@ void Vehicle::UpdateSound()
  */
 SoundId Vehicle::UpdateScreamSound()
 {
-    rct_ride_entry* rideEntry = GetRideEntry();
-
-    rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
-
     int32_t totalNumPeeps = NumPeepsUntilTrainTail();
     if (totalNumPeeps == 0)
         return SoundId::Null;
@@ -5596,11 +5581,11 @@ SoundId Vehicle::UpdateScreamSound()
             if (vehicle2->vehicle_sprite_type < 1)
                 continue;
             if (vehicle2->vehicle_sprite_type <= 4)
-                goto produceScream;
+                return ProduceScreamSound(totalNumPeeps);
             if (vehicle2->vehicle_sprite_type < 9)
                 continue;
             if (vehicle2->vehicle_sprite_type <= 15)
-                goto produceScream;
+                return ProduceScreamSound(totalNumPeeps);
         }
         return SoundId::Null;
     }
@@ -5619,15 +5604,21 @@ SoundId Vehicle::UpdateScreamSound()
         if (vehicle2->vehicle_sprite_type < 5)
             continue;
         if (vehicle2->vehicle_sprite_type <= 8)
-            goto produceScream;
+            return ProduceScreamSound(totalNumPeeps);
         if (vehicle2->vehicle_sprite_type < 17)
             continue;
         if (vehicle2->vehicle_sprite_type <= 23)
-            goto produceScream;
+            return ProduceScreamSound(totalNumPeeps);
     }
     return SoundId::Null;
+}
 
-produceScream:
+SoundId Vehicle::ProduceScreamSound(const int32_t totalNumPeeps)
+{
+    rct_ride_entry* rideEntry = GetRideEntry();
+
+    rct_ride_entry_vehicle* vehicleEntry = &rideEntry->vehicles[vehicle_type];
+
     if (scream_sound_id == SoundId::Null)
     {
         auto r = scenario_rand();
@@ -7173,10 +7164,10 @@ void Vehicle::UpdateSpinningCar()
  *
  *  rct2: 0x006734B2
  */
-static void steam_particle_create(int16_t x, int16_t y, int16_t z)
+static void steam_particle_create(const CoordsXYZ& coords)
 {
-    auto surfaceElement = map_get_surface_element_at(CoordsXY{ x, y });
-    if (surfaceElement != nullptr && z > surfaceElement->GetBaseZ())
+    auto surfaceElement = map_get_surface_element_at(coords);
+    if (surfaceElement != nullptr && coords.z > surfaceElement->GetBaseZ())
     {
         SteamParticle* steam = &create_sprite(SPRITE_IDENTIFIER_MISC)->steam_particle;
         if (steam == nullptr)
@@ -7189,7 +7180,7 @@ static void steam_particle_create(int16_t x, int16_t y, int16_t z)
         steam->type = SPRITE_MISC_STEAM_PARTICLE;
         steam->frame = 256;
         steam->time_to_move = 0;
-        steam->MoveTo({ x, y, z });
+        steam->MoveTo(coords);
     }
 }
 
@@ -7243,7 +7234,7 @@ void Vehicle::UpdateAdditionalAnimation()
                             }();
                             int32_t directionIndex = sprite_direction >> 1;
                             auto offset = SteamParticleOffsets[typeIndex][directionIndex];
-                            steam_particle_create(x + offset.x, y + offset.y, z + offset.z);
+                            steam_particle_create({ x + offset.x, y + offset.y, z + offset.z });
                         }
                     }
                 }

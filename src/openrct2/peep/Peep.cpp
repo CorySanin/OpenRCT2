@@ -812,16 +812,14 @@ void peep_sprite_remove(Peep* peep)
 
     window_close_by_number(WC_FIRE_PROMPT, peep->sprite_identifier);
 
+    // Needed for invalidations after sprite removal
+    bool wasGuest = peep->AssignedPeepType == PEEP_TYPE_GUEST;
     if (peep->AssignedPeepType == PEEP_TYPE_GUEST)
     {
-        window_invalidate_by_class(WC_GUEST_LIST);
-
         news_item_disable_news(NEWS_ITEM_PEEP_ON_RIDE, peep->sprite_index);
     }
     else
     {
-        window_invalidate_by_class(WC_STAFF_LIST);
-
         gStaffModes[peep->StaffId] = 0;
         peep->AssignedPeepType = PEEP_TYPE_INVALID;
         staff_update_greyed_patrol_areas();
@@ -830,6 +828,9 @@ void peep_sprite_remove(Peep* peep)
         news_item_disable_news(NEWS_ITEM_PEEP, peep->sprite_index);
     }
     sprite_remove(peep);
+
+    auto intent = Intent(wasGuest ? INTENT_ACTION_REFRESH_GUEST_LIST : INTENT_ACTION_REFRESH_STAFF_LIST);
+    context_broadcast_intent(&intent);
 }
 
 /**
@@ -2296,8 +2297,9 @@ static void peep_return_to_centre_of_tile(Peep* peep)
  *
  *  rct2: 0x00693f2C
  */
-static void peep_interact_with_entrance(Peep* peep, int16_t x, int16_t y, TileElement* tile_element, uint8_t& pathing_result)
+static void peep_interact_with_entrance(Peep* peep, const CoordsXYE& coords, uint8_t& pathing_result)
 {
+    auto tile_element = coords.element;
     uint8_t entranceType = tile_element->AsEntrance()->GetEntranceType();
 
     // Store some details to determine when to override the default
@@ -2446,7 +2448,7 @@ static void peep_interact_with_entrance(Peep* peep, int16_t x, int16_t y, TileEl
             peep->DestinationX += CoordsDirectionDelta[peep->PeepDirection].x;
             peep->DestinationY += CoordsDirectionDelta[peep->PeepDirection].y;
             peep->DestinationTolerance = 9;
-            peep->MoveTo({ x, y, peep->z });
+            peep->MoveTo({ coords, peep->z });
             peep->SetState(PEEP_STATE_LEAVING_PARK);
 
             peep->Var37 = 0;
@@ -2481,19 +2483,16 @@ static void peep_interact_with_entrance(Peep* peep, int16_t x, int16_t y, TileEl
         }
 
         bool found = false;
-        auto entrance = std::find_if(gParkEntrances.begin(), gParkEntrances.end(), [x, y](const auto& e) {
-            return e.x == floor2(x, 32) && e.y == floor2(y, 32);
-        });
+        auto entrance = std::find_if(
+            gParkEntrances.begin(), gParkEntrances.end(), [coords](const auto& e) { return coords.ToTileStart() == e; });
         if (entrance != gParkEntrances.end())
         {
             int16_t z = entrance->z / 8;
             entranceDirection = entrance->direction;
-
-            int16_t next_x = (x & 0xFFE0) + CoordsDirectionDelta[entranceDirection].x;
-            int16_t next_y = (y & 0xFFE0) + CoordsDirectionDelta[entranceDirection].y;
+            auto nextLoc = coords.ToTileStart() + CoordsDirectionDelta[entranceDirection];
 
             // Make sure there is a path right behind the entrance, otherwise turn around
-            TileElement* nextTileElement = map_get_first_element_at({ next_x, next_y });
+            TileElement* nextTileElement = map_get_first_element_at(nextLoc);
             do
             {
                 if (nextTileElement == nullptr)
@@ -2587,7 +2586,7 @@ static void peep_interact_with_entrance(Peep* peep, int16_t x, int16_t y, TileEl
         peep->DestinationX += CoordsDirectionDelta[peep->PeepDirection].x;
         peep->DestinationY += CoordsDirectionDelta[peep->PeepDirection].y;
         peep->DestinationTolerance = 7;
-        peep->MoveTo({ x, y, peep->z });
+        peep->MoveTo({ coords, peep->z });
     }
 }
 
@@ -2595,16 +2594,17 @@ static void peep_interact_with_entrance(Peep* peep, int16_t x, int16_t y, TileEl
  *
  *  rct2: 0x006946D8
  */
-static void peep_footpath_move_forward(Peep* peep, int16_t x, int16_t y, TileElement* tile_element, bool vandalism)
+static void peep_footpath_move_forward(Peep* peep, const CoordsXYE& coords, bool vandalism)
 {
-    peep->NextLoc = { CoordsXY{ x, y }.ToTileStart(), tile_element->GetBaseZ() };
+    auto tile_element = coords.element;
+    peep->NextLoc = { coords.ToTileStart(), tile_element->GetBaseZ() };
     peep->SetNextFlags(tile_element->AsPath()->GetSlopeDirection(), tile_element->AsPath()->IsSloped(), false);
 
-    int16_t z = peep->GetZOnSlope(x, y);
+    int16_t z = peep->GetZOnSlope(coords.x, coords.y);
 
     if (peep->AssignedPeepType == PEEP_TYPE_STAFF)
     {
-        peep->MoveTo({ x, y, z });
+        peep->MoveTo({ coords, z });
         return;
     }
 
@@ -2637,7 +2637,7 @@ static void peep_footpath_move_forward(Peep* peep, int16_t x, int16_t y, TileEle
     uint16_t crowded = 0;
     uint8_t litter_count = 0;
     uint8_t sick_count = 0;
-    auto quad = EntityTileList({ x, y });
+    auto quad = EntityTileList(coords);
     for (auto entity : quad)
     {
         if (auto other_peep = entity->As<Peep>(); other_peep != nullptr)
@@ -2725,16 +2725,17 @@ static void peep_footpath_move_forward(Peep* peep, int16_t x, int16_t y, TileEle
         }
     }
 
-    peep->MoveTo({ x, y, z });
+    peep->MoveTo({ coords, z });
 }
 
 /**
  *
  *  rct2: 0x0069455E
  */
-static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElement* tile_element)
+static void peep_interact_with_path(Peep* peep, const CoordsXYE& coords)
 {
     // 0x00F1AEE2
+    auto tile_element = coords.element;
     bool vandalism_present = false;
     if (tile_element->AsPath()->HasAddition() && (tile_element->AsPath()->IsBroken())
         && (tile_element->AsPath()->GetEdges()) != 0xF)
@@ -2743,7 +2744,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
     }
 
     int16_t z = tile_element->GetBaseZ();
-    if (map_is_location_owned({ x, y, z }))
+    if (map_is_location_owned({ coords, z }))
     {
         if (peep->OutsideOfPark)
         {
@@ -2771,7 +2772,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
             // the queue, rebuilt the ride, etc.
             if (peep->CurrentRide == rideIndex)
             {
-                peep_footpath_move_forward(peep, x, y, tile_element, vandalism_present);
+                peep_footpath_move_forward(peep, { coords, tile_element }, vandalism_present);
             }
             else
             {
@@ -2779,7 +2780,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
                 peep->InteractionRideIndex = 0xFF;
                 guest->RemoveFromQueue();
                 peep->SetState(PEEP_STATE_1);
-                peep_footpath_move_forward(peep, x, y, tile_element, vandalism_present);
+                peep_footpath_move_forward(peep, { coords, tile_element }, vandalism_present);
             }
         }
         else
@@ -2829,7 +2830,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
                         }
                     }
 
-                    peep_footpath_move_forward(peep, x, y, tile_element, vandalism_present);
+                    peep_footpath_move_forward(peep, { coords, tile_element }, vandalism_present);
                 }
                 else
                 {
@@ -2841,7 +2842,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
             {
                 /* Peep is approaching a queue tile without a ride
                  * sign facing the peep. */
-                peep_footpath_move_forward(peep, x, y, tile_element, vandalism_present);
+                peep_footpath_move_forward(peep, { coords, tile_element }, vandalism_present);
             }
         }
     }
@@ -2853,7 +2854,7 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
             peep->RemoveFromQueue();
             peep->SetState(PEEP_STATE_1);
         }
-        peep_footpath_move_forward(peep, x, y, tile_element, vandalism_present);
+        peep_footpath_move_forward(peep, { coords, tile_element }, vandalism_present);
     }
 }
 
@@ -2861,9 +2862,9 @@ static void peep_interact_with_path(Peep* peep, int16_t x, int16_t y, TileElemen
  *
  *  rct2: 0x00693F70
  */
-static bool peep_interact_with_shop(Peep* peep, int16_t x, int16_t y, TileElement* tile_element)
+static bool peep_interact_with_shop(Peep* peep, const CoordsXYE& coords)
 {
-    ride_id_t rideIndex = tile_element->AsTrack()->GetRideIndex();
+    ride_id_t rideIndex = coords.element->AsTrack()->GetRideIndex();
     auto ride = get_ride(rideIndex);
     if (ride == nullptr || !ride_type_has_flag(ride->type, RIDE_TYPE_FLAG_IS_SHOP))
         return false;
@@ -2914,8 +2915,10 @@ static bool peep_interact_with_shop(Peep* peep, int16_t x, int16_t y, TileElemen
             money16 money = 0;
             guest->SpendMoney(money, cost, ExpenditureType::ParkRideTickets);
         }
-        peep->DestinationX = (x & 0xFFE0) + 16;
-        peep->DestinationY = (y & 0xFFE0) + 16;
+
+        auto coordsCentre = coords.ToTileCentre();
+        peep->DestinationX = coordsCentre.x;
+        peep->DestinationY = coordsCentre.y;
         peep->DestinationTolerance = 3;
 
         peep->CurrentRide = rideIndex;
@@ -3061,13 +3064,13 @@ void Peep::PerformNextAction(uint8_t& pathing_result, TileElement*& tile_result)
 
         if (tileElement->GetType() == TILE_ELEMENT_TYPE_PATH)
         {
-            peep_interact_with_path(this, newLoc.x, newLoc.y, tileElement);
+            peep_interact_with_path(this, { newLoc, tileElement });
             tile_result = tileElement;
             return;
         }
         else if (tileElement->GetType() == TILE_ELEMENT_TYPE_TRACK)
         {
-            if (peep_interact_with_shop(this, newLoc.x, newLoc.y, tileElement))
+            if (peep_interact_with_shop(this, { newLoc, tileElement }))
             {
                 tile_result = tileElement;
                 return;
@@ -3075,7 +3078,7 @@ void Peep::PerformNextAction(uint8_t& pathing_result, TileElement*& tile_result)
         }
         else if (tileElement->GetType() == TILE_ELEMENT_TYPE_ENTRANCE)
         {
-            peep_interact_with_entrance(this, newLoc.x, newLoc.y, tileElement, pathing_result);
+            peep_interact_with_entrance(this, { newLoc, tileElement }, pathing_result);
             tile_result = tileElement;
             return;
         }

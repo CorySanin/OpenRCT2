@@ -586,7 +586,9 @@ static void window_ride_list_paint(rct_window* w, rct_drawpixelinfo* dpi)
  */
 static void window_ride_list_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, int32_t scrollIndex)
 {
-    gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width, dpi->y + dpi->height, ColourMapA[w->colours[1]].mid_light);
+    auto dpiCoords = ScreenCoordsXY{ dpi->x, dpi->y };
+    gfx_fill_rect(
+        dpi, { dpiCoords, dpiCoords + ScreenCoordsXY{ dpi->width, dpi->height } }, ColourMapA[w->colours[1]].mid_light);
 
     auto y = 0;
     for (auto i = 0; i < w->no_list_items; i++)
@@ -618,7 +620,8 @@ static void window_ride_list_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi, 
         {
             case INFORMATION_TYPE_STATUS:
                 formatSecondaryEnabled = false;
-                ride->FormatStatusTo(gCommonFormatArgs);
+                ft.Rewind();
+                ride->FormatStatusTo(ft);
 
                 // Make test red and bold if broken down or crashed
                 if ((ride->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN) || (ride->lifecycle_flags & RIDE_LIFECYCLE_CRASHED))

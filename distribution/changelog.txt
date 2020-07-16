@@ -13,6 +13,7 @@
 - Feature: [#11788] Command to extract images from a .DAT file.
 - Feature: [#11959] Hacked go-kart tracks can now use 2x2 bends, 3x3 bends and S-bends.
 - Feature: [#12090] Boosters for the Wooden Roller Coaster (if the "Show all track pieces" cheat is enabled).
+- Feature: [#12184] .sea (RCT Classic) scenario files can now be imported.
 - Change: [#11209] Warn when user is running OpenRCT2 through Wine.
 - Change: [#11358] Switch copy and paste button positions in tile inspector.
 - Change: [#11449] Remove complete circuit requirement from Air Powered Vertical Coaster (for RCT1 parity).
@@ -42,8 +43,11 @@
 - Fix: [#11953] Incorrect banner text shade colour on wall text.
 - Fix: [#12062] Inconsistent lift hill sprites on Flying Coaster while inverted (original bug).
 - Fix: [#12068] Incorrect Entrance/Exit location on track design preview. Incorrect track design previews with track that contain diagonal track elements.
+- Fix: [#12071] Crash in Guest List when a guest dies.
 - Fix: [#12093] Staff window tab animation was no longer updating.
 - Fix: [#12123] Long server descriptions are not cut off properly.
+- Fix: [#12211] Map Generator shows incorrect map sizes (e.g. "150 x 0").
+- Fix: [#12221] Map Generation tool doesn't place any trees.
 - Fix: RCT1 scenarios have more items in the object list than are present in the park or the research list.
 - Improved: [#6530] Allow water and land height changes on park borders.
 - Improved: [#11390] Build hash written to screenshot metadata.

@@ -522,8 +522,7 @@ static void paint_attached_ps(rct_drawpixelinfo* dpi, paint_struct* ps, uint32_t
     attached_paint_struct* attached_ps = ps->attached_ps;
     for (; attached_ps; attached_ps = attached_ps->next)
     {
-        auto screenCoords = ScreenCoordsXY{ attached_ps->x + static_cast<int16_t>(ps->x),
-                                            attached_ps->y + static_cast<int16_t>(ps->y) };
+        auto screenCoords = ScreenCoordsXY{ attached_ps->x + ps->x, attached_ps->y + ps->y };
 
         uint32_t imageId = paint_ps_colourify_image(attached_ps->image_id, ps->sprite_type, viewFlags);
         if (attached_ps->flags & PAINT_STRUCT_FLAG_IS_MASKED)
@@ -599,34 +598,28 @@ static void paint_ps_image_with_bounding_boxes(rct_drawpixelinfo* dpi, paint_str
     const auto screenCoordBackBottom = translate_3d_to_2d_with_z(rotation, backBottom);
 
     // bottom square
-    gfx_draw_line(
-        dpi, screenCoordFrontBottom.x, screenCoordFrontBottom.y, screenCoordLeftBottom.x, screenCoordLeftBottom.y, colour);
-    gfx_draw_line(
-        dpi, screenCoordBackBottom.x, screenCoordBackBottom.y, screenCoordLeftBottom.x, screenCoordLeftBottom.y, colour);
-    gfx_draw_line(
-        dpi, screenCoordBackBottom.x, screenCoordBackBottom.y, screenCoordRightBottom.x, screenCoordRightBottom.y, colour);
-    gfx_draw_line(
-        dpi, screenCoordFrontBottom.x, screenCoordFrontBottom.y, screenCoordRightBottom.x, screenCoordRightBottom.y, colour);
+    gfx_draw_line(dpi, { screenCoordFrontBottom, screenCoordLeftBottom }, colour);
+    gfx_draw_line(dpi, { screenCoordBackBottom, screenCoordLeftBottom }, colour);
+    gfx_draw_line(dpi, { screenCoordBackBottom, screenCoordRightBottom }, colour);
+    gfx_draw_line(dpi, { screenCoordFrontBottom, screenCoordRightBottom }, colour);
 
     // vertical back + sides
-    gfx_draw_line(dpi, screenCoordBackTop.x, screenCoordBackTop.y, screenCoordBackBottom.x, screenCoordBackBottom.y, colour);
-    gfx_draw_line(dpi, screenCoordLeftTop.x, screenCoordLeftTop.y, screenCoordLeftBottom.x, screenCoordLeftBottom.y, colour);
-    gfx_draw_line(
-        dpi, screenCoordRightTop.x, screenCoordRightTop.y, screenCoordRightBottom.x, screenCoordRightBottom.y, colour);
+    gfx_draw_line(dpi, { screenCoordBackTop, screenCoordBackBottom }, colour);
+    gfx_draw_line(dpi, { screenCoordLeftTop, screenCoordLeftBottom }, colour);
+    gfx_draw_line(dpi, { screenCoordRightTop, screenCoordRightBottom }, colour);
 
     // top square back
-    gfx_draw_line(dpi, screenCoordBackTop.x, screenCoordBackTop.y, screenCoordLeftTop.x, screenCoordLeftTop.y, colour);
-    gfx_draw_line(dpi, screenCoordBackTop.x, screenCoordBackTop.y, screenCoordRightTop.x, screenCoordRightTop.y, colour);
+    gfx_draw_line(dpi, { screenCoordBackTop, screenCoordLeftTop }, colour);
+    gfx_draw_line(dpi, { screenCoordBackTop, screenCoordRightTop }, colour);
 
     paint_ps_image(dpi, ps, imageId, x, y);
 
     // vertical front
-    gfx_draw_line(
-        dpi, screenCoordFrontTop.x, screenCoordFrontTop.y, screenCoordFrontBottom.x, screenCoordFrontBottom.y, colour);
+    gfx_draw_line(dpi, { screenCoordFrontTop, screenCoordFrontBottom }, colour);
 
     // top square
-    gfx_draw_line(dpi, screenCoordFrontTop.x, screenCoordFrontTop.y, screenCoordLeftTop.x, screenCoordLeftTop.y, colour);
-    gfx_draw_line(dpi, screenCoordFrontTop.x, screenCoordFrontTop.y, screenCoordRightTop.x, screenCoordRightTop.y, colour);
+    gfx_draw_line(dpi, { screenCoordFrontTop, screenCoordLeftTop }, colour);
+    gfx_draw_line(dpi, { screenCoordFrontTop, screenCoordRightTop }, colour);
 }
 
 static void paint_ps_image(rct_drawpixelinfo* dpi, paint_struct* ps, uint32_t imageId, int16_t x, int16_t y)
@@ -1001,7 +994,7 @@ paint_struct* sub_98199C(
  * @param y (cx)
  * @return (!CF) success
  */
-bool paint_attach_to_previous_attach(paint_session* session, uint32_t image_id, uint16_t x, uint16_t y)
+bool paint_attach_to_previous_attach(paint_session* session, uint32_t image_id, int16_t x, int16_t y)
 {
     if (session->UnkF1AD2C == nullptr)
     {
@@ -1038,7 +1031,7 @@ bool paint_attach_to_previous_attach(paint_session* session, uint32_t image_id, 
  * @param y (cx)
  * @return (!CF) success
  */
-bool paint_attach_to_previous_ps(paint_session* session, uint32_t image_id, uint16_t x, uint16_t y)
+bool paint_attach_to_previous_ps(paint_session* session, uint32_t image_id, int16_t x, int16_t y)
 {
     if (session->NextFreePaintStruct >= session->EndOfPaintStructArray)
     {

@@ -582,7 +582,11 @@ static void window_guest_list_scrollmousedown(rct_window* w, int32_t scrollIndex
             {
                 if (i == 0)
                 {
-                    window_guest_open(GET_PEEP(spriteIndex));
+                    auto guest = GetEntity<Guest>(spriteIndex);
+                    if (guest != nullptr)
+                    {
+                        window_guest_open(guest);
+                    }
                     break;
                 }
                 i--;
@@ -745,7 +749,9 @@ static void window_guest_list_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi,
     rct_peep_thought* thought;
 
     // Background fill
-    gfx_fill_rect(dpi, dpi->x, dpi->y, dpi->x + dpi->width - 1, dpi->y + dpi->height - 1, ColourMapA[w->colours[1]].mid_light);
+    gfx_fill_rect(
+        dpi, { { dpi->x, dpi->y }, { dpi->x + dpi->width - 1, dpi->y + dpi->height - 1 } },
+        ColourMapA[w->colours[1]].mid_light);
     switch (_window_guest_list_selected_tab)
     {
         case PAGE_INDIVIDUAL:
@@ -769,7 +775,11 @@ static void window_guest_list_scrollpaint(rct_window* w, rct_drawpixelinfo* dpi,
                     }
 
                     // Guest name
-                    auto peep = GET_PEEP(spriteIndex);
+                    auto peep = GetEntity<Guest>(spriteIndex);
+                    if (peep == nullptr)
+                    {
+                        continue;
+                    }
                     auto ft = Formatter::Common();
                     peep->FormatNameTo(ft);
                     gfx_draw_string_left_clipped(dpi, format, gCommonFormatArgs, COLOUR_BLACK, { 0, y }, 113);
