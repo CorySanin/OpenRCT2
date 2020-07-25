@@ -710,7 +710,7 @@ private:
         }
         else
         {
-            dst->type = RCT1::GetRideType(src->type);
+            dst->type = RCT1::GetRideType(src->type, src->vehicle_type);
         }
 
         if (RCT1::RideTypeUsesVehicles(src->type))
@@ -1151,7 +1151,7 @@ private:
 
         dst->sprite_identifier = SPRITE_IDENTIFIER_VEHICLE;
         dst->ride = src->ride;
-        dst->ride_subtype = ride->subtype;
+        dst->ride_subtype = RCTEntryIndexToOpenRCT2EntryIndex(ride->subtype);
 
         dst->vehicle_type = vehicleEntryIndex;
         dst->type = src->type;
@@ -2604,7 +2604,7 @@ private:
                     auto rideType = ride_entry_get_first_non_null_ride_type(rideEntry);
                     dst->entryIndex = entryIndex;
                     dst->baseRideType = rideType;
-                    dst->type = RESEARCH_ENTRY_TYPE_RIDE;
+                    dst->type = Research::EntryType::Ride;
                     dst->flags = 0;
                     dst->category = RideTypeDescriptors[rideType].Category;
                 }
@@ -2623,7 +2623,7 @@ private:
                     auto rideType = ride_entry_get_first_non_null_ride_type(rideEntry);
                     dst->entryIndex = entryIndex;
                     dst->baseRideType = rideType;
-                    dst->type = RESEARCH_ENTRY_TYPE_RIDE;
+                    dst->type = Research::EntryType::Ride;
                     dst->flags = 0;
                     dst->category = RideTypeDescriptors[rideType].Category;
                 }
@@ -2636,7 +2636,7 @@ private:
             if (entryIndex != OBJECT_ENTRY_INDEX_IGNORE && entryIndex != OBJECT_ENTRY_INDEX_NULL)
             {
                 dst->entryIndex = entryIndex;
-                dst->type = RESEARCH_ENTRY_TYPE_SCENERY;
+                dst->type = Research::EntryType::Scenery;
                 dst->category = RESEARCH_CATEGORY_SCENERY_GROUP;
                 dst->flags = 0;
             }
@@ -2870,7 +2870,7 @@ private:
     void ImportBanner(Banner* dst, const RCT12Banner* src)
     {
         *dst = {};
-        dst->type = src->type;
+        dst->type = RCTEntryIndexToOpenRCT2EntryIndex(src->type);
 
         dst->flags = 0;
         if (src->flags & BANNER_FLAG_NO_ENTRY)

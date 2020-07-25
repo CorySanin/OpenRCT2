@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,11 +17,14 @@
 
 struct rct_ride_entry;
 
-enum
+namespace Research
 {
-    RESEARCH_ENTRY_TYPE_SCENERY = 0,
-    RESEARCH_ENTRY_TYPE_RIDE = 1,
-};
+    enum class EntryType : uint8_t
+    {
+        Scenery = 0,
+        Ride = 1,
+    };
+}
 
 enum
 {
@@ -39,7 +42,7 @@ struct ResearchItem
         {
             ObjectEntryIndex entryIndex;
             uint8_t baseRideType;
-            uint8_t type; // 0: scenery entry, 1: ride entry
+            Research::EntryType type; // 0: scenery entry, 1: ride entry
         };
     };
     uint8_t flags;
@@ -59,7 +62,8 @@ struct ResearchItem
         , category(_category)
     {
     }
-    ResearchItem(uint8_t _type, ObjectEntryIndex _entryIndex, uint8_t _baseRideType, uint8_t _category, uint8_t _flags)
+    ResearchItem(
+        Research::EntryType _type, ObjectEntryIndex _entryIndex, uint8_t _baseRideType, uint8_t _category, uint8_t _flags)
         : entryIndex(_entryIndex)
         , baseRideType(_baseRideType)
         , type(_type)
@@ -78,8 +82,8 @@ struct ResearchItem
         else
         {
             retItem.entryIndex = OpenRCT2EntryIndexToRCTEntryIndex(entryIndex);
-            retItem.baseRideType = baseRideType;
-            retItem.type = type;
+            retItem.baseRideType = OpenRCT2RideTypeToRCT2RideType(baseRideType);
+            retItem.type = static_cast<uint8_t>(type);
             retItem.flags = (flags & ~RESEARCH_ENTRY_FLAG_FIRST_OF_TYPE);
             retItem.category = category;
         }
@@ -100,8 +104,10 @@ struct ResearchItem
         else
         {
             entryIndex = RCTEntryIndexToOpenRCT2EntryIndex(oldResearchItem.entryIndex);
-            baseRideType = oldResearchItem.baseRideType;
-            type = oldResearchItem.type;
+            auto* rideEntry = get_ride_entry(entryIndex);
+            baseRideType = rideEntry != nullptr ? RCT2RideTypeToOpenRCT2RideType(oldResearchItem.baseRideType, rideEntry)
+                                                : oldResearchItem.baseRideType;
+            type = Research::EntryType{ oldResearchItem.type };
             flags = oldResearchItem.flags;
             category = oldResearchItem.category;
         }

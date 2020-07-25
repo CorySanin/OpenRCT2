@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -123,6 +123,7 @@ namespace OpenRCT2
             void ConfigureDirtyGrid();
             static void ResetWindowVisbilities();
             void DrawAllDirtyBlocks();
+            uint32_t GetNumDirtyRows(const uint32_t x, const uint32_t y, const uint32_t columns);
             void DrawDirtyBlocks(uint32_t x, uint32_t y, uint32_t columns, uint32_t rows);
         };
 #ifdef __WARN_SUGGEST_FINAL_TYPES__

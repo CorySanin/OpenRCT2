@@ -56,7 +56,6 @@
 #include "CableLift.h"
 #include "MusicList.h"
 #include "RideData.h"
-#include "RideGroupManager.h"
 #include "ShopItem.h"
 #include "Station.h"
 #include "Track.h"
@@ -397,8 +396,24 @@ money32 Ride::CalculateIncomePerHour() const
 
     if (currentShopItem != SHOP_ITEM_NONE)
     {
-        priceMinusCost += price[1];
-        priceMinusCost -= ShopItems[currentShopItem].Cost;
+        const money16 shopItemProfit = price[1] - ShopItems[currentShopItem].Cost;
+
+        if (ShopItems[currentShopItem].IsPhoto())
+        {
+            const int32_t rideTicketsSold = total_customers - no_secondary_items_sold;
+
+            // Use the ratio between photo sold and total admissions to approximate the photo income(as not every guest will buy
+            // one).
+            // TODO: use data from the last 5 minutes instead of all-time values for a more accurate calculation
+            if (rideTicketsSold > 0)
+            {
+                priceMinusCost += ((no_secondary_items_sold * shopItemProfit) / rideTicketsSold);
+            }
+        }
+        else
+        {
+            priceMinusCost += shopItemProfit;
+        }
 
         if (entry->shop_item[0] != SHOP_ITEM_NONE)
             priceMinusCost /= 2;
@@ -5623,12 +5638,7 @@ void Ride::SetNameToDefault()
  */
 RideNaming get_ride_naming(const uint8_t rideType, rct_ride_entry* rideEntry)
 {
-    if (RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_HAS_RIDE_GROUPS))
-    {
-        const RideGroup* rideGroup = RideGroupManager::GetRideGroup(rideType, rideEntry);
-        return rideGroup->Naming;
-    }
-    else if (!RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY))
+    if (!RideTypeDescriptors[rideType].HasFlag(RIDE_TYPE_FLAG_LIST_VEHICLES_SEPARATELY))
     {
         return RideTypeDescriptors[rideType].Naming;
     }
@@ -7631,18 +7641,6 @@ void Ride::FormatNameTo(Formatter& ft) const
             if (rideEntry != nullptr)
             {
                 rideTypeName = rideEntry->naming.Name;
-            }
-        }
-        else if (RideTypeDescriptors[type].HasFlag(RIDE_TYPE_FLAG_HAS_RIDE_GROUPS))
-        {
-            auto rideEntry = GetRideEntry();
-            if (rideEntry != nullptr)
-            {
-                auto rideGroup = RideGroupManager::GetRideGroup(type, rideEntry);
-                if (rideGroup != nullptr)
-                {
-                    rideTypeName = rideGroup->Naming.Name;
-                }
             }
         }
         ft.Add<rct_string_id>(1).Add<rct_string_id>(rideTypeName).Add<uint16_t>(default_name_number);

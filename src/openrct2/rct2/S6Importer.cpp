@@ -507,8 +507,19 @@ public:
     {
         *dst = {};
         dst->id = rideIndex;
-        dst->type = src->type;
-        dst->subtype = src->subtype;
+
+        ObjectEntryIndex rideType = src->type;
+        auto subtype = RCTEntryIndexToOpenRCT2EntryIndex(src->subtype);
+        if (RCT2RideTypeNeedsConversion(src->type))
+        {
+            auto* rideEntry = get_ride_entry(subtype);
+            if (rideEntry != nullptr)
+            {
+                rideType = RCT2RideTypeToOpenRCT2RideType(src->type, rideEntry);
+            }
+        }
+        dst->type = rideType;
+        dst->subtype = subtype;
         // pad_002;
         dst->mode = src->mode;
         dst->colour_scheme_type = src->colour_scheme_type;
@@ -926,7 +937,7 @@ public:
     void ImportBanner(Banner* dst, const RCT12Banner* src)
     {
         *dst = {};
-        dst->type = src->type;
+        dst->type = RCTEntryIndexToOpenRCT2EntryIndex(src->type);
         dst->flags = src->flags;
 
         if (!(src->flags & BANNER_FLAG_LINKED_TO_RIDE) && is_user_string_id(src->string_idx))
@@ -1398,7 +1409,7 @@ public:
         dst->var_D3 = src->var_D3;
         dst->mini_golf_current_animation = src->mini_golf_current_animation;
         dst->mini_golf_flags = src->mini_golf_flags;
-        dst->ride_subtype = src->ride_subtype;
+        dst->ride_subtype = RCTEntryIndexToOpenRCT2EntryIndex(src->ride_subtype);
         dst->colours_extended = src->colours_extended;
         dst->seat_rotation = src->seat_rotation;
         dst->target_seat_rotation = src->target_seat_rotation;

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -1945,8 +1945,8 @@ static SoundIdVolume sub_6D7AC0(SoundId currentSoundId, uint8_t currentVolume, S
  */
 void Vehicle::Update()
 {
-    // The cable lift uses the ride type of NULL
-    if (ride_subtype == RIDE_TYPE_NULL)
+    // The cable lift uses a ride entry index of NULL
+    if (ride_subtype == RIDE_ENTRY_INDEX_NULL)
     {
         CableLiftUpdate();
         return;
@@ -7621,7 +7621,7 @@ bool Vehicle::UpdateMotionCollisionDetection(const CoordsXYZ& loc, uint16_t* oth
             if (z_diff > 16)
                 continue;
 
-            if (vehicle2->ride_subtype == RIDE_TYPE_NULL)
+            if (vehicle2->ride_subtype == RIDE_ENTRY_INDEX_NULL)
                 continue;
 
             auto collideVehicleEntry = vehicle2->Entry();
@@ -8030,7 +8030,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
         if (curRide != nullptr)
         {
             uint16_t rideType = curRide->type;
-            if (trackType == TRACK_ELEM_ROTATION_CONTROL_TOGGLE && rideType == RIDE_TYPE_STEEL_WILD_MOUSE)
+            if (trackType == TRACK_ELEM_ROTATION_CONTROL_TOGGLE && rideType == RIDE_TYPE_SPINNING_WILD_MOUSE)
             {
                 update_flags ^= VEHICLE_UPDATE_FLAG_ROTATION_OFF_WILD_MOUSE;
             }

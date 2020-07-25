@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -1073,27 +1073,12 @@ ScreenCoordsXY screen_coord_to_viewport_coord(rct_viewport* viewport, const Scre
 
 CoordsXY viewport_coord_to_map_coord(const ScreenCoordsXY& coords, int32_t z)
 {
-    CoordsXY ret{};
-    switch (get_current_rotation())
-    {
-        case 0:
-            ret.x = -coords.x / 2 + coords.y + z;
-            ret.y = coords.x / 2 + coords.y + z;
-            break;
-        case 1:
-            ret.x = -coords.x / 2 - coords.y - z;
-            ret.y = -coords.x / 2 + coords.y + z;
-            break;
-        case 2:
-            ret.x = coords.x / 2 - coords.y - z;
-            ret.y = -coords.x / 2 - coords.y - z;
-            break;
-        case 3:
-            ret.x = coords.x / 2 + coords.y + z;
-            ret.y = coords.x / 2 - coords.y - z;
-            break;
-    }
-    return ret;
+    constexpr uint8_t inverseRotationMapping[NumOrthogonalDirections] = { 0, 3, 2, 1 };
+
+    // Reverse of translate_3d_to_2d_with_z
+    CoordsXY ret = { coords.y - coords.x / 2 + z, coords.y + coords.x / 2 + z };
+    auto inverseRotation = inverseRotationMapping[get_current_rotation()];
+    return ret.Rotate(inverseRotation);
 }
 
 /**

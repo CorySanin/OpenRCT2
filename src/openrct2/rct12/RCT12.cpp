@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -1009,7 +1009,7 @@ bool RCT12ResearchItem::IsRandomEndMarker() const
     return rawValue == RCT12_RESEARCHED_ITEMS_END_2;
 }
 
-ObjectEntryIndex RCTEntryIndexToOpenRCT2EntryIndex(RCT12ObjectEntryIndex index)
+ObjectEntryIndex RCTEntryIndexToOpenRCT2EntryIndex(const RCT12ObjectEntryIndex index)
 {
     if (index == RCT12_OBJECT_ENTRY_INDEX_NULL)
         return OBJECT_ENTRY_INDEX_NULL;
@@ -1017,7 +1017,7 @@ ObjectEntryIndex RCTEntryIndexToOpenRCT2EntryIndex(RCT12ObjectEntryIndex index)
     return index;
 }
 
-RCT12ObjectEntryIndex OpenRCT2EntryIndexToRCTEntryIndex(ObjectEntryIndex index)
+RCT12ObjectEntryIndex OpenRCT2EntryIndexToRCTEntryIndex(const ObjectEntryIndex index)
 {
     if (index == OBJECT_ENTRY_INDEX_NULL)
         return RCT12_OBJECT_ENTRY_INDEX_NULL;

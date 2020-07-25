@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2019 OpenRCT2 developers
+ * Copyright (c) 2014-2020 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -306,7 +306,7 @@ struct Vehicle : SpriteBase
     uint8_t var_D3;
     uint8_t mini_golf_current_animation;
     uint8_t mini_golf_flags;
-    uint8_t ride_subtype;
+    ObjectEntryIndex ride_subtype;
     uint8_t colours_extended;
     uint8_t seat_rotation;
     uint8_t target_seat_rotation;
