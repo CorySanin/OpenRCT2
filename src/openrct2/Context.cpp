@@ -726,33 +726,33 @@ namespace OpenRCT2
          */
         void Launch()
         {
-            gIntroState = INTRO_STATE_NONE;
+            gIntroState = IntroState::None;
             if (gOpenRCT2Headless)
             {
                 // NONE or OPEN are the only allowed actions for headless mode
-                if (gOpenRCT2StartupAction != STARTUP_ACTION_OPEN)
+                if (gOpenRCT2StartupAction != StartupAction::Open)
                 {
-                    gOpenRCT2StartupAction = STARTUP_ACTION_NONE;
+                    gOpenRCT2StartupAction = StartupAction::None;
                 }
             }
             else
             {
-                if ((gOpenRCT2StartupAction == STARTUP_ACTION_TITLE) && gConfigGeneral.play_intro)
+                if ((gOpenRCT2StartupAction == StartupAction::Title) && gConfigGeneral.play_intro)
                 {
-                    gOpenRCT2StartupAction = STARTUP_ACTION_INTRO;
+                    gOpenRCT2StartupAction = StartupAction::Intro;
                 }
             }
 
             switch (gOpenRCT2StartupAction)
             {
-                case STARTUP_ACTION_INTRO:
-                    gIntroState = INTRO_STATE_PUBLISHER_BEGIN;
+                case StartupAction::Intro:
+                    gIntroState = IntroState::PublisherBegin;
                     title_load();
                     break;
-                case STARTUP_ACTION_TITLE:
+                case StartupAction::Title:
                     title_load();
                     break;
-                case STARTUP_ACTION_OPEN:
+                case StartupAction::Open:
                 {
                     // A path that includes "://" is illegal with all common filesystems, so it is almost certainly a URL
                     // This way all cURL supported protocols, like http, ftp, scp and smb are automatically handled
@@ -826,7 +826,7 @@ namespace OpenRCT2
                     }
                     break;
                 }
-                case STARTUP_ACTION_EDIT:
+                case StartupAction::Edit:
                     if (String::SizeOf(gOpenRCT2StartupActionPath) == 0)
                     {
                         Editor::Load();
@@ -835,6 +835,8 @@ namespace OpenRCT2
                     {
                         title_load();
                     }
+                    break;
+                default:
                     break;
             }
 
@@ -1013,7 +1015,7 @@ namespace OpenRCT2
 
             date_update_real_time_of_day();
 
-            if (gIntroState != INTRO_STATE_NONE)
+            if (gIntroState != IntroState::None)
             {
                 intro_update();
             }

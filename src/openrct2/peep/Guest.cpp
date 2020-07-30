@@ -403,7 +403,7 @@ bool loc_690FD0(Peep* peep, uint8_t* rideToView, uint8_t* rideSeatToView, TileEl
 template<> bool SpriteBase::Is<Guest>() const
 {
     auto peep = As<Peep>();
-    return peep && peep->AssignedPeepType == PEEP_TYPE_GUEST;
+    return peep && peep->AssignedPeepType == PeepType::Guest;
 }
 
 bool Guest::GuestHasValidXY() const
@@ -1702,7 +1702,7 @@ loc_69B221:
         ft.Add<rct_string_id>(ShopItems[shopItem].Naming.Indefinite);
         if (gConfigNotifications.guest_bought_item)
         {
-            news_item_add_to_queue(2, STR_PEEP_TRACKING_NOTIFICATION_BOUGHT_X, sprite_index);
+            news_item_add_to_queue(News::ItemType::PeepOnRide, STR_PEEP_TRACKING_NOTIFICATION_BOUGHT_X, sprite_index);
         }
     }
 
@@ -2025,8 +2025,8 @@ bool Guest::ShouldGoOnRide(Ride* ride, int32_t entranceNum, bool atQueue, bool t
                 // Check if there's room in the queue for the peep to enter.
                 if (ride->stations[entranceNum].LastPeepInQueue != SPRITE_INDEX_NULL)
                 {
-                    Peep* lastPeepInQueue = GET_PEEP(ride->stations[entranceNum].LastPeepInQueue);
-                    if (abs(lastPeepInQueue->z - z) <= 6)
+                    Peep* lastPeepInQueue = GetEntity<Guest>(ride->stations[entranceNum].LastPeepInQueue);
+                    if (lastPeepInQueue != nullptr && (abs(lastPeepInQueue->z - z) <= 6))
                     {
                         int32_t dx = abs(lastPeepInQueue->x - x);
                         int32_t dy = abs(lastPeepInQueue->y - y);
@@ -3734,7 +3734,7 @@ void Guest::UpdateRideAdvanceThroughEntrance()
                 ride->FormatNameTo(ft);
                 if (gConfigNotifications.ride_warnings)
                 {
-                    news_item_add_to_queue(NEWS_ITEM_RIDE, STR_GUESTS_GETTING_STUCK_ON_RIDE, CurrentRide);
+                    news_item_add_to_queue(News::ItemType::Ride, STR_GUESTS_GETTING_STUCK_ON_RIDE, CurrentRide);
                 }
             }
 
@@ -3911,7 +3911,7 @@ void Guest::UpdateRideFreeVehicleEnterRide(Ride* ride)
 
         if (gConfigNotifications.guest_on_ride)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEP_ON_RIDE, msg_string, sprite_index);
+            news_item_add_to_queue(News::ItemType::PeepOnRide, msg_string, sprite_index);
         }
     }
 
@@ -4081,22 +4081,21 @@ void Guest::UpdateRideEnterVehicle()
 
             if (vehicle->IsUsedInPairs())
             {
-                auto* seatedPeep = GET_PEEP(vehicle->peep[CurrentSeat ^ 1]);
-                if (seatedPeep != nullptr)
+                auto* seatedGuest = GetEntity<Guest>(vehicle->peep[CurrentSeat ^ 1]);
+                if (seatedGuest != nullptr)
                 {
-                    auto* seatedPeepAsGuest = seatedPeep->AsGuest();
-                    if (seatedPeepAsGuest == nullptr || seatedPeepAsGuest->SubState != PEEP_RIDE_ENTER_VEHICLE)
+                    if (seatedGuest->SubState != PEEP_RIDE_ENTER_VEHICLE)
                         return;
 
                     vehicle->num_peeps++;
                     ride->cur_num_customers++;
 
-                    vehicle->mass += seatedPeepAsGuest->Mass;
-                    seatedPeepAsGuest->MoveTo({ LOCATION_NULL, 0, 0 });
-                    seatedPeepAsGuest->SetState(PEEP_STATE_ON_RIDE);
-                    seatedPeepAsGuest->GuestTimeOnRide = 0;
-                    seatedPeepAsGuest->SubState = PEEP_RIDE_ON_RIDE;
-                    seatedPeepAsGuest->OnEnterRide(CurrentRide);
+                    vehicle->mass += seatedGuest->Mass;
+                    seatedGuest->MoveTo({ LOCATION_NULL, 0, 0 });
+                    seatedGuest->SetState(PEEP_STATE_ON_RIDE);
+                    seatedGuest->GuestTimeOnRide = 0;
+                    seatedGuest->SubState = PEEP_RIDE_ON_RIDE;
+                    seatedGuest->OnEnterRide(CurrentRide);
                 }
             }
 
@@ -5012,7 +5011,7 @@ void Guest::UpdateRideLeaveExit()
 
         if (gConfigNotifications.guest_left_ride)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEP_ON_RIDE, STR_PEEP_TRACKING_LEFT_RIDE_X, sprite_index);
+            news_item_add_to_queue(News::ItemType::PeepOnRide, STR_PEEP_TRACKING_LEFT_RIDE_X, sprite_index);
         }
     }
 
@@ -5569,10 +5568,13 @@ void Guest::UpdateQueuing()
             // first check if the next in queue is actually nearby
             // if they are not then it's safe to assume that this is
             // the front of the queue.
-            Peep* next_peep = GET_PEEP(GuestNextInQueue);
-            if (abs(next_peep->x - x) < 32 && abs(next_peep->y - y) < 32)
+            Peep* nextGuest = GetEntity<Guest>(GuestNextInQueue);
+            if (nextGuest != nullptr)
             {
-                is_front = false;
+                if (abs(nextGuest->x - x) < 32 && abs(nextGuest->y - y) < 32)
+                {
+                    is_front = false;
+                }
             }
         }
 

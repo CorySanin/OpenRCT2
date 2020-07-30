@@ -83,7 +83,7 @@ void viewport_init_all()
 
     // ?
     input_reset_flags();
-    input_set_state(INPUT_STATE_RESET);
+    input_set_state(InputState::Reset);
     gPressedWidget.window_classification = 255;
     gPickupPeepImage = UINT32_MAX;
     reset_tooltip_not_shown();
@@ -655,11 +655,18 @@ void viewport_update_smart_sprite_follow(rct_window* window)
     }
     else if (entity->sprite_identifier == SPRITE_IDENTIFIER_PEEP)
     {
-        Peep* peep = GET_PEEP(window->viewport_smart_follow_sprite);
+        Peep* peep = TryGetEntity<Peep>(window->viewport_smart_follow_sprite);
+        if (peep == nullptr)
+        {
+            // will never happen
+            window->viewport_smart_follow_sprite = SPRITE_INDEX_NULL;
+            window->viewport_target_sprite = SPRITE_INDEX_NULL;
+            return;
+        }
 
-        if (peep->AssignedPeepType == PEEP_TYPE_GUEST)
+        if (peep->AssignedPeepType == PeepType::Guest)
             viewport_update_smart_guest_follow(window, peep);
-        else if (peep->AssignedPeepType == PEEP_TYPE_STAFF)
+        else if (peep->AssignedPeepType == PeepType::Staff)
             viewport_update_smart_staff_follow(window, peep);
     }
     else if (entity->sprite_identifier == SPRITE_IDENTIFIER_VEHICLE)

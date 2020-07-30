@@ -248,7 +248,7 @@ namespace OpenRCT2::Scripting
     private:
         Vehicle* GetVehicle() const
         {
-            return get_sprite(_id)->generic.As<Vehicle>();
+            return ::GetEntity<Vehicle>(_id);
         }
 
         uint8_t rideObject_get() const
@@ -643,7 +643,7 @@ namespace OpenRCT2::Scripting
             auto peep = GetPeep();
             if (peep != nullptr)
             {
-                return peep->AssignedPeepType == PEEP_TYPE_STAFF ? "staff" : "guest";
+                return peep->AssignedPeepType == PeepType::Staff ? "staff" : "guest";
             }
             return "";
         }

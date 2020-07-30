@@ -555,6 +555,9 @@ bool track_block_get_next_from_zero(
  */
 bool track_block_get_next(CoordsXYE* input, CoordsXYE* output, int32_t* z, int32_t* direction)
 {
+    if (input == nullptr || input->element == nullptr)
+        return false;
+
     auto inputElement = input->element->AsTrack();
     if (inputElement == nullptr)
         return false;
@@ -2176,8 +2179,11 @@ void Ride::UpdateSpiralSlide()
     {
         slide_in_use--;
 
-        Peep* peep = GET_PEEP(slide_peep);
-        peep->DestinationX++;
+        auto* peep = GetEntity<Guest>(slide_peep);
+        if (peep != nullptr)
+        {
+            peep->DestinationX++;
+        }
     }
 
     const uint8_t current_rotation = get_current_rotation();
@@ -2533,7 +2539,7 @@ void ride_breakdown_add_news_item(Ride* ride)
     ride->FormatNameTo(ft);
     if (gConfigNotifications.ride_broken_down)
     {
-        news_item_add_to_queue(NEWS_ITEM_RIDE, STR_RIDE_IS_BROKEN_DOWN, ride->id);
+        news_item_add_to_queue(News::ItemType::Ride, STR_RIDE_IS_BROKEN_DOWN, ride->id);
     }
 }
 
@@ -2560,7 +2566,7 @@ static void ride_breakdown_status_update(Ride* ride)
             ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
-                news_item_add_to_queue(NEWS_ITEM_RIDE, STR_RIDE_IS_STILL_NOT_FIXED, ride->id);
+                news_item_add_to_queue(News::ItemType::Ride, STR_RIDE_IS_STILL_NOT_FIXED, ride->id);
             }
         }
     }
@@ -3211,7 +3217,7 @@ static void ride_entrance_exit_connected(Ride* ride)
             ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
-                news_item_add_to_queue(1, STR_ENTRANCE_NOT_CONNECTED, ride->id);
+                news_item_add_to_queue(News::ItemType::Ride, STR_ENTRANCE_NOT_CONNECTED, ride->id);
             }
             ride->connected_message_throttle = 3;
         }
@@ -3223,7 +3229,7 @@ static void ride_entrance_exit_connected(Ride* ride)
             ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
-                news_item_add_to_queue(1, STR_EXIT_NOT_CONNECTED, ride->id);
+                news_item_add_to_queue(News::ItemType::Ride, STR_EXIT_NOT_CONNECTED, ride->id);
             }
             ride->connected_message_throttle = 3;
         }
@@ -3299,7 +3305,7 @@ static void ride_shop_connected(Ride* ride)
     ride->FormatNameTo(ft);
     if (gConfigNotifications.ride_warnings)
     {
-        news_item_add_to_queue(1, STR_ENTRANCE_NOT_CONNECTED, ride->id);
+        news_item_add_to_queue(News::ItemType::Ride, STR_ENTRANCE_NOT_CONNECTED, ride->id);
     }
 
     ride->connected_message_throttle = 3;
@@ -7099,7 +7105,7 @@ void Ride::Crash(uint8_t vehicleIndex)
     FormatNameTo(ft);
     if (gConfigNotifications.ride_crashed)
     {
-        news_item_add_to_queue(NEWS_ITEM_RIDE, STR_RIDE_HAS_CRASHED, id);
+        news_item_add_to_queue(News::ItemType::Ride, STR_RIDE_HAS_CRASHED, id);
     }
 }
 

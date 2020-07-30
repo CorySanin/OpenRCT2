@@ -32,7 +32,7 @@ enum
 };
 
 static rct_widget window_dropdown_widgets[] = {
-    { WWT_IMGBTN, 0, 0, 0, 0, 0, static_cast<uint32_t>(SPR_NONE), STR_NONE },
+    MakeWidget({ 0, 0 }, { 1, 1 }, WWT_IMGBTN, 0),
     { WIDGETS_END },
 };
 
@@ -223,7 +223,7 @@ void window_dropdown_show_text_custom_width(
     _dropdownItemsChecked.reset();
     gDropdownIsColour = false;
     gDropdownDefaultIndex = -1;
-    input_set_state(INPUT_STATE_DROPDOWN_ACTIVE);
+    input_set_state(InputState::DropdownActive);
 }
 
 /**
@@ -303,7 +303,7 @@ void window_dropdown_show_image(
     _dropdownItemsChecked.reset();
     gDropdownIsColour = false;
     gDropdownDefaultIndex = -1;
-    input_set_state(INPUT_STATE_DROPDOWN_ACTIVE);
+    input_set_state(InputState::DropdownActive);
 }
 
 void window_dropdown_close()

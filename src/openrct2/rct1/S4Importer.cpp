@@ -1364,8 +1364,9 @@ private:
         for (auto i = 0; i < MAX_NEWS_ITEMS; i++)
         {
             rct12_news_item* newsItem = &_s4.messages[i];
+            News::ItemType type = static_cast<News::ItemType>(newsItem->Type);
 
-            if (newsItem->Type == NEWS_ITEM_PEEP || newsItem->Type == NEWS_ITEM_PEEP_ON_RIDE)
+            if (type == News::ItemType::Peep || type == News::ItemType::PeepOnRide)
             {
                 newsItem->Assoc = MapSpriteIndex(newsItem->Assoc, spriteIndexMap);
             }
@@ -1552,7 +1553,7 @@ private:
 
         dst->ItemStandardFlags = src->item_standard_flags;
 
-        if (dst->AssignedPeepType == PEEP_TYPE_GUEST)
+        if (dst->AssignedPeepType == PeepType::Guest)
         {
             if (dst->OutsideOfPark && dst->State != PEEP_STATE_LEAVING_PARK)
             {
@@ -2532,14 +2533,14 @@ private:
             const rct12_news_item* src = &_s4.messages[i];
             NewsItem* dst = &gNewsItems[i];
 
-            dst->Type = src->Type;
+            dst->Type = static_cast<News::ItemType>(src->Type);
             dst->Flags = src->Flags;
             dst->Ticks = src->Ticks;
             dst->MonthYear = src->MonthYear;
             dst->Day = src->Day;
             std::copy(std::begin(src->Text), std::end(src->Text), dst->Text);
 
-            if (dst->Type == NEWS_ITEM_RESEARCH)
+            if (dst->Type == News::ItemType::Research)
             {
                 uint8_t researchItem = src->Assoc & 0x000000FF;
                 uint8_t researchType = (src->Assoc & 0x00FF0000) >> 16;
@@ -2651,12 +2652,12 @@ private:
         gClimateCurrent.Weather = _s4.weather;
         gClimateCurrent.WeatherEffect = WEATHER_EFFECT_NONE;
         gClimateCurrent.WeatherGloom = _s4.weather_gloom;
-        gClimateCurrent.RainLevel = _s4.rain;
+        gClimateCurrent.Level = static_cast<RainLevel>(_s4.rain);
         gClimateNext.Temperature = _s4.target_temperature;
         gClimateNext.Weather = _s4.target_weather;
         gClimateNext.WeatherEffect = WEATHER_EFFECT_NONE;
         gClimateNext.WeatherGloom = _s4.target_weather_gloom;
-        gClimateNext.RainLevel = _s4.target_rain;
+        gClimateNext.Level = static_cast<RainLevel>(_s4.target_rain);
     }
 
     void ImportScenarioNameDetails()
@@ -2807,13 +2808,25 @@ private:
                             ConvertWall(&type, &colourA, &colourB);
 
                             type = _wallTypeToEntryMap[type];
-                            auto edgeSlope = LandSlopeToWallSlope[slope][edge & 3] & ~EDGE_SLOPE_ELEVATED;
+                            auto baseZ = originalTileElement.GetBaseZ();
+                            auto clearanceZ = originalTileElement.GetClearanceZ();
+                            auto edgeSlope = LandSlopeToWallSlope[slope][edge & 3];
+                            if (edgeSlope & (EDGE_SLOPE_UPWARDS | EDGE_SLOPE_DOWNWARDS))
+                            {
+                                clearanceZ += LAND_HEIGHT_STEP;
+                            }
+                            if (edgeSlope & EDGE_SLOPE_ELEVATED)
+                            {
+                                edgeSlope &= ~EDGE_SLOPE_ELEVATED;
+                                baseZ += LAND_HEIGHT_STEP;
+                                clearanceZ += LAND_HEIGHT_STEP;
+                            }
 
                             auto element = tile_element_insert(location, originalTileElement.GetOccupiedQuadrants());
                             element->SetType(TILE_ELEMENT_TYPE_WALL);
                             element->SetDirection(edge);
-                            element->SetBaseZ(originalTileElement.GetBaseZ());
-                            element->SetClearanceZ(originalTileElement.GetClearanceZ());
+                            element->SetBaseZ(baseZ);
+                            element->SetClearanceZ(clearanceZ);
 
                             auto wallElement = element->AsWall();
                             wallElement->SetEntryIndex(type);

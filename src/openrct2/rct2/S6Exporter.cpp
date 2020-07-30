@@ -391,8 +391,8 @@ void S6Exporter::Export()
     _s6.next_weather_effect = gClimateNext.WeatherEffect;
     _s6.current_weather_gloom = gClimateCurrent.WeatherGloom;
     _s6.next_weather_gloom = gClimateNext.WeatherGloom;
-    _s6.current_rain_level = gClimateCurrent.RainLevel;
-    _s6.next_rain_level = gClimateNext.RainLevel;
+    _s6.current_rain_level = static_cast<uint8_t>(gClimateCurrent.Level);
+    _s6.next_rain_level = static_cast<uint8_t>(gClimateNext.Level);
 
     // News items
     for (size_t i = 0; i < RCT12_MAX_NEWS_ITEMS; i++)
@@ -400,7 +400,7 @@ void S6Exporter::Export()
         const NewsItem* src = &gNewsItems[i];
         rct12_news_item* dst = &_s6.news_items[i];
 
-        dst->Type = src->Type;
+        dst->Type = static_cast<uint8_t>(src->Type);
         dst->Flags = src->Flags;
         dst->Assoc = src->Assoc;
         dst->Ticks = src->Ticks;
@@ -1111,7 +1111,7 @@ void S6Exporter::ExportSpritePeep(RCT2SpritePeep* dst, const Peep* src)
     }
     if (generateName)
     {
-        if (src->AssignedPeepType == PeepType::PEEP_TYPE_STAFF)
+        if (src->AssignedPeepType == PeepType::Staff)
         {
             static constexpr const rct_string_id staffNames[] = {
                 STR_HANDYMAN_X,

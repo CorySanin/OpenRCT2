@@ -664,7 +664,7 @@ private:
                         {
                             offset++;
                         }
-                        auto peep = GET_PEEP(vehicle->peep[i + offset]);
+                        auto peep = TryGetEntity<Guest>(vehicle->peep[i + offset]);
                         if (peep != nullptr)
                         {
                             vehicle->mass -= peep->Mass;
@@ -688,7 +688,7 @@ private:
         // will be fetched on a deleted peep.
         for (auto peep : EntityList<Peep>(EntityListId::Peep))
         {
-            if (peep->AssignedPeepType == PEEP_TYPE_GUEST)
+            if (peep->AssignedPeepType == PeepType::Guest)
             {
                 peep->Remove();
             }

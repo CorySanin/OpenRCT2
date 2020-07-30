@@ -331,12 +331,12 @@ template<> bool SpriteBase::Is<Peep>() const
 
 Guest* Peep::AsGuest()
 {
-    return AssignedPeepType == PEEP_TYPE_GUEST ? static_cast<Guest*>(this) : nullptr;
+    return AssignedPeepType == PeepType::Guest ? static_cast<Guest*>(this) : nullptr;
 }
 
 Staff* Peep::AsStaff()
 {
-    return AssignedPeepType == PEEP_TYPE_STAFF ? static_cast<Staff*>(this) : nullptr;
+    return AssignedPeepType == PeepType::Staff ? static_cast<Staff*>(this) : nullptr;
 }
 
 void Peep::Invalidate()
@@ -683,7 +683,7 @@ void peep_window_state_update(Peep* peep)
     if (w != nullptr)
         window_event_invalidate_call(w);
 
-    if (peep->AssignedPeepType == PEEP_TYPE_GUEST)
+    if (peep->AssignedPeepType == PeepType::Guest)
     {
         if (peep->State == PEEP_STATE_ON_RIDE || peep->State == PEEP_STATE_ENTERING_RIDE)
         {
@@ -784,7 +784,7 @@ std::unique_ptr<GameActionResult> Peep::Place(const TileCoordsXYZ& location, boo
         PathCheckOptimisation = 0;
         sprite_position_tween_reset();
 
-        if (AssignedPeepType == PEEP_TYPE_GUEST)
+        if (AssignedPeepType == PeepType::Guest)
         {
             ActionSpriteType = PEEP_ACTION_SPRITE_TYPE_INVALID;
             HappinessTarget = std::max(HappinessTarget - 10, 0);
@@ -813,19 +813,19 @@ void peep_sprite_remove(Peep* peep)
     window_close_by_number(WC_FIRE_PROMPT, peep->sprite_identifier);
 
     // Needed for invalidations after sprite removal
-    bool wasGuest = peep->AssignedPeepType == PEEP_TYPE_GUEST;
-    if (peep->AssignedPeepType == PEEP_TYPE_GUEST)
+    bool wasGuest = peep->AssignedPeepType == PeepType::Guest;
+    if (peep->AssignedPeepType == PeepType::Guest)
     {
-        news_item_disable_news(NEWS_ITEM_PEEP_ON_RIDE, peep->sprite_index);
+        news_item_disable_news(News::ItemType::PeepOnRide, peep->sprite_index);
     }
     else
     {
         gStaffModes[peep->StaffId] = 0;
-        peep->AssignedPeepType = PEEP_TYPE_INVALID;
+        peep->AssignedPeepType = PeepType::Invalid;
         staff_update_greyed_patrol_areas();
-        peep->AssignedPeepType = PEEP_TYPE_STAFF;
+        peep->AssignedPeepType = PeepType::Staff;
 
-        news_item_disable_news(NEWS_ITEM_PEEP, peep->sprite_index);
+        news_item_disable_news(News::ItemType::Peep, peep->sprite_index);
     }
     sprite_remove(peep);
 
@@ -838,7 +838,7 @@ void peep_sprite_remove(Peep* peep)
  */
 void Peep::Remove()
 {
-    if (AssignedPeepType == PEEP_TYPE_GUEST)
+    if (AssignedPeepType == PeepType::Guest)
     {
         if (!OutsideOfPark)
         {
@@ -872,7 +872,7 @@ void Peep::UpdateFalling()
         {
             auto ft = Formatter::Common();
             FormatNameTo(ft);
-            news_item_add_to_queue(NEWS_ITEM_BLANK, STR_NEWS_ITEM_GUEST_DROWNED, x | (y << 16));
+            news_item_add_to_queue(News::ItemType::Blank, STR_NEWS_ITEM_GUEST_DROWNED, x | (y << 16));
         }
 
         gParkRatingCasualtyPenalty = std::min(gParkRatingCasualtyPenalty + 25, 1000);
@@ -981,7 +981,7 @@ void Peep::Update1()
     if (!CheckForPath())
         return;
 
-    if (AssignedPeepType == PEEP_TYPE_GUEST)
+    if (AssignedPeepType == PeepType::Guest)
     {
         SetState(PEEP_STATE_WALKING);
     }
@@ -1085,7 +1085,7 @@ static void peep_update_thoughts(Peep* peep)
  */
 void Peep::Update()
 {
-    if (AssignedPeepType == PEEP_TYPE_GUEST)
+    if (AssignedPeepType == PeepType::Guest)
     {
         if (PreviousRide != RIDE_ID_NULL)
             if (++PreviousRideTimeOut >= 720)
@@ -1238,7 +1238,7 @@ void peep_problem_warnings_update()
         warning_throttle[0] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_ARE_HUNGRY, 20);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_ARE_HUNGRY, 20);
         }
     }
 
@@ -1249,7 +1249,7 @@ void peep_problem_warnings_update()
         warning_throttle[1] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_ARE_THIRSTY, 21);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_ARE_THIRSTY, 21);
         }
     }
 
@@ -1260,7 +1260,7 @@ void peep_problem_warnings_update()
         warning_throttle[2] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_CANT_FIND_TOILET, 22);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_CANT_FIND_TOILET, 22);
         }
     }
 
@@ -1271,7 +1271,7 @@ void peep_problem_warnings_update()
         warning_throttle[3] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_DISLIKE_LITTER, 26);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_DISLIKE_LITTER, 26);
         }
     }
 
@@ -1282,7 +1282,7 @@ void peep_problem_warnings_update()
         warning_throttle[4] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_DISGUSTED_BY_PATHS, 31);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_DISGUSTED_BY_PATHS, 31);
         }
     }
 
@@ -1293,7 +1293,7 @@ void peep_problem_warnings_update()
         warning_throttle[5] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_DISLIKE_VANDALISM, 33);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_DISLIKE_VANDALISM, 33);
         }
     }
 
@@ -1304,7 +1304,7 @@ void peep_problem_warnings_update()
         warning_throttle[6] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_GETTING_LOST_OR_STUCK, 27);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_GETTING_LOST_OR_STUCK, 27);
         }
     }
     else if (lost_counter >= PEEP_LOST_WARNING_THRESHOLD)
@@ -1312,7 +1312,7 @@ void peep_problem_warnings_update()
         warning_throttle[6] = 4;
         if (gConfigNotifications.guest_warnings)
         {
-            news_item_add_to_queue(NEWS_ITEM_PEEPS, STR_PEEPS_GETTING_LOST_OR_STUCK, 16);
+            news_item_add_to_queue(News::ItemType::Peeps, STR_PEEPS_GETTING_LOST_OR_STUCK, 16);
         }
     }
 }
@@ -1608,7 +1608,7 @@ Peep* Peep::Generate(const CoordsXYZ& coords)
     peep->Mass = (scenario_rand() & 0x1F) + 45;
     peep->PathCheckOptimisation = 0;
     peep->InteractionRideIndex = RIDE_ID_NULL;
-    peep->AssignedPeepType = PEEP_TYPE_GUEST;
+    peep->AssignedPeepType = PeepType::Guest;
     peep->PreviousRide = RIDE_ID_NULL;
     peep->Thoughts->type = PEEP_THOUGHT_TYPE_NONE;
     peep->WindowInvalidateFlags = 0;
@@ -1931,7 +1931,7 @@ void Peep::FormatNameTo(Formatter& ft) const
 {
     if (Name == nullptr)
     {
-        if (AssignedPeepType == PeepType::PEEP_TYPE_STAFF)
+        if (AssignedPeepType == PeepType::Staff)
         {
             static constexpr const rct_string_id staffNames[] = {
                 STR_HANDYMAN_X,
@@ -2176,7 +2176,7 @@ int32_t get_peep_face_sprite_large(Peep* peep)
 void peep_set_map_tooltip(Peep* peep)
 {
     auto ft = Formatter::MapTooltip();
-    if (peep->AssignedPeepType == PEEP_TYPE_GUEST)
+    if (peep->AssignedPeepType == PeepType::Guest)
     {
         ft.Add<rct_string_id>((peep->PeepFlags & PEEP_FLAGS_TRACKING) ? STR_TRACKED_GUEST_MAP_TIP : STR_GUEST_MAP_TIP);
         ft.Add<uint32_t>(get_peep_face_sprite_small(peep));
@@ -2219,11 +2219,15 @@ static bool peep_update_queue_position(Peep* peep, uint8_t previous_action)
     if (peep->GuestNextInQueue == SPRITE_INDEX_NULL)
         return false;
 
-    Peep* peep_next = GET_PEEP(peep->GuestNextInQueue);
+    auto* guestNext = GetEntity<Guest>(peep->GuestNextInQueue);
+    if (guestNext == nullptr)
+    {
+        return false;
+    }
 
-    int16_t x_diff = abs(peep_next->x - peep->x);
-    int16_t y_diff = abs(peep_next->y - peep->y);
-    int16_t z_diff = abs(peep_next->z - peep->z);
+    int16_t x_diff = abs(guestNext->x - peep->x);
+    int16_t y_diff = abs(guestNext->y - peep->y);
+    int16_t z_diff = abs(guestNext->z - peep->z);
 
     if (z_diff > 10)
         return false;
@@ -2240,29 +2244,29 @@ static bool peep_update_queue_position(Peep* peep, uint8_t previous_action)
     {
         if (x_diff > 13)
         {
-            if ((peep->x & 0xFFE0) != (peep_next->x & 0xFFE0) || (peep->y & 0xFFE0) != (peep_next->y & 0xFFE0))
+            if ((peep->x & 0xFFE0) != (guestNext->x & 0xFFE0) || (peep->y & 0xFFE0) != (guestNext->y & 0xFFE0))
                 return false;
         }
 
-        if (peep->sprite_direction != peep_next->sprite_direction)
+        if (peep->sprite_direction != guestNext->sprite_direction)
             return false;
 
-        switch (peep_next->sprite_direction / 8)
+        switch (guestNext->sprite_direction / 8)
         {
             case 0:
-                if (peep->x >= peep_next->x)
+                if (peep->x >= guestNext->x)
                     return false;
                 break;
             case 1:
-                if (peep->y <= peep_next->y)
+                if (peep->y <= guestNext->y)
                     return false;
                 break;
             case 2:
-                if (peep->x <= peep_next->x)
+                if (peep->x <= guestNext->x)
                     return false;
                 break;
             case 3:
-                if (peep->y >= peep_next->y)
+                if (peep->y >= guestNext->y)
                     return false;
                 break;
         }
@@ -2397,7 +2401,8 @@ static void peep_interact_with_entrance(Peep* peep, const CoordsXYE& coords, uin
             ride->FormatNameTo(ft);
             if (gConfigNotifications.guest_queuing_for_ride)
             {
-                news_item_add_to_queue(NEWS_ITEM_PEEP_ON_RIDE, STR_PEEP_TRACKING_PEEP_JOINED_QUEUE_FOR_X, peep->sprite_index);
+                news_item_add_to_queue(
+                    News::ItemType::PeepOnRide, STR_PEEP_TRACKING_PEEP_JOINED_QUEUE_FOR_X, peep->sprite_index);
             }
         }
     }
@@ -2458,7 +2463,7 @@ static void peep_interact_with_entrance(Peep* peep, const CoordsXYE& coords, uin
                 peep->FormatNameTo(ft);
                 if (gConfigNotifications.guest_left_park)
                 {
-                    news_item_add_to_queue(NEWS_ITEM_PEEP_ON_RIDE, STR_PEEP_TRACKING_LEFT_PARK, peep->sprite_index);
+                    news_item_add_to_queue(News::ItemType::PeepOnRide, STR_PEEP_TRACKING_LEFT_PARK, peep->sprite_index);
                 }
             }
             return;
@@ -2602,7 +2607,7 @@ static void peep_footpath_move_forward(Peep* peep, const CoordsXYE& coords, bool
 
     int16_t z = peep->GetZOnSlope(coords.x, coords.y);
 
-    if (peep->AssignedPeepType == PEEP_TYPE_STAFF)
+    if (peep->AssignedPeepType == PeepType::Staff)
     {
         peep->MoveTo({ coords, z });
         return;
@@ -2826,7 +2831,7 @@ static void peep_interact_with_path(Peep* peep, const CoordsXYE& coords)
                         if (gConfigNotifications.guest_queuing_for_ride)
                         {
                             news_item_add_to_queue(
-                                NEWS_ITEM_PEEP_ON_RIDE, STR_PEEP_TRACKING_PEEP_JOINED_QUEUE_FOR_X, peep->sprite_index);
+                                News::ItemType::PeepOnRide, STR_PEEP_TRACKING_PEEP_JOINED_QUEUE_FOR_X, peep->sprite_index);
                         }
                     }
 
@@ -2936,7 +2941,7 @@ static bool peep_interact_with_shop(Peep* peep, const CoordsXYE& coords)
                                                                                              : STR_PEEP_TRACKING_PEEP_IS_ON_X;
             if (gConfigNotifications.guest_used_facility)
             {
-                news_item_add_to_queue(NEWS_ITEM_PEEP_ON_RIDE, string_id, peep->sprite_index);
+                news_item_add_to_queue(News::ItemType::PeepOnRide, string_id, peep->sprite_index);
             }
         }
     }
@@ -3084,10 +3089,10 @@ void Peep::PerformNextAction(uint8_t& pathing_result, TileElement*& tile_result)
         }
     } while (!(tileElement++)->IsLastForTile());
 
-    if (AssignedPeepType == PEEP_TYPE_STAFF || (GetNextIsSurface()))
+    if (AssignedPeepType == PeepType::Staff || (GetNextIsSurface()))
     {
         int16_t height = abs(tile_element_height(newLoc) - z);
-        if (height <= 3 || (AssignedPeepType == PEEP_TYPE_STAFF && height <= 32))
+        if (height <= 3 || (AssignedPeepType == PeepType::Staff && height <= 32))
         {
             InteractionRideIndex = 0xFF;
             if (State == PEEP_STATE_QUEUING)
@@ -3116,7 +3121,7 @@ void Peep::PerformNextAction(uint8_t& pathing_result, TileElement*& tile_result)
                 return;
             }
 
-            if (AssignedPeepType == PEEP_TYPE_STAFF && !GetNextIsSurface())
+            if (AssignedPeepType == PeepType::Staff && !GetNextIsSurface())
             {
                 // Prevent staff from leaving the path on their own unless they're allowed to mow.
                 if (!((this->StaffOrders & STAFF_ORDERS_MOWING) && this->StaffMowingTimeout >= 12))
@@ -3202,13 +3207,17 @@ rct_string_id get_real_name_string_id_from_id(uint32_t id)
 
 int32_t peep_compare(const uint16_t sprite_index_a, const uint16_t sprite_index_b)
 {
-    Peep const* peep_a = GET_PEEP(sprite_index_a);
-    Peep const* peep_b = GET_PEEP(sprite_index_b);
+    Peep const* peep_a = GetEntity<Peep>(sprite_index_a);
+    Peep const* peep_b = GetEntity<Peep>(sprite_index_b);
+    if (peep_a == nullptr || peep_b == nullptr)
+    {
+        return 0;
+    }
 
     // Compare types
     if (peep_a->AssignedPeepType != peep_b->AssignedPeepType)
     {
-        return peep_a->AssignedPeepType - peep_b->AssignedPeepType;
+        return static_cast<int32_t>(peep_a->AssignedPeepType) - static_cast<int32_t>(peep_b->AssignedPeepType);
     }
 
     if (peep_a->Name == nullptr && peep_b->Name == nullptr)
@@ -3383,13 +3392,18 @@ void Peep::RemoveFromQueue()
     auto spriteId = station.LastPeepInQueue;
     while (spriteId != SPRITE_INDEX_NULL)
     {
-        Peep* other_peep = GET_PEEP(spriteId);
-        if (sprite_index == other_peep->GuestNextInQueue)
+        auto* otherGuest = GetEntity<Guest>(spriteId);
+        if (otherGuest == nullptr)
         {
-            other_peep->GuestNextInQueue = GuestNextInQueue;
+            log_error("Invalid Guest Queue list!");
             return;
         }
-        spriteId = other_peep->GuestNextInQueue;
+        if (sprite_index == otherGuest->GuestNextInQueue)
+        {
+            otherGuest->GuestNextInQueue = GuestNextInQueue;
+            return;
+        }
+        spriteId = otherGuest->GuestNextInQueue;
     }
 }
 
