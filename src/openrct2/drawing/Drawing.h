@@ -608,6 +608,7 @@ void gfx_draw_dashed_line(
 void gfx_fill_rect(rct_drawpixelinfo* dpi, const ScreenRect& rect, int32_t colour);
 void gfx_fill_rect_inset(
     rct_drawpixelinfo* dpi, int16_t left, int16_t top, int16_t right, int16_t bottom, int32_t colour, uint8_t flags);
+void gfx_fill_rect_inset(rct_drawpixelinfo* dpi, const ScreenRect& rect, int32_t colour, uint8_t flags);
 void gfx_filter_rect(
     rct_drawpixelinfo* dpi, int32_t left, int32_t top, int32_t right, int32_t bottom, FILTER_PALETTE_ID palette);
 void gfx_filter_rect(rct_drawpixelinfo* dpi, const ScreenRect& rect, FILTER_PALETTE_ID palette);
@@ -694,8 +695,12 @@ void ttf_draw_string(rct_drawpixelinfo* dpi, const_utf8string text, int32_t colo
 // scrolling text
 void scrolling_text_initialise_bitmaps();
 void scrolling_text_invalidate();
+
+class Formatter;
+
 int32_t scrolling_text_setup(
-    struct paint_session* session, rct_string_id stringId, uint16_t scroll, uint16_t scrollingMode, colour_t colour);
+    struct paint_session* session, rct_string_id stringId, Formatter& ft, uint16_t scroll, uint16_t scrollingMode,
+    colour_t colour);
 
 rct_size16 FASTCALL gfx_get_sprite_size(uint32_t image_id);
 size_t g1_calculate_data_size(const rct_g1_element* g1);
