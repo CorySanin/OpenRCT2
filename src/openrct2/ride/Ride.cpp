@@ -835,9 +835,7 @@ void Ride::FormatStatusTo(Formatter& ft) const
     {
         ft.Add<rct_string_id>(STR_TEST_RUN);
     }
-    else if (
-        mode == RIDE_MODE_RACE && !(lifecycle_flags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING)
-        && race_winner != SPRITE_INDEX_NULL)
+    else if (mode == RIDE_MODE_RACE && !(lifecycle_flags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING))
     {
         auto peep = GetEntity<Peep>(race_winner);
         if (peep != nullptr)
@@ -2751,15 +2749,10 @@ Peep* find_closest_mechanic(const CoordsXY& entrancePosition, int32_t forInspect
 
 Staff* ride_get_mechanic(Ride* ride)
 {
-    if (ride->mechanic != SPRITE_INDEX_NULL)
+    auto staff = GetEntity<Staff>(ride->mechanic);
+    if (staff != nullptr && staff->IsMechanic())
     {
-        auto peep = GetEntity<Peep>(ride->mechanic);
-        if (peep != nullptr)
-        {
-            auto staff = peep->AsStaff();
-            if (staff != nullptr && staff->IsMechanic())
-                return staff;
-        }
+        return staff;
     }
     return nullptr;
 }
@@ -4412,7 +4405,7 @@ static Vehicle* vehicle_create_car(
     if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_DODGEM_CAR_PLACEMENT)
     {
         // loc_6DDCA4:
-        vehicle->TrackSubposition = VEHICLE_TRACK_SUBPOSITION_0;
+        vehicle->TrackSubposition = VehicleTrackSubposition::Default;
         int32_t direction = tileElement->GetDirection();
         auto dodgemPos = carPosition + CoordsXYZ{ word_9A3AB4[direction], 0 };
         vehicle->TrackLocation = dodgemPos;
@@ -4438,24 +4431,24 @@ static Vehicle* vehicle_create_car(
     }
     else
     {
-        VEHICLE_TRACK_SUBPOSITION subposition = VEHICLE_TRACK_SUBPOSITION_0;
+        VehicleTrackSubposition subposition = VehicleTrackSubposition::Default;
         if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_CHAIRLIFT)
         {
-            subposition = VEHICLE_TRACK_SUBPOSITION_CHAIRLIFT_GOING_OUT;
+            subposition = VehicleTrackSubposition::ChairliftGoingOut;
         }
 
         if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_GO_KART)
         {
             // Choose which lane Go Kart should start in
-            subposition = VEHICLE_TRACK_SUBPOSITION_GO_KARTS_LEFT_LANE;
+            subposition = VehicleTrackSubposition::GoKartsLeftLane;
             if (vehicleIndex & 1)
             {
-                subposition = VEHICLE_TRACK_SUBPOSITION_GO_KARTS_RIGHT_LANE;
+                subposition = VehicleTrackSubposition::GoKartsRightLane;
             }
         }
         if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_MINI_GOLF)
         {
-            subposition = VEHICLE_TRACK_SUBPOSITION_MINI_GOLF_START_9;
+            subposition = VehicleTrackSubposition::MiniGolfStart9;
             vehicle->var_D3 = 0;
             vehicle->mini_golf_current_animation = 0;
             vehicle->mini_golf_flags = 0;
@@ -4464,12 +4457,12 @@ static Vehicle* vehicle_create_car(
         {
             if (vehicle->IsHead())
             {
-                subposition = VEHICLE_TRACK_SUBPOSITION_REVERSER_RC_FRONT_BOGIE;
+                subposition = VehicleTrackSubposition::ReverserRCFrontBogie;
             }
         }
         if (vehicleEntry->flags & VEHICLE_ENTRY_FLAG_5)
         {
-            subposition = VEHICLE_TRACK_SUBPOSITION_REVERSER_RC_REAR_BOGIE;
+            subposition = VehicleTrackSubposition::ReverserRCRearBogie;
         }
         vehicle->TrackSubposition = subposition;
 
