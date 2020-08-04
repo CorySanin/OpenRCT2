@@ -2538,7 +2538,7 @@ void ride_breakdown_add_news_item(Ride* ride)
     ride->FormatNameTo(ft);
     if (gConfigNotifications.ride_broken_down)
     {
-        news_item_add_to_queue(News::ItemType::Ride, STR_RIDE_IS_BROKEN_DOWN, ride->id);
+        News::AddItemToQueue(News::ItemType::Ride, STR_RIDE_IS_BROKEN_DOWN, ride->id);
     }
 }
 
@@ -2565,7 +2565,7 @@ static void ride_breakdown_status_update(Ride* ride)
             ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
-                news_item_add_to_queue(News::ItemType::Ride, STR_RIDE_IS_STILL_NOT_FIXED, ride->id);
+                News::AddItemToQueue(News::ItemType::Ride, STR_RIDE_IS_STILL_NOT_FIXED, ride->id);
             }
         }
     }
@@ -3211,7 +3211,7 @@ static void ride_entrance_exit_connected(Ride* ride)
             ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
-                news_item_add_to_queue(News::ItemType::Ride, STR_ENTRANCE_NOT_CONNECTED, ride->id);
+                News::AddItemToQueue(News::ItemType::Ride, STR_ENTRANCE_NOT_CONNECTED, ride->id);
             }
             ride->connected_message_throttle = 3;
         }
@@ -3223,7 +3223,7 @@ static void ride_entrance_exit_connected(Ride* ride)
             ride->FormatNameTo(ft);
             if (gConfigNotifications.ride_warnings)
             {
-                news_item_add_to_queue(News::ItemType::Ride, STR_EXIT_NOT_CONNECTED, ride->id);
+                News::AddItemToQueue(News::ItemType::Ride, STR_EXIT_NOT_CONNECTED, ride->id);
             }
             ride->connected_message_throttle = 3;
         }
@@ -3299,7 +3299,7 @@ static void ride_shop_connected(Ride* ride)
     ride->FormatNameTo(ft);
     if (gConfigNotifications.ride_warnings)
     {
-        news_item_add_to_queue(News::ItemType::Ride, STR_ENTRANCE_NOT_CONNECTED, ride->id);
+        News::AddItemToQueue(News::ItemType::Ride, STR_ENTRANCE_NOT_CONNECTED, ride->id);
     }
 
     ride->connected_message_throttle = 3;
@@ -3704,7 +3704,7 @@ void ride_music_update_final()
                         // Move circus music to the sound mixer group
                         if (ride_music_info->path_id == PATH_ID_CSS24)
                         {
-                            Mixer_Channel_SetGroup(ride_music_3->sound_channel, MIXER_GROUP_SOUND);
+                            Mixer_Channel_SetGroup(ride_music_3->sound_channel, Audio::MixerGroup::Sound);
                         }
                     }
                     return;
@@ -6046,38 +6046,32 @@ static int32_t loc_6CD18E(
  */
 CoordsXYZD ride_get_entrance_or_exit_position_from_screen_position(const ScreenCoordsXY& screenCoords)
 {
-    int16_t entranceMinX, entranceMinY, entranceMaxX, entranceMaxY, word_F4418C, word_F4418E;
-    int32_t interactionType, stationDirection;
-    TileElement* tileElement;
-    rct_viewport* viewport;
-    Ride* ride;
     CoordsXYZD entranceExitCoords{};
 
     gRideEntranceExitPlaceDirection = INVALID_DIRECTION;
-    CoordsXY unusedCoords;
-    get_map_coordinates_from_pos(screenCoords, 0xFFFB, unusedCoords, &interactionType, &tileElement, &viewport);
-    if (interactionType != 0)
+    auto info = get_map_coordinates_from_pos(screenCoords, 0xFFFB);
+    if (info.SpriteType != 0)
     {
-        if (tileElement->GetType() == TILE_ELEMENT_TYPE_TRACK)
+        if (info.Element->GetType() == TILE_ELEMENT_TYPE_TRACK)
         {
-            if (tileElement->AsTrack()->GetRideIndex() == gRideEntranceExitPlaceRideIndex)
+            if (info.Element->AsTrack()->GetRideIndex() == gRideEntranceExitPlaceRideIndex)
             {
-                if (TrackSequenceProperties[tileElement->AsTrack()->GetTrackType()][0] & TRACK_SEQUENCE_FLAG_ORIGIN)
+                if (TrackSequenceProperties[info.Element->AsTrack()->GetTrackType()][0] & TRACK_SEQUENCE_FLAG_ORIGIN)
                 {
-                    if (tileElement->AsTrack()->GetTrackType() == TRACK_ELEM_MAZE)
+                    if (info.Element->AsTrack()->GetTrackType() == TRACK_ELEM_MAZE)
                     {
                         gRideEntranceExitPlaceStationIndex = 0;
                     }
                     else
                     {
-                        gRideEntranceExitPlaceStationIndex = tileElement->AsTrack()->GetStationIndex();
+                        gRideEntranceExitPlaceStationIndex = info.Element->AsTrack()->GetStationIndex();
                     }
                 }
             }
         }
     }
 
-    ride = get_ride(gRideEntranceExitPlaceRideIndex);
+    auto ride = get_ride(gRideEntranceExitPlaceRideIndex);
     if (ride == nullptr)
     {
         entranceExitCoords.setNull();
@@ -6093,8 +6087,8 @@ CoordsXYZD ride_get_entrance_or_exit_position_from_screen_position(const ScreenC
         return entranceExitCoords;
     }
 
-    word_F4418C = coords->x;
-    word_F4418E = coords->y;
+    auto word_F4418C = coords->x;
+    auto word_F4418E = coords->y;
 
     entranceExitCoords = { coords->ToTileStart(), stationBaseZ, INVALID_DIRECTION };
 
@@ -6130,7 +6124,7 @@ CoordsXYZD ride_get_entrance_or_exit_position_from_screen_position(const ScreenC
             mapY = entranceExitCoords.y + CoordsDirectionDelta[entranceExitCoords.direction].y;
             if (map_is_location_valid({ mapX, mapY }))
             {
-                tileElement = map_get_first_element_at({ mapX, mapY });
+                auto tileElement = map_get_first_element_at({ mapX, mapY });
                 if (tileElement == nullptr)
                     continue;
                 do
@@ -6170,17 +6164,19 @@ CoordsXYZD ride_get_entrance_or_exit_position_from_screen_position(const ScreenC
     {
         auto mapX = stationStart.x;
         auto mapY = stationStart.y;
-        entranceMinX = mapX;
-        entranceMinY = mapY;
+        auto entranceMinX = mapX;
+        auto entranceMinY = mapY;
+        auto entranceMaxX = mapX;
+        auto entranceMaxY = mapY;
 
-        tileElement = ride_get_station_start_track_element(ride, gRideEntranceExitPlaceStationIndex);
+        auto tileElement = ride_get_station_start_track_element(ride, gRideEntranceExitPlaceStationIndex);
         if (tileElement == nullptr)
         {
             entranceExitCoords.setNull();
             return entranceExitCoords;
         }
         entranceExitCoords.direction = tileElement->GetDirection();
-        stationDirection = entranceExitCoords.direction;
+        auto stationDirection = entranceExitCoords.direction;
 
         while (true)
         {
@@ -7081,7 +7077,7 @@ void Ride::Crash(uint8_t vehicleIndex)
     FormatNameTo(ft);
     if (gConfigNotifications.ride_crashed)
     {
-        news_item_add_to_queue(News::ItemType::Ride, STR_RIDE_HAS_CRASHED, id);
+        News::AddItemToQueue(News::ItemType::Ride, STR_RIDE_HAS_CRASHED, id);
     }
 }
 

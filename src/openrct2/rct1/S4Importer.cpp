@@ -1361,7 +1361,7 @@ private:
             }
         }
         // Fix the news items in advance
-        for (auto i = 0; i < MAX_NEWS_ITEMS; i++)
+        for (auto i = 0; i < News::MaxItems; i++)
         {
             rct12_news_item* newsItem = &_s4.messages[i];
             News::ItemType type = static_cast<News::ItemType>(newsItem->Type);
@@ -1659,6 +1659,11 @@ private:
             {
                 rct1_unk_sprite* src = &sprite.unknown;
                 SpriteGeneric* dst = reinterpret_cast<SpriteGeneric*>(create_sprite(SPRITE_IDENTIFIER_MISC));
+                if (dst == nullptr)
+                {
+                    log_warning("SV4 has too many misc entities. No more misc entities will be imported!");
+                    break;
+                }
                 dst->sprite_identifier = src->sprite_identifier;
                 dst->type = src->type;
                 dst->flags = src->flags;
@@ -2541,7 +2546,7 @@ private:
         for (size_t i = 0; i < RCT12_MAX_NEWS_ITEMS; i++)
         {
             const rct12_news_item* src = &_s4.messages[i];
-            NewsItem* dst = &gNewsItems[i];
+            News::Item* dst = &gNewsItems[i];
 
             dst->Type = static_cast<News::ItemType>(src->Type);
             dst->Flags = src->Flags;
