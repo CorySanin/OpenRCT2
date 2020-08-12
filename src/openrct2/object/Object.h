@@ -134,13 +134,16 @@ struct rct_object_filters
 assert_struct_size(rct_object_filters, 3);
 #pragma pack(pop)
 
-interface IObjectRepository;
-interface IStream;
+struct IObjectRepository;
+namespace OpenRCT2
+{
+    struct IStream;
+}
 struct ObjectRepositoryItem;
 struct rct_drawpixelinfo;
 struct json_t;
 
-interface IReadObjectContext
+struct IReadObjectContext
 {
     virtual ~IReadObjectContext() = default;
 
@@ -166,6 +169,7 @@ private:
     StringTable _stringTable;
     ImageTable _imageTable;
     std::vector<uint8_t> _sourceGames;
+    std::vector<std::string> _authors;
     bool _isJsonObject{};
 
 protected:
@@ -223,7 +227,7 @@ public:
     virtual void ReadJson(IReadObjectContext* /*context*/, const json_t* /*root*/)
     {
     }
-    virtual void ReadLegacy(IReadObjectContext* context, IStream* stream);
+    virtual void ReadLegacy(IReadObjectContext* context, OpenRCT2::IStream* stream);
     virtual void Load() abstract;
     virtual void Unload() abstract;
 
@@ -243,6 +247,9 @@ public:
     }
     std::vector<uint8_t> GetSourceGames();
     void SetSourceGames(const std::vector<uint8_t>& sourceGames);
+
+    const std::vector<std::string>& GetAuthors() const;
+    void SetAuthors(const std::vector<std::string>&& authors);
 
     const ImageTable& GetImageTable() const
     {

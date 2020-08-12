@@ -61,27 +61,27 @@ S6Exporter::S6Exporter()
 
 void S6Exporter::SaveGame(const utf8* path)
 {
-    auto fs = FileStream(path, FILE_MODE_WRITE);
+    auto fs = OpenRCT2::FileStream(path, OpenRCT2::FILE_MODE_WRITE);
     SaveGame(&fs);
 }
 
-void S6Exporter::SaveGame(IStream* stream)
+void S6Exporter::SaveGame(OpenRCT2::IStream* stream)
 {
     Save(stream, false);
 }
 
 void S6Exporter::SaveScenario(const utf8* path)
 {
-    auto fs = FileStream(path, FILE_MODE_WRITE);
+    auto fs = OpenRCT2::FileStream(path, OpenRCT2::FILE_MODE_WRITE);
     SaveScenario(&fs);
 }
 
-void S6Exporter::SaveScenario(IStream* stream)
+void S6Exporter::SaveScenario(OpenRCT2::IStream* stream)
 {
     Save(stream, true);
 }
 
-void S6Exporter::Save(IStream* stream, bool isScenario)
+void S6Exporter::Save(OpenRCT2::IStream* stream, bool isScenario)
 {
     _s6.header.type = isScenario ? S6_TYPE_SCENARIO : S6_TYPE_SAVEDGAME;
     _s6.header.classic_flag = 0;
@@ -387,8 +387,8 @@ void S6Exporter::Export()
     _s6.next_weather = gClimateNext.Weather;
     _s6.temperature = gClimateCurrent.Temperature;
     _s6.next_temperature = gClimateNext.Temperature;
-    _s6.current_weather_effect = gClimateCurrent.WeatherEffect;
-    _s6.next_weather_effect = gClimateNext.WeatherEffect;
+    _s6.current_weather_effect = static_cast<uint8_t>(gClimateCurrent.WeatherEffect);
+    _s6.next_weather_effect = static_cast<uint8_t>(gClimateNext.WeatherEffect);
     _s6.current_weather_gloom = gClimateCurrent.WeatherGloom;
     _s6.next_weather_gloom = gClimateNext.WeatherGloom;
     _s6.current_rain_level = static_cast<uint8_t>(gClimateCurrent.Level);
@@ -1017,7 +1017,7 @@ void S6Exporter::ExportSpriteVehicle(RCT2SpriteVehicle* dst, const Vehicle* src)
     dst->vehicle_type = src->vehicle_type;
     dst->colours = src->colours;
     dst->track_progress = src->track_progress;
-    if (ride != nullptr && ride->mode == RIDE_MODE_BOAT_HIRE && src->status == VEHICLE_STATUS_TRAVELLING_BOAT)
+    if (ride != nullptr && ride->mode == RIDE_MODE_BOAT_HIRE && src->status == Vehicle::Status::TravellingBoat)
     {
         if (src->BoatLocation.isNull())
         {
@@ -1048,7 +1048,7 @@ void S6Exporter::ExportSpriteVehicle(RCT2SpriteVehicle* dst, const Vehicle* src)
     dst->current_station = src->current_station;
     dst->current_time = src->current_time;
     dst->crash_z = src->crash_z;
-    dst->status = src->status;
+    dst->status = static_cast<uint8_t>(src->status);
     dst->sub_state = src->sub_state;
     for (size_t i = 0; i < std::size(src->peep); i++)
     {

@@ -93,7 +93,7 @@ public:
 
     ParkLoadResult LoadSavedGame(const utf8* path, bool skipObjectCheck = false) override
     {
-        auto fs = FileStream(path, FILE_MODE_OPEN);
+        auto fs = OpenRCT2::FileStream(path, OpenRCT2::FILE_MODE_OPEN);
         auto result = LoadFromStream(&fs, false, skipObjectCheck);
         _s6Path = path;
         return result;
@@ -101,14 +101,14 @@ public:
 
     ParkLoadResult LoadScenario(const utf8* path, bool skipObjectCheck = false) override
     {
-        auto fs = FileStream(path, FILE_MODE_OPEN);
+        auto fs = OpenRCT2::FileStream(path, OpenRCT2::FILE_MODE_OPEN);
         auto result = LoadFromStream(&fs, true, skipObjectCheck);
         _s6Path = path;
         return result;
     }
 
     ParkLoadResult LoadFromStream(
-        IStream* stream, bool isScenario, [[maybe_unused]] bool skipObjectCheck = false,
+        OpenRCT2::IStream* stream, bool isScenario, [[maybe_unused]] bool skipObjectCheck = false,
         const utf8* path = String::Empty) override
     {
         if (isScenario && !gConfigGeneral.allow_loading_with_incorrect_checksum && !SawyerEncoding::ValidateChecksum(stream))
@@ -414,8 +414,8 @@ public:
         gClimateNext.Weather = _s6.next_weather;
         gClimateCurrent.Temperature = _s6.temperature;
         gClimateNext.Temperature = _s6.next_temperature;
-        gClimateCurrent.WeatherEffect = _s6.current_weather_effect;
-        gClimateNext.WeatherEffect = _s6.next_weather_effect;
+        gClimateCurrent.WeatherEffect = WeatherEffectType{ _s6.current_weather_effect };
+        gClimateNext.WeatherEffect = WeatherEffectType{ _s6.next_weather_effect };
         gClimateCurrent.WeatherGloom = _s6.current_weather_gloom;
         gClimateNext.WeatherGloom = _s6.next_weather_gloom;
         gClimateCurrent.Level = static_cast<RainLevel>(_s6.current_rain_level);
@@ -1130,7 +1130,7 @@ public:
                 // Skipping IsHighlighted()
 
                 auto trackType = dst2->GetTrackType();
-                if (track_element_has_speed_setting(trackType))
+                if (TrackTypeHasSpeedSetting(trackType))
                 {
                     dst2->SetBrakeBoosterSpeed(src2->GetBrakeBoosterSpeed());
                 }
@@ -1345,7 +1345,8 @@ public:
         dst->colours = src->colours;
         dst->track_progress = src->track_progress;
         dst->track_direction = src->track_direction;
-        if (src->boat_location.isNull() || ride.mode != RIDE_MODE_BOAT_HIRE || src->status != VEHICLE_STATUS_TRAVELLING_BOAT)
+        if (src->boat_location.isNull() || ride.mode != RIDE_MODE_BOAT_HIRE
+            || src->status != static_cast<uint8_t>(Vehicle::Status::TravellingBoat))
         {
             dst->BoatLocation.setNull();
             dst->track_type = src->track_type;
@@ -1368,10 +1369,10 @@ public:
         dst->current_time = src->current_time;
         dst->crash_z = src->crash_z;
 
-        VEHICLE_STATUS statusSrc = VEHICLE_STATUS_MOVING_TO_END_OF_STATION;
-        if (src->status <= static_cast<uint8_t>(VEHICLE_STATUS_STOPPED_BY_BLOCK_BRAKES))
+        Vehicle::Status statusSrc = Vehicle::Status::MovingToEndOfStation;
+        if (src->status <= static_cast<uint8_t>(Vehicle::Status::StoppedByBlockBrakes))
         {
-            statusSrc = static_cast<VEHICLE_STATUS>(src->status);
+            statusSrc = static_cast<Vehicle::Status>(src->status);
         }
 
         dst->status = statusSrc;

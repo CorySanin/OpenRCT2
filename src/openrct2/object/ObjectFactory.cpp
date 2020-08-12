@@ -40,7 +40,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-interface IFileDataRetriever
+struct IFileDataRetriever
 {
     virtual ~IFileDataRetriever() = default;
     virtual std::vector<uint8_t> GetData(const std::string_view& path) const abstract;
@@ -179,7 +179,7 @@ namespace ObjectFactory
         return (result != LookupTable.end()) ? result->second : OBJECT_SOURCE_CUSTOM;
     }
 
-    static void ReadObjectLegacy(Object* object, IReadObjectContext* context, IStream* stream)
+    static void ReadObjectLegacy(Object* object, IReadObjectContext* context, OpenRCT2::IStream* stream)
     {
         try
         {
@@ -203,7 +203,7 @@ namespace ObjectFactory
         Object* result = nullptr;
         try
         {
-            auto fs = FileStream(path, FILE_MODE_OPEN);
+            auto fs = OpenRCT2::FileStream(path, OpenRCT2::FILE_MODE_OPEN);
             auto chunkReader = SawyerChunkReader(&fs);
 
             rct_object_entry entry = fs.ReadValue<rct_object_entry>();
@@ -219,7 +219,7 @@ namespace ObjectFactory
                 auto chunk = chunkReader.ReadChunk();
                 log_verbose("  size: %zu", chunk->GetLength());
 
-                auto chunkStream = MemoryStream(chunk->GetData(), chunk->GetLength());
+                auto chunkStream = OpenRCT2::MemoryStream(chunk->GetData(), chunk->GetLength());
                 auto readContext = ReadObjectContext(objectRepository, objectName, !gOpenRCT2NoGraphics, nullptr);
                 ReadObjectLegacy(result, &readContext, &chunkStream);
                 if (readContext.WasError())
@@ -251,7 +251,7 @@ namespace ObjectFactory
             object_entry_get_name_fixed(objectName, sizeof(objectName), entry);
 
             auto readContext = ReadObjectContext(objectRepository, objectName, !gOpenRCT2NoGraphics, nullptr);
-            auto chunkStream = MemoryStream(data, dataSize);
+            auto chunkStream = OpenRCT2::MemoryStream(data, dataSize);
             ReadObjectLegacy(result, &readContext, &chunkStream);
 
             if (readContext.WasError())
@@ -442,6 +442,26 @@ namespace ObjectFactory
                 {
                     throw std::runtime_error("Object has errors");
                 }
+
+                auto authors = json_object_get(jRoot, "authors");
+                if (json_is_array(authors))
+                {
+                    std::vector<std::string> authorVector;
+                    for (size_t j = 0; j < json_array_size(authors); j++)
+                    {
+                        json_t* tryString = json_array_get(authors, j);
+                        if (json_is_string(tryString))
+                        {
+                            authorVector.emplace_back(json_string_value(tryString));
+                        }
+                    }
+                    result->SetAuthors(std::move(authorVector));
+                }
+                else if (json_is_string(authors))
+                {
+                    result->SetAuthors({ json_string_value(authors) });
+                }
+
                 auto sourceGames = json_object_get(jRoot, "sourceGame");
                 if (json_is_array(sourceGames))
                 {

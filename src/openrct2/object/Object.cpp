@@ -32,7 +32,7 @@ void* Object::GetLegacyData()
     throw std::runtime_error("Not supported.");
 }
 
-void Object::ReadLegacy(IReadObjectContext* context, IStream* stream)
+void Object::ReadLegacy(IReadObjectContext* context, OpenRCT2::IStream* stream)
 {
     throw std::runtime_error("Not supported.");
 }
@@ -114,6 +114,16 @@ void rct_object_entry::SetName(const std::string_view& value)
 {
     std::memset(name, ' ', sizeof(name));
     std::memcpy(name, value.data(), std::min(sizeof(name), value.size()));
+}
+
+const std::vector<std::string>& Object::GetAuthors() const
+{
+    return _authors;
+}
+
+void Object::SetAuthors(const std::vector<std::string>&& authors)
+{
+    _authors = authors;
 }
 
 std::optional<uint8_t> rct_object_entry::GetSceneryType() const

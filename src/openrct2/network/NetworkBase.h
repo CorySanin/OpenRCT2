@@ -68,7 +68,7 @@ public: // Server
     void RemovePlayer(std::unique_ptr<NetworkConnection>& connection);
     void UpdateServer();
     void ServerClientDisconnected(std::unique_ptr<NetworkConnection>& connection);
-    bool SaveMap(IStream* stream, const std::vector<const ObjectRepositoryItem*>& objects) const;
+    bool SaveMap(OpenRCT2::IStream* stream, const std::vector<const ObjectRepositoryItem*>& objects) const;
     uint8_t* save_for_network(size_t& out_size, const std::vector<const ObjectRepositoryItem*>& objects) const;
     std::string MakePlayerNameUnique(const std::string& name);
 
@@ -113,14 +113,14 @@ public: // Client
     void ProcessPlayerInfo();
     void ProcessDisconnectedClients();
     static const char* FormatChat(NetworkPlayer* fromplayer, const char* text);
-    void SendPacketToClients(NetworkPacket& packet, bool front = false, bool gameCmd = false);
+    void SendPacketToClients(const NetworkPacket& packet, bool front = false, bool gameCmd = false);
     bool CheckSRAND(uint32_t tick, uint32_t srand0);
     bool CheckDesynchronizaton();
     void RequestStateSnapshot();
     bool IsDesynchronised();
     NetworkServerState_t GetServerState() const;
     void ServerClientDisconnected();
-    bool LoadMap(IStream* stream);
+    bool LoadMap(OpenRCT2::IStream* stream);
     void UpdateClient();
 
     // Packet dispatchers.
@@ -218,7 +218,7 @@ private: // Client Data
     std::string _chatLogPath;
     std::string _chatLogFilenameFormat = "%Y%m%d-%H%M%S.txt";
     std::string _password;
-    MemoryStream _serverGameState;
+    OpenRCT2::MemoryStream _serverGameState;
     NetworkServerState_t _serverState;
     uint32_t _lastSentHeartbeat = 0;
     uint32_t last_ping_sent_time = 0;

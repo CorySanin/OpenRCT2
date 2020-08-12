@@ -70,9 +70,9 @@ namespace Config
         ConfigEnumEntry<int32_t>("CUSTOM", CURRENCY_CUSTOM),
     });
 
-    static const auto Enum_CurrencySymbolAffix = ConfigEnum<int32_t>({
-        ConfigEnumEntry<int32_t>("PREFIX", CURRENCY_PREFIX),
-        ConfigEnumEntry<int32_t>("SUFFIX", CURRENCY_SUFFIX),
+    static const auto Enum_CurrencySymbolAffix = ConfigEnum<CurrencyAffix>({
+        ConfigEnumEntry<CurrencyAffix>("PREFIX", CurrencyAffix::Prefix),
+        ConfigEnumEntry<CurrencyAffix>("SUFFIX", CurrencyAffix::Suffix),
     });
 
     static const auto Enum_DateFormat = ConfigEnum<int32_t>({
@@ -88,9 +88,9 @@ namespace Config
         ConfigEnumEntry<int32_t>("OPENGL", DRAWING_ENGINE_OPENGL),
     });
 
-    static const auto Enum_Temperature = ConfigEnum<int32_t>({
-        ConfigEnumEntry<int32_t>("CELSIUS", TEMPERATURE_FORMAT_C),
-        ConfigEnumEntry<int32_t>("FAHRENHEIT", TEMPERATURE_FORMAT_F),
+    static const auto Enum_Temperature = ConfigEnum<TemperatureUnit>({
+        ConfigEnumEntry<TemperatureUnit>("CELSIUS", TemperatureUnit::Celsius),
+        ConfigEnumEntry<TemperatureUnit>("FAHRENHEIT", TemperatureUnit::Fahrenheit),
     });
 
     static const auto Enum_ScaleQuality = ConfigEnum<int32_t>({
@@ -144,8 +144,8 @@ namespace Config
             model->confirmation_prompt = reader->GetBoolean("confirmation_prompt", false);
             model->currency_format = reader->GetEnum<int32_t>("currency_format", platform_get_locale_currency(), Enum_Currency);
             model->custom_currency_rate = reader->GetInt32("custom_currency_rate", 10);
-            model->custom_currency_affix = reader->GetEnum<int32_t>(
-                "custom_currency_affix", CURRENCY_SUFFIX, Enum_CurrencySymbolAffix);
+            model->custom_currency_affix = reader->GetEnum<CurrencyAffix>(
+                "custom_currency_affix", CurrencyAffix::Suffix, Enum_CurrencySymbolAffix);
             model->custom_currency_symbol = reader->GetCString("custom_currency_symbol", "Ctm");
             model->edge_scrolling = reader->GetBoolean("edge_scrolling", true);
             model->edge_scrolling_speed = reader->GetInt32("edge_scrolling_speed", 12);
@@ -162,7 +162,7 @@ namespace Config
             model->save_plugin_data = reader->GetBoolean("save_plugin_data", true);
             model->debugging_tools = reader->GetBoolean("debugging_tools", false);
             model->show_height_as_units = reader->GetBoolean("show_height_as_units", false);
-            model->temperature_format = reader->GetEnum<int32_t>(
+            model->temperature_format = reader->GetEnum<TemperatureUnit>(
                 "temperature_format", platform_get_locale_temperature_format(), Enum_Temperature);
             model->window_height = reader->GetInt32("window_height", -1);
             model->window_snap_proximity = reader->GetInt32("window_snap_proximity", 5);
@@ -226,7 +226,7 @@ namespace Config
         writer->WriteBoolean("confirmation_prompt", model->confirmation_prompt);
         writer->WriteEnum<int32_t>("currency_format", model->currency_format, Enum_Currency);
         writer->WriteInt32("custom_currency_rate", model->custom_currency_rate);
-        writer->WriteEnum<int32_t>("custom_currency_affix", model->custom_currency_affix, Enum_CurrencySymbolAffix);
+        writer->WriteEnum<CurrencyAffix>("custom_currency_affix", model->custom_currency_affix, Enum_CurrencySymbolAffix);
         writer->WriteString("custom_currency_symbol", model->custom_currency_symbol);
         writer->WriteBoolean("edge_scrolling", model->edge_scrolling);
         writer->WriteInt32("edge_scrolling_speed", model->edge_scrolling_speed);
@@ -242,7 +242,7 @@ namespace Config
         writer->WriteBoolean("save_plugin_data", model->save_plugin_data);
         writer->WriteBoolean("debugging_tools", model->debugging_tools);
         writer->WriteBoolean("show_height_as_units", model->show_height_as_units);
-        writer->WriteEnum<int32_t>("temperature_format", model->temperature_format, Enum_Temperature);
+        writer->WriteEnum<TemperatureUnit>("temperature_format", model->temperature_format, Enum_Temperature);
         writer->WriteInt32("window_height", model->window_height);
         writer->WriteInt32("window_snap_proximity", model->window_snap_proximity);
         writer->WriteInt32("window_width", model->window_width);

@@ -14,6 +14,7 @@
 - Feature: [#11959] Hacked go-kart tracks can now use 2x2 bends, 3x3 bends and S-bends.
 - Feature: [#12090] Boosters for the Wooden Roller Coaster (if the "Show all track pieces" cheat is enabled).
 - Feature: [#12184] .sea (RCT Classic) scenario files can now be imported.
+- Feature: [#12591] Show authors of an object on the object selection dialog. 
 - Change: [#11209] Warn when user is running OpenRCT2 through Wine.
 - Change: [#11358] Switch copy and paste button positions in tile inspector.
 - Change: [#11449] Remove complete circuit requirement from Air Powered Vertical Coaster (for RCT1 parity).
@@ -27,10 +28,12 @@
 - Fix: [#7324] Research window shows vehicle name instead of ride name.
 - Fix: [#7969, #8175, #12501] When loading a landscape in the Scenario Editor, the inventions list, financial settings and objective settings are reset.
 - Fix: [#10634] Guests are unable to use uphill paths out of toilets.
+- Fix: [#10751] Saved mazes are incomplete.
 - Fix: [#10876] When removing a path, its guest entry point is not removed.
 - Fix: [#10876] There can be multiple peep spawns on the same location.
 - Fix: [#11002] Rides list shows both red and green light activated.
 - Fix: [#11072] Land and water tools working out of bounds (original bug).
+- Fix: [#11085] Handle player list before game actions during map load.
 - Fix: [#11259] Custom JSON object breaks saves.
 - Fix: [#11290] Perform funds checking for all peeps entering a ride.
 - Fix: [#11315] Ride that has never opened is shown as favorite ride of many guests.
@@ -44,6 +47,7 @@
 - Fix: [#11695] Mechanics walk to tile 0, 0 at entrance only stations when trying to fix them.
 - Fix: [#11804] Some RCT1 fences are imported at the wrong height.
 - Fix: [#11953] Incorrect banner text shade colour on wall text.
+- Fix: [#11968] Maze height is higher than it should be.
 - Fix: [#12062] Inconsistent lift hill sprites on Flying Coaster while inverted (original bug).
 - Fix: [#12068] Incorrect Entrance/Exit location on track design preview. Incorrect track design previews with track that contain diagonal track elements.
 - Fix: [#12071] Crash in Guest List when a guest dies.
@@ -59,6 +63,7 @@
 - Fix: [#12505] Stores selling multiple items can only have the first product advertised.
 - Fix: [#12506] Cannot advertise food if there are no rides in the park.
 - Fix: [#12533] Track designs list does not use natural sorting.
+- Fix: [#12611] 'Monthly Income from ride tickets' in Scenario Editor is removed when park is not free entry.
 - Fix: 'j' character has broken kerning (original bug).
 - Fix: RCT1 scenarios have more items in the object list than are present in the park or the research list.
 - Fix: Brakes keep working during "Brakes failure".

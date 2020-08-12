@@ -11,8 +11,11 @@
 
 #include "../common.h"
 #include "../drawing/Drawing.h"
+#include "../localisation/Currency.h"
 
 #include <string>
+
+enum class TemperatureUnit : int32_t;
 
 struct GeneralConfiguration
 {
@@ -53,12 +56,12 @@ struct GeneralConfiguration
     // Localisation
     int32_t language;
     int32_t measurement_format;
-    int32_t temperature_format;
+    TemperatureUnit temperature_format;
     bool show_height_as_units;
     int32_t date_format;
     int32_t currency_format;
     int32_t custom_currency_rate;
-    int32_t custom_currency_affix;
+    CurrencyAffix custom_currency_affix;
     utf8* custom_currency_symbol;
 
     // Controls
@@ -205,10 +208,10 @@ enum SORT
     SORT_DATE_DESCENDING,
 };
 
-enum TEMPERATURE_FORMAT
+enum class TemperatureUnit : int32_t
 {
-    TEMPERATURE_FORMAT_C,
-    TEMPERATURE_FORMAT_F
+    Celsius,
+    Fahrenheit
 };
 
 enum SCALE_QUALITY
