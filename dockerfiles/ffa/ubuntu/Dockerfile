@@ -3,6 +3,7 @@ FROM ubuntu:20.04 AS build-env
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
  && apt-get install --no-install-recommends -y git cmake pkg-config ninja-build clang-10 duktape-dev libsdl2-dev libspeexdsp-dev libjansson-dev libcurl4-openssl-dev libcrypto++-dev libfontconfig1-dev libfreetype6-dev libpng-dev libzip-dev libssl-dev libicu-dev \
+ && rm -rf /var/lib/apt/lists/* \
  && ln -s /usr/bin/clang-10 /usr/bin/clang \
  && ln -s /usr/bin/clang++-10 /usr/bin/clang++
 
@@ -15,9 +16,9 @@ RUN mkdir build \
 
 # Build runtime image
 FROM ubuntu:20.04
-RUN apt-get update
-RUN apt-get -y upgrade
-RUN apt-get install --no-install-recommends -y rsync ca-certificates libduktape205 libjansson4 libpng16-16 libzip5 libcurl4 libfreetype6 libfontconfig1 libicu66
+RUN apt-get update \
+ && apt-get install --no-install-recommends -y rsync ca-certificates libduktape205 libjansson4 libpng16-16 libzip5 libcurl4 libfreetype6 libfontconfig1 libicu66 \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install OpenRCT2
 COPY --from=build-env /openrct2-install /openrct2-install

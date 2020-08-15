@@ -2,7 +2,8 @@
 FROM alpine:edge AS build-env
 RUN apk update \
  && apk add git gcc g++ make cmake jansson-dev libzip-dev curl-dev libressl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers \
- && apk add duktape-dev --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
+ && apk add duktape-dev --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
+ && rm -rf /var/cache/apk/*
 WORKDIR /openrct2
 COPY . .
 RUN mkdir build \
@@ -16,6 +17,7 @@ COPY --from=build-env /openrct2-install /openrct2-install
 RUN apk update && apk upgrade \
  && apk add rsync ca-certificates jansson libpng libzip libcurl freetype fontconfig icu \
  && apk add duktape --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
+ && rm -rf /var/cache/apk/* \
  && rsync -a /openrct2-install/* / \
  && rm -rf /openrct2-install \
  && openrct2-cli --version \
