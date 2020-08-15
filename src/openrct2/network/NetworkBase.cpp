@@ -33,7 +33,7 @@
 // This string specifies which version of network stream current build uses.
 // It is used for making sure only compatible builds get connected, even within
 // single OpenRCT2 version.
-#define NETWORK_STREAM_VERSION "27"
+#define NETWORK_STREAM_VERSION "0"
 #define NETWORK_STREAM_ID OPENRCT2_VERSION "-" NETWORK_STREAM_VERSION
 
 static Peep* _pickup_peep = nullptr;
@@ -1721,8 +1721,10 @@ bool NetworkBase::ProcessConnection(NetworkConnection& connection)
                 // could not read anything from socket
                 break;
         }
-    } while (packetStatus == NETWORK_READPACKET_MORE_DATA || packetStatus == NETWORK_READPACKET_SUCCESS);
+    } while (packetStatus == NETWORK_READPACKET_SUCCESS);
+
     connection.SendQueuedPackets();
+
     if (!connection.ReceivedPacketRecently())
     {
         if (!connection.GetLastDisconnectReason())
@@ -1731,6 +1733,7 @@ bool NetworkBase::ProcessConnection(NetworkConnection& connection)
         }
         return false;
     }
+
     return true;
 }
 

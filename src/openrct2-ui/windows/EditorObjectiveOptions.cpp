@@ -87,27 +87,27 @@ enum {
 
 #define MAIN_OBJECTIVE_OPTIONS_WIDGETS \
     WINDOW_SHIM(WINDOW_TITLE, WW, WH), \
-    { WWT_RESIZE,           1,  0,      279,    43,     148,    STR_NONE,                   STR_NONE                                            }, \
-    { WWT_TAB,              1,  3,      33,     17,     43,     IMAGE_TYPE_REMAP | SPR_TAB, STR_SELECT_OBJECTIVE_AND_PARK_NAME_TIP              }, \
-    { WWT_TAB,              1,  34,     64,     17,     43,     IMAGE_TYPE_REMAP | SPR_TAB, STR_SELECT_RIDES_TO_BE_PRESERVED_TIP                }
+    MakeWidget     ({  0,  43}, {280, 106}, WWT_RESIZE, 1                                                 ), \
+    MakeRemapWidget({  3,  17}, { 31,  27}, WWT_TAB,    1, SPR_TAB, STR_SELECT_OBJECTIVE_AND_PARK_NAME_TIP), \
+    MakeRemapWidget({ 34,  17}, { 31,  27}, WWT_TAB,    1, SPR_TAB, STR_SELECT_RIDES_TO_BE_PRESERVED_TIP  )
 
 static rct_widget window_editor_objective_options_main_widgets[] = {
     MAIN_OBJECTIVE_OPTIONS_WIDGETS,
-    { WWT_DROPDOWN,         1,  98,     441,    48,     59,     STR_NONE,                   STR_SELECT_OBJECTIVE_FOR_THIS_SCENARIO_TIP          },
-    { WWT_BUTTON,           1,  430,    440,    49,     58,     STR_DROPDOWN_GLYPH,         STR_SELECT_OBJECTIVE_FOR_THIS_SCENARIO_TIP          },
-      SPINNER_WIDGETS      (1,  158,    277,    65,     76,     STR_NONE,                   STR_NONE), // NB: 3 widgets
-      SPINNER_WIDGETS      (1,  158,    277,    82,     93,     STR_NONE,                   STR_NONE), // NB: 3 widgets
-    { WWT_BUTTON,           1,  370,    444,    99,     110,    STR_CHANGE,                 STR_CHANGE_NAME_OF_PARK_TIP                         },
-    { WWT_BUTTON,           1,  370,    444,    116,    127,    STR_CHANGE,                 STR_CHANGE_NAME_OF_SCENARIO_TIP                     },
-    { WWT_DROPDOWN,         1,  98,     277,    133,    144,    STR_NONE,                   STR_SELECT_WHICH_GROUP_THIS_SCENARIO_APPEARS_IN     },
-    { WWT_BUTTON,           1,  266,    276,    134,    143,    STR_DROPDOWN_GLYPH,         STR_SELECT_WHICH_GROUP_THIS_SCENARIO_APPEARS_IN     },
-    { WWT_BUTTON,           1,  370,    444,    150,    161,    STR_CHANGE,                 STR_CHANGE_DETAIL_NOTES_ABOUT_PARK_SCENARIO_TIP     },
+    MakeWidget        ({ 98,  48}, {344,  12}, WWT_DROPDOWN, 1, STR_NONE,           STR_SELECT_OBJECTIVE_FOR_THIS_SCENARIO_TIP     ),
+    MakeWidget        ({430,  49}, { 11,  10}, WWT_BUTTON,   1, STR_DROPDOWN_GLYPH, STR_SELECT_OBJECTIVE_FOR_THIS_SCENARIO_TIP     ),
+    MakeSpinnerWidgets({158,  65}, {120,  12}, WWT_BUTTON,   1                                                                     ), // NB: 3 widgets
+    MakeSpinnerWidgets({158,  82}, {120,  12}, WWT_BUTTON,   1                                                                     ), // NB: 3 widgets
+    MakeWidget        ({370,  99}, { 75,  12}, WWT_BUTTON,   1, STR_CHANGE,         STR_CHANGE_NAME_OF_PARK_TIP                    ),
+    MakeWidget        ({370, 116}, { 75,  12}, WWT_BUTTON,   1, STR_CHANGE,         STR_CHANGE_NAME_OF_SCENARIO_TIP                ),
+    MakeWidget        ({ 98, 133}, {180,  12}, WWT_DROPDOWN, 1, STR_NONE,           STR_SELECT_WHICH_GROUP_THIS_SCENARIO_APPEARS_IN),
+    MakeWidget        ({266, 134}, { 11,  10}, WWT_BUTTON,   1, STR_DROPDOWN_GLYPH, STR_SELECT_WHICH_GROUP_THIS_SCENARIO_APPEARS_IN),
+    MakeWidget        ({370, 150}, { 75,  12}, WWT_BUTTON,   1, STR_CHANGE,         STR_CHANGE_DETAIL_NOTES_ABOUT_PARK_SCENARIO_TIP),
     { WIDGETS_END }
 };
 
 static rct_widget window_editor_objective_options_rides_widgets[] = {
     MAIN_OBJECTIVE_OPTIONS_WIDGETS,
-    { WWT_SCROLL,           1,  3,      376,    60,     220,    SCROLL_VERTICAL,            STR_NONE                                            },
+    MakeWidget({  3,  60}, {374, 161}, WWT_SCROLL,   1, SCROLL_VERTICAL),
     { WIDGETS_END }
 };
 
@@ -439,51 +439,21 @@ static void window_editor_objective_options_show_objective_dropdown(rct_window* 
     dropdownWidget = &w->widgets[WIDX_OBJECTIVE];
     parkFlags = gParkFlags;
 
-    gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-    gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_HAVE_FUN;
-    numItems++;
-
-    if (!(parkFlags & PARK_FLAGS_NO_MONEY_SCENARIO))
+    for (auto i = 0; i < OBJECTIVE_COUNT; i++)
     {
-        gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-        gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_NUMBER_OF_GUESTS_AT_A_GIVEN_DATE;
-        numItems++;
+        if (i == OBJECTIVE_NONE || i == OBJECTIVE_BUILD_THE_BEST)
+            continue;
 
-        gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-        gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_MONTHLY_PROFIT_FROM_FOOD_MERCHANDISE;
-        numItems++;
-
-        gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-        gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_REPAY_LOAN_AND_ACHIEVE_A_GIVEN_PARK_VALUE;
-        numItems++;
-
-        gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-        gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_PARK_VALUE_AT_A_GIVEN_DATE;
-        numItems++;
-
-        if (park_ride_prices_unlocked())
+        const bool objectiveAllowedByMoneyUsage = !(parkFlags & PARK_FLAGS_NO_MONEY_SCENARIO) || !ObjectiveNeedsMoney(i);
+        // This objective can only work if the player can ask money for rides.
+        const bool objectiveAllowedByPaymentSettings = (i != OBJECTIVE_MONTHLY_RIDE_INCOME) || park_ride_prices_unlocked();
+        if (objectiveAllowedByMoneyUsage && objectiveAllowedByPaymentSettings)
         {
             gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-            gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_MONTHLY_INCOME_FROM_RIDE_TICKETS;
+            gDropdownItemsArgs[numItems] = ObjectiveDropdownOptionNames[i];
             numItems++;
         }
     }
-
-    gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-    gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_NUMBER_OF_GUESTS_IN_PARK;
-    numItems++;
-
-    gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-    gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_BUILD_10_ROLLER_COASTERS;
-    numItems++;
-
-    gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-    gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_BUILD_10_ROLLER_COASTERS_OF_A_GIVEN_LENGTH;
-    numItems++;
-
-    gDropdownItemsFormat[numItems] = STR_DROPDOWN_MENU_LABEL;
-    gDropdownItemsArgs[numItems] = STR_OBJECTIVE_DROPDOWN_FINISH_BUILDING_5_ROLLER_COASTERS;
-    numItems++;
 
     window_dropdown_show_text_custom_width(
         { w->windowPos.x + dropdownWidget->left, w->windowPos.y + dropdownWidget->top }, dropdownWidget->height() + 1,
@@ -746,13 +716,13 @@ static void window_editor_objective_options_main_update(rct_window* w)
     parkFlags = gParkFlags;
     objectiveType = gScenarioObjectiveType;
 
-    // Reset objective if invalid
-    if (((parkFlags & PARK_FLAGS_NO_MONEY_SCENARIO) &&
-         // The following objectives are the only valid objectives when there is no money
-         objectiveType != OBJECTIVE_HAVE_FUN && objectiveType != OBJECTIVE_10_ROLLERCOASTERS
-         && objectiveType != OBJECTIVE_GUESTS_AND_RATING && objectiveType != OBJECTIVE_10_ROLLERCOASTERS_LENGTH
-         && objectiveType != OBJECTIVE_FINISH_5_ROLLERCOASTERS)
-        || (!park_ride_prices_unlocked() && objectiveType == OBJECTIVE_MONTHLY_RIDE_INCOME))
+    // Check if objective is allowed by money and pay-per-ride settings.
+    const bool objectiveAllowedByMoneyUsage = !(parkFlags & PARK_FLAGS_NO_MONEY_SCENARIO)
+        || !ObjectiveNeedsMoney(objectiveType);
+    // This objective can only work if the player can ask money for rides.
+    const bool objectiveAllowedByPaymentSettings = (objectiveType != OBJECTIVE_MONTHLY_RIDE_INCOME)
+        || park_ride_prices_unlocked();
+    if (!objectiveAllowedByMoneyUsage || !objectiveAllowedByPaymentSettings)
     {
         // Reset objective
         window_editor_objective_options_set_objective(w, OBJECTIVE_GUESTS_AND_RATING);

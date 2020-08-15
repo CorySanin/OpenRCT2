@@ -43,10 +43,10 @@ namespace Config
 {
 #pragma region Enums
 
-    static const auto Enum_MeasurementFormat = ConfigEnum<int32_t>({
-        ConfigEnumEntry<int32_t>("IMPERIAL", MEASUREMENT_FORMAT_IMPERIAL),
-        ConfigEnumEntry<int32_t>("METRIC", MEASUREMENT_FORMAT_METRIC),
-        ConfigEnumEntry<int32_t>("SI", MEASUREMENT_FORMAT_SI),
+    static const auto Enum_MeasurementFormat = ConfigEnum<MeasurementFormat>({
+        ConfigEnumEntry<MeasurementFormat>("IMPERIAL", MeasurementFormat::Imperial),
+        ConfigEnumEntry<MeasurementFormat>("METRIC", MeasurementFormat::Metric),
+        ConfigEnumEntry<MeasurementFormat>("SI", MeasurementFormat::SI),
     });
 
     static const auto Enum_Currency = ConfigEnum<int32_t>({
@@ -156,7 +156,7 @@ namespace Config
             model->rct2_path = reader->GetCString("game_path", nullptr);
             model->landscape_smoothing = reader->GetBoolean("landscape_smoothing", true);
             model->language = reader->GetEnum<int32_t>("language", platform_get_locale_language(), Enum_LanguageEnum);
-            model->measurement_format = reader->GetEnum<int32_t>(
+            model->measurement_format = reader->GetEnum<MeasurementFormat>(
                 "measurement_format", platform_get_locale_measurement_format(), Enum_MeasurementFormat);
             model->play_intro = reader->GetBoolean("play_intro", false);
             model->save_plugin_data = reader->GetBoolean("save_plugin_data", true);
@@ -213,6 +213,7 @@ namespace Config
             model->show_real_names_of_guests = reader->GetBoolean("show_real_names_of_guests", true);
             model->allow_early_completion = reader->GetBoolean("allow_early_completion", false);
             model->transparent_screenshot = reader->GetBoolean("transparent_screenshot", true);
+            model->last_version_check_time = reader->GetInt64("last_version_check_time", 0);
         }
     }
 
@@ -237,7 +238,7 @@ namespace Config
         writer->WriteString("game_path", model->rct2_path);
         writer->WriteBoolean("landscape_smoothing", model->landscape_smoothing);
         writer->WriteEnum<int32_t>("language", model->language, Enum_LanguageEnum);
-        writer->WriteEnum<int32_t>("measurement_format", model->measurement_format, Enum_MeasurementFormat);
+        writer->WriteEnum<MeasurementFormat>("measurement_format", model->measurement_format, Enum_MeasurementFormat);
         writer->WriteBoolean("play_intro", model->play_intro);
         writer->WriteBoolean("save_plugin_data", model->save_plugin_data);
         writer->WriteBoolean("debugging_tools", model->debugging_tools);
@@ -288,6 +289,7 @@ namespace Config
         writer->WriteBoolean("allow_early_completion", model->allow_early_completion);
         writer->WriteEnum<int32_t>("virtual_floor_style", model->virtual_floor_style, Enum_VirtualFloorStyle);
         writer->WriteBoolean("transparent_screenshot", model->transparent_screenshot);
+        writer->WriteInt64("last_version_check_time", model->last_version_check_time);
     }
 
     static void ReadInterface(IIniReader* reader)
