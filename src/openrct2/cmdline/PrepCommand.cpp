@@ -23,7 +23,7 @@
 #include "../scenario/Scenario.h"
 #include "../world/Park.h"
 #include "../world/Surface.h"
-#include "../peep/Staff.h"
+#include "../entity/Staff.h"
 #include "../management/NewsItem.h"
 #include "CommandLine.hpp"
 
