@@ -23,6 +23,7 @@ RUN apk add --no-cache rsync ca-certificates libpng libzip libcurl duktape freet
  && rm -rf /openrct2-install \
  && openrct2-cli --version \
  && npm install \
+ && npm run build \
  && chown -R node:node /home/node/.config/OpenRCT2
 USER node
 EXPOSE 8080
