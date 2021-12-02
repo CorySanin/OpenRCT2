@@ -1,0 +1,37 @@
+html,
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    line-height: 1.2em;
+    min-height: 100%;
+}
+
+div {
+    margin-bottom: .2em;
+}
+
+a {
+    color: #0077cc;
+
+    &:hover{
+        color: #3399ff;
+    }
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .75em 1em;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.align-right {
+    text-align: right;
+}

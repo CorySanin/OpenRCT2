@@ -65,6 +65,7 @@ function prepareSave(filename, destination, mode, funds = FUNDS) {
 
 app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
+app.use('/assets/', express.static('assets'));
 app.use(fileUpload({
     createParentPath: true,
     abortOnLimit: true,

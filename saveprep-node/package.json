@@ -3,11 +3,22 @@
   "version": "1.0.0",
   "description": "Prepare OpenRCT2 saves for use with FFA Tycoon multiplayer servers",
   "main": "index.js",
+  "scripts": {
+    "build": "gulp"
+  },
   "dependencies": {
     "dayjs": "1.10.7",
     "ejs": "3.1.6",
     "express": "4.17.1",
     "express-fileupload": "1.2.1"
+  },
+  "devDependencies": {
+    "gulp": "4.0.2",
+    "gulp-sass": "5.0.0",
+    "sass": "1.44.0",
+    "gulp-clean-css": "4.3.0",
+    "gulp-concat-css": "3.1.0",
+    "gulp-uglify": "3.0.2"
   },
   "repository": {
     "type": "git",

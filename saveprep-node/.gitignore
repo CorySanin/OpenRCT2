@@ -105,3 +105,5 @@ dist
 
 # Custom
 config/config.json5
+assets/css
+assets/js
