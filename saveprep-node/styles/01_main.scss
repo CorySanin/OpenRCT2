@@ -5,6 +5,36 @@ body {
     min-height: 100%;
 }
 
+h1 {
+    font-size: 2.5em;
+    line-height: 1.2em;
+}
+
+h2 {
+    font-size: 1.9em;
+    line-height: 1.2em;
+}
+
+h3 {
+    font-size: 1.5em;
+    line-height: 1.2em;
+}
+
+h4 {
+    font-size: 1.3em;
+    line-height: 1.2em;
+}
+
+h5 {
+    font-size: 1.2em;
+    line-height: 1.2em;
+}
+
+h6 {
+    font-size: 1.1em;
+    line-height: 1.2em;
+}
+
 div {
     margin-bottom: .2em;
 }
@@ -12,7 +42,7 @@ div {
 a {
     color: #0077cc;
 
-    &:hover{
+    &:hover {
         color: #3399ff;
     }
 }
@@ -34,4 +64,78 @@ a {
 
 .align-right {
     text-align: right;
+}
+
+.buttontile {
+    min-height: 10em;
+    min-width: 10em;
+    background-color: #9E9E9E;
+    color: #424242;
+    border: 2px solid #E0E0E0;
+
+    .statusicon {
+        display: none;
+    }
+
+    .nofile {
+        display: initial;
+    }
+
+    &.loading,
+    &.error,
+    &.ready {
+        .nofile {
+            display: none;
+        }
+    }
+
+    &.loading {
+        background-color: #FFD54F;
+        color: #FF6F00;
+
+        .loadingspinner {
+            display: initial;
+        }
+    }
+
+    &.error {
+        background-color: #F44336;
+        color: #FFCDD2;
+
+        .erroricon {
+            display: initial;
+        }
+    }
+
+    &.ready {
+        background-color: #004D40;
+        color: #E8F5E9;
+        cursor: pointer;
+
+        .parkfile {
+            display: initial;
+        }
+    }
+}
+
+#footer {
+    margin-top: .75em;
+    background-color: rgba(0, 0, 0, .1);
+    padding: .4em .3em;
+    border-radius: .5em;
+
+    a {
+        padding: .3em .4em;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        color: #fff;
+        background-color: #000;
+    }
+
+    #footer {
+        background-color: rgba(255, 255, 255, .1);
+    }
 }

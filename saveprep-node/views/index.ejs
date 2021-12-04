@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
-    <link rel="stylesheet" href="/assets/css/styles.css?v1">
+    <link rel="stylesheet" href="/assets/css/styles.css?v2">
     <script src="/assets/js/prep.js"></script>
 </head>
 
@@ -28,14 +28,22 @@
         </div>
         <div>
             <button type="button" class="buttontile" id="sandboxbtn" disabled>
-                Sandbox
+                <div>Sandbox</div>
+                <div class="statusicon nofile"><%- inliner('/assets/svg/nofile.svg') %></div>
+                <div class="statusicon loadingspinner"><%- inliner('/assets/svg/fwheelloader.svg') %></div>
+                <div class="statusicon erroricon"><%- inliner('/assets/svg/error.svg') %></div>
+                <div class="statusicon parkfile"><%- inliner('/assets/svg/parkfile.svg') %></div>
             </button>
             <button type="button" class="buttontile" id="economybtn" disabled>
-                Economy
+                <div>Economy</div>
+                <div class="statusicon nofile"><%- inliner('/assets/svg/nofile.svg') %></div>
+                <div class="statusicon loadingspinner"><%- inliner('/assets/svg/fwheelloader.svg') %></div>
+                <div class="statusicon erroricon"><%- inliner('/assets/svg/error.svg') %></div>
+                <div class="statusicon parkfile"><%- inliner('/assets/svg/parkfile.svg') %></div>
             </button>
         </div>
         <footer>
-            <div>
+            <div id="footer">
                 <a href="https://ffa-tycoon.com/">FFA Tycoon</a>
                 <a href="https://gitlab.com/sanin.dev/ffa-tycoon-scenario-prep">Source</a>
             </div>

@@ -12,6 +12,7 @@ const PARKDIR = process.env.PARKDIR || path.join(HOME, '.config', 'OpenRCT2', 's
 const FILENUMMAX = 100000;
 const TIMEOUT = process.env.TIMEOUT || 20000;
 const FUNDS = 100000;
+const PROJECT_ROOT = __dirname;
 
 const app = express();
 
@@ -61,6 +62,10 @@ function prepareSave(filename, destination, mode, funds = FUNDS) {
             }
         });
     });
+}
+
+function inliner(file) {
+    return fs.readFileSync(path.join(PROJECT_ROOT, file));
 }
 
 app.set('trust proxy', 1);
@@ -168,6 +173,9 @@ app.post('/upload', async (req, res) => {
 
 app.get('/', (req, res) => {
     res.render('index',
+        {
+            inliner
+        },
         function (err, html) {
             if (!err) {
                 res.send(html);
