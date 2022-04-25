@@ -11,20 +11,20 @@
 #include "../EditorObjectSelectionSession.h"
 #include "../FileClassifier.h"
 #include "../OpenRCT2.h"
-#include "../ParkFile.h"
 #include "../ParkImporter.h"
 #include "../actions/ParkSetDateAction.h"
 #include "../actions/ParkSetParameterAction.h"
 #include "../actions/PauseToggleAction.h"
 #include "../core/Console.hpp"
 #include "../core/Path.hpp"
+#include "../entity/Staff.h"
+#include "../management/NewsItem.h"
 #include "../object/ObjectManager.h"
 #include "../object/ObjectRepository.h"
+#include "../park/ParkFile.h"
 #include "../scenario/Scenario.h"
 #include "../world/Park.h"
 #include "../world/Surface.h"
-#include "../entity/Staff.h"
-#include "../management/NewsItem.h"
 #include "CommandLine.hpp"
 
 #include <memory>
@@ -91,9 +91,8 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         return EXITCODE_FAIL;
     }
 
-    utf8 sourcePath[MAX_PATH];
-    Path::GetAbsolute(sourcePath, sizeof(sourcePath), rawSourcePath);
-    uint32_t sourceFileType = get_file_extension_type(sourcePath);
+    const auto sourcePath = Path::GetAbsolute(rawSourcePath);
+    auto sourceFileType = get_file_extension_type(sourcePath);
 
     // Get the destination path
     const utf8* rawDestinationPath;
@@ -103,12 +102,11 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         return EXITCODE_FAIL;
     }
 
-    utf8 destinationPath[MAX_PATH];
-    Path::GetAbsolute(destinationPath, sizeof(sourcePath), rawDestinationPath);
-    uint32_t destinationFileType = get_file_extension_type(destinationPath);
+    const auto destinationPath = Path::GetAbsolute(rawDestinationPath);
+    auto destinationFileType = get_file_extension_type(destinationPath);
 
     // Validate target type
-    if (destinationFileType != FILE_EXTENSION_PARK)
+    if (destinationFileType != FileExtension::PARK)
     {
         Console::Error::WriteLine("Only conversion to .PARK is supported.");
         return EXITCODE_FAIL;
@@ -117,11 +115,11 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     // Validate the source type
     switch (sourceFileType)
     {
-        case FILE_EXTENSION_SC4:
-        case FILE_EXTENSION_SV4:
-        case FILE_EXTENSION_SC6:
-        case FILE_EXTENSION_SV6:
-        case FILE_EXTENSION_PARK:
+        case FileExtension::SC4:
+        case FileExtension::SV4:
+        case FileExtension::SC6:
+        case FileExtension::SV6:
+        case FileExtension::PARK:
             break;
         default:
             Console::Error::WriteLine("Only conversion from .SC4, .SV4, .SC6, .SV6, or .PARK is supported.");
@@ -139,23 +137,23 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     {
         switch (sourceFileType)
         {
-            case FILE_EXTENSION_SC4:
-            case FILE_EXTENSION_SV4:
-            case FILE_EXTENSION_SC6:
-            case FILE_EXTENSION_SV6:
+            case FileExtension::SC4:
+            case FileExtension::SV4:
+            case FileExtension::SC6:
+            case FileExtension::SV6:
             {
                 auto importer = ParkImporter::Create(sourcePath);
-                auto loadResult = importer->Load(sourcePath);
+                auto loadResult = importer->Load(sourcePath.c_str());
 
                 objManager.LoadObjects(loadResult.RequiredObjects);
 
                 importer->Import();
             }
             break;
-            case FILE_EXTENSION_PARK:
+            case FileExtension::PARK:
             {
                 std::unique_ptr<IParkImporter> importer = ParkImporter::CreateParkFile(context->GetObjectRepository());
-                auto loadResult = importer->Load(sourcePath);
+                auto loadResult = importer->Load(sourcePath.c_str());
 
                 objManager.LoadObjects(loadResult.RequiredObjects);
 
@@ -173,7 +171,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         return EXITCODE_FAIL;
     }
 
-    if (sourceFileType == FILE_EXTENSION_SC4 || sourceFileType == FILE_EXTENSION_SC6)
+    if (sourceFileType == FileExtension::SC4 || sourceFileType == FileExtension::SC6)
     {
         // We are converting a scenario, so reset the park
         scenario_begin();
@@ -184,6 +182,8 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     CheatsSet(CheatType::RemoveLitter);
     CheatsSet(CheatType::RemoveAllGuests);
     CheatsSet(CheatType::RemoveDucks);
+    CheatsSet(CheatType::ClearLoan);
+    CheatsSet(CheatType::HaveFun, 1);
 
     auto setDateAction = ParkSetDateAction(1, 1, 1);
     GameActions::Execute(&setDateAction);
@@ -201,23 +201,21 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     if (prepSandbox)
     {
+        const ObjectRepositoryItem* items = object_repository_get_items();
+        int32_t numObjects = static_cast<int32_t>(object_repository_get_items_count());
+        int32_t flags = INPUT_FLAG_EDITOR_OBJECT_1 | INPUT_FLAG_EDITOR_OBJECT_SELECT_OBJECTS_IN_SCENERY_GROUP;
         CheatsSet(CheatType::NoMoney, 1);
+
         for (auto& rideRef : GetRideManager())
         {
             if (rideRef.type == RIDE_TYPE_CASH_MACHINE)
             {
                 rideRef.type = RIDE_TYPE_FIRST_AID;
-                rideRef.subtype = 58;
+                rideRef.subtype = ride_get_entry_index(RIDE_TYPE_FIRST_AID, OBJECT_ENTRY_INDEX_NULL);
             }
         }
         UpdateTrackElementsRideType();
 
-        const ObjectRepositoryItem* items = object_repository_get_items();
-        int32_t numObjects = static_cast<int32_t>(object_repository_get_items_count());
-        int32_t flags = INPUT_FLAG_EDITOR_OBJECT_1 | INPUT_FLAG_EDITOR_OBJECT_SELECT_OBJECTS_IN_SCENERY_GROUP;
-
-        // if (prepEcon)
-        //     flags |= INPUT_FLAG_EDITOR_OBJECT_SELECT; // enable the ATM
         sub_6AB211();
         for (int32_t i = 0; i < numObjects; i++)
         {
@@ -271,7 +269,7 @@ static void UpdateTrackElementsRideType()
                 continue;
             do
             {
-                if (tileElement->GetType() != TILE_ELEMENT_TYPE_TRACK)
+                if (tileElement->GetType() != TileElementType::Track)
                     continue;
 
                 auto* trackElement = tileElement->AsTrack();

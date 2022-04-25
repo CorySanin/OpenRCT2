@@ -1,5 +1,5 @@
 # Build OpenRCT2
-FROM public.ecr.aws/docker/library/node:16-alpine3.13 AS build-env
+FROM public.ecr.aws/docker/library/node:16-alpine3.15 AS build-env
 RUN apk add --no-cache gcc g++ make cmake duktape-dev nlohmann-json libzip-dev curl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers
 
 WORKDIR /openrct2
@@ -13,7 +13,7 @@ RUN mkdir build \
  && rm /openrct2-install/usr/lib/libopenrct2.a
 
 # Build runtime image
-FROM public.ecr.aws/docker/library/node:16-alpine3.13
+FROM public.ecr.aws/docker/library/node:16-alpine3.15
 COPY --from=build-env /openrct2-install /openrct2-install
 WORKDIR /usr/src/saveprep
 COPY ./config /home/node/.config/OpenRCT2/
