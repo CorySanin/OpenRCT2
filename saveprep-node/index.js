@@ -92,7 +92,7 @@ app.post('/upload', async (req, res) => {
             if (fext == park.name) {
                 fext = '.park';
             }
-            let basename = path.basename(park.name, fext).replaceAll(' ', '_');
+            let basename = path.basename(park.name, fext).replaceAll(' ', '_').toLowerCase();
             let dir = path.join(PARKDIR, `upload_${dayjs().format('YYYYMMDD')}_${getFileNum()}`);
             let filename = path.join(dir, park.name);
             await fsp.mkdir(dir);
