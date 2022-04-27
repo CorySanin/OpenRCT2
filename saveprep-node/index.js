@@ -92,13 +92,13 @@ app.post('/upload', async (req, res) => {
             if (fext == park.name) {
                 fext = '.park';
             }
-            let basename = path.basename(park.name, fext);
+            let basename = path.basename(park.name, fext).replaceAll(' ', '_');
             let dir = path.join(PARKDIR, `upload_${dayjs().format('YYYYMMDD')}_${getFileNum()}`);
             let filename = path.join(dir, park.name);
             await fsp.mkdir(dir);
             await park.mv(filename);
-            let destsandbox = path.join(dir, `${basename}_sandbox.park`);
-            let desteconomy = path.join(dir, `${basename}_economy.park`);
+            let destsandbox = path.join(dir, `${basename}-sandbox.park`);
+            let desteconomy = path.join(dir, `${basename}-economy.park`);
 
             try {
                 let result = await Promise.all([
