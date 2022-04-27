@@ -220,7 +220,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         for (int32_t i = 0; i < numObjects; i++)
         {
             const ObjectRepositoryItem* item = &items[i];
-            if (item->Id == 508 || item->Id == 507)
+            if (item->Name == "Cash Machine")
             {
                 window_editor_object_selection_select_object(0, flags, item);
             }
@@ -254,7 +254,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         return EXITCODE_FAIL;
     }
 
-    Console::WriteLine("Conversion successful!");
+    Console::WriteLine("Execution complete.");
     return EXITCODE_OK;
 }
 
