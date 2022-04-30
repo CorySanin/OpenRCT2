@@ -15,6 +15,7 @@
 #include "../actions/ParkSetDateAction.h"
 #include "../actions/ParkSetParameterAction.h"
 #include "../actions/PauseToggleAction.h"
+#include "../actions/ScenarioSetSettingAction.h"
 #include "../core/Console.hpp"
 #include "../core/Path.hpp"
 #include "../entity/Staff.h"
@@ -183,6 +184,10 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     CheatsSet(CheatType::RemoveAllGuests);
     CheatsSet(CheatType::RemoveDucks);
     CheatsSet(CheatType::ClearLoan);
+    CheatsSet(CheatType::ResetCrashStatus);
+    CheatsSet(CheatType::FixRides);
+    CheatsSet(CheatType::FixVandalism);
+    CheatsSet(CheatType::RenewRides);
     CheatsSet(CheatType::HaveFun, 1);
 
     auto setDateAction = ParkSetDateAction(1, 1, 1);
@@ -232,6 +237,14 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (prepEcon)
     {
         CheatsSet(CheatType::NoMoney, 0);
+        auto parkChargeMethod = ScenarioSetSettingAction(ScenarioSetSetting::ParkChargeMethod, 0);
+        GameActions::Execute(&parkChargeMethod);
+        auto initialLoan = ScenarioSetSettingAction(ScenarioSetSetting::InitialLoan, 0);
+        GameActions::Execute(&initialLoan);
+        auto maximumLoanSize = ScenarioSetSettingAction(ScenarioSetSetting::MaximumLoanSize, 0);
+        GameActions::Execute(&maximumLoanSize);
+        auto annualInterestRate = ScenarioSetSettingAction(ScenarioSetSetting::AnnualInterestRate, 0);
+        GameActions::Execute(&annualInterestRate);
         CheatsSet(CheatType::SetMoney, econBudget);
     }
 
