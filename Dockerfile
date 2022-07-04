@@ -1,6 +1,6 @@
 # Build OpenRCT2
-FROM node:16-alpine3.15 AS build-env
-RUN apk add --no-cache gcc g++ make cmake duktape-dev nlohmann-json libzip-dev curl-dev sdl2-dev speexdsp-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers
+FROM node:16-alpine3.16 AS build-env
+RUN apk add --no-cache git gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers
 
 WORKDIR /openrct2
 
@@ -8,12 +8,16 @@ COPY . .
 
 RUN mkdir build \
  && cd build \
- && cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib -DDISABLE_OPENGL=ON \
+ && cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib -DDISABLE_OPENGL=ON -DDISABLE_GUI=ON \
  && make -j4 install \
- && rm /openrct2-install/usr/lib/libopenrct2.a
+ && rm /openrct2-install/usr/lib/libopenrct2.a \
+ # HACK due to issue in cmakelists, move content from cli
+ && mv /openrct2-install/usr/share/openrct2-cli/* /openrct2-install/usr/share/openrct2 \
+ && rm -rf /openrct2-install/usr/share/openrct2-cli
+
 
 # Build runtime image
-FROM node:16-alpine3.15
+FROM node:16-alpine3.16
 COPY --from=build-env /openrct2-install /openrct2-install
 WORKDIR /usr/src/saveprep
 COPY ./config /home/node/.config/OpenRCT2/

@@ -8,15 +8,15 @@
     "watch": "node build.js --watch"
   },
   "dependencies": {
-    "dayjs": "1.11.1",
-    "ejs": "3.1.7",
-    "express": "4.18.0",
-    "express-fileupload": "1.3.1"
+    "dayjs": "1.11.3",
+    "ejs": "3.1.8",
+    "express": "4.18.1",
+    "express-fileupload": "1.4.0"
   },
   "devDependencies": {
     "csso": "5.0.3",
-    "sass": "1.50.1",
-    "uglify-js": "3.15.4"
+    "sass": "1.53.0",
+    "uglify-js": "3.16.2"
   },
   "repository": {
     "type": "git",
