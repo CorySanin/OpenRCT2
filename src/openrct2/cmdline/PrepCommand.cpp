@@ -252,14 +252,12 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     try
     {
-        auto exporter = std::make_unique<ParkFileExporter>();
-
         // HACK remove the main window so it saves the park with the
         //      correct initial view
         //      taken from ConvertCommand.cpp
         window_close_by_class(WindowClass::MainWindow);
 
-        exporter->Export(destinationPath);
+        save_game_with_name(destinationPath);
     }
     catch (const std::exception& ex)
     {
