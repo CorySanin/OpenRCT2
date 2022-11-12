@@ -257,7 +257,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         // HACK remove the main window so it saves the park with the
         //      correct initial view
         //      taken from ConvertCommand.cpp
-        window_close_by_class(WC_MAIN_WINDOW);
+        window_close_by_class(WindowClass::MainWindow);
 
         exporter->Export(destinationPath);
     }
