@@ -275,7 +275,7 @@ static void UpdateTrackElementsRideType()
     {
         for (int32_t y = 0; y < MAXIMUM_MAP_SIZE_TECHNICAL; y++)
         {
-            TileElement* tileElement = map_get_first_element_at(TileCoordsXY{ x, y });
+            TileElement* tileElement = MapGetFirstElementAt(TileCoordsXY{ x, y });
             if (tileElement == nullptr)
                 continue;
             do
