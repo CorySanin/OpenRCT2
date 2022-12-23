@@ -116,17 +116,18 @@ enum FileMenuDdidx
     DDIDX_LOAD_GAME = 1,
     DDIDX_SAVE_GAME = 2,
     DDIDX_SAVE_GAME_AS = 3,
+    DDIDX_SERVER_LIST = 4,
     // separator
-    DDIDX_ABOUT = 5,
-    DDIDX_OPTIONS = 6,
-    DDIDX_SCREENSHOT = 7,
-    DDIDX_GIANT_SCREENSHOT = 8,
+    DDIDX_ABOUT = 6,
+    DDIDX_OPTIONS = 7,
+    DDIDX_SCREENSHOT = 8,
+    DDIDX_GIANT_SCREENSHOT = 9,
     // separator
-    DDIDX_FILE_BUG_ON_GITHUB = 10,
-    DDIDX_UPDATE_AVAILABLE = 11,
+    DDIDX_FILE_BUG_ON_GITHUB = 11,
+    DDIDX_UPDATE_AVAILABLE = 12,
     // separator
-    DDIDX_QUIT_TO_MENU = 13,
-    DDIDX_EXIT_OPENRCT2 = 14,
+    DDIDX_QUIT_TO_MENU = 14,
+    DDIDX_EXIT_OPENRCT2 = 15,
 };
 
 enum TopToolbarViewMenuDdidx
@@ -488,6 +489,9 @@ static void WindowTopToolbarMousedown(rct_window* w, WidgetIndex widgetIndex, rc
                 gDropdownItems[numItems++].Format = STR_LOAD_GAME;
                 gDropdownItems[numItems++].Format = STR_SAVE_GAME;
                 gDropdownItems[numItems++].Format = STR_SAVE_GAME_AS;
+#ifndef DISABLE_NETWORK
+                gDropdownItems[numItems++].Format = STR_SERVER_LIST;
+#endif
                 gDropdownItems[numItems++].Format = STR_EMPTY;
                 gDropdownItems[numItems++].Format = STR_ABOUT;
                 gDropdownItems[numItems++].Format = STR_OPTIONS;
@@ -565,6 +569,11 @@ static void WindowTopToolbarDropdown(rct_window* w, WidgetIndex widgetIndex, int
             if (gScreenFlags & (SCREEN_FLAGS_TRACK_DESIGNER | SCREEN_FLAGS_TRACK_MANAGER))
                 dropdownIndex += DDIDX_ABOUT;
 
+#ifdef DISABLE_NETWORK
+            if (dropdownIndex >= DDIDX_SERVER_LIST)
+                dropdownIndex += 1;
+#endif
+
             // The "Update available" menu item is only available when there is one
             if (dropdownIndex >= DDIDX_UPDATE_AVAILABLE && !OpenRCT2::GetContext()->HasNewVersionInfo())
                 dropdownIndex += 1;
@@ -602,6 +611,11 @@ static void WindowTopToolbarDropdown(rct_window* w, WidgetIndex widgetIndex, int
                         save_game_as();
                     }
                     break;
+                case DDIDX_SERVER_LIST:
+                {
+                    ContextOpenWindow(WindowClass::ServerList);
+                    break;
+                }
                 case DDIDX_ABOUT:
                     ContextOpenWindow(WindowClass::About);
                     break;
