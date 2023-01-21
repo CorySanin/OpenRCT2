@@ -60,7 +60,6 @@ namespace OpenRCT2 { namespace Drawing
     };
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-final-types"
     class X8DrawingEngine : public IDrawingEngine
     {
     protected:

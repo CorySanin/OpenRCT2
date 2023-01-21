@@ -8892,11 +8892,11 @@ loc_6DC2F6:
     goto loc_6DC316;
 
 loc_6DC2FA:
-    if (regs.ecx <= 0) {
-        if (regs.ecx >= -500) {
-            if (vehicle->velocity <= 0x8000) {
-                regs.ecx += 400;
-            }
+    if (regs.ecx <= 0 && regs.ecx >= -500) {
+        // Probably moving slowly on a flat track piece, low rolling resistance and drag.
+        if(vehicle->velocity <= 0x8000 && vehicle->velocity >= 0) {
+            // Vehicle is creeping forwards very slowly (less than ~2km/h), boost speed a bit.
+            regs.ecx += 400;
         }
     }
 

@@ -134,7 +134,6 @@ void X8RainDrawer::Restore()
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-final-methods"
 
 X8DrawingEngine::X8DrawingEngine()
 {
