@@ -93,7 +93,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     }
 
     const auto sourcePath = Path::GetAbsolute(rawSourcePath);
-    auto sourceFileType = get_file_extension_type(sourcePath);
+    auto sourceFileType = GetFileExtensionType(sourcePath);
 
     // Get the destination path
     const utf8* rawDestinationPath;
@@ -104,7 +104,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     }
 
     const auto destinationPath = Path::GetAbsolute(rawDestinationPath);
-    auto destinationFileType = get_file_extension_type(destinationPath);
+    auto destinationFileType = GetFileExtensionType(destinationPath);
 
     // Validate target type
     if (destinationFileType != FileExtension::PARK)
@@ -175,7 +175,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (sourceFileType == FileExtension::SC4 || sourceFileType == FileExtension::SC6)
     {
         // We are converting a scenario, so reset the park
-        scenario_begin();
+        ScenarioBegin();
     }
 
     CheatsSet(CheatType::SetGrassLength, GRASS_LENGTH_CLEAR_0);
@@ -206,8 +206,8 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     if (prepSandbox)
     {
-        const ObjectRepositoryItem* items = object_repository_get_items();
-        int32_t numObjects = static_cast<int32_t>(object_repository_get_items_count());
+        const ObjectRepositoryItem* items = ObjectRepositoryGetItems();
+        int32_t numObjects = static_cast<int32_t>(ObjectRepositoryGetItemsCount());
         int32_t flags = INPUT_FLAG_EDITOR_OBJECT_1 | INPUT_FLAG_EDITOR_OBJECT_SELECT_OBJECTS_IN_SCENERY_GROUP;
         CheatsSet(CheatType::NoMoney, 1);
 
@@ -216,23 +216,23 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             if (rideRef.type == RIDE_TYPE_CASH_MACHINE)
             {
                 rideRef.type = RIDE_TYPE_FIRST_AID;
-                rideRef.subtype = ride_get_entry_index(RIDE_TYPE_FIRST_AID, OBJECT_ENTRY_INDEX_NULL);
+                rideRef.subtype = RideGetEntryIndex(RIDE_TYPE_FIRST_AID, OBJECT_ENTRY_INDEX_NULL);
             }
         }
         UpdateTrackElementsRideType();
 
-        sub_6AB211();
+        Sub6AB211();
         for (int32_t i = 0; i < numObjects; i++)
         {
             const ObjectRepositoryItem* item = &items[i];
             if (item->Name == "Cash Machine")
             {
-                window_editor_object_selection_select_object(0, flags, item);
+                WindowEditorObjectSelectionSelectObject(0, flags, item);
             }
         }
 
-        unload_unselected_objects();
-        editor_object_flags_free();
+        UnloadUnselectedObjects();
+        EditorObjectFlagsFree();
     }
     if (prepEcon)
     {
@@ -252,12 +252,14 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     try
     {
+        auto exporter = std::make_unique<ParkFileExporter>();
+
         // HACK remove the main window so it saves the park with the
         //      correct initial view
         //      taken from ConvertCommand.cpp
-        window_close_by_class(WindowClass::MainWindow);
+        WindowCloseByClass(WindowClass::MainWindow);
 
-        save_game_with_name(destinationPath);
+        exporter->Export(destinationPath);
     }
     catch (const std::exception& ex)
     {
@@ -284,7 +286,7 @@ static void UpdateTrackElementsRideType()
                     continue;
 
                 auto* trackElement = tileElement->AsTrack();
-                const auto* ride = get_ride(trackElement->GetRideIndex());
+                const auto* ride = GetRide(trackElement->GetRideIndex());
                 if (ride != nullptr)
                 {
                     trackElement->SetRideType(ride->type);
