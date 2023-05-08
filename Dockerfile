@@ -1,6 +1,6 @@
 # Build OpenRCT2
-FROM node:18-alpine3.16 AS build-env
-RUN apk add --no-cache git gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev fts-dev icu-dev musl-dev linux-headers
+FROM node:18-alpine3.17 AS build-env
+RUN apk add --no-cache gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev icu-dev musl-dev linux-headers
 
 WORKDIR /openrct2
 
@@ -17,7 +17,7 @@ RUN mkdir build \
 
 
 # Build runtime image
-FROM node:18-alpine3.16
+FROM node:18-alpine3.17
 COPY --from=build-env /openrct2-install /openrct2-install
 WORKDIR /usr/src/saveprep
 COPY ./config /home/node/.config/OpenRCT2/
