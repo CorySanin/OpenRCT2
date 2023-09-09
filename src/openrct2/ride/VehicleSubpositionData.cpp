@@ -12,8 +12,8 @@
 #include "Vehicle.h"
 
 #define CREATE_VEHICLE_INFO(VAR, ...)                                                                                          \
-    static constexpr const VehicleInfo VAR##_data[] = __VA_ARGS__;                                                             \
-    static constexpr const VehicleInfoList VAR = { static_cast<uint16_t>(std::size(VAR##_data)), VAR##_data };
+    static constexpr VehicleInfo VAR##_data[] = __VA_ARGS__;                                                                   \
+    static constexpr VehicleInfoList VAR = { static_cast<uint16_t>(std::size(VAR##_data)), VAR##_data };
 
 #define MINI_GOLF_STATE(STATE)                                                                                                 \
     {                                                                                                                          \
@@ -23816,7 +23816,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfoRightLargeZeroGRollDown3, {
 
 
 
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown0, {
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown0, {
     {     31,   16,    0,  0,  0,  0 }, {     30,   16,    0,  0,  0,  0 }, {     29,   16,    0,  0,  0,  0 }, {     28,   16,    0,  0,  0,  0 }, {     27,   16,    0,  0,  0,  0 },
     {     26,   16,    0,  0,  0,  0 }, {     25,   16,    0,  0,  0,  0 }, {     24,   16,    0,  0,  0,  0 }, {     23,   16,   -1,  0,  0,  0 }, {     22,   16,   -1,  0,  0,  0 },
     {     21,   15,   -1,  0,  0,  0 }, {     20,   15,   -1,  0,  0,  0 }, {     19,   15,   -2,  0,  0,  0 }, {     18,   15,   -2,  0,  0,  0 }, {     17,   15,   -2,  0,  0,  0 },
@@ -23884,7 +23884,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown0, {
                                                                                                                                                                                                
                                                                                                                                                                                                
                                                                                                                                                                                                
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown1, {                                                                                                                           
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown1, {
     {     16,    0,    0,  8,  0,  0 }, {     16,    1,    0,  8,  0,  0 }, {     16,    2,    0,  8,  0,  0 }, {     16,    3,    0,  8,  0,  0 }, {     16,    4,    0,  8,  0,  0 },
     {     16,    5,    0,  8,  0,  0 }, {     16,    6,    0,  8,  0,  0 }, {     16,    7,    0,  8,  0,  0 }, {     16,    8,   -1,  8,  0,  0 }, {     16,    9,   -1,  8,  0,  0 },
     {     15,   10,   -1,  8,  0,  0 }, {     15,   11,   -1,  8,  0,  0 }, {     15,   12,   -2,  8,  0,  0 }, {     15,   13,   -2,  8,  0,  0 }, {     15,   14,   -2,  8,  0,  0 },
@@ -23952,7 +23952,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown1, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown2, {                                                                                                                    
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown2, {
     {      0,   16,    0, 16,  0,  0 }, {      1,   16,    0, 16,  0,  0 }, {      2,   16,    0, 16,  0,  0 }, {      3,   16,    0, 16,  0,  0 }, {      4,   16,    0, 16,  0,  0 },
     {      5,   16,    0, 16,  0,  0 }, {      6,   16,    0, 16,  0,  0 }, {      7,   16,    0, 16,  0,  0 }, {      8,   16,   -1, 16,  0,  0 }, {      9,   16,   -1, 16,  0,  0 },
     {     10,   17,   -1, 16,  0,  0 }, {     11,   17,   -1, 16,  0,  0 }, {     12,   17,   -2, 16,  0,  0 }, {     13,   17,   -2, 16,  0,  0 }, {     14,   17,   -2, 16,  0,  0 },
@@ -24020,7 +24020,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown2, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown3, {                                                                                                                    
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown3, {
     {     16,   31,    0, 24,  0,  0 }, {     16,   30,    0, 24,  0,  0 }, {     16,   29,    0, 24,  0,  0 }, {     16,   28,    0, 24,  0,  0 }, {     16,   27,    0, 24,  0,  0 },
     {     16,   26,    0, 24,  0,  0 }, {     16,   25,    0, 24,  0,  0 }, {     16,   24,    0, 24,  0,  0 }, {     16,   23,   -1, 24,  0,  0 }, {     16,   22,   -1, 24,  0,  0 },
     {     17,   21,   -1, 24,  0,  0 }, {     17,   20,   -1, 24,  0,  0 }, {     17,   19,   -2, 24,  0,  0 }, {     17,   18,   -2, 24,  0,  0 }, {     17,   17,   -2, 24,  0,  0 },
@@ -24088,7 +24088,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown3, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown0, {                                                                                                                     
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown0, {
     {     31,   16,    0,  0,  0,  0 }, {     30,   16,    0,  0,  0,  0 }, {     29,   16,    0,  0,  0,  0 }, {     28,   16,    0,  0,  0,  0 }, {     27,   16,    0,  0,  0,  0 },
     {     26,   16,    0,  0,  0,  0 }, {     25,   16,    0,  0,  0,  0 }, {     24,   16,    0,  0,  0,  0 }, {     23,   16,   -1,  0,  0,  0 }, {     22,   16,   -1,  0,  0,  0 },
     {     21,   17,   -1,  0,  0,  0 }, {     20,   17,   -1,  0,  0,  0 }, {     19,   17,   -2,  0,  0,  0 }, {     18,   17,   -2,  0,  0,  0 }, {     17,   17,   -2,  0,  0,  0 },
@@ -24156,7 +24156,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown0, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown1, {                                                                                                                     
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown1, {
     {     16,    0,    0,  8,  0,  0 }, {     16,    1,    0,  8,  0,  0 }, {     16,    2,    0,  8,  0,  0 }, {     16,    3,    0,  8,  0,  0 }, {     16,    4,    0,  8,  0,  0 },
     {     16,    5,    0,  8,  0,  0 }, {     16,    6,    0,  8,  0,  0 }, {     16,    7,    0,  8,  0,  0 }, {     16,    8,   -1,  8,  0,  0 }, {     16,    9,   -1,  8,  0,  0 },
     {     17,   10,   -1,  8,  0,  0 }, {     17,   11,   -1,  8,  0,  0 }, {     17,   12,   -2,  8,  0,  0 }, {     17,   13,   -2,  8,  0,  0 }, {     17,   14,   -2,  8,  0,  0 },
@@ -24224,7 +24224,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown1, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown2, {                                                                                                                     
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown2, {
     {      0,   16,    0, 16,  0,  0 }, {      1,   16,    0, 16,  0,  0 }, {      2,   16,    0, 16,  0,  0 }, {      3,   16,    0, 16,  0,  0 }, {      4,   16,    0, 16,  0,  0 },
     {      5,   16,    0, 16,  0,  0 }, {      6,   16,    0, 16,  0,  0 }, {      7,   16,    0, 16,  0,  0 }, {      8,   16,   -1, 16,  0,  0 }, {      9,   16,   -1, 16,  0,  0 },
     {     10,   15,   -1, 16,  0,  0 }, {     11,   15,   -1, 16,  0,  0 }, {     12,   15,   -2, 16,  0,  0 }, {     13,   15,   -2, 16,  0,  0 }, {     14,   15,   -2, 16,  0,  0 },
@@ -24292,7 +24292,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown2, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown3, {                                                                                                                     
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopDown3, {
     {     16,   31,    0, 24,  0,  0 }, {     16,   30,    0, 24,  0,  0 }, {     16,   29,    0, 24,  0,  0 }, {     16,   28,    0, 24,  0,  0 }, {     16,   27,    0, 24,  0,  0 },
     {     16,   26,    0, 24,  0,  0 }, {     16,   25,    0, 24,  0,  0 }, {     16,   24,    0, 24,  0,  0 }, {     16,   23,   -1, 24,  0,  0 }, {     16,   22,   -1, 24,  0,  0 },
     {     15,   21,   -1, 24,  0,  0 }, {     15,   20,   -1, 24,  0,  0 }, {     15,   19,   -2, 24,  0,  0 }, {     15,   18,   -2, 24,  0,  0 }, {     15,   17,   -2, 24,  0,  0 },
@@ -24360,7 +24360,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopDown3, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown0, {                                                                                                                         
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown0, {
     {     31,   16,   32,  0,  0,  0 }, {     30,   16,   32,  0,  0,  0 }, {     29,   16,   32,  0,  0,  0 }, {     28,   16,   32,  0,  0,  0 }, {     27,   16,   32,  0,  0,  0 },
     {     26,   16,   32,  0,  0,  0 }, {     25,   16,   32,  0,  0,  0 }, {     24,   16,   32,  0,  0,  0 }, {     23,   16,   31,  0,  0,  0 }, {     22,   16,   31,  0,  0,  0 },
     {     21,   15,   31,  0,  0,  0 }, {     20,   15,   31,  0,  0,  0 }, {     19,   15,   30,  0,  0,  0 }, {     18,   15,   30,  0,  0,  0 }, {     17,   15,   30,  0,  0,  0 },
@@ -24428,7 +24428,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown0, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown1, {                                                                                                                         
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown1, {
     {     16,    0,   32,  8,  0,  0 }, {     16,    1,   32,  8,  0,  0 }, {     16,    2,   32,  8,  0,  0 }, {     16,    3,   32,  8,  0,  0 }, {     16,    4,   32,  8,  0,  0 },
     {     16,    5,   32,  8,  0,  0 }, {     16,    6,   32,  8,  0,  0 }, {     16,    7,   32,  8,  0,  0 }, {     16,    8,   31,  8,  0,  0 }, {     16,    9,   31,  8,  0,  0 },
     {     15,   10,   31,  8,  0,  0 }, {     15,   11,   31,  8,  0,  0 }, {     15,   12,   30,  8,  0,  0 }, {     15,   13,   30,  8,  0,  0 }, {     15,   14,   30,  8,  0,  0 },
@@ -24496,7 +24496,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown1, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown2, {                                                                                                                         
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown2, {
     {      0,   16,   32, 16,  0,  0 }, {      1,   16,   32, 16,  0,  0 }, {      2,   16,   32, 16,  0,  0 }, {      3,   16,   32, 16,  0,  0 }, {      4,   16,   32, 16,  0,  0 },
     {      5,   16,   32, 16,  0,  0 }, {      6,   16,   32, 16,  0,  0 }, {      7,   16,   32, 16,  0,  0 }, {      8,   16,   31, 16,  0,  0 }, {      9,   16,   31, 16,  0,  0 },
     {     10,   17,   31, 16,  0,  0 }, {     11,   17,   31, 16,  0,  0 }, {     12,   17,   30, 16,  0,  0 }, {     13,   17,   30, 16,  0,  0 }, {     14,   17,   30, 16,  0,  0 },
@@ -24564,7 +24564,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown2, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown3, {                                                                                                                         
+CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown3, {
     {     16,   31,   32, 24,  0,  0 }, {     16,   30,   32, 24,  0,  0 }, {     16,   29,   32, 24,  0,  0 }, {     16,   28,   32, 24,  0,  0 }, {     16,   27,   32, 24,  0,  0 },
     {     16,   26,   32, 24,  0,  0 }, {     16,   25,   32, 24,  0,  0 }, {     16,   24,   32, 24,  0,  0 }, {     16,   23,   31, 24,  0,  0 }, {     16,   22,   31, 24,  0,  0 },
     {     17,   21,   31, 24,  0,  0 }, {     17,   20,   31, 24,  0,  0 }, {     17,   19,   30, 24,  0,  0 }, {     17,   18,   30, 24,  0,  0 }, {     17,   17,   30, 24,  0,  0 },
@@ -24632,7 +24632,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown3, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown0, {                                                                                                                          
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown0, {
     {     31,   16,   32,  0,  0,  0 }, {     30,   16,   32,  0,  0,  0 }, {     29,   16,   32,  0,  0,  0 }, {     28,   16,   32,  0,  0,  0 }, {     27,   16,   32,  0,  0,  0 },
     {     26,   16,   32,  0,  0,  0 }, {     25,   16,   32,  0,  0,  0 }, {     24,   16,   32,  0,  0,  0 }, {     23,   16,   31,  0,  0,  0 }, {     22,   16,   31,  0,  0,  0 },
     {     21,   17,   31,  0,  0,  0 }, {     20,   17,   31,  0,  0,  0 }, {     19,   17,   30,  0,  0,  0 }, {     18,   17,   30,  0,  0,  0 }, {     17,   17,   30,  0,  0,  0 },
@@ -24700,7 +24700,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown0, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown1, {                                                                                                                          
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown1, {
     {     16,    0,   32,  8,  0,  0 }, {     16,    1,   32,  8,  0,  0 }, {     16,    2,   32,  8,  0,  0 }, {     16,    3,   32,  8,  0,  0 }, {     16,    4,   32,  8,  0,  0 },
     {     16,    5,   32,  8,  0,  0 }, {     16,    6,   32,  8,  0,  0 }, {     16,    7,   32,  8,  0,  0 }, {     16,    8,   31,  8,  0,  0 }, {     16,    9,   31,  8,  0,  0 },
     {     17,   10,   31,  8,  0,  0 }, {     17,   11,   31,  8,  0,  0 }, {     17,   12,   30,  8,  0,  0 }, {     17,   13,   30,  8,  0,  0 }, {     17,   14,   30,  8,  0,  0 },
@@ -24768,7 +24768,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown1, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown2, {                                                                                                                          
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown2, {
     {      0,   16,   32, 16,  0,  0 }, {      1,   16,   32, 16,  0,  0 }, {      2,   16,   32, 16,  0,  0 }, {      3,   16,   32, 16,  0,  0 }, {      4,   16,   32, 16,  0,  0 },
     {      5,   16,   32, 16,  0,  0 }, {      6,   16,   32, 16,  0,  0 }, {      7,   16,   32, 16,  0,  0 }, {      8,   16,   31, 16,  0,  0 }, {      9,   16,   31, 16,  0,  0 },
     {     10,   15,   31, 16,  0,  0 }, {     11,   15,   31, 16,  0,  0 }, {     12,   15,   30, 16,  0,  0 }, {     13,   15,   30, 16,  0,  0 }, {     14,   15,   30, 16,  0,  0 },
@@ -24836,7 +24836,7 @@ CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown2, {
                                                                                                                                                                                      
                                                                                                                                                                                      
                                                                                                                                                                                      
-CREATE_VEHICLE_INFO(TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown3, {                                                                                                                          
+CREATE_VEHICLE_INFO(TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown3, {
     {     16,   31,   32, 24,  0,  0 }, {     16,   30,   32, 24,  0,  0 }, {     16,   29,   32, 24,  0,  0 }, {     16,   28,   32, 24,  0,  0 }, {     16,   27,   32, 24,  0,  0 },
     {     16,   26,   32, 24,  0,  0 }, {     16,   25,   32, 24,  0,  0 }, {     16,   24,   32, 24,  0,  0 }, {     16,   23,   31, 24,  0,  0 }, {     16,   22,   31, 24,  0,  0 },
     {     15,   21,   31, 24,  0,  0 }, {     15,   20,   31, 24,  0,  0 }, {     15,   19,   30, 24,  0,  0 }, {     15,   18,   30, 24,  0,  0 }, {     15,   17,   30, 24,  0,  0 },
@@ -29922,8 +29922,8 @@ static constexpr const VehicleInfoList *TrackVehicleInfoListDefault[] = {
     &TrackVehicleInfo_8C232A, &TrackVehicleInfo_8C244C, &TrackVehicleInfo_8C256E, &TrackVehicleInfo_8C2690,  // PoweredLift
     &TrackVehicleInfo_9221B2, &TrackVehicleInfo_9237A6, &TrackVehicleInfo_924D9A, &TrackVehicleInfo_92638E,  // LeftLargeHalfLoopUp
     &TrackVehicleInfo_922CAC, &TrackVehicleInfo_9242A0, &TrackVehicleInfo_925894, &TrackVehicleInfo_926E88,  // RightLargeHalfLoopUp
-    &TrackVehicleInfo_927982, &TrackVehicleInfo_928F76, &TrackVehicleInfo_92A56A, &TrackVehicleInfo_92BB5E,  // RightLargeHalfLoopDown
-    &TrackVehicleInfo_92847C, &TrackVehicleInfo_929A70, &TrackVehicleInfo_92B064, &TrackVehicleInfo_92C658,  // LeftLargeHalfLoopDown
+    &TrackVehicleInfo_927982, &TrackVehicleInfo_928F76, &TrackVehicleInfo_92A56A, &TrackVehicleInfo_92BB5E,  // LeftLargeHalfLoopDown
+    &TrackVehicleInfo_92847C, &TrackVehicleInfo_929A70, &TrackVehicleInfo_92B064, &TrackVehicleInfo_92C658,  // RightLargeHalfLoopDown
     &TrackVehicleInfo_8D9BFE, &TrackVehicleInfo_8D9F60, &TrackVehicleInfo_8DA2C2, &TrackVehicleInfo_8DA624,  // LeftFlyerTwistUp
     &TrackVehicleInfo_8DA986, &TrackVehicleInfo_8DACE8, &TrackVehicleInfo_8DB04A, &TrackVehicleInfo_8DB3AC,  // RightFlyerTwistUp
     &TrackVehicleInfo_8DD21E, &TrackVehicleInfo_8DD580, &TrackVehicleInfo_8DD8E2, &TrackVehicleInfo_8DDC44,  // LeftFlyerTwistDown
@@ -30022,12 +30022,12 @@ static constexpr const VehicleInfoList *TrackVehicleInfoListDefault[] = {
     &TrackVehicleInfoRightLargeZeroGRollDown0, &TrackVehicleInfoRightLargeZeroGRollDown1, &TrackVehicleInfoRightLargeZeroGRollDown2, &TrackVehicleInfoRightLargeZeroGRollDown3,
     &TrackVehicleInfo_9221B2, &TrackVehicleInfo_9237A6, &TrackVehicleInfo_924D9A, &TrackVehicleInfo_92638E,  // LeftFlyerLargeHalfLoopUninvertedUp
     &TrackVehicleInfo_922CAC, &TrackVehicleInfo_9242A0, &TrackVehicleInfo_925894, &TrackVehicleInfo_926E88,  // RightFlyerLargeHalfLoopUninvertedUp
-    &TrackVehicleInfo_RightFlyerLargeHalfLoopDown0, &TrackVehicleInfo_RightFlyerLargeHalfLoopDown1, &TrackVehicleInfo_RightFlyerLargeHalfLoopDown2, &TrackVehicleInfo_RightFlyerLargeHalfLoopDown3,  // RightFlyerLargeHalfLoopInvertedDown
     &TrackVehicleInfo_LeftFlyerLargeHalfLoopDown0, &TrackVehicleInfo_LeftFlyerLargeHalfLoopDown1, &TrackVehicleInfo_LeftFlyerLargeHalfLoopDown2, &TrackVehicleInfo_LeftFlyerLargeHalfLoopDown3,  // LeftFlyerLargeHalfLoopInvertedDown
+    &TrackVehicleInfo_RightFlyerLargeHalfLoopDown0, &TrackVehicleInfo_RightFlyerLargeHalfLoopDown1, &TrackVehicleInfo_RightFlyerLargeHalfLoopDown2, &TrackVehicleInfo_RightFlyerLargeHalfLoopDown3,  // RightFlyerLargeHalfLoopInvertedDown
     &TrackVehicleInfo_9221B2, &TrackVehicleInfo_9237A6, &TrackVehicleInfo_924D9A, &TrackVehicleInfo_92638E,  // LeftFlyerLargeHalfLoopInvertedUp
     &TrackVehicleInfo_922CAC, &TrackVehicleInfo_9242A0, &TrackVehicleInfo_925894, &TrackVehicleInfo_926E88,  // RightFlyerLargeHalfLoopInvertedUp
-    &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown0, &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown1, &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown2, &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown3,  // RightFlyerLargeHalfLoopUninvertedDown
     &TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown0, &TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown1, &TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown2, &TrackVehicleInfo_LeftFlyerLargeHalfLoopUninvertedDown3,  // LeftFlyerLargeHalfLoopUninvertedDown
+    &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown0, &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown1, &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown2, &TrackVehicleInfo_RightFlyerLargeHalfLoopUninvertedDown3,  // RightFlyerLargeHalfLoopUninvertedDown
      &TrackVehicleInfo_8E644E, &TrackVehicleInfo_8E69F9, &TrackVehicleInfo_8E6FA4, &TrackVehicleInfo_8E754F,  // FlyerHalfLoopInvertedUp
      &TrackVehicleInfo_FlyerHalfLoopUninvertedDown0, &TrackVehicleInfo_FlyerHalfLoopUninvertedDown1, &TrackVehicleInfo_FlyerHalfLoopUninvertedDown2, &TrackVehicleInfo_FlyerHalfLoopUninvertedDown3,  // FlyerHalfLoopUninvertedDown
      &TrackVehicleInfoLeftEighthToDiagUp250, &TrackVehicleInfoLeftEighthToDiagUp251, &TrackVehicleInfoLeftEighthToDiagUp252, &TrackVehicleInfoLeftEighthToDiagUp253, // TrackElemType::LeftEighthToDiagUp25          
