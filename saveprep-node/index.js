@@ -17,6 +17,7 @@ const PROJECT_ROOT = __dirname;
 const app = express();
 
 let filenum = 0;
+let orct2Version;
 
 function getFileNum() {
     return (filenum = (filenum + 1) % FILENUMMAX);
@@ -174,7 +175,8 @@ app.post('/upload', async (req, res) => {
 app.get('/', (req, res) => {
     res.render('index',
         {
-            inliner
+            inliner,
+            version: orct2Version
         },
         function (err, html) {
             if (!err) {
@@ -196,5 +198,25 @@ let server = app.listen(PORT, () => {
         }
     });
 });
+
+// Retrieve version of OpenRCT2 binary
+(function () {
+    let process = spawn('openrct2-cli', ['--version']);
+    let timeout = setTimeout(() => {
+        reject('Timed out');
+        process.kill();
+    }, TIMEOUT);
+
+    process.stdout.on('data', out => {
+        if (!orct2Version) {
+            orct2Version = out.toString().trim();
+            orct2Version = orct2Version.substr(orct2Version.indexOf(' ') + 1);
+        }
+    });
+
+    process.on('exit', () => {
+        clearTimeout(timeout);
+    });
+})();
 
 process.on('SIGTERM', server.close);
