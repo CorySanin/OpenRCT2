@@ -18,11 +18,13 @@ RUN mkdir build \
 
 # Build runtime image
 FROM node:18-alpine3.18
+HEALTHCHECK  --timeout=3s \
+  CMD curl --fail http://localhost:8080/healthcheck || exit 1
 COPY --from=build-env /openrct2-install /openrct2-install
 WORKDIR /usr/src/saveprep
 COPY ./config /home/node/.config/OpenRCT2/
 COPY ./saveprep-node .
-RUN apk add --no-cache rsync ca-certificates libpng libzip libcurl freetype fontconfig icu \
+RUN apk add --no-cache rsync ca-certificates libpng libzip libcurl freetype fontconfig icu curl \
  && rsync -a /openrct2-install/* / \
  && rm -rf /openrct2-install \
  && openrct2-cli --version \

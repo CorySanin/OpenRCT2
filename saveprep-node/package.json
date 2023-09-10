@@ -1,6 +1,6 @@
 {
   "name": "saveprep-node",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Prepare OpenRCT2 saves for use with FFA Tycoon multiplayer servers",
   "main": "index.js",
   "scripts": {

@@ -80,6 +80,10 @@ app.use(fileUpload({
     }
 }));
 
+app.get('/healthcheck', async (req, res) => {
+    res.send('Healthy');
+});
+
 app.post('/upload', async (req, res) => {
     try {
         if (!req.files || !req.files.park) {
