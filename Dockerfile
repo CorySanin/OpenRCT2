@@ -2,7 +2,7 @@ FROM node:lts-alpine3.19 AS base
 
 # Build OpenRCT2
 FROM base AS build-env
-RUN apk add --no-cache git gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev icu-dev musl-dev linux-headers
+RUN apk add --no-cache gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev icu-dev musl-dev linux-headers
 
 WORKDIR /openrct2
 
