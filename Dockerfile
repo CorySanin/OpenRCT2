@@ -1,6 +1,8 @@
+FROM node:lts-alpine3.19 AS base
+
 # Build OpenRCT2
-FROM node:18-alpine3.18 AS build-env
-RUN apk add --no-cache gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev icu-dev musl-dev linux-headers
+FROM base AS build-env
+RUN apk add --no-cache git gcc g++ make cmake nlohmann-json libzip-dev curl-dev fontconfig-dev icu-dev musl-dev linux-headers
 
 WORKDIR /openrct2
 
@@ -17,7 +19,7 @@ RUN mkdir build \
 
 
 # Build runtime image
-FROM node:18-alpine3.18
+FROM base as deploy
 HEALTHCHECK  --timeout=3s \
   CMD curl --fail http://localhost:8080/healthcheck || exit 1
 COPY --from=build-env /openrct2-install /openrct2-install

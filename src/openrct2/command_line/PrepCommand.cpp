@@ -10,6 +10,7 @@
 #include "../Context.h"
 #include "../EditorObjectSelectionSession.h"
 #include "../FileClassifier.h"
+#include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../ParkImporter.h"
 #include "../actions/ParkSetDateAction.h"
@@ -30,8 +31,10 @@
 
 #include <memory>
 
+using namespace OpenRCT2;
+
 static void UpdateTrackElementsRideType();
-static void DetectProblems();
+static void DetectProblems(GameState_t& gameState);
 
 exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 {
@@ -129,10 +132,11 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     // Perform preparation
     gOpenRCT2Headless = true;
-    auto context = OpenRCT2::CreateContext();
+    auto context = CreateContext();
     context->Initialise();
 
     auto& objManager = context->GetObjectManager();
+    auto& gameState = GetGameState();
 
     try
     {
@@ -148,7 +152,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
                 objManager.LoadObjects(loadResult.RequiredObjects);
 
-                importer->Import();
+                importer->Import(gameState);
             }
             break;
             case FileExtension::PARK:
@@ -158,7 +162,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
                 objManager.LoadObjects(loadResult.RequiredObjects);
 
-                importer->Import();
+                importer->Import(gameState);
             }
             break;
             default:
@@ -175,7 +179,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (sourceFileType == FileExtension::SC4 || sourceFileType == FileExtension::SC6)
     {
         // We are converting a scenario, so reset the park
-        ScenarioBegin();
+        ScenarioBegin(gameState);
     }
 
     CheatsSet(CheatType::SetGrassLength, GRASS_LENGTH_CLEAR_0);
@@ -248,7 +252,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         CheatsSet(CheatType::SetMoney, econBudget);
     }
 
-    DetectProblems();
+    DetectProblems(gameState);
 
     try
     {
@@ -295,7 +299,7 @@ static void UpdateTrackElementsRideType()
     }
 }
 
-static void DetectProblems()
+static void DetectProblems(GameState_t& gameState)
 {
     bool food = false;
     bool drink = false;
@@ -324,7 +328,7 @@ static void DetectProblems()
         }
     }
 
-    if (hmen < gParkSize / 800)
+    if (hmen < gameState.ParkSize / 800)
     {
         Console::Error::WriteLine("Consider adding more handymen to the park.");
     }
