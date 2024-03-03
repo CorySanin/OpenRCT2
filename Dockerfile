@@ -33,7 +33,9 @@ RUN apk add --no-cache rsync ca-certificates libpng libzip libcurl freetype font
  && npm install \
  && npm run build \
  && chown -R node:node /home/node/.config/OpenRCT2 \
- && ln -sf /game /rct2
+ && ln -sf /game /rct2 \
+ && mkdir -p /home/node/.config/OpenRCT2/object/ \
+ && chown -R node:node /home/node/.config/OpenRCT2
 USER node
 EXPOSE 8080
 

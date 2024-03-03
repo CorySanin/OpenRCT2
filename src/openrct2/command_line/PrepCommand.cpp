@@ -13,6 +13,7 @@
 #include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../ParkImporter.h"
+#include "../actions/CheatSetAction.h"
 #include "../actions/ParkSetDateAction.h"
 #include "../actions/ParkSetParameterAction.h"
 #include "../actions/PauseToggleAction.h"
@@ -176,44 +177,38 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         return EXITCODE_FAIL;
     }
 
-    if (sourceFileType == FileExtension::SC4 || sourceFileType == FileExtension::SC6)
-    {
-        // We are converting a scenario, so reset the park
-        ScenarioBegin(gameState);
-    }
 
-    CheatsSet(CheatType::SetGrassLength, GRASS_LENGTH_CLEAR_0);
-    CheatsSet(CheatType::WaterPlants);
-    CheatsSet(CheatType::RemoveLitter);
-    CheatsSet(CheatType::RemoveAllGuests);
-    CheatsSet(CheatType::RemoveDucks);
-    CheatsSet(CheatType::ClearLoan);
-    CheatsSet(CheatType::ResetCrashStatus);
-    CheatsSet(CheatType::FixRides);
-    CheatsSet(CheatType::FixVandalism);
-    CheatsSet(CheatType::RenewRides);
-    CheatsSet(CheatType::HaveFun, 1);
+    ScenarioBegin(gameState);
 
-    auto setDateAction = ParkSetDateAction(1, 1, 1);
-    GameActions::Execute(&setDateAction);
+    CheatSetAction(CheatType::SetGrassLength, GRASS_LENGTH_CLEAR_0).Execute();
+    CheatSetAction(CheatType::WaterPlants).Execute();
+    CheatSetAction(CheatType::RemoveLitter).Execute();
+    CheatSetAction(CheatType::RemoveAllGuests).Execute();
+    CheatSetAction(CheatType::RemoveDucks).Execute();
+    CheatSetAction(CheatType::ClearLoan).Execute();
+    CheatSetAction(CheatType::ResetCrashStatus).Execute();
+    CheatSetAction(CheatType::FixRides).Execute();
+    CheatSetAction(CheatType::FixVandalism).Execute();
+    CheatSetAction(CheatType::RenewRides).Execute();
+    CheatSetAction(CheatType::HaveFun, 1).Execute();
 
-    auto parkSetParameter = ParkSetParameterAction(ParkParameter::Open);
-    GameActions::Execute(&parkSetParameter);
+    ParkSetDateAction(1, 1, 1).Execute();
+
+    ParkSetParameterAction(ParkParameter::Open).Execute();
 
     if (gGamePaused & GAME_PAUSED_NORMAL)
     {
-        auto pauseToggleAction = PauseToggleAction();
-        GameActions::Execute(&pauseToggleAction);
+        PauseToggleAction().Execute();
     }
 
-    gNewsItems.Clear();
+    gameState.NewsItems.Clear();
 
     if (prepSandbox)
     {
         const ObjectRepositoryItem* items = ObjectRepositoryGetItems();
         int32_t numObjects = static_cast<int32_t>(ObjectRepositoryGetItemsCount());
         int32_t flags = INPUT_FLAG_EDITOR_OBJECT_1 | INPUT_FLAG_EDITOR_OBJECT_SELECT_OBJECTS_IN_SCENERY_GROUP;
-        CheatsSet(CheatType::NoMoney, 1);
+        CheatSetAction(CheatType::NoMoney, 1).Execute();
 
         for (auto& rideRef : GetRideManager())
         {
@@ -240,16 +235,12 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     }
     if (prepEcon)
     {
-        CheatsSet(CheatType::NoMoney, 0);
-        auto parkChargeMethod = ScenarioSetSettingAction(ScenarioSetSetting::ParkChargeMethod, 0);
-        GameActions::Execute(&parkChargeMethod);
-        auto initialLoan = ScenarioSetSettingAction(ScenarioSetSetting::InitialLoan, 0);
-        GameActions::Execute(&initialLoan);
-        auto maximumLoanSize = ScenarioSetSettingAction(ScenarioSetSetting::MaximumLoanSize, 0);
-        GameActions::Execute(&maximumLoanSize);
-        auto annualInterestRate = ScenarioSetSettingAction(ScenarioSetSetting::AnnualInterestRate, 0);
-        GameActions::Execute(&annualInterestRate);
-        CheatsSet(CheatType::SetMoney, econBudget);
+        CheatSetAction(CheatType::NoMoney, 0).Execute();
+        ScenarioSetSettingAction(ScenarioSetSetting::ParkChargeMethod, 0).Execute();
+        ScenarioSetSettingAction(ScenarioSetSetting::InitialLoan, 0).Execute();
+        ScenarioSetSettingAction(ScenarioSetSetting::MaximumLoanSize, 0).Execute();
+        ScenarioSetSettingAction(ScenarioSetSetting::AnnualInterestRate, 0).Execute();
+        gameState.Cash = econBudget;
     }
 
     DetectProblems(gameState);
