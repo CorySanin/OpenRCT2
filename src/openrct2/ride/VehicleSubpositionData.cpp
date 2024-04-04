@@ -31742,7 +31742,7 @@ static constexpr const VehicleInfoList *TrackVehicleInfoListReverserRCRearBogie[
 };
 
 // rct2: 0x008B8F30
-constexpr const VehicleInfoList * const * gTrackVehicleInfo[static_cast<uint8_t>(VehicleTrackSubposition::Count)] = {
+constexpr const VehicleInfoList * const * gTrackVehicleInfo[EnumValue(VehicleTrackSubposition::Count)] = {
     TrackVehicleInfoListDefault,                  // VehicleTrackSubposition::Default
     TrackVehicleInfoListChairliftGoingOut,        // VehicleTrackSubposition::ChairliftGoingOut
     TrackVehicleInfoListChairliftGoingBack,       // VehicleTrackSubposition::ChairliftGoingBack

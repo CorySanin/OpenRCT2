@@ -2758,7 +2758,7 @@ void NetworkBase::Client_Handle_MAP([[maybe_unused]] NetworkConnection& connecti
             GameLoadScripts();
             GameNotifyMapChanged();
             _serverState.tick = GetGameState().CurrentTicks;
-            // WindowNetworkStatusOpen("Loaded new map from network");
+            // NetworkStatusOpen("Loaded new map from network");
             _serverState.state = NetworkServerStatus::Ok;
             _clientMapLoaded = true;
             gFirstTimeSaving = true;
@@ -2805,7 +2805,7 @@ bool NetworkBase::LoadMap(IStream* stream)
         EntityTweener::Get().Reset();
         MapAnimationAutoCreate();
 
-        gLastAutoSaveUpdate = AUTOSAVE_PAUSE;
+        gLastAutoSaveUpdate = kAutosavePause;
         result = true;
     }
     catch (const std::exception& e)
