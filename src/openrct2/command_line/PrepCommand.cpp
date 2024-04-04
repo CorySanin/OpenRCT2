@@ -266,9 +266,9 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
 static void UpdateTrackElementsRideType()
 {
-    for (int32_t x = 0; x < MAXIMUM_MAP_SIZE_TECHNICAL; x++)
+    for (int32_t x = 0; x < MAXIMUM_MAP_SIZE_BIG; x++)
     {
-        for (int32_t y = 0; y < MAXIMUM_MAP_SIZE_TECHNICAL; y++)
+        for (int32_t y = 0; y < MAXIMUM_MAP_SIZE_BIG; y++)
         {
             TileElement* tileElement = MapGetFirstElementAt(TileCoordsXY{ x, y });
             if (tileElement == nullptr)
