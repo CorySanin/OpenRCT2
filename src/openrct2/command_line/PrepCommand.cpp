@@ -319,7 +319,7 @@ static void DetectProblems(GameState_t& gameState)
         }
     }
 
-    if (hmen < gameState.ParkSize / 800)
+    if (hmen < static_cast<uint32_t>(gameState.MapSize.x * gameState.MapSize.y / 800))
     {
         Console::Error::WriteLine("Consider adding more handymen to the park.");
     }
