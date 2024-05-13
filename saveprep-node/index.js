@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 8080;
 const HOME = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
 const PARKDIR = process.env.PARKDIR || path.join(HOME, '.config', 'OpenRCT2', 'save');
 const FILENUMMAX = 100000;
-const TIMEOUT = process.env.TIMEOUT || 20000;
+const TIMEOUT = process.env.TIMEOUT || 30000;
 const FUNDS = 100000;
 const PROJECT_ROOT = __dirname;
 
