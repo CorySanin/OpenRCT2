@@ -1,4 +1,4 @@
-FROM node:lts-alpine3.19 AS base
+FROM node:lts-alpine3.20 AS base
 
 # Build OpenRCT2
 FROM base AS build-env
