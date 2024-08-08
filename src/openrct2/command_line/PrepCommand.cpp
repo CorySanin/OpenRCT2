@@ -21,6 +21,7 @@
 #include "../core/Console.hpp"
 #include "../core/Path.hpp"
 #include "../entity/Staff.h"
+#include "../interface/Window.h"
 #include "../management/NewsItem.h"
 #include "../object/ObjectManager.h"
 #include "../object/ObjectRepository.h"
@@ -180,6 +181,8 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     ScenarioBegin(gameState);
 
+    gameState.LastEntranceStyle = objManager.GetLoadedObjectEntryIndex("rct2.station.plain");
+
     CheatSetAction(CheatType::SetGrassLength, GRASS_LENGTH_CLEAR_0).Execute();
     CheatSetAction(CheatType::WaterPlants).Execute();
     CheatSetAction(CheatType::RemoveLitter).Execute();
@@ -191,15 +194,36 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     CheatSetAction(CheatType::FixVandalism).Execute();
     CheatSetAction(CheatType::RenewRides).Execute();
     CheatSetAction(CheatType::HaveFun, 1).Execute();
+    CheatSetAction(CheatType::DisableClearanceChecks, 0).Execute();
+    CheatSetAction(CheatType::DisableSupportLimits, 0).Execute();
+    CheatSetAction(CheatType::DisableSupportLimits, 0).Execute();
+    CheatSetAction(CheatType::SandboxMode, 0).Execute();
+    CheatSetAction(CheatType::ShowAllOperatingModes, 0).Execute();
+    CheatSetAction(CheatType::ShowVehiclesFromOtherTrackTypes, 0).Execute();
+    CheatSetAction(CheatType::DisableTrainLengthLimit, 0).Execute();
+    CheatSetAction(CheatType::EnableChainLiftOnAllTrack, 0).Execute();
+    CheatSetAction(CheatType::FastLiftHill, 0).Execute();
+    CheatSetAction(CheatType::DisableBrakesFailure, 0).Execute();
+    CheatSetAction(CheatType::DisableAllBreakdowns, 0).Execute();
+    CheatSetAction(CheatType::UnlockAllPrices, 0).Execute();
+    CheatSetAction(CheatType::BuildInPauseMode, 0).Execute();
+    CheatSetAction(CheatType::IgnoreRideIntensity, 0).Execute();
+    CheatSetAction(CheatType::DisableVandalism, 0).Execute();
+    CheatSetAction(CheatType::DisableLittering, 0).Execute();
+    CheatSetAction(CheatType::DisablePlantAging, 0).Execute();
+    CheatSetAction(CheatType::MakeDestructible, 0).Execute();
+    CheatSetAction(CheatType::NeverEndingMarketing, 0).Execute();
+    CheatSetAction(CheatType::AllowArbitraryRideTypeChanges, 0).Execute();
+    CheatSetAction(CheatType::DisableRideValueAging, 0).Execute();
+    CheatSetAction(CheatType::IgnoreResearchStatus, 0).Execute();
+    CheatSetAction(CheatType::EnableAllDrawableTrackPieces, 0).Execute();
+    CheatSetAction(CheatType::AllowTrackPlaceInvalidHeights, 0).Execute();
 
     ParkSetDateAction(1, 1, 1).Execute();
 
     ParkSetParameterAction(ParkParameter::Open).Execute();
 
-    if (gGamePaused & GAME_PAUSED_NORMAL)
-    {
-        PauseToggleAction().Execute();
-    }
+    gGamePaused = 0;
 
     gameState.NewsItems.Clear();
 
