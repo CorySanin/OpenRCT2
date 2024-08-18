@@ -216,7 +216,6 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     CheatSetAction(CheatType::AllowArbitraryRideTypeChanges, 0).Execute();
     CheatSetAction(CheatType::DisableRideValueAging, 0).Execute();
     CheatSetAction(CheatType::IgnoreResearchStatus, 0).Execute();
-    CheatSetAction(CheatType::EnableAllDrawableTrackPieces, 0).Execute();
     CheatSetAction(CheatType::AllowTrackPlaceInvalidHeights, 0).Execute();
 
     ParkSetDateAction(1, 1, 1).Execute();
