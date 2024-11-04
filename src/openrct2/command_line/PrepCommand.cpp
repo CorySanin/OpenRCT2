@@ -20,6 +20,7 @@
 #include "../actions/ScenarioSetSettingAction.h"
 #include "../core/Console.hpp"
 #include "../core/Path.hpp"
+#include "../core/String.hpp"
 #include "../entity/Staff.h"
 #include "../interface/Window.h"
 #include "../management/NewsItem.h"
@@ -28,7 +29,8 @@
 #include "../park/ParkFile.h"
 #include "../scenario/Scenario.h"
 #include "../world/Park.h"
-#include "../world/Surface.h"
+#include "../world/tile_element/SurfaceElement.h"
+#include "../world/tile_element/TrackElement.h"
 #include "CommandLine.hpp"
 
 #include <memory>
@@ -289,9 +291,10 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
 static void UpdateTrackElementsRideType()
 {
-    for (int32_t x = 0; x < MAXIMUM_MAP_SIZE_BIG; x++)
+    auto& gameState = GetGameState();
+    for (int32_t y = 0; y < gameState.MapSize.y; y++)
     {
-        for (int32_t y = 0; y < MAXIMUM_MAP_SIZE_BIG; y++)
+        for (int32_t x = 0; x < gameState.MapSize.x; x++)
         {
             TileElement* tileElement = MapGetFirstElementAt(TileCoordsXY{ x, y });
             if (tileElement == nullptr)
