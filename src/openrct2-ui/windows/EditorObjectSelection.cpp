@@ -183,6 +183,7 @@ namespace OpenRCT2::Ui::Windows
         { STR_OBJECT_SELECTION_PARK_ENTRANCE,             ObjectType::ParkEntrance,    SPR_TAB_PARK,            kEntrancesObjectSubTabs },
         { STR_OBJECT_SELECTION_TERRAIN_SURFACES,          ObjectType::TerrainSurface,  SPR_G2_TAB_LAND,         kTerrainObjectSubTabs },
         { STR_OBJECT_SELECTION_MUSIC,                     ObjectType::Music,           SPR_TAB_MUSIC_0,         {} },
+        { STR_OBJECT_SELECTION_PEEP_NAMES,                ObjectType::PeepNames,       SPR_TAB_GUESTS_0,        {} },
     };
     // clang-format on
 
@@ -406,7 +407,7 @@ namespace OpenRCT2::Ui::Windows
                     VisibleListRefresh();
 
                     selected_list_item = -1;
-                    scrolls[0].v_top = 0;
+                    scrolls[0].contentOffsetY = 0;
                     frame_no = 0;
                     Invalidate();
                     break;
@@ -431,7 +432,7 @@ namespace OpenRCT2::Ui::Windows
                 case WIDX_FILTER_CLEAR_BUTTON:
                     std::fill_n(_filter_string, sizeof(_filter_string), 0x00);
                     FilterUpdateCounts();
-                    scrolls->v_top = 0;
+                    scrolls->contentOffsetY = 0;
                     VisibleListRefresh();
                     Invalidate();
                     break;
@@ -566,7 +567,7 @@ namespace OpenRCT2::Ui::Windows
                     Config::Save();
 
                     FilterUpdateCounts();
-                    scrolls->v_top = 0;
+                    scrolls->contentOffsetY = 0;
 
                     VisibleListRefresh();
                     Invalidate();
@@ -829,7 +830,7 @@ namespace OpenRCT2::Ui::Windows
 
             FilterUpdateCounts();
 
-            scrolls->v_top = 0;
+            scrolls->contentOffsetY = 0;
 
             VisibleListRefresh();
             Invalidate();
@@ -889,7 +890,7 @@ namespace OpenRCT2::Ui::Windows
                 if (numSourcesActive == 1)
                 {
                     widgets[WIDX_FILTER_DROPDOWN].text = STR_OBJECT_SELECTION_ONLY_STRINGID;
-                    auto firstActiveSource = UtilBitScanForward(sources);
+                    auto firstActiveSource = Numerics::bitScanForward(sources);
                     ft.Add<StringId>(kSourceStringIds[firstActiveSource]);
                 }
                 else
@@ -906,7 +907,7 @@ namespace OpenRCT2::Ui::Windows
             for (size_t i = 0; i < std::size(ObjectSelectionPages); i++)
             {
                 auto& widget = widgets[WIDX_TAB_1 + i];
-                if (ObjectSelectionPages[i].Image != static_cast<uint32_t>(SPR_NONE))
+                if (ObjectSelectionPages[i].Image != kSpriteIdNull)
                 {
                     widget.type = WindowWidgetType::Tab;
                     widget.left = x;
@@ -1147,7 +1148,7 @@ namespace OpenRCT2::Ui::Windows
             _selectedSubTab = 0;
             _filter_flags |= FILTER_RIDES_ALL;
             selected_list_item = -1;
-            scrolls[0].v_top = 0;
+            scrolls[0].contentOffsetY = 0;
             frame_no = 0;
 
             if (_page == EnumValue(ObjectType::Ride))
@@ -1274,19 +1275,19 @@ namespace OpenRCT2::Ui::Windows
             if (GetSelectedObjectType() == ObjectType::Ride)
             {
                 auto* rideObject = reinterpret_cast<RideObject*>(_loadedObject.get());
-                const auto* rideEntry = reinterpret_cast<RideObjectEntry*>(rideObject->GetLegacyData());
-                if (rideEntry->shop_item[0] != ShopItem::None)
+                const auto& rideEntry = rideObject->GetEntry();
+                if (rideEntry.shop_item[0] != ShopItem::None)
                 {
                     std::string sells = "";
-                    for (size_t i = 0; i < std::size(rideEntry->shop_item); i++)
+                    for (size_t i = 0; i < std::size(rideEntry.shop_item); i++)
                     {
-                        if (rideEntry->shop_item[i] == ShopItem::None)
+                        if (rideEntry.shop_item[i] == ShopItem::None)
                             continue;
 
                         if (!sells.empty())
                             sells += ", ";
 
-                        sells += LanguageGetString(GetShopItemDescriptor(rideEntry->shop_item[i]).Naming.Plural);
+                        sells += LanguageGetString(GetShopItemDescriptor(rideEntry.shop_item[i]).Naming.Plural);
                     }
                     auto ft = Formatter();
                     ft.Add<const char*>(sells.c_str());

@@ -12,6 +12,8 @@
 #include "../../../ride/Track.h"
 #include "../../../ride/TrackPaint.h"
 #include "../../../ride/Vehicle.h"
+#include "../../../world/tile_element/TileElement.h"
+#include "../../../world/tile_element/TrackElement.h"
 #include "../../Paint.h"
 #include "../../support/WoodenSupports.h"
 #include "../../tile_element/Segment.h"
@@ -32,7 +34,7 @@ enum
 /** rct2: 0x006FD1F8 */
 static void PaintLaunchedFreefallBase(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -116,7 +118,7 @@ static void PaintLaunchedFreefallBase(
 /** rct2: 0x006FD208 */
 static void PaintLaunchedFreefallTowerSection(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence == 1)
     {
@@ -142,7 +144,7 @@ static void PaintLaunchedFreefallTowerSection(
 /**
  * rct2: 0x006FD0E8
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionLaunchedFreefall(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionLaunchedFreefall(OpenRCT2::TrackElemType trackType)
 {
     switch (trackType)
     {
@@ -151,7 +153,7 @@ TRACK_PAINT_FUNCTION GetTrackPaintFunctionLaunchedFreefall(int32_t trackType)
 
         case TrackElemType::TowerSection:
             return PaintLaunchedFreefallTowerSection;
+        default:
+            return nullptr;
     }
-
-    return nullptr;
 }

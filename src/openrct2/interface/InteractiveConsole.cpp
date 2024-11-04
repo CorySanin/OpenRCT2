@@ -694,7 +694,7 @@ static int32_t ConsoleCommandGet(InteractiveConsole& console, const arguments_t&
             {
                 Viewport* viewport = WindowGetViewport(w);
                 auto info = GetMapCoordinatesFromPos(
-                    { viewport->view_width / 2, viewport->view_height / 2 }, EnumsToFlags(ViewportInteractionItem::Terrain));
+                    { viewport->ViewWidth() / 2, viewport->ViewHeight() / 2 }, EnumsToFlags(ViewportInteractionItem::Terrain));
 
                 auto tileMapCoord = TileCoordsXY(info.Loc);
                 console.WriteFormatLine("location %d %d", tileMapCoord.x, tileMapCoord.y);
@@ -1299,7 +1299,7 @@ constexpr std::array _objectTypeNames = {
     "Scenery groups",
     "Park entrances",
     "Water",
-    "ScenarioText",
+    "Scenario Text",
     "Terrain Surface",
     "Terrain Edges",
     "Stations",
@@ -1307,6 +1307,7 @@ constexpr std::array _objectTypeNames = {
     "Footpath Surface",
     "Footpath Railings",
     "Audio",
+    "Guest Names",
 };
 static_assert(_objectTypeNames.size() == EnumValue(ObjectType::Count));
 
@@ -1405,15 +1406,6 @@ static int32_t ConsoleCommandRemoveFloatingObjects(InteractiveConsole& console, 
 {
     uint16_t result = RemoveFloatingEntities();
     console.WriteFormatLine("Removed %d flying objects", result);
-    return 0;
-}
-
-static int32_t ConsoleCommandRemoveParkFences(InteractiveConsole& console, [[maybe_unused]] const arguments_t& argv)
-{
-    auto action = CheatSetAction(CheatType::RemoveParkFences);
-    GameActions::Execute(&action);
-
-    console.WriteFormatLine("Park fences have been removed.");
     return 0;
 }
 
@@ -2027,7 +2019,6 @@ static constexpr ConsoleCommand console_command_table[] = {
     { "object_count", ConsoleCommandCountObjects, "Shows the number of objects of each type in the scenario.", "object_count" },
     { "open", ConsoleCommandOpen, "Opens the window with the give name.", "open <window>." },
     { "quit", ConsoleCommandClose, "Closes the console.", "quit" },
-    { "remove_park_fences", ConsoleCommandRemoveParkFences, "Removes all park fences from the surface", "remove_park_fences" },
     { "remove_unused_objects", ConsoleCommandRemoveUnusedObjects, "Removes all the unused objects from the object selection.",
       "remove_unused_objects" },
     { "remove_floating_objects", ConsoleCommandRemoveFloatingObjects, "Removes floating objects", "remove_floating_objects" },

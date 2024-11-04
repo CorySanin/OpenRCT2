@@ -199,7 +199,7 @@ namespace OpenRCT2::Platform
                         break;
                     }
                 }
-            }                                         // end strip
+            } // end strip
             std::memcpy(pattern, langString, length); // copy all until first '.' or '@'
             pattern[length] = '\0';
             // find _ if present
@@ -331,6 +331,22 @@ namespace OpenRCT2::Platform
     u8string GetRCT2SteamDir()
     {
         return u8"Rollercoaster Tycoon 2";
+    }
+
+    std::vector<std::string_view> GetSearchablePathsRCT1()
+    {
+        return {
+            // game-data-packager uses this path when installing game files
+            "/usr/share/games/roller-coaster-tycoon",
+        };
+    }
+
+    std::vector<std::string_view> GetSearchablePathsRCT2()
+    {
+        return {
+            // game-data-packager uses this path when installing game files
+            "/usr/share/games/roller-coaster-tycoon2",
+        };
     }
 
 #    ifndef NO_TTF

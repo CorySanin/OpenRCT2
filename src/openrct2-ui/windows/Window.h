@@ -34,6 +34,7 @@ namespace OpenRCT2::Ui::Windows
     extern ScatterToolDensity gWindowSceneryScatterDensity;
     extern uint8_t gWindowSceneryRotation;
     extern bool gWindowSceneryEyedropperEnabled;
+    extern bool gDisableErrorWindowSound;
 
     WindowBase* AboutOpen();
     void WindowCampaignRefreshRides();
@@ -90,6 +91,7 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* ViewClippingOpen();
     WindowBase* TransparencyOpen();
     WindowBase* AssetPacksOpen();
+    WindowBase* EditorParkEntranceOpen();
 
     // WC_FINANCES
     WindowBase* FinancesOpen();
@@ -197,11 +199,10 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* RideConstructionOpen();
     void WindowRideConstructionUpdateActiveElementsImpl();
     void WindowRideConstructionUpdateEnabledTrackPieces();
+    void RideRestoreProvisionalTrackPiece();
+    void RideRemoveProvisionalTrackPiece();
 
     WindowBase* TopToolbarOpen();
-    bool LandToolIsActive();
-    bool ClearSceneryToolIsActive();
-    bool WaterToolIsActive();
 
     WindowBase* SceneryOpen();
     void WindowScenerySetSelectedItem(

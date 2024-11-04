@@ -47,7 +47,6 @@
 #include "../util/Util.h"
 #include "../windows/Intent.h"
 #include "../world/TilePointerIndex.hpp"
-#include "../world/tile_element/Slope.h"
 #include "Banner.h"
 #include "Climate.h"
 #include "Entrance.h"
@@ -55,10 +54,16 @@
 #include "MapAnimation.h"
 #include "Park.h"
 #include "Scenery.h"
-#include "Surface.h"
 #include "TileElementsView.h"
 #include "TileInspector.h"
-#include "Wall.h"
+#include "tile_element/BannerElement.h"
+#include "tile_element/EntranceElement.h"
+#include "tile_element/LargeSceneryElement.h"
+#include "tile_element/PathElement.h"
+#include "tile_element/Slope.h"
+#include "tile_element/SmallSceneryElement.h"
+#include "tile_element/SurfaceElement.h"
+#include "tile_element/TrackElement.h"
 
 #include <iterator>
 #include <memory>
@@ -113,7 +118,7 @@ void StashMap()
     auto& gameState = GetGameState();
     _tileIndexStash = std::move(_tileIndex);
     _tileElementsStash = std::move(gameState.TileElements);
-    _mapSizeStash = GetGameState().MapSize;
+    _mapSizeStash = gameState.MapSize;
     _tileElementsInUseStash = _tileElementsInUse;
 }
 
@@ -122,18 +127,18 @@ void UnstashMap()
     auto& gameState = GetGameState();
     _tileIndex = std::move(_tileIndexStash);
     gameState.TileElements = std::move(_tileElementsStash);
-    GetGameState().MapSize = _mapSizeStash;
+    gameState.MapSize = _mapSizeStash;
     _tileElementsInUse = _tileElementsInUseStash;
 }
 
 CoordsXY GetMapSizeUnits()
 {
-    auto& gameState = OpenRCT2::GetGameState();
+    auto& gameState = GetGameState();
     return { (gameState.MapSize.x - 1) * kCoordsXYStep, (gameState.MapSize.y - 1) * kCoordsXYStep };
 }
 CoordsXY GetMapSizeMinus2()
 {
-    auto& gameState = OpenRCT2::GetGameState();
+    auto& gameState = GetGameState();
     return { (gameState.MapSize.x * kCoordsXYStep) + (8 * kCoordsXYStep - 2),
              (gameState.MapSize.y * kCoordsXYStep) + (8 * kCoordsXYStep - 2) };
 }
@@ -147,9 +152,8 @@ const std::vector<TileElement>& GetTileElements()
     return GetGameState().TileElements;
 }
 
-void SetTileElements(std::vector<TileElement>&& tileElements)
+void SetTileElements(GameState_t& gameState, std::vector<TileElement>&& tileElements)
 {
-    auto& gameState = GetGameState();
     gameState.TileElements = std::move(tileElements);
     _tileIndex = TilePointerIndex<TileElement>(
         kMaximumMapSizeTechnical, gameState.TileElements.data(), gameState.TileElements.size());
@@ -211,7 +215,7 @@ std::vector<TileElement> GetReorganisedTileElementsWithoutGhosts()
     return newElements;
 }
 
-static void ReorganiseTileElements(size_t capacity)
+static void ReorganiseTileElements(GameState_t& gameState, size_t capacity)
 {
     ContextSetCurrentCursor(CursorID::ZZZ);
 
@@ -236,12 +240,19 @@ static void ReorganiseTileElements(size_t capacity)
         }
     }
 
-    SetTileElements(std::move(newElements));
+    SetTileElements(gameState, std::move(newElements));
+}
+
+static void ReorganiseTileElements(size_t capacity)
+{
+    auto& gameState = GetGameState();
+    ReorganiseTileElements(gameState, capacity);
 }
 
 void ReorganiseTileElements()
 {
-    ReorganiseTileElements(GetGameState().TileElements.size());
+    auto& gameState = GetGameState();
+    ReorganiseTileElements(gameState, gameState.TileElements.size());
 }
 
 static bool MapCheckFreeElementsAndReorganise(size_t numElementsOnTile, size_t numNewElements)
@@ -454,15 +465,15 @@ BannerElement* MapGetBannerElementAt(const CoordsXYZ& bannerPos, uint8_t positio
 void MapInit(const TileCoordsXY& size)
 {
     auto numTiles = kMaximumMapSizeTechnical * kMaximumMapSizeTechnical;
-    SetTileElements(std::vector<TileElement>(numTiles, GetDefaultSurfaceElement()));
 
     auto& gameState = GetGameState();
+    SetTileElements(gameState, std::vector<TileElement>(numTiles, GetDefaultSurfaceElement()));
 
     gameState.GrassSceneryTileLoopPosition = 0;
     gameState.WidePathTileLoopPosition = {};
     gameState.MapSize = size;
     MapRemoveOutOfRangeElements();
-    MapAnimationAutoCreate();
+    ClearMapAnimations();
 
     auto intent = Intent(INTENT_ACTION_MAP);
     ContextBroadcastIntent(&intent);
@@ -754,6 +765,9 @@ void MapUpdatePathWideFlags()
         return;
     }
 
+    const int32_t kPracticalMapSizeBigX = GetGameState().MapSize.x * kCoordsXYStep;
+    const int32_t kPracticalMapSizeBigY = GetGameState().MapSize.y * kCoordsXYStep;
+
     // Presumably update_path_wide_flags is too computationally expensive to call for every
     // tile every update, so gWidePathTileLoopX and gWidePathTileLoopY store the x and y
     // progress. A maximum of 128 calls is done per update.
@@ -764,11 +778,11 @@ void MapUpdatePathWideFlags()
 
         // Next x, y tile
         loopPosition.x += kCoordsXYStep;
-        if (loopPosition.x >= MAXIMUM_MAP_SIZE_BIG)
+        if (loopPosition.x >= kPracticalMapSizeBigX)
         {
             loopPosition.x = 0;
             loopPosition.y += kCoordsXYStep;
-            if (loopPosition.y >= MAXIMUM_MAP_SIZE_BIG)
+            if (loopPosition.y >= kPracticalMapSizeBigY)
             {
                 loopPosition.y = 0;
             }
@@ -1026,7 +1040,7 @@ void TileElementRemove(TileElement* tileElement)
 
     // Mark the latest element with the last element flag.
     (tileElement - 1)->SetLastForTile(true);
-    tileElement->BaseHeight = MAX_ELEMENT_HEIGHT;
+    tileElement->BaseHeight = kMaxTileElementHeight;
     _tileElementsInUse--;
     auto& gameState = GetGameState();
     if (tileElement == &gameState.TileElements.back())
@@ -1194,7 +1208,7 @@ TileElement* TileElementInsert(const CoordsXYZ& loc, int32_t occupiedQuadrants, 
         {
             // Copy over map element
             *newTileElement = *originalTileElement;
-            originalTileElement->BaseHeight = MAX_ELEMENT_HEIGHT;
+            originalTileElement->BaseHeight = kMaxTileElementHeight;
             originalTileElement++;
             newTileElement++;
 
@@ -1229,7 +1243,7 @@ TileElement* TileElementInsert(const CoordsXYZ& loc, int32_t occupiedQuadrants, 
         {
             // Copy over map element
             *newTileElement = *originalTileElement;
-            originalTileElement->BaseHeight = MAX_ELEMENT_HEIGHT;
+            originalTileElement->BaseHeight = kMaxTileElementHeight;
             originalTileElement++;
             newTileElement++;
         } while (!((newTileElement - 1)->IsLastForTile()));
@@ -1290,54 +1304,6 @@ void MapUpdateTiles()
     }
 }
 
-void MapRemoveProvisionalElements()
-{
-    PROFILED_FUNCTION();
-
-    if (gProvisionalFootpath.Flags & PROVISIONAL_PATH_FLAG_1)
-    {
-        FootpathProvisionalRemove();
-        gProvisionalFootpath.Flags |= PROVISIONAL_PATH_FLAG_1;
-    }
-    if (WindowFindByClass(WindowClass::RideConstruction) != nullptr)
-    {
-        RideRemoveProvisionalTrackPiece();
-        RideEntranceExitRemoveGhost();
-    }
-    // This is in non performant so only make network games suffer for it
-    // non networked games do not need this as its to prevent desyncs.
-    if ((NetworkGetMode() != NETWORK_MODE_NONE) && WindowFindByClass(WindowClass::TrackDesignPlace) != nullptr)
-    {
-        auto intent = Intent(INTENT_ACTION_TRACK_DESIGN_REMOVE_PROVISIONAL);
-        ContextBroadcastIntent(&intent);
-    }
-}
-
-void MapRestoreProvisionalElements()
-{
-    PROFILED_FUNCTION();
-
-    if (gProvisionalFootpath.Flags & PROVISIONAL_PATH_FLAG_1)
-    {
-        gProvisionalFootpath.Flags &= ~PROVISIONAL_PATH_FLAG_1;
-        FootpathProvisionalSet(
-            gProvisionalFootpath.SurfaceIndex, gProvisionalFootpath.RailingsIndex, gProvisionalFootpath.Position,
-            gProvisionalFootpath.Slope, gProvisionalFootpath.ConstructFlags);
-    }
-    if (WindowFindByClass(WindowClass::RideConstruction) != nullptr)
-    {
-        RideRestoreProvisionalTrackPiece();
-        RideEntranceExitPlaceProvisionalGhost();
-    }
-    // This is in non performant so only make network games suffer for it
-    // non networked games do not need this as its to prevent desyncs.
-    if ((NetworkGetMode() != NETWORK_MODE_NONE) && WindowFindByClass(WindowClass::TrackDesignPlace) != nullptr)
-    {
-        auto intent = Intent(INTENT_ACTION_TRACK_DESIGN_RESTORE_PROVISIONAL);
-        ContextBroadcastIntent(&intent);
-    }
-}
-
 /**
  * Removes elements that are out of the map size range and crops the park perimeter.
  *  rct2: 0x0068ADBC
@@ -1351,8 +1317,9 @@ void MapRemoveOutOfRangeElements()
     // NOTE: This is only a workaround for non-networked games.
     // Map resize has to become its own Game Action to properly solve this issue.
     //
-    bool buildState = GetGameState().Cheats.BuildInPauseMode;
-    GetGameState().Cheats.BuildInPauseMode = true;
+    auto& gameState = GetGameState();
+    bool buildState = gameState.Cheats.BuildInPauseMode;
+    gameState.Cheats.BuildInPauseMode = true;
 
     for (int32_t y = MAXIMUM_MAP_SIZE_BIG - kCoordsXYStep; y >= 0; y -= kCoordsXYStep)
     {
@@ -1373,7 +1340,7 @@ void MapRemoveOutOfRangeElements()
     }
 
     // Reset cheat state
-    GetGameState().Cheats.BuildInPauseMode = buildState;
+    gameState.Cheats.BuildInPauseMode = buildState;
 }
 
 static void MapExtendBoundarySurfaceExtendTile(const SurfaceElement& sourceTile, SurfaceElement& destTile)
@@ -1455,7 +1422,7 @@ void MapExtendBoundarySurfaceX()
  * Clears the provided element properly from a certain tile, and updates
  * the pointer (when needed) passed to this function to point to the next element.
  */
-static void ClearElementAt(const CoordsXY& loc, TileElement** elementPtr)
+void ClearElementAt(const CoordsXY& loc, TileElement** elementPtr)
 {
     TileElement* element = *elementPtr;
     switch (element->GetType())
@@ -1711,20 +1678,18 @@ SmallSceneryElement* MapGetSmallSceneryElementAt(const CoordsXYZ& sceneryCoords,
 std::optional<CoordsXYZ> MapLargeSceneryGetOrigin(
     const CoordsXYZD& sceneryPos, int32_t sequence, LargeSceneryElement** outElement)
 {
-    LargeSceneryTile* tile;
-
     auto tileElement = MapGetLargeScenerySegment(sceneryPos, sequence);
     if (tileElement == nullptr)
         return std::nullopt;
 
     auto* sceneryEntry = tileElement->GetEntry();
-    tile = &sceneryEntry->tiles[sequence];
+    auto& tile = sceneryEntry->tiles[sequence];
 
-    CoordsXY offsetPos{ tile->x_offset, tile->y_offset };
+    CoordsXY offsetPos{ tile.offset };
     auto rotatedOffsetPos = offsetPos.Rotate(sceneryPos.direction);
 
     auto origin = CoordsXYZ{ sceneryPos.x - rotatedOffsetPos.x, sceneryPos.y - rotatedOffsetPos.y,
-                             sceneryPos.z - tile->z_offset };
+                             sceneryPos.z - tile.offset.z };
     if (outElement != nullptr)
         *outElement = tileElement;
     return origin;
@@ -1737,7 +1702,6 @@ std::optional<CoordsXYZ> MapLargeSceneryGetOrigin(
 bool MapLargeScenerySignSetColour(const CoordsXYZD& signPos, int32_t sequence, uint8_t mainColour, uint8_t textColour)
 {
     LargeSceneryElement* tileElement;
-    LargeSceneryTile *sceneryTiles, *tile;
 
     auto sceneryOrigin = MapLargeSceneryGetOrigin(signPos, sequence, &tileElement);
     if (!sceneryOrigin)
@@ -1746,18 +1710,16 @@ bool MapLargeScenerySignSetColour(const CoordsXYZD& signPos, int32_t sequence, u
     }
 
     auto* sceneryEntry = tileElement->GetEntry();
-    sceneryTiles = sceneryEntry->tiles;
 
     // Iterate through each tile of the large scenery element
-    sequence = 0;
-    for (tile = sceneryTiles; tile->x_offset != -1; tile++, sequence++)
+    for (auto& tile : sceneryEntry->tiles)
     {
-        CoordsXY offsetPos{ tile->x_offset, tile->y_offset };
+        CoordsXY offsetPos{ tile.offset };
         auto rotatedOffsetPos = offsetPos.Rotate(signPos.direction);
 
         auto tmpSignPos = CoordsXYZD{ sceneryOrigin->x + rotatedOffsetPos.x, sceneryOrigin->y + rotatedOffsetPos.y,
-                                      sceneryOrigin->z + tile->z_offset, signPos.direction };
-        tileElement = MapGetLargeScenerySegment(tmpSignPos, sequence);
+                                      sceneryOrigin->z + tile.offset.z, signPos.direction };
+        tileElement = MapGetLargeScenerySegment(tmpSignPos, tile.index);
         if (tileElement != nullptr)
         {
             tileElement->SetPrimaryColour(mainColour);
@@ -1945,7 +1907,7 @@ TrackElement* MapGetTrackElementAt(const CoordsXYZ& trackPos)
  * @param y y units, not tiles.
  * @param z Base height.
  */
-TileElement* MapGetTrackElementAtOfType(const CoordsXYZ& trackPos, track_type_t trackType)
+TileElement* MapGetTrackElementAtOfType(const CoordsXYZ& trackPos, OpenRCT2::TrackElemType trackType)
 {
     TileElement* tileElement = MapGetFirstElementAt(trackPos);
     if (tileElement == nullptr)
@@ -1972,7 +1934,7 @@ TileElement* MapGetTrackElementAtOfType(const CoordsXYZ& trackPos, track_type_t 
  * @param y y units, not tiles.
  * @param z Base height.
  */
-TileElement* MapGetTrackElementAtOfTypeSeq(const CoordsXYZ& trackPos, track_type_t trackType, int32_t sequence)
+TileElement* MapGetTrackElementAtOfTypeSeq(const CoordsXYZ& trackPos, OpenRCT2::TrackElemType trackType, int32_t sequence)
 {
     TileElement* tileElement = MapGetFirstElementAt(trackPos);
     auto trackTilePos = TileCoordsXYZ{ trackPos };
@@ -1995,7 +1957,7 @@ TileElement* MapGetTrackElementAtOfTypeSeq(const CoordsXYZ& trackPos, track_type
     return nullptr;
 }
 
-TrackElement* MapGetTrackElementAtOfType(const CoordsXYZD& location, track_type_t trackType)
+TrackElement* MapGetTrackElementAtOfType(const CoordsXYZD& location, OpenRCT2::TrackElemType trackType)
 {
     auto tileElement = MapGetFirstElementAt(location);
     if (tileElement != nullptr)
@@ -2018,7 +1980,7 @@ TrackElement* MapGetTrackElementAtOfType(const CoordsXYZD& location, track_type_
     return nullptr;
 }
 
-TrackElement* MapGetTrackElementAtOfTypeSeq(const CoordsXYZD& location, track_type_t trackType, int32_t sequence)
+TrackElement* MapGetTrackElementAtOfTypeSeq(const CoordsXYZD& location, OpenRCT2::TrackElemType trackType, int32_t sequence)
 {
     auto tileElement = MapGetFirstElementAt(location);
     if (tileElement != nullptr)
@@ -2049,7 +2011,7 @@ TrackElement* MapGetTrackElementAtOfTypeSeq(const CoordsXYZD& location, track_ty
  * @param y y units, not tiles.
  * @param z Base height.
  */
-TileElement* MapGetTrackElementAtOfTypeFromRide(const CoordsXYZ& trackPos, track_type_t trackType, RideId rideIndex)
+TileElement* MapGetTrackElementAtOfTypeFromRide(const CoordsXYZ& trackPos, OpenRCT2::TrackElemType trackType, RideId rideIndex)
 {
     TileElement* tileElement = MapGetFirstElementAt(trackPos);
     if (tileElement == nullptr)
@@ -2200,23 +2162,15 @@ uint16_t CheckMaxAllowableLandRightsForTile(const CoordsXYZ& tileMapPos)
     return destOwnership;
 }
 
-void FixLandOwnershipTiles(std::initializer_list<TileCoordsXY> tiles)
+void FixLandOwnershipTilesWithOwnership(std::vector<TileCoordsXY> tiles, uint8_t ownership)
 {
-    FixLandOwnershipTilesWithOwnership(tiles, OWNERSHIP_AVAILABLE);
-}
-
-void FixLandOwnershipTilesWithOwnership(std::initializer_list<TileCoordsXY> tiles, uint8_t ownership, bool doNotDowngrade)
-{
-    for (const TileCoordsXY* tile = tiles.begin(); tile != tiles.end(); ++tile)
+    for (const auto& tile : tiles)
     {
-        auto surfaceElement = MapGetSurfaceElementAt(*tile);
+        auto surfaceElement = MapGetSurfaceElementAt(tile);
         if (surfaceElement != nullptr)
         {
-            if (doNotDowngrade && surfaceElement->GetOwnership() == OWNERSHIP_OWNED)
-                continue;
-
             surfaceElement->SetOwnership(ownership);
-            Park::UpdateFencesAroundTile({ (*tile).x * 32, (*tile).y * 32 });
+            Park::UpdateFencesAroundTile(tile.ToCoordsXY());
         }
     }
 }
@@ -2298,7 +2252,8 @@ void ShiftMap(const TileCoordsXY& amount)
             }
         }
     }
-    SetTileElements(std::move(newElements));
+
+    SetTileElements(gameState, std::move(newElements));
     MapRemoveOutOfRangeElements();
 
     for (auto& spawn : gameState.PeepSpawns)

@@ -186,16 +186,16 @@ namespace OpenRCT2::Scripting
             return objectManager.getAllObjects(typez);
         }
 
-        DukValue getTrackSegment(track_type_t type)
+        DukValue getTrackSegment(uint16_t type)
         {
             auto ctx = GetContext()->GetScriptEngine().GetContext();
-            if (type >= TrackElemType::Count)
+            if (type >= EnumValue(TrackElemType::Count))
             {
                 return ToDuk(ctx, nullptr);
             }
             else
             {
-                return GetObjectAsDukValue(ctx, std::make_shared<ScTrackSegment>(type));
+                return GetObjectAsDukValue(ctx, std::make_shared<ScTrackSegment>(static_cast<TrackElemType>(type)));
             }
         }
 
@@ -204,9 +204,9 @@ namespace OpenRCT2::Scripting
             auto ctx = GetContext()->GetScriptEngine().GetContext();
 
             std::vector<DukValue> result;
-            for (track_type_t type = 0; type < TrackElemType::Count; type++)
+            for (uint16_t type = 0; type < EnumValue(TrackElemType::Count); type++)
             {
-                auto obj = std::make_shared<ScTrackSegment>(type);
+                auto obj = std::make_shared<ScTrackSegment>(static_cast<TrackElemType>(type));
                 if (obj != nullptr)
                 {
                     result.push_back(GetObjectAsDukValue(ctx, obj));
@@ -273,7 +273,8 @@ namespace OpenRCT2::Scripting
         //      Only ensuring it was not in the same generated method fixed it.
         __declspec(noinline)
 #    endif
-            std::shared_ptr<ScDisposable> CreateSubscription(HOOK_TYPE hookType, const DukValue& callback)
+        std::shared_ptr<ScDisposable>
+            CreateSubscription(HOOK_TYPE hookType, const DukValue& callback)
         {
             auto owner = _execInfo.GetCurrentPlugin();
             auto cookie = _hookEngine.Subscribe(hookType, owner, callback);

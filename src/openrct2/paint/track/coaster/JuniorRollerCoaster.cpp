@@ -15,6 +15,7 @@
 #include "../../../ride/TrackPaint.h"
 #include "../../../sprites.h"
 #include "../../../world/Map.h"
+#include "../../../world/tile_element/TrackElement.h"
 #include "../../Paint.h"
 #include "../../support/MetalSupports.h"
 #include "../../tile_element/Segment.h"
@@ -25,7 +26,7 @@
 
 using namespace OpenRCT2;
 
-static constexpr MetalSupportType kSupportType = MetalSupportType::Fork;
+static constexpr TunnelGroup kTunnelGroup = TunnelGroup::Standard;
 
 enum class JuniorRCSubType : uint8_t
 {
@@ -1850,7 +1851,8 @@ static constexpr const uint32_t junior_rc_track_pieces_diag_blockbrakes[2][4] = 
     },
 };
 
-template<JuniorRCSubType TSubType> constexpr uint8_t JuniorRCGetSubTypeOffset(const TrackElement& trackElement)
+template<JuniorRCSubType TSubType>
+constexpr uint8_t JuniorRCGetSubTypeOffset(const TrackElement& trackElement)
 {
     return trackElement.HasChain() ? EnumValue(TSubType) : 0;
 }
@@ -1858,18 +1860,17 @@ template<JuniorRCSubType TSubType> constexpr uint8_t JuniorRCGetSubTypeOffset(co
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     auto imageId = session.TrackColours.WithIndex(junior_rc_track_pieces_flat[subTypeOffset][direction]);
     PaintAddImageAsParentRotated(session, direction, imageId, { 0, 6, height }, { 32, 20, 1 });
-    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::StandardFlat);
+    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -1883,7 +1884,7 @@ static void JuniorRCPaintTrackFlat(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintStation(
     PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -1932,7 +1933,7 @@ static void JuniorRCPaintStation(
     }
 
     DrawSupportsSideBySide(session, direction, height, session.SupportColours, MetalSupportType::Boxed);
-    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+    TrackPaintUtilDrawStationTunnel(session, direction, height);
 
     TrackPaintUtilDrawStation(session, ride, direction, height, trackElement);
 
@@ -1943,21 +1944,21 @@ static void JuniorRCPaintStation(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrack25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     auto imageId = session.TrackColours.WithIndex(junior_rc_track_pieces_25_deg_up[subTypeOffset][direction]);
     PaintAddImageAsParentRotated(session, direction, imageId, { 0, 6, height }, { 32, 20, 1 });
 
     int8_t tunnelHeights[4] = { -8, 8, 8, -8 };
-    TunnelType tunnelType[4] = { TunnelType::StandardSlopeStart, TunnelType::StandardSlopeEnd, TunnelType::StandardSlopeEnd,
-                                 TunnelType::StandardSlopeStart };
-    PaintUtilPushTunnelRotated(session, direction, height + tunnelHeights[direction], tunnelType[direction]);
+    TunnelSubType tunnelType[4] = { TunnelSubType::SlopeStart, TunnelSubType::SlopeEnd, TunnelSubType::SlopeEnd,
+                                    TunnelSubType::SlopeStart };
+    PaintUtilPushTunnelRotated(session, direction, height + tunnelHeights[direction], kTunnelGroup, tunnelType[direction]);
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 8, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 8, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -1971,7 +1972,7 @@ static void JuniorRCPaintTrack25DegUp(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackFlatTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     auto imageId = session.TrackColours.WithIndex(junior_rc_track_pieces_flat_to_25_deg_up[subTypeOffset][direction]);
@@ -1979,18 +1980,18 @@ static void JuniorRCPaintTrackFlatTo25DegUp(
     PaintAddImageAsParentRotated(session, direction, imageId, { 0, 6, height }, { 32, 20, 1 });
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
         uint16_t ax = (direction == 0) ? 5 : 3;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, ax, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, ax, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2004,38 +2005,38 @@ static void JuniorRCPaintTrackFlatTo25DegUp(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrack25DegUpToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     auto imageId = session.TrackColours.WithIndex(junior_rc_track_pieces_25_deg_up_to_flat[subTypeOffset][direction]);
     PaintAddImageAsParentRotated(session, direction, imageId, { 0, 6, height }, { 32, 20, 1 });
 
-    TunnelType tunnelType;
+    TunnelSubType tunnelType;
     int16_t tunnelHeight;
     if (direction == 1 || direction == 2)
     {
-        tunnelType = TunnelType::StandardFlatTo25Deg;
+        tunnelType = TunnelSubType::FlatTo25Deg;
         tunnelHeight = height + 8;
     }
     else
     {
-        tunnelType = TunnelType::StandardFlat;
+        tunnelType = TunnelSubType::Flat;
         tunnelHeight = height - 8;
     }
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, tunnelHeight, tunnelType);
+        PaintUtilPushTunnelRight(session, tunnelHeight, kTunnelGroup, tunnelType);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, tunnelHeight, tunnelType);
+        PaintUtilPushTunnelLeft(session, tunnelHeight, kTunnelGroup, tunnelType);
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 6, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 6, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2055,7 +2056,7 @@ static constexpr int8_t junior_rc_track_right_quarter_turn_5_tiles_support_heigh
 
 static void JuniorRCRightQuarterTurn5TilesPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilRightQuarterTurn5TilesPaint(
         session, 1, height, direction, trackSequence, session.TrackColours, junior_rc_track_pieces_flat_quarter_turn_5_tiles,
@@ -2066,35 +2067,34 @@ static void JuniorRCRightQuarterTurn5TilesPaintSetup(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0,
-                supportHeight, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, supportHeight, session.SupportColours);
             break;
         case 6:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 0,
-                supportHeight, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 0, supportHeight,
+                session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 0 && trackSequence == 6)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 1 && trackSequence == 6)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     switch (trackSequence)
@@ -2160,10 +2160,11 @@ static constexpr uint8_t junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[]
 /* rct2: 0x0051917A */
 static void JuniorRCLeftQuarterTurn5TilesPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[trackSequence];
-    JuniorRCRightQuarterTurn5TilesPaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightQuarterTurn5TilesPaintSetup(
+        session, ride, trackSequence, DirectionNext(direction), height, trackElement, supportType);
 }
 
 /**
@@ -2171,7 +2172,7 @@ static void JuniorRCLeftQuarterTurn5TilesPaintSetup(
  */
 static void JuniorRCFlatToLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -2180,13 +2181,13 @@ static void JuniorRCFlatToLeftBankPaintSetup(
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 6, 0, height }, { 20, 32, 1 } });
 
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
 
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (junior_rc_track_pieces_flat_to_left_bank[direction][1] != 0)
@@ -2205,8 +2206,8 @@ static void JuniorRCFlatToLeftBankPaintSetup(
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2222,7 +2223,7 @@ static void JuniorRCFlatToLeftBankPaintSetup(
  */
 static void JuniorRCFlatToRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -2231,13 +2232,13 @@ static void JuniorRCFlatToRightBankPaintSetup(
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 6, 0, height }, { 20, 32, 1 } });
 
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
 
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (junior_rc_track_pieces_flat_to_right_bank[direction][1] != 0)
@@ -2256,8 +2257,8 @@ static void JuniorRCFlatToRightBankPaintSetup(
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2270,16 +2271,16 @@ static void JuniorRCFlatToRightBankPaintSetup(
 
 static void JuniorRCLeftBankToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCFlatToRightBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCFlatToRightBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static void JuniorRCRightBankToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCFlatToLeftBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCFlatToLeftBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static constexpr CoordsXY junior_rc_banked_right_quarter_turn_5_tiles_bound_lengths[4][5] = {
@@ -2347,7 +2348,7 @@ static constexpr CoordsXYZ junior_rc_banked_right_quarter_turn_5_tiles_bound_off
 /* rct2: 0x008AB010, 0x0052304C */
 static void JuniorRCBankedRightQuarterTurn5TilesPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     uint8_t thickness = 1;
     if (direction == 2 && (trackSequence == 0 || trackSequence == 6))
@@ -2374,35 +2375,34 @@ static void JuniorRCBankedRightQuarterTurn5TilesPaintSetup(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0,
-                supportHeight, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, supportHeight, session.SupportColours);
             break;
         case 6:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 0,
-                supportHeight, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 0, supportHeight,
+                session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 0 && trackSequence == 6)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 1 && trackSequence == 6)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     switch (trackSequence)
@@ -2464,10 +2464,11 @@ static void JuniorRCBankedRightQuarterTurn5TilesPaintSetup(
 /* rct2: 0x008AB000 */
 static void JuniorRCBankedLeftQuarterTurn5TilesPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[trackSequence];
-    JuniorRCBankedRightQuarterTurn5TilesPaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCBankedRightQuarterTurn5TilesPaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /**
@@ -2475,7 +2476,7 @@ static void JuniorRCBankedLeftQuarterTurn5TilesPaintSetup(
  */
 static void JuniorRCLeftBankTo25DegUpPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -2505,23 +2506,23 @@ static void JuniorRCLeftBankTo25DegUpPaintSetup(
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 3, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 3, height, session.SupportColours);
     }
 
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
     }
 
@@ -2538,7 +2539,7 @@ static void JuniorRCLeftBankTo25DegUpPaintSetup(
  */
 static void JuniorRCRightBankTo25DegUpPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -2568,23 +2569,23 @@ static void JuniorRCRightBankTo25DegUpPaintSetup(
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 3, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 3, height, session.SupportColours);
     }
 
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
     }
 
@@ -2601,20 +2602,20 @@ static void JuniorRCRightBankTo25DegUpPaintSetup(
  */
 static void JuniorRC25DegUpToLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
-    TunnelType tunnelType;
+    TunnelSubType tunnelType;
     int16_t tunnelHeight;
     if (direction == 1 || direction == 2)
     {
-        tunnelType = TunnelType::StandardFlatTo25Deg;
+        tunnelType = TunnelSubType::FlatTo25Deg;
         tunnelHeight = height + 8;
     }
     else
     {
-        tunnelType = TunnelType::StandardFlat;
+        tunnelType = TunnelSubType::Flat;
         tunnelHeight = height - 8;
     }
 
@@ -2623,13 +2624,13 @@ static void JuniorRC25DegUpToLeftBankPaintSetup(
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 6, 0, height }, { 20, 32, 1 } });
 
-        PaintUtilPushTunnelRight(session, tunnelHeight, tunnelType);
+        PaintUtilPushTunnelRight(session, tunnelHeight, kTunnelGroup, tunnelType);
     }
     else
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
 
-        PaintUtilPushTunnelLeft(session, tunnelHeight, tunnelType);
+        PaintUtilPushTunnelLeft(session, tunnelHeight, kTunnelGroup, tunnelType);
     }
 
     if (junior_rc_track_pieces_25_deg_up_to_left_bank[direction][1] != 0)
@@ -2648,8 +2649,8 @@ static void JuniorRC25DegUpToLeftBankPaintSetup(
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 6, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 6, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2665,20 +2666,20 @@ static void JuniorRC25DegUpToLeftBankPaintSetup(
  */
 static void JuniorRC25DegUpToRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
-    TunnelType tunnelType;
+    TunnelSubType tunnelType;
     int16_t tunnelHeight;
     if (direction == 1 || direction == 2)
     {
-        tunnelType = TunnelType::StandardFlatTo25Deg;
+        tunnelType = TunnelSubType::FlatTo25Deg;
         tunnelHeight = height + 8;
     }
     else
     {
-        tunnelType = TunnelType::StandardFlat;
+        tunnelType = TunnelSubType::Flat;
         tunnelHeight = height - 8;
     }
 
@@ -2687,13 +2688,13 @@ static void JuniorRC25DegUpToRightBankPaintSetup(
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 6, 0, height }, { 20, 32, 1 } });
 
-        PaintUtilPushTunnelRight(session, tunnelHeight, tunnelType);
+        PaintUtilPushTunnelRight(session, tunnelHeight, kTunnelGroup, tunnelType);
     }
     else
     {
         PaintAddImageAsParent(session, image_id, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
 
-        PaintUtilPushTunnelLeft(session, tunnelHeight, tunnelType);
+        PaintUtilPushTunnelLeft(session, tunnelHeight, kTunnelGroup, tunnelType);
     }
 
     if (junior_rc_track_pieces_25_deg_up_to_right_bank[direction][1] != 0)
@@ -2712,8 +2713,8 @@ static void JuniorRC25DegUpToRightBankPaintSetup(
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 6, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 6, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2729,9 +2730,9 @@ static void JuniorRC25DegUpToRightBankPaintSetup(
  */
 static void JuniorRCLeftBankTo25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRC25DegUpToRightBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRC25DegUpToRightBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 /**
@@ -2739,9 +2740,9 @@ static void JuniorRCLeftBankTo25DegDownPaintSetup(
  */
 static void JuniorRCRightBankTo25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRC25DegUpToLeftBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRC25DegUpToLeftBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 /**
@@ -2749,9 +2750,9 @@ static void JuniorRCRightBankTo25DegDownPaintSetup(
  */
 static void JuniorRC25DegDownToLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCRightBankTo25DegUpPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCRightBankTo25DegUpPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 /**
@@ -2759,9 +2760,9 @@ static void JuniorRC25DegDownToLeftBankPaintSetup(
  */
 static void JuniorRC25DegDownToRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCLeftBankTo25DegUpPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCLeftBankTo25DegUpPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static constexpr CoordsXYZ junior_rc_left_bank_bound_lengths[4] = {
@@ -2783,7 +2784,7 @@ static constexpr CoordsXY junior_rc_left_bank_bound_offsets[4] = {
  */
 static void JuniorRCLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -2794,17 +2795,17 @@ static void JuniorRCLeftBankPaintSetup(
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -2820,14 +2821,14 @@ static void JuniorRCLeftBankPaintSetup(
  */
 static void JuniorRCRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCLeftBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCLeftBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static void JuniorRCPaintTrackLeftQuarterTurn5Tiles25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
     TrackPaintUtilRightQuarterTurn5TilesPaint(
@@ -2839,32 +2840,32 @@ static void JuniorRCPaintTrackLeftQuarterTurn5Tiles25DegUp(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre,
-                (direction == 0 || direction == 3) ? 10 : 8, height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, (direction == 0 || direction == 3) ? 10 : 8,
+                height, session.SupportColours);
             break;
         case 6:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre,
-                supportSpecial[direction], height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionPrev(direction), supportSpecial[direction],
+                height, session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
     if (direction == 2 && trackSequence == 6)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
     if (direction == 3 && trackSequence == 6)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
     switch (trackSequence)
@@ -2932,7 +2933,7 @@ static void JuniorRCPaintTrackLeftQuarterTurn5Tiles25DegUp(
 
 static void JuniorRCPaintTrackRightQuarterTurn5Tiles25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
     TrackPaintUtilRightQuarterTurn5TilesPaint(
@@ -2944,32 +2945,32 @@ static void JuniorRCPaintTrackRightQuarterTurn5Tiles25DegUp(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre,
-                supportSpecial[direction], height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, supportSpecial[direction], height,
+                session.SupportColours);
             break;
         case 6:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 8, height,
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 8, height,
                 session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
     if (direction == 0 && trackSequence == 6)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
     if (direction == 1 && trackSequence == 6)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
     switch (trackSequence)
@@ -3037,27 +3038,27 @@ static void JuniorRCPaintTrackRightQuarterTurn5Tiles25DegUp(
 /* rct2: 0x008AAE30, 0x0051AA42, 0x0051AA68, 0x0051AA8C, 0x0051AAB0 */
 static void JuniorRCLeftQuarterTurn5Tiles25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     JuniorRCPaintTrackRightQuarterTurn5Tiles25DegUp(
         session, ride, junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[trackSequence], (direction + 1) & 3, height,
-        trackElement);
+        trackElement, supportType);
 }
 
 /* rct2: 0x008AAE40, 0x0051AAD4, 0x0051AE04, 0x0051B10E, 0x0051B3F4 */
 static void JuniorRCRightQuarterTurn5Tiles25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     JuniorRCPaintTrackLeftQuarterTurn5Tiles25DegUp(
         session, ride, junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[trackSequence], (direction - 1) & 3, height,
-        trackElement);
+        trackElement, supportType);
 }
 
 /* rct2: 0x008AAE50, 0x0051B6FE, 0x0051B946, 0x0051BB8E, 0x0051BBA8 */
 static void JuniorRCSBendLeftPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (direction == 2 || direction == 3)
     {
@@ -3094,45 +3095,30 @@ static void JuniorRCSBendLeftPaintSetup(
     {
         if (trackSequence == 0)
         {
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
-        }
-
-        switch (trackSequence)
-        {
-            case 0:
-                MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
-            case 1:
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::TopLeftSide, 0, height, session.SupportColours);
-                break;
-            case 3:
-                MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
         }
     }
     else
     {
         if (trackSequence == 3)
         {
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
         }
-
-        switch (trackSequence)
-        {
-            case 0:
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
-            case 1:
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::TopRightSide, 0, height, session.SupportColours);
-                break;
-            case 3:
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
-        }
+    }
+    switch (trackSequence)
+    {
+        case 0:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+            break;
+        case 1:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::TopLeftSide, direction & 1, 0, height, session.SupportColours);
+            break;
+        case 3:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+            break;
     }
 
     int32_t blockedSegments = 0;
@@ -3165,7 +3151,7 @@ static void JuniorRCSBendLeftPaintSetup(
 /* rct2: 0x008AAE60, 0x0051BBC0, 0x0051BE06, 0x0051C04E, 0x0051C068 */
 static void JuniorRCSBendRightPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (direction == 2 || direction == 3)
     {
@@ -3202,45 +3188,31 @@ static void JuniorRCSBendRightPaintSetup(
     {
         if (trackSequence == 0)
         {
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
-        }
-
-        switch (trackSequence)
-        {
-            case 0:
-                MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
-            case 1:
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::BottomRightSide, 0, height, session.SupportColours);
-                break;
-            case 3:
-                MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
         }
     }
     else
     {
         if (trackSequence == 3)
         {
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
         }
-
-        switch (trackSequence)
-        {
-            case 0:
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
-            case 1:
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::BottomLeftSide, 0, height, session.SupportColours);
-                break;
-            case 3:
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 0, height, session.SupportColours);
-                break;
-        }
+    }
+    switch (trackSequence)
+    {
+        case 0:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+            break;
+        case 1:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::BottomRightSide, direction & 1, 0, height,
+                session.SupportColours);
+            break;
+        case 3:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+            break;
     }
 
     int32_t blockedSegments = 0;
@@ -3273,23 +3245,22 @@ static void JuniorRCSBendRightPaintSetup(
 /** rct2: 0x008AAEB0, 0x0051C0E0, 0x0051C2C1, 0x0051C47F, 0x0051C61D */
 static void JuniorRCRightQuarterTurn3TilesPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilRightQuarterTurn3TilesPaint(
         session, 1, height, direction, trackSequence, session.TrackColours, junior_rc_track_pieces_flat_quarter_turn_3_tiles,
         defaultRightQuarterTurn3TilesOffsets, defaultRightQuarterTurn3TilesBoundLengths, nullptr);
-    TrackPaintUtilRightQuarterTurn3TilesTunnel(session, height, direction, trackSequence, TunnelType::StandardFlat);
+    TrackPaintUtilRightQuarterTurn3TilesTunnel(session, kTunnelGroup, TunnelSubType::Flat, height, direction, trackSequence);
 
-    static constexpr MetalSupportType supportType[2][4] = {
-        { kSupportType, MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt },
-        { MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt, kSupportType },
-    };
     switch (trackSequence)
     {
         case 0:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+            break;
         case 3:
-            MetalASupportsPaintSetup(
-                session, supportType[(direction & 1)][trackSequence], MetalSupportPlace::Centre, 0, height,
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionPrev(direction), 0, height,
                 session.SupportColours);
             break;
     }
@@ -3318,10 +3289,11 @@ static void JuniorRCRightQuarterTurn3TilesPaintSetup(
 /** rct2: 0x008AAEA0 */
 static void JuniorRCLeftQuarterTurn3TilesPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kMapLeftQuarterTurn3TilesToRightQuarterTurn3Tiles[trackSequence];
-    JuniorRCRightQuarterTurn3TilesPaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightQuarterTurn3TilesPaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 static constexpr CoordsXY junior_rc_right_quarter_turn_3_tiles_bank_bound_lengths[4][3] = {
@@ -3373,7 +3345,7 @@ static constexpr CoordsXYZ junior_rc_right_quarter_turn_3_tiles_bank_offsets[4][
 /** rct2: 0x008AA0D0, 0x00523EA0, 0x005240CC, 0x0052430F, 0x00524500*/
 static void JuniorRCRightQuarterTurn3TilesBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr uint8_t thickness[4][4] = {
         { 1, 1, 1, 1 },
@@ -3386,7 +3358,7 @@ static void JuniorRCRightQuarterTurn3TilesBankPaintSetup(
         session, thickness[direction][trackSequence], height, direction, trackSequence, session.TrackColours,
         junior_rc_track_pieces_banked_quarter_turn_3_tiles, nullptr, junior_rc_right_quarter_turn_3_tiles_bank_bound_lengths,
         junior_rc_right_quarter_turn_3_tiles_bank_offsets);
-    TrackPaintUtilRightQuarterTurn3TilesTunnel(session, height, direction, trackSequence, TunnelType::StandardFlat);
+    TrackPaintUtilRightQuarterTurn3TilesTunnel(session, kTunnelGroup, TunnelSubType::Flat, height, direction, trackSequence);
 
     if (direction == 1 && trackSequence == 3)
     {
@@ -3399,16 +3371,15 @@ static void JuniorRCRightQuarterTurn3TilesBankPaintSetup(
         PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height }, { 1, 32, 26 } });
     }
 
-    static constexpr MetalSupportType supportType[2][4] = {
-        { kSupportType, MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt },
-        { MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt, kSupportType },
-    };
     switch (trackSequence)
     {
         case 0:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+            break;
         case 3:
-            MetalASupportsPaintSetup(
-                session, supportType[(direction & 1)][trackSequence], MetalSupportPlace::Centre, 0, height,
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 0, height,
                 session.SupportColours);
             break;
     }
@@ -3436,7 +3407,7 @@ static void JuniorRCRightQuarterTurn3TilesBankPaintSetup(
 
 static void JuniorRCPaintTrackRightQuarterTurn3Tiles25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
     auto imageId = ImageId(0);
@@ -3467,34 +3438,33 @@ static void JuniorRCPaintTrackRightQuarterTurn3Tiles25DegUp(
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
 
     if (direction == 0 && trackSequence == 3)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
     if (direction == 1 && trackSequence == 3)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
 
-    static constexpr MetalSupportType supportType[2][4] = {
-        { kSupportType, MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt },
-        { MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt, kSupportType },
-    };
     switch (trackSequence)
     {
         case 0:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 8, height, session.SupportColours);
+            break;
         case 3:
-            MetalASupportsPaintSetup(
-                session, supportType[(direction & 1)][trackSequence], MetalSupportPlace::Centre, 8, height,
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 8, height,
                 session.SupportColours);
             break;
     }
@@ -3521,7 +3491,7 @@ static void JuniorRCPaintTrackRightQuarterTurn3Tiles25DegUp(
 
 static void JuniorRCPaintTrackRightQuarterTurn3Tiles25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
     auto imageId = ImageId(0);
@@ -3552,34 +3522,33 @@ static void JuniorRCPaintTrackRightQuarterTurn3Tiles25DegDown(
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
     if (direction == 0 && trackSequence == 3)
     {
-        PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
 
     if (direction == 1 && trackSequence == 3)
     {
-        PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+        PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardSlopeEnd);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
 
-    static constexpr MetalSupportType supportType[2][4] = {
-        { kSupportType, MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt },
-        { MetalSupportType::ForkAlt, kSupportType, MetalSupportType::ForkAlt, kSupportType },
-    };
     switch (trackSequence)
     {
         case 0:
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 8, height, session.SupportColours);
+            break;
         case 3:
-            MetalASupportsPaintSetup(
-                session, supportType[(direction & 1)][trackSequence], MetalSupportPlace::Centre, 8, height,
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 8, height,
                 session.SupportColours);
             break;
     }
@@ -3607,10 +3576,11 @@ static void JuniorRCPaintTrackRightQuarterTurn3Tiles25DegDown(
 /** rct2: 0x008AA0C0 */
 static void JuniorRCLeftQuarterTurn3TilesBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kMapLeftQuarterTurn3TilesToRightQuarterTurn3Tiles[trackSequence];
-    JuniorRCRightQuarterTurn3TilesBankPaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightQuarterTurn3TilesBankPaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 static constexpr uint8_t junior_rc_left_quarter_turn_3_tiles_to_right_turn_map[] = {
@@ -3623,25 +3593,27 @@ static constexpr uint8_t junior_rc_left_quarter_turn_3_tiles_to_right_turn_map[]
 /** rct2: 0x008AAEC0 */
 static void JuniorRCLeftQuarterTurn3Tiles25DegUpPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = junior_rc_left_quarter_turn_3_tiles_to_right_turn_map[trackSequence];
-    JuniorRCPaintTrackRightQuarterTurn3Tiles25DegDown(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCPaintTrackRightQuarterTurn3Tiles25DegDown(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AAEE0 */
 static void JuniorRCLeftQuarterTurn3Tiles25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = junior_rc_left_quarter_turn_3_tiles_to_right_turn_map[trackSequence];
-    JuniorRCPaintTrackRightQuarterTurn3Tiles25DegUp(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCPaintTrackRightQuarterTurn3Tiles25DegUp(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AB0F0, 0x0052B3A4, 0x0052B5F8, 0x0052B863, 0x0052BA78 */
 static void JuniorRCRightHalfBankedHelixUpSmallPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr int8_t thickness[2] = { 1, 26 };
 
@@ -3658,35 +3630,33 @@ static void JuniorRCRightHalfBankedHelixUpSmallPaintSetup(
 
     if (trackSequence == 0)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 2, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 2, height, session.SupportColours);
     }
     else if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 6, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 6, height, session.SupportColours);
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 0 && trackSequence == 3)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 1 && trackSequence == 3)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     int32_t blockedSegments = 0;
@@ -3714,7 +3684,7 @@ static void JuniorRCRightHalfBankedHelixUpSmallPaintSetup(
 /** rct2: 0x008AB110, 0x0052BD80, 0x0052BFD4, 0x0052C23B, 0x0052C450 */
 static void JuniorRCRightHalfBankedHelixDownSmallPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr int8_t thickness[2] = { 1, 26 };
 
@@ -3731,35 +3701,33 @@ static void JuniorRCRightHalfBankedHelixDownSmallPaintSetup(
 
     if (trackSequence == 0)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 6, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 6, height, session.SupportColours);
     }
     else if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 2, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 2, height, session.SupportColours);
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 0 && trackSequence == 3)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 1 && trackSequence == 3)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     int32_t blockedSegments = 0;
@@ -3787,7 +3755,7 @@ static void JuniorRCRightHalfBankedHelixDownSmallPaintSetup(
 /** rct2: 0x008AB0E0 */
 static void JuniorRCLeftHalfBankedHelixUpSmallPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence > 3)
     {
@@ -3796,13 +3764,14 @@ static void JuniorRCLeftHalfBankedHelixUpSmallPaintSetup(
         direction &= 3;
     }
     trackSequence = junior_rc_left_quarter_turn_3_tiles_to_right_turn_map[trackSequence];
-    JuniorRCRightHalfBankedHelixDownSmallPaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightHalfBankedHelixDownSmallPaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AB100 */
 static void JuniorRCLeftHalfBankedHelixDownSmallPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence > 3)
     {
@@ -3811,13 +3780,14 @@ static void JuniorRCLeftHalfBankedHelixDownSmallPaintSetup(
         direction &= 3;
     }
     trackSequence = junior_rc_left_quarter_turn_3_tiles_to_right_turn_map[trackSequence];
-    JuniorRCRightHalfBankedHelixUpSmallPaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightHalfBankedHelixUpSmallPaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AB130, 0x0052C7BC, 0x0052CB6B, 0x0052CF32, 0x0052D2B3 */
 static void JuniorRCRightHalfBankedHelixUpLargePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr int8_t thickness[2] = { 1, 26 };
 
@@ -3834,35 +3804,33 @@ static void JuniorRCRightHalfBankedHelixUpLargePaintSetup(
 
     if (trackSequence == 0)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 1, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 1, height, session.SupportColours);
     }
     else if (trackSequence == 6)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 7, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 7, height, session.SupportColours);
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 0 && trackSequence == 6)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 1 && trackSequence == 6)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     switch (trackSequence)
@@ -3924,7 +3892,7 @@ static void JuniorRCRightHalfBankedHelixUpLargePaintSetup(
 /** rct2: 0x008AB150, 0x0052D778, 0x0052DB27, 0x0052DEEA, 0x0052E26B */
 static void JuniorRCRightHalfBankedHelixDownLargePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr int8_t thickness[2] = { 1, 26 };
 
@@ -3941,35 +3909,33 @@ static void JuniorRCRightHalfBankedHelixDownLargePaintSetup(
 
     if (trackSequence == 0)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 7, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 7, height, session.SupportColours);
     }
     else if (trackSequence == 6)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? kSupportType : MetalSupportType::ForkAlt, MetalSupportPlace::Centre, 1, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, DirectionNext(direction), 1, height, session.SupportColours);
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 0 && trackSequence == 6)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 1 && trackSequence == 6)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height + 8, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height + 8, kTunnelGroup, TunnelSubType::Flat);
     }
 
     switch (trackSequence)
@@ -4031,7 +3997,7 @@ static void JuniorRCRightHalfBankedHelixDownLargePaintSetup(
 /** rct2: 0x008AB120 */
 static void JuniorRCLeftHalfBankedHelixUpLargePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence > 6)
     {
@@ -4040,13 +4006,14 @@ static void JuniorRCLeftHalfBankedHelixUpLargePaintSetup(
         direction &= 3;
     }
     trackSequence = junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[trackSequence];
-    JuniorRCRightHalfBankedHelixDownLargePaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightHalfBankedHelixDownLargePaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AB140 */
 static void JuniorRCLeftHalfBankedHelixDownLargePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence > 6)
     {
@@ -4055,7 +4022,8 @@ static void JuniorRCLeftHalfBankedHelixDownLargePaintSetup(
         direction &= 3;
     }
     trackSequence = junior_rc_left_quarter_turn_5_tiles_to_right_turn_map[trackSequence];
-    JuniorRCRightHalfBankedHelixUpLargePaintSetup(session, ride, trackSequence, (direction + 1) % 4, height, trackElement);
+    JuniorRCRightHalfBankedHelixUpLargePaintSetup(
+        session, ride, trackSequence, (direction + 1) % 4, height, trackElement, supportType);
 }
 
 /**
@@ -4063,7 +4031,7 @@ static void JuniorRCLeftHalfBankedHelixDownLargePaintSetup(
  */
 static void JuniorRCBrakePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -4072,19 +4040,19 @@ static void JuniorRCBrakePaintSetup(
     {
         PaintAddImageAsParent(session, image_id, { 6, 0, height }, { 20, 32, 1 });
 
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
         PaintAddImageAsParent(session, image_id, { 0, 6, height }, { 32, 20, 1 });
 
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -4100,7 +4068,7 @@ static void JuniorRCBrakePaintSetup(
  */
 static void JuniorRCBlockBrakePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId image_id;
 
@@ -4111,19 +4079,19 @@ static void JuniorRCBlockBrakePaintSetup(
     {
         PaintAddImageAsParent(session, image_id, { 6, 0, height }, { 20, 32, 1 });
 
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
         PaintAddImageAsParent(session, image_id, { 0, 6, height }, { 32, 20, 1 });
 
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -4137,7 +4105,7 @@ static void JuniorRCBlockBrakePaintSetup(
 /** rct2: 0x008AAF80 */
 static void JuniorRCLeftEighthToDiagPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilEighthToDiagTilesPaint(
         session, defaultEighthToDiagThickness, height, direction, trackSequence, session.TrackColours,
@@ -4147,33 +4115,23 @@ static void JuniorRCLeftEighthToDiagPaintSetup(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0, height,
-                session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
             break;
         case 4:
-            if (direction == 0)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::BottomCorner, 0, height, session.SupportColours);
-            if (direction == 1)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::LeftCorner, 0, height, session.SupportColours);
-            if (direction == 2)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::TopCorner, 0, height, session.SupportColours);
-            if (direction == 3)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::RightCorner, 0, height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::LeftCorner, DirectionPrev(direction), 0, height,
+                session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     int32_t blockedSegments = 0;
@@ -4210,7 +4168,7 @@ static void JuniorRCLeftEighthToDiagPaintSetup(
 /** rct2: 0x008AAF90 */
 static void JuniorRCRightEighthToDiagPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilEighthToDiagTilesPaint(
         session, defaultEighthToDiagThickness, height, direction, trackSequence, session.TrackColours,
@@ -4220,33 +4178,23 @@ static void JuniorRCRightEighthToDiagPaintSetup(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0, height,
-                session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
             break;
         case 4:
-            if (direction == 0)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::LeftCorner, 0, height, session.SupportColours);
-            if (direction == 1)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::TopCorner, 0, height, session.SupportColours);
-            if (direction == 2)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::RightCorner, 0, height, session.SupportColours);
-            if (direction == 3)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::BottomCorner, 0, height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::BottomCorner, DirectionNext(direction), 0, height,
+                session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     int32_t blockedSegments = 0;
@@ -4283,19 +4231,19 @@ static void JuniorRCRightEighthToDiagPaintSetup(
 /** rct2: 0x008AAFA0 */
 static void JuniorRCLeftEighthToOrthogonalPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = mapLeftEighthTurnToOrthogonal[trackSequence];
-    JuniorRCRightEighthToDiagPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCRightEighthToDiagPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AAFB0 */
 static void JuniorRCRightEighthToOrthogonalPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = mapLeftEighthTurnToOrthogonal[trackSequence];
-    JuniorRCLeftEighthToDiagPaintSetup(session, ride, trackSequence, (direction + 3) % 4, height, trackElement);
+    JuniorRCLeftEighthToDiagPaintSetup(session, ride, trackSequence, (direction + 3) % 4, height, trackElement, supportType);
 }
 
 static constexpr CoordsXY junior_rc_left_eighth_to_diag_bank_bound_lengths[4][4] = {
@@ -4382,7 +4330,7 @@ static constexpr int8_t junior_rc_left_eighth_to_diag_bank_thickness[4][4] = {
 /** rct2: 0x008AB160 */
 static void JuniorRCLeftEighthToDiagBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilEighthToDiagTilesPaint(
         session, junior_rc_left_eighth_to_diag_bank_thickness, height, direction, trackSequence, session.TrackColours,
@@ -4392,33 +4340,22 @@ static void JuniorRCLeftEighthToDiagBankPaintSetup(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0, height,
-                session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
             break;
         case 4:
-            if (direction == 0)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::BottomCorner, 0, height, session.SupportColours);
-            if (direction == 1)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::LeftCorner, 0, height, session.SupportColours);
-            if (direction == 2)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::TopCorner, 0, height, session.SupportColours);
-            if (direction == 3)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::RightCorner, 0, height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::BottomCorner, direction, 0, height, session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     int32_t blockedSegments = 0;
@@ -4536,7 +4473,7 @@ static constexpr int8_t junior_rc_right_eighth_to_diag_bank_thickness[4][4] = {
 /** rct2: 0x008AB170 */
 static void JuniorRCRightEighthToDiagBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilEighthToDiagTilesPaint(
         session, junior_rc_right_eighth_to_diag_bank_thickness, height, direction, trackSequence, session.TrackColours,
@@ -4546,33 +4483,22 @@ static void JuniorRCRightEighthToDiagBankPaintSetup(
     switch (trackSequence)
     {
         case 0:
-            MetalASupportsPaintSetup(
-                session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 0, height,
-                session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
             break;
         case 4:
-            if (direction == 0)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::LeftCorner, 0, height, session.SupportColours);
-            if (direction == 1)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::TopCorner, 0, height, session.SupportColours);
-            if (direction == 2)
-                MetalASupportsPaintSetup(
-                    session, kSupportType, MetalSupportPlace::RightCorner, 0, height, session.SupportColours);
-            if (direction == 3)
-                MetalASupportsPaintSetup(
-                    session, MetalSupportType::ForkAlt, MetalSupportPlace::BottomCorner, 0, height, session.SupportColours);
+            MetalASupportsPaintSetupRotated(
+                session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
             break;
     }
 
     if (direction == 0 && trackSequence == 0)
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     if (direction == 3 && trackSequence == 0)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     int32_t blockedSegments = 0;
@@ -4609,34 +4535,36 @@ static void JuniorRCRightEighthToDiagBankPaintSetup(
 /** rct2: 0x008AB180 */
 static void JuniorRCLeftEighthToOrthogonalBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = mapLeftEighthTurnToOrthogonal[trackSequence];
-    JuniorRCRightEighthToDiagBankPaintSetup(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCRightEighthToDiagBankPaintSetup(
+        session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 /** rct2: 0x008AB190 */
 static void JuniorRCRightEighthToOrthogonalBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = mapLeftEighthTurnToOrthogonal[trackSequence];
-    JuniorRCLeftEighthToDiagBankPaintSetup(session, ride, trackSequence, (direction + 3) % 4, height, trackElement);
+    JuniorRCLeftEighthToDiagBankPaintSetup(
+        session, ride, trackSequence, (direction + 3) % 4, height, trackElement, supportType);
 }
 
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiagFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaintExtra(
-        session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_flat[subTypeOffset], kSupportType);
+        session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_flat[subTypeOffset], supportType.metal);
 }
 
 static void JuniorRCTrackDiagBrakes(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_brakes, defaultDiagTileOffsets,
@@ -4644,9 +4572,8 @@ static void JuniorRCTrackDiagBrakes(
 
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4656,7 +4583,7 @@ static void JuniorRCTrackDiagBrakes(
 
 static void JuniorRCTrackDiagBlockBrakes(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_blockbrakes[trackElement.IsBrakeClosed()],
@@ -4664,9 +4591,8 @@ static void JuniorRCTrackDiagBlockBrakes(
 
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4677,7 +4603,7 @@ static void JuniorRCTrackDiagBlockBrakes(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiag25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaint(
@@ -4686,9 +4612,8 @@ static void JuniorRCPaintTrackDiag25DegUp(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 8, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 8, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4699,7 +4624,7 @@ static void JuniorRCPaintTrackDiag25DegUp(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiagFlatTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaint(
@@ -4708,9 +4633,8 @@ static void JuniorRCPaintTrackDiagFlatTo25DegUp(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4720,7 +4644,7 @@ static void JuniorRCPaintTrackDiagFlatTo25DegUp(
 
 static void JuniorRCPaintTrackDiagFlatTo60DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -4731,9 +4655,8 @@ static void JuniorRCPaintTrackDiagFlatTo60DegUp(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0,
-            height + 6, session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height + 6, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4744,7 +4667,7 @@ static void JuniorRCPaintTrackDiagFlatTo60DegUp(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiag25DegUpToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaint(
@@ -4753,9 +4676,8 @@ static void JuniorRCPaintTrackDiag25DegUpToFlat(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4765,7 +4687,7 @@ static void JuniorRCPaintTrackDiag25DegUpToFlat(
 
 static void JuniorRCPaintTrackDiag60DegUpToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -4776,9 +4698,8 @@ static void JuniorRCPaintTrackDiag60DegUpToFlat(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4,
-            height + 13, session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height + 13, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4789,7 +4710,7 @@ static void JuniorRCPaintTrackDiag60DegUpToFlat(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiag25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaint(
@@ -4798,9 +4719,8 @@ static void JuniorRCPaintTrackDiag25DegDown(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 8, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 8, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4811,7 +4731,7 @@ static void JuniorRCPaintTrackDiag25DegDown(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiagFlatTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaint(
@@ -4820,9 +4740,8 @@ static void JuniorRCPaintTrackDiagFlatTo25DegDown(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4832,7 +4751,7 @@ static void JuniorRCPaintTrackDiagFlatTo25DegDown(
 
 static void JuniorRCPaintTrackDiagFlatTo60DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -4843,9 +4762,8 @@ static void JuniorRCPaintTrackDiagFlatTo60DegDown(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4,
-            height + 7, session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height + 7, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4856,7 +4774,7 @@ static void JuniorRCPaintTrackDiagFlatTo60DegDown(
 template<JuniorRCSubType TSubType>
 static void JuniorRCPaintTrackDiag25DegDownToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto subTypeOffset = JuniorRCGetSubTypeOffset<TSubType>(trackElement);
     TrackPaintUtilDiagTilesPaint(
@@ -4865,9 +4783,8 @@ static void JuniorRCPaintTrackDiag25DegDownToFlat(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4877,7 +4794,7 @@ static void JuniorRCPaintTrackDiag25DegDownToFlat(
 
 static void JuniorRCPaintTrackDiag60DegDownToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -4888,9 +4805,8 @@ static void JuniorRCPaintTrackDiag60DegDownToFlat(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4901,7 +4817,7 @@ static void JuniorRCPaintTrackDiag60DegDownToFlat(
 /** rct2: 0x008AB1C0 */
 static void JuniorRCDiagFlatToLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_flat_to_left_bank, defaultDiagTileOffsets,
@@ -4915,9 +4831,8 @@ static void JuniorRCDiagFlatToLeftBankPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4928,7 +4843,7 @@ static void JuniorRCDiagFlatToLeftBankPaintSetup(
 /** rct2: 0x008AB1D0 */
 static void JuniorRCDiagFlatToRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_flat_to_right_bank, defaultDiagTileOffsets,
@@ -4942,9 +4857,8 @@ static void JuniorRCDiagFlatToRightBankPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4955,7 +4869,7 @@ static void JuniorRCDiagFlatToRightBankPaintSetup(
 /** rct2: 0x008AB1E0 */
 static void JuniorRCDiagLeftBankToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_left_bank_to_flat, defaultDiagTileOffsets,
@@ -4969,9 +4883,8 @@ static void JuniorRCDiagLeftBankToFlatPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -4982,7 +4895,7 @@ static void JuniorRCDiagLeftBankToFlatPaintSetup(
 /** rct2: 0x008AB1F0 */
 static void JuniorRCDiagRightBankToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_right_bank_to_flat, defaultDiagTileOffsets,
@@ -4996,9 +4909,8 @@ static void JuniorRCDiagRightBankToFlatPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5009,7 +4921,7 @@ static void JuniorRCDiagRightBankToFlatPaintSetup(
 /** rct2: 0x008AB220 */
 static void JuniorRCDiagLeftBankTo25DegUpPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_left_bank_to_25_deg_up,
@@ -5023,9 +4935,8 @@ static void JuniorRCDiagLeftBankTo25DegUpPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5036,7 +4947,7 @@ static void JuniorRCDiagLeftBankTo25DegUpPaintSetup(
 /** rct2: 0x008AB230 */
 static void JuniorRCDiagRightBankTo25DegUpPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_right_bank_to_25_deg_up,
@@ -5050,9 +4961,8 @@ static void JuniorRCDiagRightBankTo25DegUpPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5063,7 +4973,7 @@ static void JuniorRCDiagRightBankTo25DegUpPaintSetup(
 /** rct2: 0x008AB200 */
 static void JuniorRCDiag25DegUpToLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_25_deg_up_to_left_bank,
@@ -5077,9 +4987,8 @@ static void JuniorRCDiag25DegUpToLeftBankPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5090,7 +4999,7 @@ static void JuniorRCDiag25DegUpToLeftBankPaintSetup(
 /** rct2: 0x008AB210 */
 static void JuniorRCDiag25DegUpToRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_25_deg_up_to_right_bank,
@@ -5104,9 +5013,8 @@ static void JuniorRCDiag25DegUpToRightBankPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5117,7 +5025,7 @@ static void JuniorRCDiag25DegUpToRightBankPaintSetup(
 /** rct2: 0x008AB200 */
 static void JuniorRCDiagLeftBankTo25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_left_bank_to_25_deg_down,
@@ -5131,9 +5039,8 @@ static void JuniorRCDiagLeftBankTo25DegDownPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5144,7 +5051,7 @@ static void JuniorRCDiagLeftBankTo25DegDownPaintSetup(
 /** rct2: 0x008AB210 */
 static void JuniorRCDiagRightBankTo25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_right_bank_to_25_deg_down,
@@ -5158,9 +5065,8 @@ static void JuniorRCDiagRightBankTo25DegDownPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 4, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 4, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5171,7 +5077,7 @@ static void JuniorRCDiagRightBankTo25DegDownPaintSetup(
 /** rct2: 0x008AB220 */
 static void JuniorRCDiag25DegDownToLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_25_deg_down_to_left_bank,
@@ -5185,9 +5091,8 @@ static void JuniorRCDiag25DegDownToLeftBankPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5198,7 +5103,7 @@ static void JuniorRCDiag25DegDownToLeftBankPaintSetup(
 /** rct2: 0x008AB230 */
 static void JuniorRCDiag25DegDownToRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     TrackPaintUtilDiagTilesPaint(
         session, 1, height, direction, trackSequence, junior_rc_track_pieces_diag_25_deg_down_to_right_bank,
@@ -5212,9 +5117,8 @@ static void JuniorRCDiag25DegDownToRightBankPaintSetup(
     }
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5239,7 +5143,7 @@ static constexpr CoordsXYZ junior_rc_diag_right_bank_bound_offsets[4] = {
 /** rct2: 0x008AB1A0 */
 static void JuniorRCDiagLeftBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     uint8_t thickness = direction == 0 ? 0 : 1;
     TrackPaintUtilDiagTilesPaint(
@@ -5248,9 +5152,8 @@ static void JuniorRCDiagLeftBankPaintSetup(
 
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5261,7 +5164,7 @@ static void JuniorRCDiagLeftBankPaintSetup(
 /** rct2: 0x008AB1B0 */
 static void JuniorRCDiagRightBankPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     uint8_t thickness = direction == 2 ? 0 : 1;
     TrackPaintUtilDiagTilesPaint(
@@ -5270,9 +5173,8 @@ static void JuniorRCDiagRightBankPaintSetup(
 
     if (trackSequence == 3)
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 0, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 0, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5310,7 +5212,7 @@ static constexpr CoordsXY junior_rc_60_deg_up_bound_lengths[4] = {
 
 static void JuniorRCPaintTrack60DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5325,25 +5227,25 @@ static void JuniorRCPaintTrack60DegUp(
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height + 56, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height + 56, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height + 56, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height + 56, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
     }
 
     static constexpr int8_t support[4] = { 35, 29, 25, 32 };
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre,
-            support[direction & 3], height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, support[direction & 3], height,
+            session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -5356,9 +5258,9 @@ static void JuniorRCPaintTrack60DegUp(
 
 static void JuniorRC60DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCPaintTrack60DegUp(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCPaintTrack60DegUp(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static constexpr CoordsXY junior_rc_25_deg_up_to_60_deg_up_bound_lengths[4][2] = {
@@ -5384,7 +5286,7 @@ static constexpr CoordsXY junior_rc_25_deg_up_to_60_deg_up_bound_offsets[4][2] =
 
 static void JuniorRCPaintTrack25DegUpTo60DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5411,25 +5313,25 @@ static void JuniorRCPaintTrack25DegUpTo60DegUp(
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
     }
 
     static constexpr int8_t support[4] = { 12, 12, 12, 14 };
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre,
-            support[direction & 3], height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, support[direction & 3], height,
+            session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -5442,14 +5344,14 @@ static void JuniorRCPaintTrack25DegUpTo60DegUp(
 
 static void JuniorRC60DegDownTo25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCPaintTrack25DegUpTo60DegUp(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCPaintTrack25DegUpTo60DegUp(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static void JuniorRCPaintTrack60DegUpTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5476,24 +5378,23 @@ static void JuniorRCPaintTrack60DegUpTo25DegUp(
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height - 8, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelLeft(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height - 8, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelRight(session, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 20, height,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 20, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -5506,14 +5407,14 @@ static void JuniorRCPaintTrack60DegUpTo25DegUp(
 
 static void JuniorRC25DegDownTo60DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCPaintTrack60DegUpTo25DegUp(session, ride, trackSequence, (direction + 2) % 4, height, trackElement);
+    JuniorRCPaintTrack60DegUpTo25DegUp(session, ride, trackSequence, (direction + 2) % 4, height, trackElement, supportType);
 }
 
 static void JuniorRCPaintTrackDiag60DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5524,9 +5425,8 @@ static void JuniorRCPaintTrackDiag60DegUp(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 36, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 36, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5536,7 +5436,7 @@ static void JuniorRCPaintTrackDiag60DegUp(
 
 static void JuniorRCPaintTrackDiag60DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5547,9 +5447,8 @@ static void JuniorRCPaintTrackDiag60DegDown(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 28, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 28, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5559,7 +5458,7 @@ static void JuniorRCPaintTrackDiag60DegDown(
 
 static void JuniorRCPaintTrackDiag25DegUpTo60DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5570,9 +5469,8 @@ static void JuniorRCPaintTrackDiag25DegUpTo60DegUp(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 16, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 16, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5582,7 +5480,7 @@ static void JuniorRCPaintTrackDiag25DegUpTo60DegUp(
 
 static void JuniorRCPaintTrackDiag60DegUpTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5603,9 +5501,8 @@ static void JuniorRCPaintTrackDiag60DegUpTo25DegUp(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 21, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 21, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5615,7 +5512,7 @@ static void JuniorRCPaintTrackDiag60DegUpTo25DegUp(
 
 static void JuniorRCPaintTrackDiag25DegDownTo60DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5636,9 +5533,8 @@ static void JuniorRCPaintTrackDiag25DegDownTo60DegDown(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 17, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 17, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5648,7 +5544,7 @@ static void JuniorRCPaintTrackDiag25DegDownTo60DegDown(
 
 static void JuniorRCPaintTrackDiag60DegDownTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     // There is no specific chain for the Water Coaster, use the Junior RC chain instead
     auto subTypeOffset = JuniorRCGetSubTypeOffset<JuniorRCSubType::Junior>(trackElement);
@@ -5659,9 +5555,8 @@ static void JuniorRCPaintTrackDiag60DegDownTo25DegDown(
 
     if (trackSequence == 3)
     {
-        MetalBSupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, kDiagSupportPlacement[direction], 8, height,
-            session.SupportColours);
+        MetalBSupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::LeftCorner, direction, 8, height, session.SupportColours);
     }
 
     int32_t blockedSegments = BlockedSegments::kDiagStraightFlat[trackSequence];
@@ -5706,7 +5601,7 @@ static constexpr CoordsXY junior_rc_60_deg_up_to_flat_tile_offsets[4][2] = {
 
 static void JuniorRCFlatTo60DegUpPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     bool isChained = trackElement.HasChain();
     auto image_id = session.TrackColours.WithIndex(junior_rc_track_pieces_flat_to_60_deg_up[isChained][direction][0]);
@@ -5731,25 +5626,25 @@ static void JuniorRCFlatTo60DegUpPaintSetup(
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
     }
 
     static constexpr int8_t support[4] = { 12, 12, 12, 14 };
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, support[direction],
-            height - 7, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, support[direction], height - 7,
+            session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -5762,14 +5657,14 @@ static void JuniorRCFlatTo60DegUpPaintSetup(
 
 static void JuniorRC60DegDownToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCFlatTo60DegUpPaintSetup(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    JuniorRCFlatTo60DegUpPaintSetup(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void JuniorRC60DegUpToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     bool isChained = trackElement.HasChain();
     auto image_id = session.TrackColours.WithIndex(junior_rc_track_pieces_60_deg_up_to_flat[isChained][direction][0]);
@@ -5794,24 +5689,23 @@ static void JuniorRC60DegUpToFlatPaintSetup(
     switch (direction)
     {
         case 0:
-            PaintUtilPushTunnelLeft(session, height, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
         case 1:
-            PaintUtilPushTunnelRight(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelRight(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 2:
-            PaintUtilPushTunnelLeft(session, height + 24, TunnelType::StandardSlopeEnd);
+            PaintUtilPushTunnelLeft(session, height + 24, kTunnelGroup, TunnelSubType::SlopeEnd);
             break;
         case 3:
-            PaintUtilPushTunnelRight(session, height, TunnelType::StandardSlopeStart);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::SlopeStart);
             break;
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, (direction & 1) ? MetalSupportType::ForkAlt : kSupportType, MetalSupportPlace::Centre, 20, height - 5,
-            session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 20, height - 5, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -5824,61 +5718,63 @@ static void JuniorRC60DegUpToFlatPaintSetup(
 
 static void JuniorRCFlatTo60DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRC60DegUpToFlatPaintSetup(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    JuniorRC60DegUpToFlatPaintSetup(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /* rct2: 0x005189B0 */
 template<JuniorRCSubType TSubType>
 static void JuniorRC25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCPaintTrack25DegUp<TSubType>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    JuniorRCPaintTrack25DegUp<TSubType>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /* rct2: 0x00518FE8 */
 template<JuniorRCSubType TSubType>
 static void JuniorRCFlatTo25DegDownPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCPaintTrack25DegUpToFlat<TSubType>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    JuniorRCPaintTrack25DegUpToFlat<TSubType>(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 /* rct2: 0x00518CCC */
 template<JuniorRCSubType TSubType>
 static void JuniorRC25DegDownToFlatPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    JuniorRCPaintTrackFlatTo25DegUp<TSubType>(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    JuniorRCPaintTrackFlatTo25DegUp<TSubType>(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void JuniorRCBoosterPaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (direction & 1)
     {
         PaintAddImageAsParent(
             session, session.TrackColours.WithIndex(SPR_JUNIOR_RC_BOOSTER_NE_SW), { 0, 0, height }, { 20, 32, 1 });
 
-        PaintUtilPushTunnelRight(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
         PaintAddImageAsParent(
             session, session.TrackColours.WithIndex(SPR_JUNIOR_RC_BOOSTER_NW_SE), { 0, 0, height }, { 32, 20, 1 });
 
-        PaintUtilPushTunnelLeft(session, height, TunnelType::StandardFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        auto supportType = (direction & 1) ? MetalSupportType::ForkAlt : kSupportType;
-        MetalASupportsPaintSetup(session, supportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
     }
 
     PaintUtilSetSegmentSupportHeight(
@@ -5891,24 +5787,21 @@ static void JuniorRCBoosterPaintSetup(
 
 static void JuniorRCTrackOnRidePhoto(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     auto imageId = session.TrackColours.WithIndex(junior_rc_track_pieces_flat[0][direction]);
-    constexpr int8_t photoCameraOffset = -1;
     PaintAddImageAsParentRotated(
-        session, direction, ImageId(SPR_STATION_BASE_D, COLOUR_BLACK), { 0, 0, height + photoCameraOffset }, { 32, 32, 1 });
-    DrawSupportsSideBySide(session, direction, height + photoCameraOffset, session.SupportColours, kSupportType, 6);
+        session, direction, ImageId(SPR_STATION_BASE_D, COLOUR_BLACK), { 0, 0, height }, { 32, 32, 1 });
+    DrawSupportsSideBySide(session, direction, height, session.SupportColours, supportType.metal, 6);
 
     PaintAddImageAsParentRotated(session, direction, imageId, { 0, 6, height }, { { 0, 6, height + 3 }, { 32, 20, 1 } });
 
-    TrackPaintUtilOnridePhotoPaint(session, direction, height + 3 + photoCameraOffset, trackElement);
-    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
-    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48 + photoCameraOffset);
+    TrackPaintUtilOnridePhotoPaint2(session, direction, trackElement, height);
 }
 
 /* 0x008AAA0C */
-template<JuniorRCSubType TSubType> TRACK_PAINT_FUNCTION GetTrackPaintFunctionJuniorRCTemplate(int32_t trackType)
+template<JuniorRCSubType TSubType>
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionJuniorRCTemplate(OpenRCT2::TrackElemType trackType)
 {
     switch (trackType)
     {
@@ -6132,16 +6025,17 @@ template<JuniorRCSubType TSubType> TRACK_PAINT_FUNCTION GetTrackPaintFunctionJun
 
         case TrackElemType::OnRidePhoto:
             return JuniorRCTrackOnRidePhoto;
+        default:
+            return nullptr;
     }
-    return nullptr;
 }
 
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionJuniorRC(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionJuniorRC(OpenRCT2::TrackElemType trackType)
 {
     return GetTrackPaintFunctionJuniorRCTemplate<JuniorRCSubType::Junior>(trackType);
 }
 
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionWaterRC(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionWaterRC(OpenRCT2::TrackElemType trackType)
 {
     return GetTrackPaintFunctionJuniorRCTemplate<JuniorRCSubType::WaterCoaster>(trackType);
 }

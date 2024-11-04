@@ -19,10 +19,10 @@
 namespace OpenRCT2::Ui::Windows
 {
     // clang-format off
-static Widget _mainWidgets[] = {
-    MakeWidget({0, 0}, {0, 0}, WindowWidgetType::Viewport, WindowColour::Primary),
-    kWidgetsEnd,
-};
+    static Widget _mainWidgets[] = {
+        MakeWidget({0, 0}, {0, 0}, WindowWidgetType::Viewport, WindowColour::Primary),
+        kWidgetsEnd,
+    };
     // clang-format on
 
     class MainWindow final : public Window
@@ -48,7 +48,7 @@ static Widget _mainWidgets[] = {
 
         void OnDraw(DrawPixelInfo& dpi) override
         {
-            ViewportRender(dpi, viewport, { { dpi.x, dpi.y }, { dpi.x + dpi.width, dpi.y + dpi.height } });
+            ViewportRender(dpi, viewport);
         }
 
     private:

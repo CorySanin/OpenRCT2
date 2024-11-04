@@ -21,6 +21,7 @@
 #include "../core/Numerics.hpp"
 #include "../core/Path.hpp"
 #include "../core/Random.hpp"
+#include "../core/SawyerCoding.h"
 #include "../core/String.hpp"
 #include "../entity/Balloon.h"
 #include "../entity/Duck.h"
@@ -48,12 +49,15 @@
 #include "../object/ObjectList.h"
 #include "../object/ObjectManager.h"
 #include "../object/ObjectRepository.h"
+#include "../object/ScenarioTextObject.h"
 #include "../object/WallSceneryEntry.h"
+#include "../park/Legacy.h"
 #include "../peep/RideUseSystem.h"
 #include "../rct12/CSStringConverter.h"
 #include "../rct12/EntryList.h"
 #include "../rct12/RCT12.h"
 #include "../rct12/SawyerChunkReader.h"
+#include "../rct12/ScenarioPatcher.h"
 #include "../rct2/RCT2.h"
 #include "../ride/Ride.h"
 #include "../ride/RideData.h"
@@ -65,23 +69,34 @@
 #include "../ride/Vehicle.h"
 #include "../scenario/Scenario.h"
 #include "../scenario/ScenarioRepository.h"
-#include "../util/SawyerCoding.h"
+#include "../scenario/ScenarioSources.h"
 #include "../util/Util.h"
 #include "../world/Climate.h"
 #include "../world/Entrance.h"
 #include "../world/MapAnimation.h"
 #include "../world/Park.h"
 #include "../world/Scenery.h"
-#include "../world/Surface.h"
 #include "../world/TilePointerIndex.hpp"
+#include "../world/tile_element/BannerElement.h"
+#include "../world/tile_element/EntranceElement.h"
+#include "../world/tile_element/LargeSceneryElement.h"
+#include "../world/tile_element/PathElement.h"
+#include "../world/tile_element/SmallSceneryElement.h"
+#include "../world/tile_element/SurfaceElement.h"
+#include "../world/tile_element/TileElement.h"
+#include "../world/tile_element/TrackElement.h"
+#include "../world/tile_element/WallElement.h"
 
 #include <cassert>
+#include <mutex>
 
 using namespace OpenRCT2;
 
 namespace OpenRCT2::RCT2
 {
 #define DECRYPT_MONEY(money) (static_cast<money32>(Numerics::rol32((money) ^ 0xF4EC9621, 13)))
+
+    static std::mutex mtx;
 
     /**
      * Class to import RollerCoaster Tycoon 2 scenarios (*.SC6) and saved games (*.SV6).
@@ -155,6 +170,14 @@ namespace OpenRCT2::RCT2
                     throw std::runtime_error("Park is not a scenario.");
                 }
                 chunkReader.ReadChunk(&_s6.Info, sizeof(_s6.Info));
+
+                // If the name or the details contain a colour code, they might be in UTF-8 already.
+                // This is caused by a bug that was in OpenRCT2 for 3 years.
+                if (!IsLikelyUTF8(_s6.Info.Name) && !IsLikelyUTF8(_s6.Info.Details))
+                {
+                    RCT2StringToUTF8Self(_s6.Info.Name, sizeof(_s6.Info.Name));
+                    RCT2StringToUTF8Self(_s6.Info.Details, sizeof(_s6.Info.Details));
+                }
             }
             else
             {
@@ -224,7 +247,77 @@ namespace OpenRCT2::RCT2
         bool GetDetails(ScenarioIndexEntry* dst) override
         {
             *dst = {};
-            return false;
+
+            dst->Category = _s6.Info.Category;
+            dst->ObjectiveType = _s6.Info.ObjectiveType;
+            dst->ObjectiveArg1 = _s6.Info.ObjectiveArg1;
+            dst->ObjectiveArg2 = _s6.Info.ObjectiveArg2;
+            dst->ObjectiveArg3 = _s6.Info.ObjectiveArg3;
+            dst->Highscore = nullptr;
+
+            if (String::IsNullOrEmpty(_s6.Info.Name))
+            {
+                // If the scenario doesn't have a name, set it to the filename
+                String::Set(dst->Name, sizeof(dst->Name), Path::GetFileNameWithoutExtension(dst->Path).c_str());
+            }
+            else
+            {
+                // Normalise the name to make the scenario as recognisable as possible.
+                auto normalisedName = ScenarioSources::NormaliseName(_s6.Info.Name);
+                String::Set(dst->Name, sizeof(dst->Name), normalisedName.c_str());
+            }
+
+            // Look up and store information regarding the origins of this scenario.
+            SourceDescriptor desc;
+            if (ScenarioSources::TryGetByName(dst->Name, &desc))
+            {
+                dst->ScenarioId = desc.id;
+                dst->SourceIndex = desc.index;
+                dst->SourceGame = ScenarioSource{ desc.source };
+                dst->Category = desc.category;
+            }
+            else
+            {
+                dst->ScenarioId = SC_UNIDENTIFIED;
+                dst->SourceIndex = -1;
+                if (dst->Category == SCENARIO_CATEGORY_REAL)
+                {
+                    dst->SourceGame = ScenarioSource::Real;
+                }
+                else
+                {
+                    dst->SourceGame = ScenarioSource::Other;
+                }
+            }
+
+            // dst->name will be translated later so keep the untranslated name here
+            String::Set(dst->InternalName, sizeof(dst->InternalName), dst->Name);
+            String::Set(dst->Details, sizeof(dst->Details), _s6.Info.Details);
+
+            if (!desc.textObjectId.empty())
+            {
+                auto& objManager = GetContext()->GetObjectManager();
+
+                // Ensure only one thread talks to the object manager at a time
+                std::lock_guard lock(mtx);
+
+                // Unload loaded scenario text object, if any.
+                if (auto* obj = objManager.GetLoadedObject(ObjectType::ScenarioText, 0); obj != nullptr)
+                    objManager.UnloadObjects({ obj->GetDescriptor() });
+
+                // Load the one specified
+                if (auto* obj = objManager.LoadObject(desc.textObjectId); obj != nullptr)
+                {
+                    auto* textObject = reinterpret_cast<ScenarioTextObject*>(obj);
+                    auto name = textObject->GetScenarioName();
+                    auto details = textObject->GetScenarioDetails();
+
+                    String::Set(dst->Name, sizeof(dst->Name), name.c_str());
+                    String::Set(dst->Details, sizeof(dst->Details), details.c_str());
+                }
+            }
+
+            return true;
         }
 
         void Import(GameState_t& gameState) override
@@ -257,7 +350,7 @@ namespace OpenRCT2::RCT2
             ScenarioRandSeed(_s6.ScenarioSrand0, _s6.ScenarioSrand1);
 
             DetermineFlatRideStatus();
-            ImportTileElements();
+            ImportTileElements(gameState);
             ImportEntities();
 
             gameState.InitialCash = ToMoney64(_s6.InitialCash);
@@ -280,7 +373,7 @@ namespace OpenRCT2::RCT2
             // Pad013573EE
             // rct1_park_entrance_z
 
-            ImportPeepSpawns();
+            ImportPeepSpawns(gameState);
 
             gameState.GuestChangeModifier = _s6.GuestCountChangeModifier;
             gameState.ResearchFundingLevel = _s6.CurrentResearchLevel;
@@ -291,9 +384,9 @@ namespace OpenRCT2::RCT2
             gameState.NumGuestsInPark = _s6.GuestsInPark;
             gameState.NumGuestsHeadingForPark = _s6.GuestsHeadingForPark;
 
-            for (size_t i = 0; i < Limits::ExpenditureTableMonthCount; i++)
+            for (size_t i = 0; i < Limits::kExpenditureTableMonthCount; i++)
             {
-                for (size_t j = 0; j < Limits::ExpenditureTypeCount; j++)
+                for (size_t j = 0; j < Limits::kExpenditureTypeCount; j++)
                 {
                     gameState.ExpenditureTable[i][j] = ToMoney64(_s6.ExpenditureTable[i][j]);
                 }
@@ -308,7 +401,13 @@ namespace OpenRCT2::RCT2
             gameState.Park.Rating = _s6.ParkRating;
 
             Park::ResetHistories(gameState);
-            std::copy(std::begin(_s6.ParkRatingHistory), std::end(_s6.ParkRatingHistory), gameState.Park.RatingHistory);
+            for (size_t i = 0; i < std::size(_s6.ParkRatingHistory); i++)
+            {
+                if (_s6.ParkRatingHistory[i] != RCT12ParkHistoryUndefined)
+                {
+                    gameState.Park.RatingHistory[i] = _s6.ParkRatingHistory[i] * RCT12ParkRatingHistoryFactor;
+                }
+            }
             for (size_t i = 0; i < std::size(_s6.GuestsInParkHistory); i++)
             {
                 if (_s6.GuestsInParkHistory[i] != RCT12ParkHistoryUndefined)
@@ -363,7 +462,7 @@ namespace OpenRCT2::RCT2
 
             gameState.Park.Value = ToMoney64(_s6.ParkValue);
 
-            for (size_t i = 0; i < Limits::FinanceGraphSize; i++)
+            for (size_t i = 0; i < Limits::kFinanceGraphSize; i++)
             {
                 gameState.CashHistory[i] = ToMoney64(_s6.BalanceHistory[i]);
                 gameState.WeeklyProfitHistory[i] = ToMoney64(_s6.WeeklyProfitHistory[i]);
@@ -429,12 +528,13 @@ namespace OpenRCT2::RCT2
             if (_s6.Header.Type == S6_TYPE_SCENARIO)
             {
                 // _s6.ScenarioFilename is wrong for some RCT2 expansion scenarios, so we use the real filename
-                gScenarioFileName = Path::GetFileName(_s6Path);
+                gameState.ScenarioFileName = Path::GetFileName(_s6Path);
             }
             else
             {
                 // For savegames the filename can be arbitrary, so we have no choice but to rely on the name provided
-                gScenarioFileName = std::string(String::ToStringView(_s6.ScenarioFilename, std::size(_s6.ScenarioFilename)));
+                gameState.ScenarioFileName = std::string(
+                    String::ToStringView(_s6.ScenarioFilename, std::size(_s6.ScenarioFilename)));
             }
             gCurrentRealTimeTicks = 0;
 
@@ -505,9 +605,10 @@ namespace OpenRCT2::RCT2
 
             gameState.Park.Name = GetUserString(_s6.ParkName);
 
-            FixLandOwnership();
-            FixWater();
-            FixAyersRockScenario();
+            if (_isScenario)
+            {
+                OpenRCT2::RCT12::FetchAndApplyScenarioPatch(_s6Path);
+            }
 
             ResearchDetermineFirstOfType();
             UpdateConsolidatedPatrolAreas();
@@ -531,705 +632,6 @@ namespace OpenRCT2::RCT2
             gameState.ScenarioCompletedBy = RCT2StringToUTF8(gameState.ScenarioCompletedBy, RCT2LanguageId::EnglishUK);
             gameState.ScenarioName = RCT2StringToUTF8(gameState.ScenarioName, RCT2LanguageId::EnglishUK);
             gameState.ScenarioDetails = RCT2StringToUTF8(gameState.ScenarioDetails, RCT2LanguageId::EnglishUK);
-        }
-
-        void FixLandOwnership() const
-        {
-            // Checking _s6.ScenarioFilename is generally more reliable as it survives renaming.
-            // However, some WW/TT scenarios have this incorrectly set to "Six Flags Magic Mountain.SC6",
-            // so for those cases (as well as for SFMM proper, we’ll have to check the filename.
-            if (String::Equals(_s6.ScenarioFilename, "Europe - European Cultural Festival.SC6"))
-            {
-                // This scenario breaks pathfinding. Create passages between the worlds. (List is grouped by neighbouring
-                // tiles.)
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 67, 94 }, { 68, 94 }, { 69, 94 },
-                        { 58, 24 }, { 58, 25 }, { 58, 26 }, { 58, 27 }, { 58, 28 }, { 58, 29 }, { 58, 30 }, { 58, 31 }, { 58, 32 },
-                        { 26, 44 }, { 26, 45 },
-                        { 32, 79 }, { 32, 80 }, { 32, 81 },
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "trinity islands.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 80, 60 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "katie's dreamland.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 115, 63 }, { 105, 66 }, { 109, 66 }, /*{ 118, 67 }*/
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED);
-                 FixLandOwnershipTilesWithOwnership(
-                     {
-                         { 45, 69 }, { 59, 74 }
-                     },
-                     OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "white water park.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 42, 85 }, { 89, 42 }
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "mel's world.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 93, 76 }, { 93, 77 }
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "three monkeys park.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 46, 22 }
-                    },
-                    OWNERSHIP_OWNED);
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 89, 92 }
-                    },
-                    OWNERSHIP_UNOWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "coaster canyon.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 21, 55 }
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "rotting heights.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 35, 20 }
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "grand glacier.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 99, 58 }
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "woodworm park.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 62, 105 }, { 101, 55 }
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(gScenarioFileName, "pleasure island.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 37, 66 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Crazy Castle.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 2, 4 }, { 2, 62 }, { 2, 63 }, { 2, 83 }, { 2, 84 }, { 9, 4 }
-                    },
-                    OWNERSHIP_AVAILABLE);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Extreme Heights.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 105, 147 }, { 106, 147 }, { 107, 147 },
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Ghost Town.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 43, 79 }, { 42, 80 }, { 43, 80 },
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Six Flags Great Adventure.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 241, 59 }, { 242, 59 },
-                    },
-                    OWNERSHIP_UNOWNED);
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 145, 31 }
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Six Flags Holland.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 112, 33 }, { 112, 34 },
-                        { 113, 117 }, { 114, 117 }, { 115, 117 }, { 116, 117 }, { 117, 117 }, { 114, 118 }, { 115, 118 }, { 116, 118 }, { 117, 118 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Six Flags Magic Mountain.SC6")
-                || String::IEquals(gScenarioFileName, "six flags magic mountain.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 104, 190 }, { 105, 190 }, { 108, 197 },
-                        { 75, 167 },
-                        { 61, 92 }, { 61, 93 }, { 61, 94 }, { 61, 95 }, { 62, 90 }, { 62, 91 }, { 62, 92 }, { 62, 93 }, { 62, 94 },
-                        { 92, 57 }, { 93, 57 },
-                        { 89, 40 }, { 89, 41 }, { 89, 42 }, { 88, 42 },
-                        { 168, 20 }, { 169, 20 },
-                        { 46, 51 }, { 58, 159 }, { 71, 201 }, { 126, 15 }, { 190, 6 }
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Build your own Six Flags Magic Mountain.SC6")
-                || String::IEquals(gScenarioFileName, "build your own six flags magic mountain.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 104, 190 }, { 105, 190 }, { 108, 197 },
-                        { 75, 167 },
-                        { 61, 92 }, { 61, 93 }, { 61, 94 }, { 61, 95 }, { 62, 90 }, { 62, 91 }, { 62, 92 }, { 62, 93 }, { 62, 94 },
-                        { 92, 57 }, { 93, 57 },
-                        { 89, 40 }, { 89, 41 }, { 89, 42 }, { 88, 42 },
-                        { 168, 20 }, { 169, 20 },
-                        { 46, 51 }, { 58, 159 }, { 71, 201 }, { 126, 15 }, { 190, 6 }
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Six Flags over Texas.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 85, 80 },
-                        { 86, 79 },
-                        { 96, 71 }, { 97, 71 },
-                        { 90, 42 }, { 90, 43 }, { 90, 44 }, { 90, 45 },
-                        { 87, 73 }, { 87, 74 }, { 87, 75 }, { 87, 76 }, { 87, 77 }, { 87, 78 }, { 88, 73 }, { 88, 74 }, { 88, 75 }, { 88, 76 },
-                        { 89, 73 }, { 89, 74 }, { 89, 75 }, { 90, 73 }, { 90, 74 }, { 90, 75 }, { 91, 73 }, { 92, 73 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Great Wall of China Tourism Enhancement.SC6"))
-            {
-                //clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 127, 31 },
-                    },
-                    OWNERSHIP_OWNED);
-                //clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "North America - Grand Canyon.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 42, 147 }, { 58, 122 }, { 87, 147 }
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 128, 90 },
-                        { 135, 91 }, { 136, 91 },
-                        { 129, 90 }, { 130, 90 }, { 131, 90 }, { 132, 90 },
-                        { 137, 92 }, { 138, 92 }, { 139, 92 }, { 140, 92 },
-                        { 125, 88 }, { 126, 89 }, { 127, 91 }, { 127, 92 }, { 127, 93 },
-                        {  47, 85 }, {  48, 85 },
-                        {  32, 97 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_AVAILABLE, true);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        {  98, 64 }, {  98, 65 }, {  98, 66 },
-                        {  96, 84 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Asia - Maharaja Palace.SC6")
-                || String::IEquals(gScenarioFileName, "asia - maharaja palace.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 43, 65 },
-                        { 69, 41 },
-                        { 74, 2 },
-                        { 90, 19 }, { 90, 20 },
-                        { 65, 40 }, { 66, 40 }, { 67, 40 },
-                        { 62, 24 }, { 63, 24 }, { 64, 24 }, { 65, 24 }, { 65, 25 },
-                        { 98, 19 }, { 98, 20 }, { 98, 21 }, { 99, 19 }, { 99, 20 }, { 99, 21 },
-                        { 51, 28 }, { 52, 28 }, { 53, 28 }, { 54, 28 }, { 55, 28 }, { 56, 28 }, { 51, 29 }, { 52, 29 }, { 53, 29 }, { 54, 29 },
-                        { 37, 27 }, { 37, 28 }, { 37, 29 }, { 38, 26 }, { 38, 27 }, { 38, 28 }, { 38, 29 }, { 39, 26 }, { 39, 27 }, { 39, 28 }, { 39, 29 },
-                        { 40, 26 }, { 40, 27 }, { 40, 28 }, { 40, 29 }, { 40, 30 }, { 41, 26 }, { 41, 27 }, { 41, 28 }, { 41, 29 }, { 42, 26 }, { 42, 27 },
-                        { 42, 28 }, { 42, 29 }, { 43, 25 }, { 43, 26 }, { 43, 27 }, { 43, 28 }, { 43, 29 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "South America - Inca Lost City.SC6")
-                || String::IEquals(gScenarioFileName, "south america - inca lost city.sea"))
-            {
-                // clang-format off
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 15, 59 },
-                    },
-                    OWNERSHIP_UNOWNED);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 11, 64 }, { 11, 65 }, { 11, 66 },
-                        { 13, 68 }, { 13, 69 },
-                        { 14, 69 },
-                        { 15, 59 },
-                        { 55, 60 },
-                        { 61, 6 },
-                        { 86, 63 },
-                        { 84, 22 }, { 84, 23 },
-                        { 83, 77 }, { 84, 77 }, { 84, 78 },
-                        { 44, 61 }, { 45, 61 }, { 46, 61 }, { 45, 62 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (
-                String::Equals(_s6.ScenarioFilename, "WW Africa - Oasis.SC6", true)
-                || String::Equals(_s6.ScenarioFilename, "Africa - Oasis.SC6", true))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 61, 35 },
-                    },
-                    OWNERSHIP_UNOWNED);
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 46, 87 },
-                    },
-                    OWNERSHIP_OWNED);
-                  FixLandOwnershipTilesWithOwnership(
-                    {
-                        {  140, 58 }, {  141, 58 }, {  142, 58 }, { 143, 58 }, { 144, 58 }, { 145, 58 }, { 146, 58 }, { 147, 58 },
-                        {  140, 74 }, {  141, 74 }, {  142, 74 }, { 143, 74 }, { 144, 74 }, { 145, 74 }, { 146, 74 }, { 147, 74 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Antarctic - Ecological Salvage.SC6")
-                || String::IEquals(gScenarioFileName, "antarctic - ecological salvage.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 83, 117 }, { 84, 117 },
-                        { 106, 106 }, { 106, 107 },
-                    },
-                    OWNERSHIP_UNOWNED);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 90, 8 },
-                        { 2, 26 }, { 2, 27 },
-                        { 83, 117 }, { 84, 117 },
-                        { 96, 2 }, { 97, 2 },
-                        { 106, 106 }, { 106, 107 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (
-                String::Equals(_s6.ScenarioFilename, "WW Asia - Japanese Coastal Reclaim.SC6", true)
-                || String::Equals(_s6.ScenarioFilename, "Asia - Japanese Coastal Reclaim.SC6", true))
-            {
-                // clang-format off
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 7, 29 },
-                        { 24, 14 }, { 24, 15 }, { 24, 16 },
-                        { 25, 13 }, { 25, 14 }, { 25, 15 }, { 25, 16 }, { 25, 17 },
-                        { 26, 12 }, { 26, 13 }, { 26, 14 }, { 26, 15 }, { 26, 16 }, { 26, 17 }, { 26, 18 }, { 26, 19 }, { 26, 20 },
-                        { 27, 11 }, { 27, 12 }, { 27, 13 }, { 27, 14 }, { 27, 15 }, { 27, 16 }, { 27, 17 }, { 27, 18 }, { 27, 19 }, { 27, 20 }, { 27, 21 },
-                        { 28, 8 }, { 28, 9 }, { 28, 10 }, { 28, 11 }, { 28, 12 }, { 28, 13 }, { 28, 14 }, { 28, 15 }, { 28, 16 }, { 28, 17 }, { 28, 18 }, { 28, 19 }, { 28, 20 }, { 28, 21 },
-                        { 29, 6 }, { 29, 7 }, { 29, 8 }, { 29, 9 }, { 29, 10 }, { 29, 11 }, { 29, 12 }, { 29, 13 }, { 29, 14 }, { 29, 15 }, { 29, 16 }, { 29, 17 }, { 29, 18 }, { 29, 19 }, { 29, 20 }, { 29, 21 },
-                        { 30, 2 }, { 30, 3 }, { 30, 4 }, { 30, 5 }, { 30, 6 }, { 30, 7 }, { 30, 8 }, { 30, 9 }, { 30, 10 }, { 30, 11 }, { 30, 12 }, { 30, 17 }, { 30, 18 }, { 30, 19 }, { 30, 20 }, { 30, 21 },
-                        { 31, 2 }, { 31, 3 }, { 31, 4 }, { 31, 5 }, { 31, 6 }, { 31, 7 }, { 31, 8 }, { 31, 9 }, { 31, 10 }, { 31, 11 }, { 31, 19 }, { 31, 20 }, { 31, 21 },
-                        { 32, 2 }, { 32, 3 }, { 32, 4 }, { 32, 5 }, { 32, 6 }, { 32, 7 }, { 32, 8 }, { 32, 20 }, { 32, 21 },
-                        { 33, 2 }, { 33, 3 }, { 33, 4 }, { 33, 5 }, { 33, 6 }, { 33, 7 }, { 33, 20 }, { 33, 21 },
-                        { 34, 2 }, { 34, 3 }, { 34, 4 }, { 34, 20 }, { 34, 21 },
-                        { 35, 21 },
-                    },
-                    OWNERSHIP_OWNED);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 2, 30 }, { 3, 30 }, { 4, 30 },
-                        { 25, 23 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 26, 116 },
-                        { 61, 110 },
-                        { 64, 113 }, { 64, 114 }, { 64, 115 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_AVAILABLE, true);
-                  FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 6, 100 }, { 7, 100 }, { 8, 100 }, { 9, 100 }, { 10, 100 }, { 15, 100 }, { 16, 100 },
-                        { 6, 101 }, { 7, 101 }, { 8, 101 }, { 9, 101 }, { 10, 101 }, { 15, 101 }, { 16, 101 },
-                        { 6, 102 }, { 7, 102 }, { 8, 102 }, { 9, 102 }, { 10, 102 }, { 14, 102 }, { 15, 102 }, { 16, 102 },
-                        { 6, 103 }, { 7, 103 }, { 8, 103 }, { 9, 103 }, { 10, 103 }, { 12, 103 }, { 14, 103 }, { 15, 103 }, { 16, 103 },
-                        { 6, 104 }, { 7, 104 }, { 8, 104 }, { 9, 104 }, { 10, 104 }, { 14, 104 }, { 15, 104 }, { 16, 104 },
-                        { 6, 105 }, { 7, 105 }, { 8, 105 }, { 9, 105 }, { 10, 105 }, { 11, 105 }, { 12, 105 }, { 13, 105 }, { 14, 105 }, { 15, 105 }, { 16, 105 },
-                        { 122, 78 }, { 122, 79 },
-                        { 111, 122 }, { 112, 122 }, { 113, 122 },
-                        { 120, 15 }, { 121, 15 }, { 122, 15 },
-                        { 58, 101 }, { 59, 101 }, { 59, 102 }, { 59, 103 }, { 59, 104 }, { 59, 105 }, { 59, 106 }, { 59, 107 }, { 60, 104 }, { 60, 105 },
-                        { 60, 106 }, { 61, 104 }, { 61, 105 },
-                        { 121, 105 }, { 121, 106 }, { 121, 107 }, { 122, 99 }, { 122, 100 }, { 122, 101 }, { 122, 102 }, { 122, 103 }, { 122, 104 }, { 122, 105 },
-                        { 122, 106 }, { 122, 107 }, { 122, 108 }, { 122, 109 }, { 122, 110 }, { 122, 111 }, { 122, 112 }, { 122, 113 }, { 122, 114 }, { 122, 115 },
-                        { 122, 116 }, { 122, 117 }, { 122, 118 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Australasia - Fun at the Beach.SC6"))
-            {
-                // clang-format off
-                  FixLandOwnershipTilesWithOwnership(
-                      {
-                          { 63, 97 },
-                          { 64, 97 },
-                      },
-                      OWNERSHIP_UNOWNED);
-                  FixLandOwnershipTilesWithOwnership(
-                      {
-                          { 63, 97 },
-                          { 64, 97 },
-                      },
-                      OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Europe - Renovation.SC6"))
-            {
-                // clang-format off
-                  FixLandOwnershipTilesWithOwnership(
-                      {
-                          { 12, 21 },
-                      },
-                      OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "N America - Extreme Hawaiian Island.SC6")
-                || String::IEquals(gScenarioFileName, "n america - extreme hawaiian island.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                   {
-                        { 132, 124 },
-                        { 133, 124 },
-                        { 133, 125 },
-                        { 133, 126 },
-                        { 119, 35 },
-                        { 132, 62 },
-                        { 133, 66 },
-                        { 133, 67 },
-                        { 136, 71 },
-                        { 87, 33 },
-                        { 87, 34 },
-                        { 90, 36 },
-                        { 91, 36 },
-                    },
-                    OWNERSHIP_OWNED);
-                // We set the doNotDowngrade flag for cases where the player has used a cheat to own all land.
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 49, 99 },
-                        { 50, 99 },
-                        { 88, 110 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Dark Age - Robin Hood.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 104, 64 },
-                        { 111, 114 }, { 112, 114 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Dark Age - Castle.SC6")
-                || String::IEquals(gScenarioFileName, "dark age - castle.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 61, 15 },
-                        { 62, 16 },
-                        { 34, 51 }, { 35, 51 }, { 35, 50 },
-                        { 34, 72 }, { 35, 72 }, { 35, 73 },
-                        { 66, 19 }, { 66, 20 }, { 67, 20 },
-                        { 75, 85 }, { 76, 85 }, { 76, 86 },
-                        { 59, 18 }, { 60, 18 }, { 60, 17 }, { 61, 17 },
-                    },
-                    OWNERSHIP_OWNED);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 86, 69 }, { 86, 70 }
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Mythological - Animatronic Film Set.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 44, 51 },
-                        { 47, 50 },
-                        { 48, 47 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Prehistoric - Jurassic Safari.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 28, 95 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Roaring Twenties - Schneider Cup.SC6")
-                || String::IEquals(gScenarioFileName, "roaring twenties - schneider cup.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 147, 132 },
-                        { 82, 110 }, { 83, 110 },
-                        { 120, 86 }, { 121, 86 },
-                        { 143, 130 }, { 144, 130 },
-                        { 98, 2 }, { 99, 2 }, { 100, 2 },
-                        { 65, 120 }, { 65, 121 }, { 65, 122 }, { 65, 123 },
-                        { 156, 139 }, { 156, 140 }, { 156, 141 }, { 157, 139 }, { 157, 140 }, { 157, 141 },
-                        { 105, 88 }, { 106, 86 }, { 106, 87 }, { 106, 88 }, { 107, 86 }, { 107, 87 }, { 107, 88 },
-                        { 148, 95 }, { 148, 96 }, { 148, 97 }, { 148, 98 }, { 148, 99 }, { 149, 97 }, { 149, 98 }, { 149, 99 }, { 150, 97 }, { 150, 98 }, { 150, 99 },
-                        { 148, 94 },
-                        { 84, 111 }, { 85, 111 }, { 85, 112 }, { 85, 113 }, { 85, 114 }, { 86, 111 }, { 86, 112 }, { 86, 113 }, { 86, 114 }, { 87, 111 }, { 87, 112 },
-                        { 87, 113 }, { 87, 114 }, { 88, 111 }, { 88, 112 }, { 88, 113 }, { 88, 114 }, { 88, 115 }, { 88, 116 }, { 88, 117 }, { 89, 111 }, { 89, 112 },
-                        { 89, 113 }, { 89, 114 }, { 89, 115 }, { 89, 116 }, { 89, 117 }, { 89, 118 }, { 89, 119 }, { 89, 120 }, { 89, 121 }, { 90, 113 }, { 90, 114 },
-                        { 90, 115 }, { 90, 116 }, { 90, 117 }, { 90, 118 }, { 90, 119 }, { 90, 120 }, { 90, 121 }, { 91, 115 }, { 91, 116 }, { 91, 117 }, { 91, 118 },
-                        { 91, 119 }, { 91, 120 }, { 91, 121 }, { 92, 115 }, { 92, 118 }, { 92, 119 }, { 92, 120 }, { 92, 121 },
-                    },
-                    OWNERSHIP_CONSTRUCTION_RIGHTS_AVAILABLE, true);
-                 FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 45, 151 },
-                        { 55, 137 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Mythological - Cradle of Civilization.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 103, 24 },
-                        { 104, 25 },
-                        { 116, 42 }, { 116, 43 }, { 116, 44 }, { 116, 45 }, { 116, 46 }, { 117, 41 }, { 117, 42 }, { 117, 43 }, { 117, 44 }, { 117, 45 }, { 117, 46 }
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 86, 66 }, { 86, 67 }, { 86, 68 }, { 86, 69 }, { 86, 70 }, { 86, 71 }, { 87, 65 }, { 87, 66 }, { 87, 67 }, { 87, 68 }, { 87, 69 },
-                        { 87, 70 }, { 87, 71 }, { 87, 72 }, { 88, 65 }, { 88, 66 }, { 88, 67 }, { 88, 68 }, { 88, 69 }, { 88, 70 }, { 88, 71 }, { 88, 72 },
-                        { 88, 73 }, { 88, 74 }, { 88, 75 }, { 89, 65 }, { 89, 66 }, { 89, 67 }, { 89, 68 }, { 89, 69 }, { 89, 70 }, { 89, 71 }, { 89, 72 },
-                        { 89, 73 }, { 89, 74 }, { 89, 75 }, { 89, 76 }, { 90, 64 }, { 90, 65 }, { 90, 66 }, { 90, 67 }, { 90, 68 }, { 90, 69 }, { 90, 70 },
-                        { 90, 71 }, { 90, 72 }, { 90, 73 }, { 90, 74 }, { 90, 75 }, { 90, 76 }, { 90, 77 }, { 91, 67 }, { 91, 68 },
-                    },
-                    OWNERSHIP_OWNED);
-                // clang-format on
-            }
-            else if (
-                String::IEquals(gScenarioFileName, "Prehistoric - Stone Age.SC6")
-                || String::IEquals(gScenarioFileName, "prehistoric - stone age.sea"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 58, 77 },
-                        { 62, 81 }, { 63, 81 }, { 64, 81 },
-                        { 59, 36 }, { 60, 36 }, { 61, 36 }, { 60, 37 }, { 61, 37 },
-                        { 73, 78 }, { 73, 79 }, { 73, 80 }, { 73, 81 }, { 73, 82 }, { 74, 79 }, { 74, 80 }, { 74, 81 }, { 74, 82 }, { 74, 83 },
-                        { 75, 79 }, { 75, 80 }, { 75, 81 }, { 75, 82 }, { 75, 83 }, { 76, 79 }, { 76, 80 }, { 76, 81 }, { 76, 82 }, { 76, 83 },
-                        { 77, 79 }, { 77, 80 }, { 77, 81 }, { 77, 82 }, { 78, 79 }, { 79, 79 }, { 80, 79 }, { 73, 77 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-            else if (String::Equals(_s6.ScenarioFilename, "Rock 'n' Roll - Rock 'n' Roll.SC6"))
-            {
-                // clang-format off
-                FixLandOwnershipTilesWithOwnership(
-                    {
-                        { 13, 95 },
-                        { 80, 31 },
-                        { 56, 105 },
-                    },
-                    OWNERSHIP_AVAILABLE, true);
-                // clang-format on
-            }
-        }
-
-        void FixWater() const
-        {
-            if (!_isScenario)
-            {
-                return;
-            }
-            if (String::IEquals(_s6.ScenarioFilename, "Infernal Views.SC6")
-                || String::IEquals(_s6.ScenarioFilename, "infernal views.sea"))
-            {
-                auto surfaceElement = MapGetSurfaceElementAt(TileCoordsXY{ 45, 62 });
-
-                surfaceElement->SetWaterHeight(96);
-            }
-            else if (
-                String::Equals(_s6.ScenarioFilename, "Six Flags Holland.SC6", true)
-                || String::Equals(_s6.ScenarioFilename, "six flags holland.sea", true))
-
-            {
-                auto surfaceElement = MapGetSurfaceElementAt(TileCoordsXY{ 126, 73 });
-
-                surfaceElement->SetWaterHeight(96);
-            }
-        }
-
-        void FixAyersRockScenario() const
-        {
-            if (!_isScenario || !String::Equals(_s6.ScenarioFilename, "Australasia - Ayers Rock.SC6"))
-                return;
-
-            TileCoordsXY tilesToUncovered[] = {
-                { 123, 59 }, { 123, 60 }, { 123, 61 }, { 118, 69 }, { 118, 70 }, { 118, 71 },
-                { 118, 72 }, { 118, 73 }, { 112, 79 }, { 112, 80 }, { 112, 81 }, { 112, 82 },
-            };
-            for (const auto& tile : tilesToUncovered)
-            {
-                auto* tileElement = MapGetFirstElementAt(tile);
-                if (tileElement == nullptr)
-                    continue;
-
-                do
-                {
-                    if (tileElement->GetType() != TileElementType::Track)
-                        continue;
-
-                    auto* trackElement = tileElement->AsTrack();
-                    if (trackElement->GetTrackType() != TrackElemType::FlatCovered)
-                        continue;
-
-                    trackElement->SetTrackType(TrackElemType::Flat);
-                } while (!(tileElement++)->IsLastForTile());
-            }
-
-            TileCoordsXY tilesToCovered[] = {
-                { 123, 83 },
-                { 123, 84 },
-                { 123, 85 },
-                { 123, 86 },
-            };
-            for (const auto& tile : tilesToCovered)
-            {
-                auto* tileElement = MapGetFirstElementAt(tile);
-                if (tileElement == nullptr)
-                    continue;
-
-                do
-                {
-                    if (tileElement->GetType() != TileElementType::Track)
-                        continue;
-
-                    auto* trackElement = tileElement->AsTrack();
-                    if (trackElement->GetTrackType() != TrackElemType::Flat)
-                        continue;
-
-                    trackElement->SetTrackType(TrackElemType::FlatCovered);
-                } while (!(tileElement++)->IsLastForTile());
-            }
         }
 
         void ImportRides()
@@ -1269,7 +671,7 @@ namespace OpenRCT2::RCT2
                 auto subtype = RCTEntryIndexToOpenRCT2EntryIndex(src->Subtype);
                 auto* rideEntry = GetRideEntryByIndex(subtype);
                 // If the ride is tracked, we don’t need to check the vehicle any more.
-                if (!GetRideTypeDescriptor(src->Type).HasFlag(RIDE_TYPE_FLAG_FLAT_RIDE))
+                if (!GetRideTypeDescriptor(src->Type).HasFlag(RtdFlag::isFlatRide))
                 {
                     _isFlatRide[index] = false;
                     continue;
@@ -1282,7 +684,7 @@ namespace OpenRCT2::RCT2
                 {
                     originalRideType = rideEntry->GetFirstNonNullRideType();
                 }
-                const auto isFlatRide = GetRideTypeDescriptor(originalRideType).HasFlag(RIDE_TYPE_FLAG_FLAT_RIDE);
+                const auto isFlatRide = GetRideTypeDescriptor(originalRideType).HasFlag(RtdFlag::isFlatRide);
                 _isFlatRide.set(static_cast<size_t>(index), isFlatRide);
             }
         }
@@ -1571,7 +973,7 @@ namespace OpenRCT2::RCT2
             }
 
             auto musicStyle = OBJECT_ENTRY_INDEX_NULL;
-            if (GetRideTypeDescriptor(dst->type).HasFlag(RIDE_TYPE_FLAG_ALLOW_MUSIC))
+            if (GetRideTypeDescriptor(dst->type).HasFlag(RtdFlag::allowMusic))
             {
                 musicStyle = src->Music;
             }
@@ -1579,7 +981,7 @@ namespace OpenRCT2::RCT2
 
             // In SV7, "plain" entrances are invisible.
             auto entranceStyle = OBJECT_ENTRY_INDEX_NULL;
-            if (!_isSV7 && GetRideTypeDescriptor(dst->type).HasFlag(RIDE_TYPE_FLAG_HAS_ENTRANCE_EXIT))
+            if (!_isSV7 && GetRideTypeDescriptor(dst->type).HasFlag(RtdFlag::hasEntranceAndExit))
             {
                 entranceStyle = src->EntranceStyle;
             }
@@ -1619,10 +1021,14 @@ namespace OpenRCT2::RCT2
             dst.CurrentRide = RCT12RideIdToOpenRCT2RideId(src.CurrentRide);
             dst.State = src.State;
             if (src.CurrentRide < Limits::kMaxRidesInPark && _s6.Rides[src.CurrentRide].Type < std::size(RideTypeDescriptors))
+            {
                 dst.ProximityTrackType = RCT2TrackTypeToOpenRCT2(
                     src.ProximityTrackType, _s6.Rides[src.CurrentRide].Type, IsFlatRide(src.CurrentRide));
+            }
             else
-                dst.ProximityTrackType = 0xFF;
+            {
+                dst.ProximityTrackType = TrackElemType::None;
+            }
             dst.ProximityBaseHeight = src.ProximityBaseHeight;
             dst.ProximityTotal = src.ProximityTotal;
             for (size_t i = 0; i < std::size(src.ProximityScores); i++)
@@ -1727,7 +1133,7 @@ namespace OpenRCT2::RCT2
          * Imports guest entry points.
          * Includes fixes for incorrectly set guest entry points in some scenarios.
          */
-        void ImportPeepSpawns()
+        void ImportPeepSpawns(GameState_t& gameState)
         {
             // Many WW and TT have scenario_filename fields containing an incorrect filename. Check for both this filename
             // and the corrected filename.
@@ -1758,7 +1164,6 @@ namespace OpenRCT2::RCT2
                 _s6.PeepSpawns[0].z = 7;
             }
 
-            auto& gameState = GetGameState();
             gameState.PeepSpawns.clear();
             for (size_t i = 0; i < Limits::kMaxPeepSpawns; i++)
             {
@@ -1791,7 +1196,7 @@ namespace OpenRCT2::RCT2
             dst->num_riders = numRiders;
         }
 
-        void ImportTileElements()
+        void ImportTileElements(GameState_t& gameState)
         {
             // Build tile pointer cache (needed to get the first element at a certain location)
             auto tilePointerIndex = TilePointerIndex<RCT12TileElement>(
@@ -1816,7 +1221,7 @@ namespace OpenRCT2::RCT2
                         {
                             do
                             {
-                                if (srcElement->BaseHeight == RCT12::Limits::MaxElementHeight)
+                                if (srcElement->BaseHeight == RCT12::Limits::kMaxElementHeight)
                                 {
                                     continue;
                                 }
@@ -1861,7 +1266,7 @@ namespace OpenRCT2::RCT2
                     }
                 }
             }
-            SetTileElements(std::move(tileElements));
+            SetTileElements(gameState, std::move(tileElements));
         }
 
         void ImportTileElement(TileElement* dst, const RCT12TileElement* src, bool invisible)
@@ -1942,9 +1347,11 @@ namespace OpenRCT2::RCT2
                     auto src2 = src->AsTrack();
 
                     auto rideType = _s6.Rides[src2->GetRideIndex()].Type;
-                    track_type_t trackType = static_cast<track_type_t>(src2->GetTrackType());
+                    auto oldTrackType = src2->GetTrackType();
+                    OpenRCT2::TrackElemType trackType = RCT2TrackTypeToOpenRCT2(
+                        oldTrackType, rideType, IsFlatRide(src2->GetRideIndex()));
 
-                    dst2->SetTrackType(RCT2TrackTypeToOpenRCT2(trackType, rideType, IsFlatRide(src2->GetRideIndex())));
+                    dst2->SetTrackType(trackType);
                     dst2->SetRideType(rideType);
                     dst2->SetSequenceIndex(src2->GetSequenceIndex());
                     dst2->SetRideIndex(RCT12RideIdToOpenRCT2RideId(src2->GetRideIndex()));
@@ -1975,7 +1382,7 @@ namespace OpenRCT2::RCT2
 
                     // This has to be done last, since the maze entry shares fields with the colour and sequence fields.
                     const auto& rtd = GetRideTypeDescriptor(rideType);
-                    if (rtd.HasFlag(RIDE_TYPE_FLAG_IS_MAZE))
+                    if (rtd.HasFlag(RtdFlag::isMaze))
                     {
                         dst2->SetMazeEntry(src2->GetMazeEntry());
                     }
@@ -2180,8 +1587,8 @@ namespace OpenRCT2::RCT2
             {
                 return;
             }
-            int32_t peepOffset = staffId * Limits::PatrolAreaSize;
-            for (int32_t i = 0; i < Limits::PatrolAreaSize; i++)
+            int32_t peepOffset = staffId * Limits::kPatrolAreaSize;
+            for (int32_t i = 0; i < Limits::kPatrolAreaSize; i++)
             {
                 if (_s6.PatrolAreas[peepOffset + i] == 0)
                 {
@@ -2222,7 +1629,8 @@ namespace OpenRCT2::RCT2
             return (_s6.Header.ClassicFlag == 0xf) ? Limits::kMaxEntitiesRCTCExtended : Limits::kMaxEntities;
         }
 
-        template<typename OpenRCT2_T> void ImportEntity(const RCT12EntityBase& src);
+        template<typename OpenRCT2_T>
+        void ImportEntity(const RCT12EntityBase& src);
 
         void ImportEntityPeep(::Peep* dst, const Peep* src)
         {
@@ -2239,7 +1647,7 @@ namespace OpenRCT2::RCT2
             dst->NextFlags = src->NextFlags;
             dst->State = static_cast<PeepState>(src->State);
             dst->SubState = src->SubState;
-            dst->SpriteType = static_cast<PeepSpriteType>(src->SpriteType);
+            dst->AnimationGroup = static_cast<PeepAnimationGroup>(src->AnimationGroup);
             dst->TshirtColour = src->TshirtColour;
             dst->TrousersColour = src->TrousersColour;
             dst->DestinationX = src->DestinationX;
@@ -2255,11 +1663,11 @@ namespace OpenRCT2::RCT2
             dst->CurrentTrain = src->CurrentTrain;
             dst->TimeToSitdown = src->TimeToSitdown;
             dst->SpecialSprite = src->SpecialSprite;
-            dst->ActionSpriteType = static_cast<PeepActionSpriteType>(src->ActionSpriteType);
-            dst->NextActionSpriteType = static_cast<PeepActionSpriteType>(src->NextActionSpriteType);
-            dst->ActionSpriteImageOffset = src->ActionSpriteImageOffset;
+            dst->AnimationType = static_cast<PeepAnimationType>(src->AnimationType);
+            dst->NextAnimationType = static_cast<PeepAnimationType>(src->NextAnimationType);
+            dst->AnimationImageIdOffset = src->AnimationImageIdOffset;
             dst->Action = static_cast<PeepActionType>(src->Action);
-            dst->ActionFrame = src->ActionFrame;
+            dst->AnimationFrameNum = src->AnimationFrameNum;
             dst->StepProgress = src->StepProgress;
             dst->PeepDirection = src->Direction;
             dst->InteractionRideIndex = RCT12RideIdToOpenRCT2RideId(src->InteractionRideIndex);
@@ -2289,7 +1697,7 @@ namespace OpenRCT2::RCT2
                                                 src->PathfindHistory[i].direction };
                 }
             }
-            dst->WalkingFrameNum = src->NoActionFrameNum;
+            dst->WalkingAnimationFrameNum = src->NoActionFrameNum;
         }
 
         constexpr EntityType GetEntityTypeFromRCT2Sprite(const RCT12EntityBase* src)
@@ -2479,12 +1887,25 @@ namespace OpenRCT2::RCT2
 
             AppendRequiredObjects(objectList, ObjectType::TerrainSurface, _terrainSurfaceEntries);
             AppendRequiredObjects(objectList, ObjectType::TerrainEdge, _terrainEdgeEntries);
+            AppendRequiredObjects(
+                objectList, ObjectType::PeepNames, std::vector<std::string_view>({ "rct2.peep_names.original" }));
             RCT12AddDefaultObjects(objectList);
+
+            // Normalise the name to make the scenario as recognisable as possible
+            auto normalisedName = ScenarioSources::NormaliseName(_s6.Info.Name);
+
+            // Infer what scenario text object to use, if any
+            SourceDescriptor desc;
+            if (ScenarioSources::TryGetByName(normalisedName.c_str(), &desc) && !desc.textObjectId.empty())
+                AppendRequiredObjects(
+                    objectList, ObjectType::ScenarioText, std::vector<std::string_view>({ desc.textObjectId }));
+
             return objectList;
         }
     };
 
-    template<> void S6Importer::ImportEntity<::Vehicle>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::Vehicle>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::Vehicle>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT2::Vehicle*>(&baseSrc);
@@ -2509,26 +1930,25 @@ namespace OpenRCT2::RCT2
         {
             dst->BoatLocation.SetNull();
             dst->SetTrackDirection(src->GetTrackDirection());
-            dst->SetTrackType(src->GetTrackType());
+            // Skipping OriginalRideClass::WildMouse - this is handled specifically.
+            auto originalClass = IsFlatRide(src->Ride) ? OriginalRideClass::FlatRide : OriginalRideClass::Regular;
+            auto convertedType = RCT2TrackTypeToOpenRCT2(src->GetTrackType(), originalClass);
+            dst->SetTrackType(convertedType);
             // RotationControlToggle and Booster are saved as the same track piece ID
             // Which one the vehicle is using must be determined
-            if (IsFlatRide(src->Ride))
-            {
-                dst->SetTrackType(RCT12FlatTrackTypeToOpenRCT2(src->GetTrackType()));
-            }
-            else if (src->GetTrackType() == TrackElemType::RotationControlToggleAlias)
+            if (src->GetTrackType() == OpenRCT2::RCT12::TrackElemType::RotationControlToggleAlias)
             {
                 // Merging hacks mean the track type that's appropriate for the ride type is not necessarily the track type the
                 // ride is on. It's possible to create unwanted behavior if a user layers spinning control track on top of
                 // booster track but this is unlikely since only two rides have spinning control track - by default they load as
-                // booster
+                // booster.
                 TileElement* tileElement2 = MapGetTrackElementAtOfTypeSeq(
                     dst->TrackLocation, TrackElemType::RotationControlToggle, 0);
 
                 if (tileElement2 != nullptr)
                     dst->SetTrackType(TrackElemType::RotationControlToggle);
             }
-            else if (src->GetTrackType() == TrackElemType::BlockBrakes)
+            else if (src->GetTrackType() == OpenRCT2::RCT12::TrackElemType::BlockBrakes)
             {
                 dst->brake_speed = kRCT2DefaultBlockBrakeSpeed;
             }
@@ -2537,7 +1957,7 @@ namespace OpenRCT2::RCT2
         {
             dst->BoatLocation = TileCoordsXY{ src->BoatLocation.x, src->BoatLocation.y }.ToCoordsXY();
             dst->SetTrackDirection(0);
-            dst->SetTrackType(0);
+            dst->SetTrackType(OpenRCT2::TrackElemType::Flat);
         }
 
         dst->next_vehicle_on_train = EntityId::FromUnderlying(src->NextVehicleOnTrain);
@@ -2610,7 +2030,8 @@ namespace OpenRCT2::RCT2
         return s6.GameTicks1 - ticksElapsed;
     }
 
-    template<> void S6Importer::ImportEntity<::Guest>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::Guest>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::Guest>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const Peep*>(&baseSrc);
@@ -2684,7 +2105,8 @@ namespace OpenRCT2::RCT2
         dst->FavouriteRideRating = src->FavouriteRideRating;
     }
 
-    template<> void S6Importer::ImportEntity<::Staff>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::Staff>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::Staff>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const Peep*>(&baseSrc);
@@ -2704,7 +2126,8 @@ namespace OpenRCT2::RCT2
         ImportStaffPatrolArea(dst, src->StaffId);
     }
 
-    template<> void S6Importer::ImportEntity<::SteamParticle>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::SteamParticle>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::SteamParticle>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntitySteamParticle*>(&baseSrc);
@@ -2713,7 +2136,8 @@ namespace OpenRCT2::RCT2
         dst->frame = src->Frame;
     }
 
-    template<> void S6Importer::ImportEntity<::MoneyEffect>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::MoneyEffect>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::MoneyEffect>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityMoneyEffect*>(&baseSrc);
@@ -2726,7 +2150,8 @@ namespace OpenRCT2::RCT2
         dst->Wiggle = src->Wiggle;
     }
 
-    template<> void S6Importer::ImportEntity<::VehicleCrashParticle>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::VehicleCrashParticle>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::VehicleCrashParticle>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityCrashedVehicleParticle*>(&baseSrc);
@@ -2745,7 +2170,8 @@ namespace OpenRCT2::RCT2
         dst->acceleration_z = src->AccelerationZ;
     }
 
-    template<> void S6Importer::ImportEntity<::ExplosionCloud>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::ExplosionCloud>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::ExplosionCloud>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityParticle*>(&baseSrc);
@@ -2753,7 +2179,8 @@ namespace OpenRCT2::RCT2
         dst->frame = src->Frame;
     }
 
-    template<> void S6Importer::ImportEntity<::ExplosionFlare>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::ExplosionFlare>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::ExplosionFlare>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityParticle*>(&baseSrc);
@@ -2761,7 +2188,8 @@ namespace OpenRCT2::RCT2
         dst->frame = src->Frame;
     }
 
-    template<> void S6Importer::ImportEntity<::CrashSplashParticle>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::CrashSplashParticle>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::CrashSplashParticle>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityParticle*>(&baseSrc);
@@ -2769,7 +2197,8 @@ namespace OpenRCT2::RCT2
         dst->frame = src->Frame;
     }
 
-    template<> void S6Importer::ImportEntity<::JumpingFountain>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::JumpingFountain>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::JumpingFountain>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityJumpingFountain*>(&baseSrc);
@@ -2785,7 +2214,8 @@ namespace OpenRCT2::RCT2
             : ::JumpingFountainType::Water;
     }
 
-    template<> void S6Importer::ImportEntity<::Balloon>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::Balloon>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::Balloon>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityBalloon*>(&baseSrc);
@@ -2796,7 +2226,8 @@ namespace OpenRCT2::RCT2
         dst->colour = src->Colour;
     }
 
-    template<> void S6Importer::ImportEntity<::Duck>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::Duck>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::Duck>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityDuck*>(&baseSrc);
@@ -2807,7 +2238,8 @@ namespace OpenRCT2::RCT2
         dst->state = static_cast<::Duck::DuckState>(src->State);
     }
 
-    template<> void S6Importer::ImportEntity<::Litter>(const RCT12EntityBase& baseSrc)
+    template<>
+    void S6Importer::ImportEntity<::Litter>(const RCT12EntityBase& baseSrc)
     {
         auto dst = CreateEntityAt<::Litter>(EntityId::FromUnderlying(baseSrc.EntityIndex));
         auto src = static_cast<const RCT12EntityLitter*>(&baseSrc);

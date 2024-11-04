@@ -18,13 +18,14 @@
 #include "../../../world/Map.h"
 #include "../../Paint.h"
 #include "../../support/WoodenSupports.h"
+#include "../../support/WoodenSupports.hpp"
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
 #include "../../track/Support.h"
 
 using namespace OpenRCT2;
 
-static constexpr WoodenSupportType kSupportType = WoodenSupportType::Truss;
+static constexpr TunnelGroup kTunnelGroup = TunnelGroup::Square;
 
 enum
 {
@@ -173,7 +174,7 @@ static constexpr uint32_t river_rapids_track_pieces_25_deg_down_to_flat[][2] = {
 /** rct2: 0x00757650 */
 static void PaintRiverRapidsTrackFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -196,16 +197,16 @@ static void PaintRiverRapidsTrackFlat(
         PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 10, 10, height }, { 1, 2, 5 } });
     }
 
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+    DrawSupportForSequenceA<TrackElemType::Flat>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
@@ -215,85 +216,46 @@ static void PaintRiverRapidsTrackFlat(
 /** rct2: 0x007576C0 */
 static void PaintRiverRapidsStation(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrackFlat(session, ride, trackSequence, direction, height, trackElement);
+    PaintRiverRapidsTrackFlat(session, ride, trackSequence, direction, height, trackElement, supportType);
     TrackPaintUtilDrawNarrowStationPlatform(session, ride, direction, height, 12, trackElement);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
-static void PaintRiverRapidsTrack25Deg(PaintSession& session, uint8_t direction, int32_t height, const uint32_t sprites[4][2])
+static void PaintRiverRapidsTrack25Deg(
+    PaintSession& session, uint8_t direction, int32_t height, const uint32_t sprites[4][2], SupportType supportType)
 {
-    ImageId imageId;
-    PaintStruct* ps;
+    bool isStart = direction == 0 || direction == 3;
 
-    switch (direction)
+    ImageId imageId = session.TrackColours.WithIndex(sprites[direction][0]);
+    PaintStruct* ps = PaintAddImageAsParentRotated(
+        session, direction, imageId, { 0, 0, height }, { { 0, 4, height }, { 32, 24, 4 } });
+    if (!isStart)
     {
-        case 0:
-            imageId = session.TrackColours.WithIndex(sprites[direction][0]);
-            PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 4, height }, { 32, 24, 4 } });
-
-            imageId = session.TrackColours.WithIndex(sprites[direction][1]);
-            PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height + 16 }, { 32, 1, 34 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25Deg);
-            PaintUtilPushTunnelLeft(session, height - 8, TunnelType::SquareSlopeStart);
-            break;
-
-        case 1:
-            imageId = session.TrackColours.WithIndex(sprites[direction][0]);
-            ps = PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 4, 0, height }, { 24, 32, 4 } });
-            session.WoodenSupportsPrependTo = ps;
-
-            imageId = session.TrackColours.WithIndex(sprites[direction][1]);
-            PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height + 16 }, { 1, 32, 34 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25Deg);
-            PaintUtilPushTunnelRight(session, height + 8, TunnelType::SquareSlopeEnd);
-            break;
-
-        case 2:
-            imageId = session.TrackColours.WithIndex(sprites[direction][0]);
-            ps = PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 4, height }, { 32, 24, 4 } });
-            session.WoodenSupportsPrependTo = ps;
-
-            imageId = session.TrackColours.WithIndex(sprites[direction][1]);
-            PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height + 16 }, { 32, 1, 34 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25Deg);
-            PaintUtilPushTunnelLeft(session, height + 8, TunnelType::SquareSlopeEnd);
-            break;
-
-        case 3:
-            imageId = session.TrackColours.WithIndex(sprites[direction][0]);
-            PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 4, 0, height }, { 24, 32, 4 } });
-
-            imageId = session.TrackColours.WithIndex(sprites[direction][1]);
-            PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height + 16 }, { 1, 32, 34 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25Deg);
-            PaintUtilPushTunnelRight(session, height - 8, TunnelType::SquareSlopeStart);
-            break;
+        session.WoodenSupportsPrependTo = ps;
     }
+
+    imageId = session.TrackColours.WithIndex(sprites[direction][1]);
+    PaintAddImageAsParentRotated(session, direction, imageId, { 0, 0, height }, { { 0, 27, height + 16 }, { 32, 1, 34 } });
+
+    DrawSupportForSequenceA<TrackElemType::Up25>(session, supportType.wooden, 0, direction, height, session.SupportColours);
+
+    int8_t tunnelHeightOffset = isStart ? -8 : 8;
+    auto tunnelSubType = isStart ? TunnelSubType::SlopeStart : TunnelSubType::SlopeEnd;
+    PaintUtilPushTunnelRotated(session, direction, height + tunnelHeightOffset, kTunnelGroup, tunnelSubType);
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 56);
 }
 
 static void PaintRiverRapidsTrack25DegToFlatA(
-    PaintSession& session, uint8_t direction, int32_t height, const uint32_t sprites[4][2])
+    PaintSession& session, uint8_t direction, int32_t height, const uint32_t sprites[4][2], SupportType supportType)
 {
     ImageId imageId;
     PaintStruct* ps;
 
+    bool isStart = direction == 0 || direction == 3;
     switch (direction)
     {
         case 0:
@@ -302,11 +264,6 @@ static void PaintRiverRapidsTrack25DegToFlatA(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height + 16 }, { 32, 1, 18 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25DegToFlat);
-            PaintUtilPushTunnelLeft(session, height - 8, TunnelType::SquareFlat);
             break;
 
         case 1:
@@ -316,11 +273,6 @@ static void PaintRiverRapidsTrack25DegToFlatA(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height + 16 }, { 1, 32, 18 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25DegToFlat);
-            PaintUtilPushTunnelRight(session, height + 8, TunnelType::SquareFlatTo25Deg);
             break;
 
         case 2:
@@ -331,11 +283,6 @@ static void PaintRiverRapidsTrack25DegToFlatA(
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
 
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height }, { 32, 1, 18 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25DegToFlat);
-            PaintUtilPushTunnelLeft(session, height + 8, TunnelType::SquareFlatTo25Deg);
             break;
 
         case 3:
@@ -344,20 +291,21 @@ static void PaintRiverRapidsTrack25DegToFlatA(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height + 16 }, { 1, 32, 18 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::Up25DegToFlat);
-            PaintUtilPushTunnelRight(session, height - 8, TunnelType::SquareFlat);
             break;
     }
+    DrawSupportForSequenceA<TrackElemType::Up25ToFlat>(
+        session, supportType.wooden, 0, direction, height, session.SupportColours);
+
+    int8_t heightOffset = isStart ? -8 : 8;
+    auto tunnelSubType = isStart ? TunnelSubType::Flat : TunnelSubType::FlatTo25Deg;
+    PaintUtilPushTunnelRotated(session, direction, height + heightOffset, kTunnelGroup, tunnelSubType);
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 40);
 }
 
 static void PaintRiverRapidsTrack25DegToFlatB(
-    PaintSession& session, uint8_t direction, int32_t height, const uint32_t sprites[4][2])
+    PaintSession& session, uint8_t direction, int32_t height, const uint32_t sprites[4][2], SupportType supportType)
 {
     ImageId imageId;
     PaintStruct* ps;
@@ -370,11 +318,6 @@ static void PaintRiverRapidsTrack25DegToFlatB(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height + 16 }, { 32, 1, 26 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::FlatToUp25Deg);
-            PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
             break;
 
         case 1:
@@ -384,11 +327,6 @@ static void PaintRiverRapidsTrack25DegToFlatB(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height + 16 }, { 1, 32, 26 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::FlatToUp25Deg);
-            PaintUtilPushTunnelRight(session, height, TunnelType::SquareSlopeEnd);
             break;
 
         case 2:
@@ -398,11 +336,6 @@ static void PaintRiverRapidsTrack25DegToFlatB(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height + 16 }, { 32, 1, 26 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::FlatToUp25Deg);
-            PaintUtilPushTunnelLeft(session, height, TunnelType::SquareSlopeEnd);
             break;
 
         case 3:
@@ -411,13 +344,12 @@ static void PaintRiverRapidsTrack25DegToFlatB(
 
             imageId = session.TrackColours.WithIndex(sprites[direction][1]);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 0, height + 16 }, { 1, 32, 26 } });
-
-            WoodenASupportsPaintSetupRotated(
-                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-                WoodenSupportTransitionType::FlatToUp25Deg);
-            PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
             break;
     }
+    DrawSupportForSequenceA<TrackElemType::FlatToUp25>(
+        session, supportType.wooden, 0, direction, height, session.SupportColours);
+
+    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 48);
@@ -426,55 +358,57 @@ static void PaintRiverRapidsTrack25DegToFlatB(
 /** rct2: 0x00757660 */
 static void PaintRiverRapidsTrack25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrack25Deg(session, direction, height, river_rapids_track_pieces_25_deg_up);
+    PaintRiverRapidsTrack25Deg(session, direction, height, river_rapids_track_pieces_25_deg_up, supportType);
 }
 
 /** rct2: 0x00757670 */
 static void PaintRiverRapidsTrackFlatTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrack25DegToFlatB(session, direction, height, river_rapids_track_pieces_flat_to_25_deg_up);
+    PaintRiverRapidsTrack25DegToFlatB(session, direction, height, river_rapids_track_pieces_flat_to_25_deg_up, supportType);
 }
 
 /** rct2: 0x00757680 */
 static void PaintRiverRapidsTrack25DegUpToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrack25DegToFlatA(session, direction, height, river_rapids_track_pieces_25_deg_up_to_flat);
+    PaintRiverRapidsTrack25DegToFlatA(session, direction, height, river_rapids_track_pieces_25_deg_up_to_flat, supportType);
 }
 
 /** rct2: 0x00757690 */
 static void PaintRiverRapidsTrack25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrack25Deg(session, (direction + 2) % 4, height, river_rapids_track_pieces_25_deg_down);
+    PaintRiverRapidsTrack25Deg(session, (direction + 2) % 4, height, river_rapids_track_pieces_25_deg_down, supportType);
 }
 
 /** rct2: 0x007576A0 */
 static void PaintRiverRapidsTrackFlatTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrack25DegToFlatA(session, (direction + 2) % 4, height, river_rapids_track_pieces_flat_to_25_deg_down);
+    PaintRiverRapidsTrack25DegToFlatA(
+        session, (direction + 2) % 4, height, river_rapids_track_pieces_flat_to_25_deg_down, supportType);
 }
 
 /** rct2: 0x007576B0 */
 static void PaintRiverRapidsTrack25DegDownToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrack25DegToFlatB(session, (direction + 2) % 4, height, river_rapids_track_pieces_25_deg_down_to_flat);
+    PaintRiverRapidsTrack25DegToFlatB(
+        session, (direction + 2) % 4, height, river_rapids_track_pieces_25_deg_down_to_flat, supportType);
 }
 
 /** rct2: 0x007576F0 */
 static void PaintRiverRapidsTrackLeftQuarterTurn1Tile(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
     switch (direction)
@@ -486,7 +420,7 @@ static void PaintRiverRapidsTrackLeftQuarterTurn1Tile(
             imageId = session.TrackColours.WithIndex(SPR_RIVER_RAPIDS_LEFT_QUARTER_TURN_1_TILE_FRONT_SW_NW);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 28, 27, height }, { 2, 1, 7 } });
 
-            PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
 
         case 1:
@@ -507,7 +441,7 @@ static void PaintRiverRapidsTrackLeftQuarterTurn1Tile(
             imageId = session.TrackColours.WithIndex(SPR_RIVER_RAPIDS_LEFT_QUARTER_TURN_1_TILE_FRONT_NE_SE);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 10, 10, height }, { 1, 2, 5 } });
 
-            PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
 
         case 3:
@@ -517,13 +451,13 @@ static void PaintRiverRapidsTrackLeftQuarterTurn1Tile(
             imageId = session.TrackColours.WithIndex(SPR_RIVER_RAPIDS_LEFT_QUARTER_TURN_1_TILE_FRONT_SE_SW);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 28, 28, height }, { 1, 1, 7 } });
 
-            PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
-            PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
     }
 
     WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+        session, supportType.wooden, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
@@ -531,7 +465,7 @@ static void PaintRiverRapidsTrackLeftQuarterTurn1Tile(
 /** rct2: 0x00757700 */
 static void PaintRiverRapidsTrackRightQuarterTurn1Tile(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -544,8 +478,8 @@ static void PaintRiverRapidsTrackRightQuarterTurn1Tile(
             imageId = session.TrackColours.WithIndex(SPR_RIVER_RAPIDS_RIGHT_QUARTER_TURN_1_TILE_FRONT_SW_SE);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 28, 28, height + 2 }, { 1, 1, 7 } });
 
-            PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
-            PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
 
         case 1:
@@ -555,7 +489,7 @@ static void PaintRiverRapidsTrackRightQuarterTurn1Tile(
             imageId = session.TrackColours.WithIndex(SPR_RIVER_RAPIDS_RIGHT_QUARTER_TURN_1_TILE_FRONT_SE_NE);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 28, 27, height }, { 2, 1, 7 } });
 
-            PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
+            PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
 
         case 2:
@@ -576,12 +510,12 @@ static void PaintRiverRapidsTrackRightQuarterTurn1Tile(
             imageId = session.TrackColours.WithIndex(SPR_RIVER_RAPIDS_RIGHT_QUARTER_TURN_1_TILE_FRONT_NW_SW);
             PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 27, 2, height }, { 1, 28, 7 } });
 
-            PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+            PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
             break;
     }
 
     WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NwSe, direction, height, session.SupportColours);
+        session, supportType.wooden, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
@@ -589,7 +523,7 @@ static void PaintRiverRapidsTrackRightQuarterTurn1Tile(
 /** rct2: 0x00757710 */
 static void PaintRiverRapidsTrackWaterfall(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -641,16 +575,16 @@ static void PaintRiverRapidsTrackWaterfall(
         PaintAddImageAsChild(session, imageId, { 0, 0, height }, bb);
     }
 
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+    DrawSupportForSequenceA<TrackElemType::Waterfall>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::InvertedSquare);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Tall);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::InvertedSquare);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Tall);
     }
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
@@ -660,7 +594,7 @@ static void PaintRiverRapidsTrackWaterfall(
 /** rct2: 0x00757720 */
 static void PaintRiverRapidsTrackRapids(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -683,16 +617,16 @@ static void PaintRiverRapidsTrackRapids(
         PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 27, height + 17 }, { 32, 1, 11 } });
     }
 
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+    DrawSupportForSequenceA<TrackElemType::Rapids>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
@@ -702,9 +636,9 @@ static void PaintRiverRapidsTrackRapids(
 /** rct2: 0x00757740 */
 static void PaintRiverRapidsTrackOnRidePhoto(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintRiverRapidsTrackFlat(session, ride, trackSequence, direction, height, trackElement);
+    PaintRiverRapidsTrackFlat(session, ride, trackSequence, direction, height, trackElement, supportType);
     TrackPaintUtilOnridePhotoPaint(session, direction, height + 13, trackElement);
     PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
@@ -712,7 +646,7 @@ static void PaintRiverRapidsTrackOnRidePhoto(
 /** rct2: 0x */
 static void PaintRiverRapidsTrackWhirlpool(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -753,16 +687,16 @@ static void PaintRiverRapidsTrackWhirlpool(
         PaintAddImageAsParent(session, imageId, { 0, 0, height }, bb);
     }
 
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+    DrawSupportForSequenceA<TrackElemType::Whirlpool>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRight(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelLeft(session, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
@@ -772,7 +706,7 @@ static void PaintRiverRapidsTrackWhirlpool(
 /**
  * rct2: 0x0075745C
  **/
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionRiverRapids(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionRiverRapids(OpenRCT2::TrackElemType trackType)
 {
     switch (trackType)
     {
@@ -814,7 +748,7 @@ TRACK_PAINT_FUNCTION GetTrackPaintFunctionRiverRapids(int32_t trackType)
 
         case TrackElemType::Whirlpool:
             return PaintRiverRapidsTrackWhirlpool;
+        default:
+            return nullptr;
     }
-
-    return nullptr;
 }

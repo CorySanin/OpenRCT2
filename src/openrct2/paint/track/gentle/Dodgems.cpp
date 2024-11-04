@@ -49,7 +49,7 @@ static void PaintDodgemsRoof(PaintSession& session, int32_t height, int32_t offs
 
 static void PaintDodgems(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     uint8_t relativeTrackSequence = kTrackMap4x4[direction][trackSequence];
 
@@ -109,7 +109,7 @@ static void PaintDodgems(
 /**
  * rct2:
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionDodgems(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionDodgems(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::FlatTrack4x4)
     {

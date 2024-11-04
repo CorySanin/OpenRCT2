@@ -101,9 +101,10 @@ namespace OpenRCT2::Platform
                 auto exeDirectory = Path::GetDirectory(exePath);
 
                 // check build and install paths
-                NSArray *dataSearchLocations = @[@"data", @"../share/openrct2"];
+                NSArray* dataSearchLocations = @[ @"data", @"../share/openrct2" ];
 
-                for (NSString *searchLocation in dataSearchLocations) {
+                for (NSString* searchLocation in dataSearchLocations)
+                {
                     path = Path::Combine(exeDirectory, [searchLocation UTF8String]);
                     NSString* nsPath = [NSString stringWithUTF8String:path.c_str()];
                     if ([[NSFileManager defaultManager] fileExistsAtPath:nsPath])
@@ -280,6 +281,16 @@ namespace OpenRCT2::Platform
             }
         }
     }
-}
+
+    std::vector<std::string_view> GetSearchablePathsRCT1()
+    {
+        return {};
+    }
+
+    std::vector<std::string_view> GetSearchablePathsRCT2()
+    {
+        return {};
+    }
+} // namespace OpenRCT2::Platform
 
 #endif

@@ -86,7 +86,7 @@ static void PaintTwistStructure(
 /** rct2: 0x0076D858 */
 static void PaintTwist(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -170,7 +170,7 @@ static void PaintTwist(
 /**
  * rct2: 0x0076D658
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionTwist(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionTwist(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::FlatTrack3x3)
     {

@@ -15,6 +15,7 @@
 #include "../../../ride/TrackPaint.h"
 #include "../../../sprites.h"
 #include "../../../world/Map.h"
+#include "../../../world/tile_element/TrackElement.h"
 #include "../../Paint.h"
 #include "../../support/WoodenSupports.h"
 #include "../../tile_element/Paint.Surface.h"
@@ -54,7 +55,7 @@ enum
  */
 static void MazePaintSetup(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     uint16_t mazeEntry = trackElement.GetMazeEntry();
     mazeEntry = Numerics::rol16(mazeEntry, direction * 4);
@@ -187,7 +188,7 @@ static void MazePaintSetup(
 /**
  * rct2: 0x008A81E8
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionMaze(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionMaze(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::Maze)
     {

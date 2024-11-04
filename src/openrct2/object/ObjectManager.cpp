@@ -472,7 +472,8 @@ private:
         LOG_VERBOSE("%u / %u objects unloaded", numObjectsUnloaded, totalObjectsLoaded);
     }
 
-    template<typename T> void UpdateSceneryGroupIndexes(ObjectType type)
+    template<typename T>
+    void UpdateSceneryGroupIndexes(ObjectType type)
     {
         auto& list = GetObjectList(type);
         for (auto* loadedObject : list)
@@ -538,7 +539,12 @@ private:
                 if (entry.HasValue())
                 {
                     const auto* ori = _objectRepository.FindObject(entry);
-                    if (ori == nullptr && entry.GetType() != ObjectType::ScenarioText)
+                    if (ori == nullptr && entry.GetType() == ObjectType::ScenarioText)
+                    {
+                        continue;
+                    }
+
+                    if (ori == nullptr)
                     {
                         missingObjects.push_back(entry);
                         ReportMissingObject(entry);
@@ -740,11 +746,9 @@ private:
             if (rideObject == nullptr)
                 continue;
 
-            const auto* entry = static_cast<RideObjectEntry*>(rideObject->GetLegacyData());
-            if (entry == nullptr)
-                continue;
+            const auto& entry = rideObject->GetEntry();
 
-            for (auto rideType : entry->ride_type)
+            for (auto rideType : entry.ride_type)
             {
                 if (rideType < _rideTypeToObjectMap.size())
                 {
@@ -763,8 +767,8 @@ private:
 
     void ReportObjectLoadProblem(const RCTObjectEntry* entry)
     {
-        utf8 objName[DAT_NAME_LENGTH + 1] = { 0 };
-        std::copy_n(entry->name, DAT_NAME_LENGTH, objName);
+        utf8 objName[kDatNameLength + 1] = { 0 };
+        std::copy_n(entry->name, kDatNameLength, objName);
         Console::Error::WriteLine("[%s] Object could not be loaded.", objName);
     }
 };

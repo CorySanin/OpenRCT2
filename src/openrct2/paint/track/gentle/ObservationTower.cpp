@@ -13,6 +13,8 @@
 #include "../../../ride/TrackPaint.h"
 #include "../../../ride/Vehicle.h"
 #include "../../../world/Map.h"
+#include "../../../world/tile_element/TileElement.h"
+#include "../../../world/tile_element/TrackElement.h"
 #include "../../Paint.h"
 #include "../../support/WoodenSupports.h"
 #include "../../tile_element/Segment.h"
@@ -33,7 +35,7 @@ enum
 /** rct2: 0x0070DD6C */
 static void PaintObservationTowerBase(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -116,7 +118,7 @@ static void PaintObservationTowerBase(
 /** rct2: 0x0070DD7C */
 static void PaintObservationTowerSection(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence == 1)
     {
@@ -142,7 +144,7 @@ static void PaintObservationTowerSection(
 /**
  * rct2: 0x0070DC5C
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionObservationTower(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionObservationTower(OpenRCT2::TrackElemType trackType)
 {
     switch (trackType)
     {
@@ -151,7 +153,7 @@ TRACK_PAINT_FUNCTION GetTrackPaintFunctionObservationTower(int32_t trackType)
 
         case TrackElemType::TowerSection:
             return PaintObservationTowerSection;
+        default:
+            return nullptr;
     }
-
-    return nullptr;
 }

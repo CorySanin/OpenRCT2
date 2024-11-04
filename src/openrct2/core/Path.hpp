@@ -9,15 +9,14 @@
 
 #pragma once
 
-#include "../core/String.hpp"
-
-#include <string>
+#include "../core/StringTypes.h"
 
 namespace OpenRCT2::Path
 {
     [[nodiscard]] u8string Combine(u8string_view a, u8string_view b);
 
-    template<typename... Args> static u8string Combine(u8string_view a, u8string_view b, Args... args)
+    template<typename... Args>
+    static u8string Combine(u8string_view a, u8string_view b, Args... args)
     {
         return Combine(a, Combine(b, args...));
     }

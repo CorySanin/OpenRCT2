@@ -23,7 +23,6 @@
 #    include "../localisation/Localisation.Date.h"
 #    include "../management/Finance.h"
 #    include "../platform/Platform.h"
-#    include "../util/Util.h"
 #    include "../world/Map.h"
 #    include "../world/Park.h"
 #    include "Socket.h"
@@ -46,8 +45,8 @@ enum class MasterServerStatus
 };
 
 #    ifndef DISABLE_HTTP
-constexpr int32_t MASTER_SERVER_REGISTER_TIME = 120 * 1000; // 2 minutes
-constexpr int32_t MASTER_SERVER_HEARTBEAT_TIME = 60 * 1000; // 1 minute
+constexpr int32_t kMasterServerRegisterTime = 120 * 1000; // 2 minutes
+constexpr int32_t kMasterServerHeartbeatTime = 60 * 1000; // 1 minute
 #    endif
 
 class NetworkServerAdvertiser final : public INetworkServerAdvertiser
@@ -147,7 +146,7 @@ private:
         switch (_status)
         {
             case ADVERTISE_STATUS::UNREGISTERED:
-                if (_lastAdvertiseTime == 0 || Platform::GetTicks() > _lastAdvertiseTime + MASTER_SERVER_REGISTER_TIME)
+                if (_lastAdvertiseTime == 0 || Platform::GetTicks() > _lastAdvertiseTime + kMasterServerRegisterTime)
                 {
                     if (_lastAdvertiseTime == 0)
                     {
@@ -157,7 +156,7 @@ private:
                 }
                 break;
             case ADVERTISE_STATUS::REGISTERED:
-                if (Platform::GetTicks() > _lastHeartbeatTime + MASTER_SERVER_HEARTBEAT_TIME)
+                if (Platform::GetTicks() > _lastHeartbeatTime + kMasterServerHeartbeatTime)
                 {
                     SendHeartbeat();
                 }

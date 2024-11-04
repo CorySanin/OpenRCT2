@@ -87,7 +87,7 @@ static constexpr CommandLineOptionDefinition StandardOptions[]
 #ifdef USE_BREAKPAD
     { CMDLINE_TYPE_SWITCH,  &_silentBreakpad,  NAC, "silent-breakpad",   "make breakpad crash reporting silent"                       },
 #endif // USE_BREAKPAD
-    OptionTableEnd
+    kOptionTableEnd
 };
 
 static exitcode_t HandleNoCommand(CommandLineArgEnumerator * enumerator);
@@ -147,7 +147,7 @@ const CommandLineCommand CommandLine::RootCommands[]
     DefineSubCommand("sprite",          CommandLine::SpriteCommands           ),
     DefineSubCommand("simulate",        CommandLine::SimulateCommands         ),
     DefineSubCommand("parkinfo",        CommandLine::ParkInfoCommands         ),
-    CommandTableEnd
+    kCommandTableEnd
 };
 
 const CommandLineExample CommandLine::RootExamples[]
@@ -161,7 +161,7 @@ const CommandLineExample CommandLine::RootExamples[]
 #ifndef DISABLE_NETWORK
     { "host ./my_park.sv6 --port 11753 --headless",   "run a headless server for a saved park" },
 #endif
-    ExampleTableEnd
+    kExampleTableEnd
 };
 // clang-format on
 
@@ -448,9 +448,8 @@ static void PrintAbout()
 
 static void PrintVersion()
 {
-    char buffer[256];
-    OpenRCT2WriteFullVersionInfo(buffer, sizeof(buffer));
-    Console::WriteLine(buffer);
+    u8string versionInfo = gVersionInfoFull;
+    Console::WriteLine(versionInfo.c_str());
     Console::WriteFormat("%s (%s)", OPENRCT2_PLATFORM, OPENRCT2_ARCHITECTURE);
     Console::WriteLine();
     Console::WriteFormat("Network version: %s", NetworkGetVersion().c_str());
@@ -482,9 +481,8 @@ static void PrintLaunchInformation()
     struct tm* tmInfo;
 
     // Print name and version information
-    OpenRCT2WriteFullVersionInfo(buffer, sizeof(buffer));
-    Console::WriteFormat("%s", buffer);
-    Console::WriteLine();
+    u8string versionInfo = gVersionInfoFull;
+    Console::WriteLine(versionInfo.c_str());
     Console::WriteFormat("%s (%s)", OPENRCT2_PLATFORM, OPENRCT2_ARCHITECTURE);
     Console::WriteLine();
     Console::WriteLine();

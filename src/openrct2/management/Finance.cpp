@@ -185,7 +185,7 @@ void FinancePayRideUpkeep()
 void FinanceResetHistory()
 {
     auto& gameState = GetGameState();
-    for (auto i = 0; i < kFinanceGraphSize; i++)
+    for (auto i = 0; i < kFinanceHistorySize; i++)
     {
         gameState.CashHistory[i] = kMoney64Undefined;
         gameState.WeeklyProfitHistory[i] = kMoney64Undefined;
@@ -324,7 +324,7 @@ void FinanceShiftExpenditureTable()
             std::cbegin(gameState.ExpenditureTable[kExpenditureTableMonthCount - 1]),
             std::cend(gameState.ExpenditureTable[kExpenditureTableMonthCount - 1]), money64{});
 
-        GetGameState().HistoricalProfit += sum;
+        gameState.HistoricalProfit += sum;
     }
 
     // Shift the table

@@ -83,6 +83,7 @@ namespace OpenRCT2::Scripting
             ctx, &ScVehicle::poweredAcceleration_get, &ScVehicle::poweredAcceleration_set, "poweredAcceleration");
         dukglue_register_property(ctx, &ScVehicle::poweredMaxSpeed_get, &ScVehicle::poweredMaxSpeed_set, "poweredMaxSpeed");
         dukglue_register_property(ctx, &ScVehicle::status_get, &ScVehicle::status_set, "status");
+        dukglue_register_property(ctx, &ScVehicle::spin_get, &ScVehicle::spin_set, "spin");
         dukglue_register_property(ctx, &ScVehicle::guests_get, nullptr, "peeps");
         dukglue_register_property(ctx, &ScVehicle::guests_get, nullptr, "guests");
         dukglue_register_property(ctx, &ScVehicle::gForces_get, nullptr, "gForces");
@@ -335,13 +336,15 @@ namespace OpenRCT2::Scripting
         }
     }
 
-    template<uint32_t flag> bool ScVehicle::flag_get() const
+    template<uint32_t flag>
+    bool ScVehicle::flag_get() const
     {
         auto vehicle = GetVehicle();
         return vehicle != nullptr ? vehicle->HasFlag(flag) : false;
     }
 
-    template<uint32_t flag> void ScVehicle::flag_set(bool value)
+    template<uint32_t flag>
+    void ScVehicle::flag_set(bool value)
     {
         ThrowIfGameStateNotMutable();
         auto vehicle = GetVehicle();
@@ -389,7 +392,7 @@ namespace OpenRCT2::Scripting
             dukCoords.Set("y", vehicle->TrackLocation.y);
             dukCoords.Set("z", vehicle->TrackLocation.z);
             dukCoords.Set("direction", vehicle->GetTrackDirection());
-            dukCoords.Set("trackType", vehicle->GetTrackType());
+            dukCoords.Set("trackType", EnumValue(vehicle->GetTrackType()));
             return dukCoords.Take();
         }
         return ToDuk(ctx, nullptr);
@@ -405,7 +408,7 @@ namespace OpenRCT2::Scripting
             auto z = AsOrDefault(value["z"], 0);
             vehicle->TrackLocation = CoordsXYZ(x, y, z);
             vehicle->SetTrackDirection(AsOrDefault(value["direction"], 0));
-            vehicle->SetTrackType(AsOrDefault(value["trackType"], 0));
+            vehicle->SetTrackType(static_cast<TrackElemType>(AsOrDefault(value["trackType"], 0)));
         }
     }
 
@@ -473,6 +476,25 @@ namespace OpenRCT2::Scripting
         if (vehicle != nullptr)
         {
             vehicle->status = VehicleStatusMap[value];
+        }
+    }
+
+    uint8_t ScVehicle::spin_get() const
+    {
+        auto vehicle = GetVehicle();
+        if (vehicle != nullptr)
+        {
+            return vehicle->spin_sprite;
+        }
+        return 0;
+    }
+    void ScVehicle::spin_set(const uint8_t value)
+    {
+        ThrowIfGameStateNotMutable();
+        auto vehicle = GetVehicle();
+        if (vehicle != nullptr)
+        {
+            vehicle->spin_sprite = value;
         }
     }
 

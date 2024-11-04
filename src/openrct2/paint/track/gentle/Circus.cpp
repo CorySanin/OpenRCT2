@@ -18,6 +18,7 @@
 #include "../../support/WoodenSupports.h"
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
+#include "../../track/Support.h"
 
 using namespace OpenRCT2;
 
@@ -52,7 +53,7 @@ static void PaintCircusTent(
 
 static void PaintCircus(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -120,7 +121,7 @@ static void PaintCircus(
     PaintUtilSetGeneralSupportHeight(session, height + 128);
 }
 
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionCircus(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionCircus(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::FlatTrack3x3)
     {

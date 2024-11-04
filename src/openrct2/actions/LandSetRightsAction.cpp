@@ -23,8 +23,9 @@
 #include "../windows/Intent.h"
 #include "../world/Park.h"
 #include "../world/Scenery.h"
-#include "../world/Surface.h"
 #include "../world/TileElementsView.h"
+#include "../world/tile_element/EntranceElement.h"
+#include "../world/tile_element/SurfaceElement.h"
 
 using namespace OpenRCT2;
 
@@ -185,7 +186,32 @@ GameActions::Result LandSetRightsAction::MapBuyLandRightsForTile(const CoordsXY&
             }
 
             auto& gameState = GetGameState();
-            res.Cost = gameState.LandPrice;
+            const uint8_t currentOwnership = surfaceElement->GetOwnership();
+
+            // Are land rights or construction rights currently owned?
+            if (!(currentOwnership & (OWNERSHIP_OWNED | OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED)))
+            {
+                // Buying land
+                if (!(currentOwnership & OWNERSHIP_OWNED) && (_ownership & OWNERSHIP_OWNED))
+                    res.Cost = gameState.LandPrice;
+
+                // Buying construction rights
+                if (!(currentOwnership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED)
+                    && (_ownership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED))
+                    res.Cost = gameState.ConstructionRightsPrice;
+            }
+            else
+            {
+                // Selling land
+                if ((currentOwnership & OWNERSHIP_OWNED) && !(_ownership & OWNERSHIP_OWNED))
+                    res.Cost = -gameState.LandPrice;
+
+                // Selling construction rights
+                if ((currentOwnership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED)
+                    && !(_ownership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED))
+                    res.Cost = -gameState.ConstructionRightsPrice;
+            }
+
             if (isExecuting)
             {
                 if (_ownership != OWNERSHIP_UNOWNED)

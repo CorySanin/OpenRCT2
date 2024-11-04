@@ -183,7 +183,7 @@ static void PaintTopSpinVehicle(
 
 static void PaintTopSpin(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -250,7 +250,7 @@ static void PaintTopSpin(
     PaintUtilSetGeneralSupportHeight(session, height + 112);
 }
 
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionTopspin(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionTopspin(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::FlatTrack3x3)
     {

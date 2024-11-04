@@ -14,8 +14,10 @@
 #include "../../../ride/TrackPaint.h"
 #include "../../../sprites.h"
 #include "../../../world/Map.h"
+#include "../../../world/tile_element/TrackElement.h"
 #include "../../Paint.h"
 #include "../../support/WoodenSupports.h"
+#include "../../support/WoodenSupports.hpp"
 #include "../../tile_element/Paint.TileElement.h"
 #include "../../tile_element/Segment.h"
 #include "../../track/Segment.h"
@@ -24,7 +26,7 @@
 
 using namespace OpenRCT2;
 
-static constexpr WoodenSupportType kSupportType = WoodenSupportType::Truss;
+static constexpr TunnelGroup kTunnelGroup = TunnelGroup::Square;
 
 enum
 {
@@ -236,7 +238,7 @@ enum
 
 static void ClassicWoodenRCTrackFlatToLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
@@ -259,16 +261,16 @@ static void ClassicWoodenRCTrackFlatToLeftBank(
     };
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
-    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+    DrawSupportForSequenceA<TrackElemType::FlatToLeftBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
+    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void ClassicWoodenRCTrackFlatToRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
         { {
@@ -293,30 +295,30 @@ static void ClassicWoodenRCTrackFlatToRightBank(
     };
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
-    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+    DrawSupportForSequenceA<TrackElemType::FlatToRightBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
+    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void ClassicWoodenRCTrackLeftBankToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackFlatToRightBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackFlatToRightBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackRightBankToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackFlatToLeftBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackFlatToLeftBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
         { {
@@ -340,23 +342,23 @@ static void ClassicWoodenRCTrackLeftBank(
         }
     };
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
-    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+    DrawSupportForSequenceA<TrackElemType::LeftBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
+    PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void ClassicWoodenRCTrackRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackLeftBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackLeftBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackLeftBankTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
         { {
@@ -381,16 +383,15 @@ static void ClassicWoodenRCTrackLeftBankTo25DegUp(
     };
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-        WoodenSupportTransitionType::FlatToUp25Deg);
+    DrawSupportForSequenceA<TrackElemType::LeftBankToUp25>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareSlopeEnd);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 48);
@@ -398,7 +399,7 @@ static void ClassicWoodenRCTrackLeftBankTo25DegUp(
 
 static void ClassicWoodenRCTrackRightBankTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
         { {
@@ -424,16 +425,15 @@ static void ClassicWoodenRCTrackRightBankTo25DegUp(
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-        WoodenSupportTransitionType::FlatToUp25Deg);
+    DrawSupportForSequenceA<TrackElemType::RightBankToUp25>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareSlopeEnd);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::SlopeEnd);
     }
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 48);
@@ -441,7 +441,7 @@ static void ClassicWoodenRCTrackRightBankTo25DegUp(
 
 static void ClassicWoodenRCTrack25DegUpToLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
         { {
@@ -467,16 +467,15 @@ static void ClassicWoodenRCTrack25DegUpToLeftBank(
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-        WoodenSupportTransitionType::Up25DegToFlat);
+    DrawSupportForSequenceA<TrackElemType::Up25ToLeftBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, TunnelType::SquareFlatTo25Deg);
+        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::FlatTo25Deg);
     }
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 40);
@@ -484,7 +483,7 @@ static void ClassicWoodenRCTrack25DegUpToLeftBank(
 
 static void ClassicWoodenRCTrack25DegUpToRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][1][2] = {
         { {
@@ -510,16 +509,15 @@ static void ClassicWoodenRCTrack25DegUpToRightBank(
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    WoodenASupportsPaintSetupRotated(
-        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours,
-        WoodenSupportTransitionType::Up25DegToFlat);
+    DrawSupportForSequenceA<TrackElemType::Up25ToRightBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::Flat);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, TunnelType::SquareFlatTo25Deg);
+        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::FlatTo25Deg);
     }
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + 40);
@@ -527,35 +525,37 @@ static void ClassicWoodenRCTrack25DegUpToRightBank(
 
 static void ClassicWoodenRCTrackLeftBankTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrack25DegUpToRightBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrack25DegUpToRightBank(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackRightBankTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrack25DegUpToLeftBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrack25DegUpToLeftBank(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrack25DegDownToLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackRightBankTo25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackRightBankTo25DegUp(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrack25DegDownToRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackLeftBankTo25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackLeftBankTo25DegUp(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackBankedRightQuarterTurn5(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][7][2] = {
         {
@@ -769,16 +769,6 @@ static void ClassicWoodenRCTrackBankedRightQuarterTurn5(
             },
         },
     };
-    static constexpr WoodenSupportSubType supportType[kNumOrthogonalDirections][7] = {
-        { WoodenSupportSubType::NeSw, WoodenSupportSubType::Null, WoodenSupportSubType::Corner2, WoodenSupportSubType::Corner0,
-          WoodenSupportSubType::Null, WoodenSupportSubType::Corner2, WoodenSupportSubType::NwSe },
-        { WoodenSupportSubType::NwSe, WoodenSupportSubType::Null, WoodenSupportSubType::Corner3, WoodenSupportSubType::Corner1,
-          WoodenSupportSubType::Null, WoodenSupportSubType::Corner3, WoodenSupportSubType::NeSw },
-        { WoodenSupportSubType::NeSw, WoodenSupportSubType::Null, WoodenSupportSubType::Corner0, WoodenSupportSubType::Corner2,
-          WoodenSupportSubType::Null, WoodenSupportSubType::Corner0, WoodenSupportSubType::NwSe },
-        { WoodenSupportSubType::NwSe, WoodenSupportSubType::Null, WoodenSupportSubType::Corner1, WoodenSupportSubType::Corner3,
-          WoodenSupportSubType::Null, WoodenSupportSubType::Corner1, WoodenSupportSubType::NeSw },
-    };
 
     static constexpr int blockedSegments[7] = {
         kSegmentsAll,
@@ -798,27 +788,26 @@ static void ClassicWoodenRCTrackBankedRightQuarterTurn5(
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    TrackPaintUtilRightQuarterTurn5TilesTunnel(session, height, direction, trackSequence, TunnelType::SquareFlat);
+    TrackPaintUtilRightQuarterTurn5TilesTunnel(session, kTunnelGroup, TunnelSubType::Flat, height, direction, trackSequence);
 
-    if (supportType[direction][trackSequence] != WoodenSupportSubType::Null)
-    {
-        WoodenASupportsPaintSetup(session, kSupportType, supportType[direction][trackSequence], height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::BankedRightQuarterTurn5Tiles>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments[trackSequence], direction), 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void ClassicWoodenRCTrackBankedLeftQuarterTurn5(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kMapLeftQuarterTurn5TilesToRightQuarterTurn5Tiles[trackSequence];
-    ClassicWoodenRCTrackBankedRightQuarterTurn5(session, ride, trackSequence, (direction + 1) & 3, height, trackElement);
+    ClassicWoodenRCTrackBankedRightQuarterTurn5(
+        session, ride, trackSequence, (direction + 1) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackRightQuarterTurn3Bank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -960,13 +949,10 @@ static void ClassicWoodenRCTrackRightQuarterTurn3Bank(
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
-    TrackPaintUtilRightQuarterTurn3TilesTunnel(session, height, direction, trackSequence, TunnelType::SquareFlat);
+    TrackPaintUtilRightQuarterTurn3TilesTunnel(session, kTunnelGroup, TunnelSubType::Flat, height, direction, trackSequence);
 
-    if (trackSequence == 0 || trackSequence == 3)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::RightBankedQuarterTurn3Tiles>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments[trackSequence], direction), 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
@@ -974,15 +960,16 @@ static void ClassicWoodenRCTrackRightQuarterTurn3Bank(
 
 static void ClassicWoodenRCTrackLeftQuarterTurn3Bank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kMapLeftQuarterTurn3TilesToRightQuarterTurn3Tiles[trackSequence];
-    ClassicWoodenRCTrackRightQuarterTurn3Bank(session, ride, trackSequence, (direction + 1) & 3, height, trackElement);
+    ClassicWoodenRCTrackRightQuarterTurn3Bank(
+        session, ride, trackSequence, (direction + 1) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackLeftEighthBankToDiag(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][5][2] = {
         {
@@ -1147,30 +1134,17 @@ static void ClassicWoodenRCTrackLeftEighthBankToDiag(
         },
     };
 
-    static constexpr WoodenSupportSubType supportType[kNumOrthogonalDirections][5] = {
-        { WoodenSupportSubType::NeSw, WoodenSupportSubType::NeSw, WoodenSupportSubType::Corner1, WoodenSupportSubType::Corner3,
-          WoodenSupportSubType::Null },
-        { WoodenSupportSubType::NwSe, WoodenSupportSubType::NwSe, WoodenSupportSubType::Corner2, WoodenSupportSubType::Corner0,
-          WoodenSupportSubType::Null },
-        { WoodenSupportSubType::NeSw, WoodenSupportSubType::NeSw, WoodenSupportSubType::Corner3, WoodenSupportSubType::Corner1,
-          WoodenSupportSubType::Null },
-        { WoodenSupportSubType::NwSe, WoodenSupportSubType::NwSe, WoodenSupportSubType::Corner0, WoodenSupportSubType::Corner2,
-          WoodenSupportSubType::Null },
-    };
-
     static constexpr int blockedSegments[5] = {
         kSegmentsAll, kSegmentsAll, kSegmentsAll, kSegmentsAll, kSegmentsAll,
     };
 
     if (trackSequence == 0 && (direction == 0 || direction == 3))
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
-    if (supportType[direction][trackSequence] != WoodenSupportSubType::Null)
-    {
-        WoodenASupportsPaintSetup(session, kSupportType, supportType[direction][trackSequence], height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::LeftEighthBankToDiag>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
 
@@ -1180,7 +1154,7 @@ static void ClassicWoodenRCTrackLeftEighthBankToDiag(
 
 static void ClassicWoodenRCTrackRightEighthBankToDiag(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][5][2] = {
         {
@@ -1345,30 +1319,17 @@ static void ClassicWoodenRCTrackRightEighthBankToDiag(
         },
     };
 
-    static constexpr WoodenSupportSubType supportType[kNumOrthogonalDirections][5] = {
-        { WoodenSupportSubType::NeSw, WoodenSupportSubType::NeSw, WoodenSupportSubType::Corner0, WoodenSupportSubType::Corner2,
-          WoodenSupportSubType::Null },
-        { WoodenSupportSubType::NwSe, WoodenSupportSubType::NwSe, WoodenSupportSubType::Corner1, WoodenSupportSubType::Corner3,
-          WoodenSupportSubType::Null },
-        { WoodenSupportSubType::NeSw, WoodenSupportSubType::NeSw, WoodenSupportSubType::Corner2, WoodenSupportSubType::Corner0,
-          WoodenSupportSubType::Null },
-        { WoodenSupportSubType::NwSe, WoodenSupportSubType::NwSe, WoodenSupportSubType::Corner3, WoodenSupportSubType::Corner1,
-          WoodenSupportSubType::Null },
-    };
-
     static constexpr int blockedSegments[5] = {
         kSegmentsAll, kSegmentsAll, kSegmentsAll, kSegmentsAll, kSegmentsAll,
     };
 
     if (trackSequence == 0 && (direction == 0 || direction == 3))
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+        PaintUtilPushTunnelRotated(session, direction, height, kTunnelGroup, TunnelSubType::Flat);
     }
 
-    if (supportType[direction][trackSequence] != WoodenSupportSubType::Null)
-    {
-        WoodenASupportsPaintSetup(session, kSupportType, supportType[direction][trackSequence], height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::RightEighthBankToDiag>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
 
@@ -1378,23 +1339,25 @@ static void ClassicWoodenRCTrackRightEighthBankToDiag(
 
 static void ClassicWoodenRCTrackLeftEighthBankToOrthogonal(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = mapLeftEighthTurnToOrthogonal[trackSequence];
-    ClassicWoodenRCTrackRightEighthBankToDiag(session, ride, trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackRightEighthBankToDiag(
+        session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackRightEighthBankToOrthogonal(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = mapLeftEighthTurnToOrthogonal[trackSequence];
-    ClassicWoodenRCTrackLeftEighthBankToDiag(session, ride, trackSequence, (direction + 3) & 3, height, trackElement);
+    ClassicWoodenRCTrackLeftEighthBankToDiag(
+        session, ride, trackSequence, (direction + 3) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiagFlatToLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -1489,16 +1452,8 @@ static void ClassicWoodenRCTrackDiagFlatToLeftBank(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagFlatToLeftBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -1508,7 +1463,7 @@ static void ClassicWoodenRCTrackDiagFlatToLeftBank(
 
 static void ClassicWoodenRCTrackDiagFlatToRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -1603,16 +1558,8 @@ static void ClassicWoodenRCTrackDiagFlatToRightBank(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagFlatToRightBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -1622,21 +1569,23 @@ static void ClassicWoodenRCTrackDiagFlatToRightBank(
 
 static void ClassicWoodenRCTrackDiagLeftBankToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiagFlatToRightBank(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiagFlatToRightBank(
+        session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiagRightBankToFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiagFlatToLeftBank(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiagFlatToLeftBank(
+        session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiagLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -1719,16 +1668,8 @@ static void ClassicWoodenRCTrackDiagLeftBank(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagLeftBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -1738,14 +1679,14 @@ static void ClassicWoodenRCTrackDiagLeftBank(
 
 static void ClassicWoodenRCTrackDiagRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiagLeftBank(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiagLeftBank(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiagLeftBankTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -1840,16 +1781,8 @@ static void ClassicWoodenRCTrackDiagLeftBankTo25DegUp(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagLeftBankToUp25>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -1859,7 +1792,7 @@ static void ClassicWoodenRCTrackDiagLeftBankTo25DegUp(
 
 static void ClassicWoodenRCTrackDiagRightBankTo25DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -1954,16 +1887,8 @@ static void ClassicWoodenRCTrackDiagRightBankTo25DegUp(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagRightBankToUp25>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -1973,7 +1898,7 @@ static void ClassicWoodenRCTrackDiagRightBankTo25DegUp(
 
 static void ClassicWoodenRCTrackDiag25DegUpToLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -2068,16 +1993,8 @@ static void ClassicWoodenRCTrackDiag25DegUpToLeftBank(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagUp25ToLeftBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -2087,7 +2004,7 @@ static void ClassicWoodenRCTrackDiag25DegUpToLeftBank(
 
 static void ClassicWoodenRCTrackDiag25DegUpToRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     static constexpr SpriteBoundBox2 imageIds[4][4][2] = {
         {
@@ -2182,16 +2099,8 @@ static void ClassicWoodenRCTrackDiag25DegUpToRightBank(
         },
     };
 
-    if (trackSequence == 1)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner0, direction, height, session.SupportColours);
-    }
-    else if (trackSequence == 2)
-    {
-        WoodenASupportsPaintSetupRotated(
-            session, kSupportType, WoodenSupportSubType::Corner2, direction, height, session.SupportColours);
-    }
+    DrawSupportForSequenceA<TrackElemType::DiagUp25ToRightBank>(
+        session, supportType.wooden, trackSequence, direction, height, session.SupportColours);
 
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][0], height);
     WoodenRCTrackPaintBb<true>(session, &imageIds[direction][trackSequence][1], height);
@@ -2201,36 +2110,40 @@ static void ClassicWoodenRCTrackDiag25DegUpToRightBank(
 
 static void ClassicWoodenRCTrackDiagLeftBankTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiag25DegUpToRightBank(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiag25DegUpToRightBank(
+        session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiagRightBankTo25DegDown(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiag25DegUpToLeftBank(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiag25DegUpToLeftBank(
+        session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiag25DegDownToLeftBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiagRightBankTo25DegUp(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiagRightBankTo25DegUp(
+        session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 static void ClassicWoodenRCTrackDiag25DegDownToRightBank(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, Direction direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    ClassicWoodenRCTrackDiagLeftBankTo25DegUp(session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement);
+    ClassicWoodenRCTrackDiagLeftBankTo25DegUp(
+        session, ride, 3 - trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
 // Stylistically, this coaster is _very_ similar to the regular Wooden Roller Coaster.
 // The only difference is to which parts the colours are applied, and the degree of the banking.
 // As such, all non-banked pieces are simply drawn as regular wooden roller coaster pieces with a different paint scheme.
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionClassicWoodenRC(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionClassicWoodenRC(OpenRCT2::TrackElemType trackType)
 {
     if (!IsCsgLoaded())
     {
@@ -2311,7 +2224,7 @@ TRACK_PAINT_FUNCTION GetTrackPaintFunctionClassicWoodenRC(int32_t trackType)
             return ClassicWoodenRCTrackDiagLeftBank;
         case TrackElemType::DiagRightBank:
             return ClassicWoodenRCTrackDiagRightBank;
+        default:
+            return GetTrackPaintFunctionClassicWoodenRCFallback(trackType);
     }
-
-    return GetTrackPaintFunctionClassicWoodenRCFallback(trackType);
 }

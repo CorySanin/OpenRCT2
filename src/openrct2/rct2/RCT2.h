@@ -30,7 +30,7 @@ namespace OpenRCT2::RCT2
 
     // clang-format off
     constexpr uint16_t RCT2_OBJECT_ENTRY_COUNT =
-        Limits::MaxRideObjects +
+        Limits::kMaxRideObjects +
         Limits::kMaxSmallSceneryObjects +
         Limits::kMaxLargeSceneryObjects +
         Limits::kMaxWallSceneryObjects +
@@ -46,7 +46,7 @@ namespace OpenRCT2::RCT2
 
     // clang-format off
     constexpr int32_t RCT2ObjectEntryGroupCounts[] = {
-        Limits::MaxRideObjects,
+        Limits::kMaxRideObjects,
         Limits::kMaxSmallSceneryObjects,
         Limits::kMaxLargeSceneryObjects,
         Limits::kMaxWallSceneryObjects,
@@ -137,8 +137,7 @@ namespace OpenRCT2::RCT2
         // bit 7: whirlpool
         uint8_t SpecialTrackElements; // 0x0D5
         uint8_t Pad0D6[2];            // 0x0D6
-        // Divide this value by 29127 to get the human-readable max speed
-        // (in RCT2, display_speed = (max_speed * 9) >> 18)
+        // Use ToHumanReadableSpeed if converting to display
         int32_t MaxSpeed;                            // 0x0D8
         int32_t AverageSpeed;                        // 0x0DC
         uint8_t CurrentTestSegment;                  // 0x0E0
@@ -279,8 +278,6 @@ namespace OpenRCT2::RCT2
 
         uint8_t GetMinCarsPerTrain() const;
         uint8_t GetMaxCarsPerTrain() const;
-        void SetMinCarsPerTrain(uint8_t newValue);
-        void SetMaxCarsPerTrain(uint8_t newValue);
     };
     static_assert(sizeof(Ride) == 0x260);
 
@@ -507,19 +504,19 @@ namespace OpenRCT2::RCT2
         uint8_t SeatRotation;       // 0xD8
         uint8_t TargetSeatRotation; // 0xD9
 
-        uint16_t GetTrackType() const
+        OpenRCT2::RCT12::TrackElemType GetTrackType() const
         {
-            return TrackTypeAndDirection >> 2;
+            return static_cast<OpenRCT2::RCT12::TrackElemType>(TrackTypeAndDirection >> 2);
         }
         uint8_t GetTrackDirection() const
         {
             return TrackTypeAndDirection & RCT12VehicleTrackDirectionMask;
         }
-        void SetTrackType(uint16_t trackType)
+        void SetTrackType(OpenRCT2::RCT12::TrackElemType trackType)
         {
             // set the upper 14 bits to 0
             TrackTypeAndDirection &= ~RCT12VehicleTrackTypeMask;
-            TrackTypeAndDirection |= trackType << 2;
+            TrackTypeAndDirection |= EnumValue(trackType) << 2;
         }
         void SetTrackDirection(uint8_t trackDirection)
         {
@@ -541,7 +538,7 @@ namespace OpenRCT2::RCT2
         uint8_t OutsideOfPark;  // 0x2A
         uint8_t State;          // 0x2B
         uint8_t SubState;       // 0x2C
-        uint8_t SpriteType;     // 0x2D
+        uint8_t AnimationGroup; // 0x2D
         uint8_t PeepType;       // 0x2E
         union
         {
@@ -592,13 +589,13 @@ namespace OpenRCT2::RCT2
                 uint8_t StandingFlags; // 0x6C
             };
         };
-        uint8_t SpecialSprite;           // 0x6D
-        uint8_t ActionSpriteType;        // 0x6E
-        uint8_t NextActionSpriteType;    // 0x6F
-        uint8_t ActionSpriteImageOffset; // 0x70
-        uint8_t Action;                  // 0x71
-        uint8_t ActionFrame;             // 0x72
-        uint8_t StepProgress;            // 0x73
+        uint8_t SpecialSprite;          // 0x6D
+        uint8_t AnimationType;          // 0x6E
+        uint8_t NextAnimationType;      // 0x6F
+        uint8_t AnimationImageIdOffset; // 0x70
+        uint8_t Action;                 // 0x71
+        uint8_t AnimationFrameNum;      // 0x72
+        uint8_t StepProgress;           // 0x73
         union
         {
             uint16_t MechanicTimeSinceCall;
@@ -612,17 +609,17 @@ namespace OpenRCT2::RCT2
             uint8_t Direction;
         };
         RCT12RideId InteractionRideIndex;
-        uint16_t TimeInQueue;                               // 0x7A
-        uint8_t RidesBeenOn[32];                            // 0x7C
-        uint32_t Id;                                        // 0x9C
-        money32 CashInPocket;                               // 0xA0
-        money32 CashSpent;                                  // 0xA4
-        int32_t ParkEntryTime;                              // 0xA8
-        int8_t RejoinQueueTimeout;                          // 0xAC
-        RCT12RideId PreviousRide;                           // 0xAD
-        uint16_t PreviousRideTimeOut;                       // 0xAE
-        RCT12PeepThought Thoughts[Limits::MaxPeepThoughts]; // 0xB0
-        uint8_t PathCheckOptimisation;                      // 0xC4
+        uint16_t TimeInQueue;                                // 0x7A
+        uint8_t RidesBeenOn[32];                             // 0x7C
+        uint32_t Id;                                         // 0x9C
+        money32 CashInPocket;                                // 0xA0
+        money32 CashSpent;                                   // 0xA4
+        int32_t ParkEntryTime;                               // 0xA8
+        int8_t RejoinQueueTimeout;                           // 0xAC
+        RCT12RideId PreviousRide;                            // 0xAD
+        uint16_t PreviousRideTimeOut;                        // 0xAE
+        RCT12PeepThought Thoughts[Limits::kMaxPeepThoughts]; // 0xB0
+        uint8_t PathCheckOptimisation;                       // 0xC4
         union
         {
             uint8_t StaffId;                  // 0xC5
@@ -729,7 +726,7 @@ namespace OpenRCT2::RCT2
         uint16_t ProximityStartZ;
         uint8_t CurrentRide;
         uint8_t State;
-        uint8_t ProximityTrackType;
+        OpenRCT2::RCT12::TrackElemType ProximityTrackType;
         uint8_t ProximityBaseHeight;
         uint16_t ProximityTotal;
         uint16_t ProximityScores[26];
@@ -790,7 +787,7 @@ namespace OpenRCT2::RCT2
             RCTObjectEntry Objects[RCT2_OBJECT_ENTRY_COUNT];
             struct
             {
-                RCTObjectEntry RideObjects[Limits::MaxRideObjects];
+                RCTObjectEntry RideObjects[Limits::kMaxRideObjects];
                 RCTObjectEntry SceneryObjects[Limits::kMaxSmallSceneryObjects];
                 RCTObjectEntry LargeSceneryObjects[Limits::kMaxLargeSceneryObjects];
                 RCTObjectEntry WallSceneryObjects[Limits::kMaxWallSceneryObjects];
@@ -845,7 +842,7 @@ namespace OpenRCT2::RCT2
         uint16_t GuestsHeadingForPark;
 
         // Ignored in scenario
-        money32 ExpenditureTable[Limits::ExpenditureTableMonthCount][Limits::ExpenditureTypeCount];
+        money32 ExpenditureTable[Limits::kExpenditureTableMonthCount][Limits::kExpenditureTypeCount];
 
         // SC6[8]
         uint16_t LastGuestsInPark;
@@ -862,7 +859,7 @@ namespace OpenRCT2::RCT2
 
         // Ignored in scenario
         uint8_t ParkRatingHistory[kParkRatingHistorySize];
-        uint8_t GuestsInParkHistory[32];
+        uint8_t GuestsInParkHistory[kGuestsInParkHistorySize];
 
         // SC6[10]
         uint8_t ActiveResearchTypes;
@@ -891,7 +888,7 @@ namespace OpenRCT2::RCT2
         uint8_t CampaignRideIndex[22];
 
         // Ignored in scenario
-        money32 BalanceHistory[Limits::FinanceGraphSize];
+        money32 BalanceHistory[Limits::kFinanceGraphSize];
 
         // SC6[11]
         money32 CurrentExpenditure;
@@ -901,13 +898,13 @@ namespace OpenRCT2::RCT2
         uint8_t Pad0135833A[2];
 
         // Ignored in scenario
-        money32 WeeklyProfitHistory[Limits::FinanceGraphSize];
+        money32 WeeklyProfitHistory[Limits::kFinanceGraphSize];
 
         // SC6[12]
         money32 ParkValue;
 
         // Ignored in scenario
-        money32 ParkValueHistory[Limits::FinanceGraphSize];
+        money32 ParkValueHistory[Limits::kFinanceGraphSize];
 
         // SC6[13]
         money32 CompletedCompanyValue;
@@ -957,7 +954,7 @@ namespace OpenRCT2::RCT2
         char ScenarioFilename[256];
         uint8_t SavedExpansionPackNames[3256];
         RCT12Banner Banners[Limits::kMaxBanners];
-        char CustomStrings[Limits::MaxUserStrings][Limits::MaxUserStringLength];
+        char CustomStrings[Limits::kMaxUserStrings][Limits::kMaxUserStringLength];
         uint32_t GameTicks1;
         Ride Rides[Limits::kMaxRidesInPark];
         uint16_t SavedAge; // unused
@@ -973,8 +970,8 @@ namespace OpenRCT2::RCT2
         RCT12RideMeasurement RideMeasurements[8];
         uint32_t NextGuestIndex;
         uint16_t GrassAndSceneryTilepos;
-        uint32_t PatrolAreas[(Limits::kMaxStaff + Limits::StaffTypeCount) * Limits::PatrolAreaSize];
-        StaffMode StaffModes[Limits::kMaxStaff + Limits::StaffTypeCount];
+        uint32_t PatrolAreas[(Limits::kMaxStaff + Limits::kStaffTypeCount) * Limits::kPatrolAreaSize];
+        StaffMode StaffModes[Limits::kMaxStaff + Limits::kStaffTypeCount];
         uint8_t Pad13CA73E;
         uint8_t Pad13CA73F;
         uint8_t Byte13CA740;
@@ -1014,11 +1011,21 @@ namespace OpenRCT2::RCT2
 #pragma pack(pop)
 
     ObjectEntryIndex RCT2RideTypeToOpenRCT2RideType(uint8_t rct2RideType, const RideObjectEntry& rideEntry);
-    bool RCT2TrackTypeIsBooster(ride_type_t rideType, uint16_t trackType);
     bool RCT2RideTypeNeedsConversion(uint8_t rct2RideType);
     uint8_t OpenRCT2RideTypeToRCT2RideType(ObjectEntryIndex openrct2Type);
-    track_type_t RCT2TrackTypeToOpenRCT2(RCT12TrackType origTrackType, ride_type_t rideType, bool convertFlat);
-    RCT12TrackType OpenRCT2TrackTypeToRCT2(track_type_t origTrackType);
+
+    enum class OriginalRideClass
+    {
+        Regular,
+        WildMouse,
+        FlatRide,
+    };
+
+    OpenRCT2::TrackElemType RCT2TrackTypeToOpenRCT2(
+        OpenRCT2::RCT12::TrackElemType origTrackType, ride_type_t rideType, bool isFlatRide);
+    OpenRCT2::TrackElemType RCT2TrackTypeToOpenRCT2(
+        OpenRCT2::RCT12::TrackElemType origTrackType, OriginalRideClass originalClass);
+    OpenRCT2::RCT12::TrackElemType OpenRCT2TrackTypeToRCT2(OpenRCT2::TrackElemType origTrackType);
 
     struct FootpathMapping
     {

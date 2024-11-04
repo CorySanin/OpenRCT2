@@ -13,6 +13,7 @@
 
 #    include "../interface/Viewport.h"
 
+#    include <openrct2-ui/UiContext.h>
 #    include <openrct2-ui/input/ShortcutManager.h>
 #    include <openrct2/Input.h>
 #    include <openrct2/world/Map.h>
@@ -81,7 +82,8 @@ namespace OpenRCT2::Scripting
         { "banner", ViewportInteractionItem::Banner },
     });
 
-    template<> DukValue ToDuk(duk_context* ctx, const CursorID& cursorId)
+    template<>
+    DukValue ToDuk(duk_context* ctx, const CursorID& cursorId)
     {
         auto value = EnumValue(cursorId);
         if (value < std::size(CursorNames))
@@ -93,7 +95,8 @@ namespace OpenRCT2::Scripting
         return ToDuk(ctx, undefined);
     }
 
-    template<> CursorID FromDuk(const DukValue& s)
+    template<>
+    CursorID FromDuk(const DukValue& s)
     {
         if (s.type() == DukValue::Type::STRING)
         {
@@ -194,7 +197,7 @@ namespace OpenRCT2::Scripting
             obj.Set("screenCoords", ToDuk(ctx, screenCoords));
             obj.Set("mapCoords", ToDuk(ctx, info.Loc));
 
-            if (info.SpriteType == ViewportInteractionItem::Entity && info.Entity != nullptr)
+            if (info.interactionType == ViewportInteractionItem::Entity && info.Entity != nullptr)
             {
                 obj.Set("entityId", info.Entity->Id.ToUnderlying());
             }

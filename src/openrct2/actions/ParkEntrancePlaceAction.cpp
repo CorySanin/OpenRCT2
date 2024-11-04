@@ -20,13 +20,16 @@
 #include "../world/Footpath.h"
 #include "../world/MapAnimation.h"
 #include "../world/Park.h"
-#include "../world/Surface.h"
+#include "../world/tile_element/EntranceElement.h"
+#include "../world/tile_element/SurfaceElement.h"
 
 using namespace OpenRCT2;
 
-ParkEntrancePlaceAction::ParkEntrancePlaceAction(const CoordsXYZD& location, ObjectEntryIndex pathType)
+ParkEntrancePlaceAction::ParkEntrancePlaceAction(
+    const CoordsXYZD& location, ObjectEntryIndex pathType, ObjectEntryIndex entranceType)
     : _loc(location)
     , _pathType(pathType)
+    , _entranceType(entranceType)
 {
 }
 
@@ -34,6 +37,7 @@ void ParkEntrancePlaceAction::AcceptParameters(GameActionParameterVisitor& visit
 {
     visitor.Visit(_loc);
     visitor.Visit("footpathSurfaceObject", _pathType);
+    visitor.Visit("entranceObject", _entranceType);
 }
 
 uint16_t ParkEntrancePlaceAction::GetActionFlags() const
@@ -47,6 +51,7 @@ void ParkEntrancePlaceAction::Serialise(DataSerialiser& stream)
 
     stream << DS_TAG(_loc);
     stream << DS_TAG(_pathType);
+    stream << DS_TAG(_entranceType);
 }
 
 GameActions::Result ParkEntrancePlaceAction::Query() const
@@ -156,6 +161,7 @@ GameActions::Result ParkEntrancePlaceAction::Execute() const
         entranceElement->SetDirection(_loc.direction);
         entranceElement->SetSequenceIndex(index);
         entranceElement->SetEntranceType(ENTRANCE_TYPE_PARK_ENTRANCE);
+        entranceElement->setEntryIndex(_entranceType);
         if (gFootpathSelection.LegacyPath == OBJECT_ENTRY_INDEX_NULL)
         {
             entranceElement->SetSurfaceEntryIndex(gFootpathSelection.NormalSurface);

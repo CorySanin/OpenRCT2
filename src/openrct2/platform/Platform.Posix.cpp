@@ -15,7 +15,7 @@
 #    include "../Diagnostic.h"
 #    include "../core/Memory.hpp"
 #    include "../core/Path.hpp"
-#    include "../util/Util.h"
+#    include "../core/String.hpp"
 
 #    include <cerrno>
 #    include <clocale>

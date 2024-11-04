@@ -26,7 +26,6 @@
 #include "../platform/Platform.h"
 #include "../ride/RideAudio.h"
 #include "../scenario/Scenario.h"
-#include "../sprites.h"
 #include "../ui/UiContext.h"
 #include "../ui/WindowManager.h"
 #include "../world/Map.h"
@@ -49,6 +48,9 @@ WindowCloseModifier gLastCloseModifier = { { WindowClass::Null, 0 }, CloseWindow
 
 uint32_t gWindowUpdateTicks;
 colour_t gCurrentWindowColours[3];
+
+Tool gCurrentToolId;
+WidgetRef gCurrentToolWidget;
 
 // converted from uint16_t values at 0x009A41EC - 0x009A4230
 // these are percentage coordinates of the viewport to centre to, if a window is obscuring a location, the next is tried
@@ -242,7 +244,8 @@ void WindowFlushDead()
     g_window_list.remove_if([](auto&& w) -> bool { return w->flags & WF_DEAD; });
 }
 
-template<typename TPred> static void WindowCloseByCondition(TPred pred, uint32_t flags = WindowCloseFlags::None)
+template<typename TPred>
+static void WindowCloseByCondition(TPred pred, uint32_t flags = WindowCloseFlags::None)
 {
     for (auto it = g_window_list.rbegin(); it != g_window_list.rend(); ++it)
     {
@@ -474,7 +477,8 @@ WidgetIndex WindowFindWidgetFromPoint(WindowBase& w, const ScreenCoordsXY& scree
  *
  * @param window The window to invalidate (esi).
  */
-template<typename TPred> static void WindowInvalidateByCondition(TPred pred)
+template<typename TPred>
+static void WindowInvalidateByCondition(TPred pred)
 {
     WindowVisitEach([pred](WindowBase* w) {
         if (pred(w))
@@ -539,7 +543,8 @@ void WidgetInvalidate(WindowBase& w, WidgetIndex widgetIndex)
                         { w.windowPos + ScreenCoordsXY{ widget.right + 1, widget.bottom + 1 } } });
 }
 
-template<typename TPred> static void widget_invalidate_by_condition(TPred pred)
+template<typename TPred>
+static void widget_invalidate_by_condition(TPred pred)
 {
     WindowVisitEach([pred](WindowBase* w) {
         if (pred(w))
@@ -831,8 +836,8 @@ void WindowScrollToLocation(WindowBase& w, const CoordsXYZ& coords)
             if (!(w.flags & WF_NO_SCROLLING))
             {
                 w.savedViewPos = screenCoords
-                    - ScreenCoordsXY{ static_cast<int32_t>(w.viewport->view_width * window_scroll_locations[i][0]),
-                                      static_cast<int32_t>(w.viewport->view_height * window_scroll_locations[i][1]) };
+                    - ScreenCoordsXY{ static_cast<int32_t>(w.viewport->ViewWidth() * window_scroll_locations[i][0]),
+                                      static_cast<int32_t>(w.viewport->ViewHeight() * window_scroll_locations[i][1]) };
                 w.flags |= WF_SCROLLING_TO_LOCATION;
             }
         }
@@ -932,20 +937,16 @@ void WindowZoomSet(WindowBase& w, ZoomLevel zoomLevel, bool atCursor)
     while (v->zoom > zoomLevel)
     {
         v->zoom--;
-        w.savedViewPos.x += v->view_width / 4;
-        w.savedViewPos.y += v->view_height / 4;
-        v->view_width /= 2;
-        v->view_height /= 2;
+        w.savedViewPos.x += v->ViewWidth() / 2;
+        w.savedViewPos.y += v->ViewHeight() / 2;
     }
 
     // Zoom out
     while (v->zoom < zoomLevel)
     {
         v->zoom++;
-        w.savedViewPos.x -= v->view_width / 2;
-        w.savedViewPos.y -= v->view_height / 2;
-        v->view_width *= 2;
-        v->view_height *= 2;
+        w.savedViewPos.x -= v->ViewWidth() / 4;
+        w.savedViewPos.y -= v->ViewHeight() / 4;
     }
 
     // Zooming to cursor? Centre around the tile we were hovering over just now.
@@ -1046,6 +1047,7 @@ static void WindowDrawCore(DrawPixelInfo& dpi, WindowBase& w, int32_t left, int3
 
 static void WindowDrawSingle(DrawPixelInfo& dpi, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom)
 {
+    assert(dpi.zoom_level == ZoomLevel{ 0 });
     // Copy dpi so we can crop it
     DrawPixelInfo copy = dpi;
 
@@ -1079,7 +1081,7 @@ static void WindowDrawSingle(DrawPixelInfo& dpi, WindowBase& w, int32_t left, in
         copy.height -= overflow;
         if (copy.height <= 0)
             return;
-        copy.bits += (copy.width + copy.pitch) * overflow;
+        copy.bits += copy.LineStride() * overflow;
     }
 
     // Clamp height to bottom
@@ -1101,6 +1103,31 @@ static void WindowDrawSingle(DrawPixelInfo& dpi, WindowBase& w, int32_t left, in
     gCurrentWindowColours[2] = w.colours[2].colour;
 
     w.OnDraw(copy);
+}
+
+bool isToolActive(WindowClass cls)
+{
+    return InputTestFlag(INPUT_FLAG_TOOL_ACTIVE) && gCurrentToolWidget.window_classification == cls;
+}
+
+bool isToolActive(WindowClass cls, rct_windownumber number)
+{
+    return isToolActive(cls) && gCurrentToolWidget.window_number == number;
+}
+
+bool isToolActive(WindowClass cls, WidgetIndex widgetIndex)
+{
+    return isToolActive(cls) && gCurrentToolWidget.widget_index == widgetIndex;
+}
+
+bool isToolActive(WindowClass cls, WidgetIndex widgetIndex, rct_windownumber number)
+{
+    return isToolActive(cls, widgetIndex) && gCurrentToolWidget.window_number == number;
+}
+
+bool isToolActive(const WindowBase& w, WidgetIndex widgetIndex)
+{
+    return isToolActive(w.classification, widgetIndex, w.number);
 }
 
 /**
@@ -1230,8 +1257,6 @@ void WindowResizeGuiScenarioEditor(int32_t width, int32_t height)
         mainWind->height = height;
         viewport->width = width;
         viewport->height = height;
-        viewport->view_width = viewport->zoom.ApplyTo(width);
-        viewport->view_height = viewport->zoom.ApplyTo(height);
         if (mainWind->widgets != nullptr && mainWind->widgets[WC_MAIN_WINDOW__0].type == WindowWidgetType::Viewport)
         {
             mainWind->widgets[WC_MAIN_WINDOW__0].right = width;

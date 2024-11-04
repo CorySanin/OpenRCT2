@@ -33,16 +33,19 @@
 #include "../ride/RideData.h"
 #include "../ride/ShopItem.h"
 #include "../scenario/Scenario.h"
+#include "../scripting/ScriptEngine.h"
 #include "../util/Util.h"
 #include "../windows/Intent.h"
 #include "Entrance.h"
 #include "Map.h"
-#include "Surface.h"
+#include "tile_element/EntranceElement.h"
+#include "tile_element/SurfaceElement.h"
 
 #include <limits>
 #include <type_traits>
 
 using namespace OpenRCT2;
+using namespace OpenRCT2::Scripting;
 
 namespace OpenRCT2::Park
 {
@@ -136,9 +139,9 @@ namespace OpenRCT2::Park
             {
                 if (!(ride.lifecycle_flags & RIDE_LIFECYCLE_TESTED))
                     continue;
-                if (!ride.GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_TRACK))
+                if (!ride.GetRideTypeDescriptor().HasFlag(RtdFlag::hasTrack))
                     continue;
-                if (!ride.GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_DATA_LOGGING))
+                if (!ride.GetRideTypeDescriptor().HasFlag(RtdFlag::hasDataLogging))
                     continue;
                 if (ride.GetStation().SegmentLength < (600 << 16))
                     continue;
@@ -157,6 +160,21 @@ namespace OpenRCT2::Park
         }
 
         suggestedMaxGuests = std::min<uint32_t>(suggestedMaxGuests, 65535);
+
+#ifdef ENABLE_SCRIPTING
+        auto& hookEngine = GetContext()->GetScriptEngine().GetHookEngine();
+        if (hookEngine.HasSubscriptions(HOOK_TYPE::PARK_CALCULATE_GUEST_CAP))
+        {
+            auto ctx = GetContext()->GetScriptEngine().GetContext();
+            auto obj = DukObject(ctx);
+            obj.Set("suggestedGuestMaximum", suggestedMaxGuests);
+            auto e = obj.Take();
+            hookEngine.Call(HOOK_TYPE::PARK_CALCULATE_GUEST_CAP, e, true);
+
+            suggestedMaxGuests = AsOrDefault(e["suggestedGuestMaximum"], static_cast<int32_t>(suggestedMaxGuests));
+            suggestedMaxGuests = std::clamp<uint16_t>(suggestedMaxGuests, 0, UINT16_MAX);
+        }
+#endif
         return suggestedMaxGuests;
     }
 
@@ -249,7 +267,8 @@ namespace OpenRCT2::Park
         return peep;
     }
 
-    template<typename T, size_t TSize> static void HistoryPushRecord(T history[TSize], T newItem)
+    template<typename T, size_t TSize>
+    static void HistoryPushRecord(T history[TSize], T newItem)
     {
         for (size_t i = TSize - 1; i > 0; i--)
         {
@@ -564,9 +583,10 @@ namespace OpenRCT2::Park
 
     void ResetHistories(GameState_t& gameState)
     {
-        std::fill(std::begin(gameState.Park.RatingHistory), std::end(gameState.Park.RatingHistory), ParkRatingHistoryUndefined);
         std::fill(
-            std::begin(gameState.GuestsInParkHistory), std::end(gameState.GuestsInParkHistory), GuestsInParkHistoryUndefined);
+            std::begin(gameState.Park.RatingHistory), std::end(gameState.Park.RatingHistory), kParkRatingHistoryUndefined);
+        std::fill(
+            std::begin(gameState.GuestsInParkHistory), std::end(gameState.GuestsInParkHistory), kGuestsInParkHistoryUndefined);
     }
 
     void UpdateHistories(GameState_t& gameState)
@@ -586,8 +606,10 @@ namespace OpenRCT2::Park
         gameState.NumGuestsInParkLastWeek = gameState.NumGuestsInPark;
 
         // Update park rating, guests in park and current cash history
-        HistoryPushRecord<uint8_t, 32>(gameState.Park.RatingHistory, gameState.Park.Rating / 4);
-        HistoryPushRecord<uint32_t, 32>(gameState.GuestsInParkHistory, gameState.NumGuestsInPark);
+        constexpr auto ratingHistorySize = std::extent_v<decltype(ParkData::RatingHistory)>;
+        HistoryPushRecord<uint16_t, ratingHistorySize>(gameState.Park.RatingHistory, gameState.Park.Rating);
+        constexpr auto numGuestsHistorySize = std::extent_v<decltype(GameState_t::GuestsInParkHistory)>;
+        HistoryPushRecord<uint32_t, numGuestsHistorySize>(gameState.GuestsInParkHistory, gameState.NumGuestsInPark);
 
         constexpr auto cashHistorySize = std::extent_v<decltype(GameState_t::CashHistory)>;
         HistoryPushRecord<money64, cashHistorySize>(gameState.CashHistory, FinanceGetCurrentCash() - gameState.BankLoan);

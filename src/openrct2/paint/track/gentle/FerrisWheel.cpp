@@ -106,7 +106,7 @@ static void PaintFerrisWheelStructure(
 
 static void PaintFerrisWheel(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     uint8_t relativeTrackSequence = kTrackMap1x4[direction][trackSequence];
 
@@ -173,7 +173,7 @@ static void PaintFerrisWheel(
     PaintUtilSetGeneralSupportHeight(session, height + 176);
 }
 
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionFerrisWheel(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionFerrisWheel(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::FlatTrack1x4C)
     {

@@ -150,7 +150,8 @@ namespace OpenRCT2::String
         return strcmp(a, b);
     }
 
-    template<typename TString> static bool EqualsImpl(TString&& lhs, TString&& rhs, bool ignoreCase)
+    template<typename TString>
+    static bool EqualsImpl(TString&& lhs, TString&& rhs, bool ignoreCase)
     {
         return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), [ignoreCase](auto a, auto b) {
             const auto first = static_cast<unsigned char>(a);
@@ -524,11 +525,6 @@ namespace OpenRCT2::String
         return ch;
     }
 
-    utf8* TrimStart(utf8* buffer, size_t bufferSize, const utf8* src)
-    {
-        return String::Set(buffer, bufferSize, TrimStart(src));
-    }
-
     std::string TrimStart(const std::string& s)
     {
         const utf8* trimmed = TrimStart(s.c_str());
@@ -726,8 +722,3 @@ namespace OpenRCT2::String
         return escaped.str();
     }
 } // namespace OpenRCT2::String
-
-char32_t CodepointView::iterator::GetNextCodepoint(const char* ch, const char** next)
-{
-    return UTF8GetNext(ch, next);
-}

@@ -18,6 +18,7 @@
 #include <openrct2/ride/RideData.h>
 #include <openrct2/ride/RideTypes.h>
 #include <openrct2/ride/TrackData.h>
+#include <openrct2/world/tile_element/TrackElement.h>
 
 using namespace OpenRCT2::TrackMetaData;
 
@@ -34,7 +35,7 @@ namespace OpenRCT2
         int32_t colour2 = RideGetUnusedPresetVehicleColour(rideEntryIndex);
 
         auto gameAction = RideCreateAction(
-            listItem.Type, listItem.EntryIndex, colour1, colour2, OpenRCT2::GetGameState().LastEntranceStyle);
+            listItem.Type, listItem.EntryIndex, colour1, colour2, GetGameState().LastEntranceStyle);
 
         gameAction.SetCallback([](const GameAction* ga, const GameActions::Result* result) {
             if (result->Error != GameActions::Status::Ok)
@@ -59,33 +60,33 @@ namespace OpenRCT2
             && state != RideConstructionState::Back)
             return list;
 
-        for (track_type_t trackType : DropdownOrder)
+        for (OpenRCT2::TrackElemType trackType : DropdownOrder)
         {
             const auto& ted = GetTrackElementDescriptor(trackType);
-            if (!IsTrackEnabled(ted.Definition.Type))
+            if (!IsTrackEnabled(ted.definition.group))
                 continue;
             bool entryIsDisabled;
 
             // If the current build orientation (slope, bank, diagonal) matches the track element's, show the piece as enabled
             if (state == RideConstructionState::Back)
             {
-                entryIsDisabled = ted.Definition.PitchEnd != buildSlope || ted.Definition.RollEnd != buildBank
-                    || TrackPieceDirectionIsDiagonal(ted.Coordinates.rotation_end) != buildDirectionIsDiagonal;
+                entryIsDisabled = ted.definition.pitchEnd != buildSlope || ted.definition.rollEnd != buildBank
+                    || TrackPieceDirectionIsDiagonal(ted.coordinates.rotationEnd) != buildDirectionIsDiagonal;
             }
             else
             {
-                entryIsDisabled = ted.Definition.PitchStart != buildSlope || ted.Definition.RollStart != buildBank
-                    || TrackPieceDirectionIsDiagonal(ted.Coordinates.rotation_begin) != buildDirectionIsDiagonal;
+                entryIsDisabled = ted.definition.pitchStart != buildSlope || ted.definition.rollStart != buildBank
+                    || TrackPieceDirectionIsDiagonal(ted.coordinates.rotationBegin) != buildDirectionIsDiagonal;
             }
 
             // Additional tower bases can only be built if the ride allows for it (elevator)
             if (trackType == TrackElemType::TowerBase
-                && !currentRide.GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_ALLOW_EXTRA_TOWER_BASES))
+                && !currentRide.GetRideTypeDescriptor().HasFlag(RtdFlag::allowExtraTowerBases))
                 entryIsDisabled = true;
 
             // Check if a previous element exists, to collate entries if possible
             if (!list.Elements.empty()
-                && GetTrackElementDescriptor(list.Elements.back().TrackType).Description == ted.Description)
+                && GetTrackElementDescriptor(list.Elements.back().TrackType).description == ted.description)
             {
                 // If the current element is disabled, do not add current element.
                 if (entryIsDisabled)
@@ -117,7 +118,7 @@ namespace OpenRCT2
         gRideEntranceExitPlaceDirection = INVALID_DIRECTION;
         // determine if the mouse is hovering over a station - that's the station to add the entrance to
         auto info = GetMapCoordinatesFromPos(screenCoords, EnumsToFlags(ViewportInteractionItem::Ride));
-        if (info.SpriteType != ViewportInteractionItem::None)
+        if (info.interactionType != ViewportInteractionItem::None)
         {
             if (info.Element->GetType() == TileElementType::Track)
             {
@@ -125,7 +126,7 @@ namespace OpenRCT2
                 if (trackElement->GetRideIndex() == gRideEntranceExitPlaceRideIndex)
                 {
                     const auto& ted = GetTrackElementDescriptor(trackElement->GetTrackType());
-                    if (std::get<0>(ted.SequenceProperties) & TRACK_SEQUENCE_FLAG_ORIGIN)
+                    if (ted.sequences[0].flags & TRACK_SEQUENCE_FLAG_ORIGIN)
                     {
                         if (trackElement->GetTrackType() == TrackElemType::Maze)
                         {
@@ -220,7 +221,7 @@ namespace OpenRCT2
                     // get the ride entrance's side relative to the TrackElement
                     Direction direction = (DirectionReverse(entranceExitCoords.direction) - tileElement->GetDirection()) & 3;
                     const auto& ted = GetTrackElementDescriptor(trackElement->GetTrackType());
-                    if (ted.SequenceProperties[trackElement->GetSequenceIndex()] & (1 << direction))
+                    if (ted.sequences[trackElement->GetSequenceIndex()].flags & (1 << direction))
                     {
                         // if that side of the TrackElement supports stations, the ride entrance is valid and faces away from
                         // the station

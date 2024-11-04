@@ -25,8 +25,9 @@
 #include "../../world/Footpath.h"
 #include "../../world/Map.h"
 #include "../../world/Scenery.h"
-#include "../../world/Surface.h"
 #include "../../world/tile_element/Slope.h"
+#include "../../world/tile_element/SurfaceElement.h"
+#include "../../world/tile_element/TileElement.h"
 #include "../Paint.SessionFlags.h"
 #include "../Paint.h"
 #include "../VirtualFloor.h"
@@ -91,11 +92,11 @@ static void BlankTilesPaint(PaintSession& session, int32_t x, int32_t y)
     dx -= 16;
     int32_t bx = dx + 32;
 
-    if (bx <= session.DPI.y)
+    if (bx <= session.DPI.WorldY())
         return;
     dx -= 20;
-    dx -= session.DPI.height;
-    if (dx >= session.DPI.y)
+    dx -= session.DPI.WorldHeight();
+    if (dx >= session.DPI.WorldY())
         return;
 
     session.SpritePosition.x = x;
@@ -179,7 +180,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         PaintAddImageAsParent(session, imageId, { 0, 0, arrowZ }, { { 0, 0, arrowZ + 18 }, { 32, 32, -1 } });
     }
 
-    if (screenMinY + 52 <= session.DPI.y)
+    if (screenMinY + 52 <= session.DPI.WorldY())
         return;
 
     const TileElement* element = tile_element; // push tile_element
@@ -203,7 +204,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         max_height = std::max(max_height, VirtualFloorGetHeight());
     }
 
-    if (screenMinY - (max_height + 32) >= session.DPI.y + session.DPI.height)
+    if (screenMinY - (max_height + 32) >= session.DPI.WorldY() + session.DPI.WorldHeight())
         return;
 
     session.SpritePosition.x = coords.x;

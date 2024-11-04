@@ -19,11 +19,16 @@
 #include "../ride/RideData.h"
 #include "../windows/Intent.h"
 #include "../world/ConstructionClearance.h"
+#include "../world/Footpath.h"
 #include "../world/Park.h"
 #include "../world/Scenery.h"
-#include "../world/Surface.h"
 #include "../world/TileElementsView.h"
+#include "../world/Wall.h"
+#include "../world/tile_element/PathElement.h"
 #include "../world/tile_element/Slope.h"
+#include "../world/tile_element/SmallSceneryElement.h"
+#include "../world/tile_element/SurfaceElement.h"
+#include "../world/tile_element/TrackElement.h"
 
 using namespace OpenRCT2;
 
@@ -67,7 +72,7 @@ GameActions::Result LandSetHeightAction::Query() const
         return GameActions::Result(GameActions::Status::Disallowed, STR_NONE, errorMessage);
     }
 
-    if (!(gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) && !GetGameState().Cheats.SandboxMode)
+    if (!(gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) && !gameState.Cheats.SandboxMode)
     {
         if (!MapIsLocationInPark(_coords))
         {
@@ -76,7 +81,7 @@ GameActions::Result LandSetHeightAction::Query() const
     }
 
     money64 sceneryRemovalCost = 0;
-    if (!GetGameState().Cheats.DisableClearanceChecks)
+    if (!gameState.Cheats.DisableClearanceChecks)
     {
         if (gameState.Park.Flags & PARK_FLAGS_FORBID_TREE_REMOVAL)
         {
@@ -93,7 +98,7 @@ GameActions::Result LandSetHeightAction::Query() const
     }
 
     // Check for ride support limits
-    if (!GetGameState().Cheats.DisableSupportLimits)
+    if (!gameState.Cheats.DisableSupportLimits)
     {
         errorMessage = CheckRideSupports();
         if (errorMessage != STR_NONE)
@@ -124,7 +129,7 @@ GameActions::Result LandSetHeightAction::Query() const
         return res;
     }
 
-    if (!GetGameState().Cheats.DisableClearanceChecks)
+    if (!gameState.Cheats.DisableClearanceChecks)
     {
         uint8_t zCorner = _height;
         if (_style & kTileSlopeRaisedCornersMask)

@@ -155,19 +155,28 @@ struct Viewport
     int32_t height{};
     ScreenCoordsXY pos{};
     ScreenCoordsXY viewPos{};
-    int32_t view_width{};
-    int32_t view_height{};
     uint32_t flags{};
     ZoomLevel zoom{};
     uint8_t rotation{};
     VisibilityCache visibility{};
+
+    [[nodiscard]] constexpr int32_t ViewWidth() const
+    {
+        return zoom.ApplyTo(width);
+    }
+
+    [[nodiscard]] constexpr int32_t ViewHeight() const
+    {
+        return zoom.ApplyTo(height);
+    }
 
     // Use this function on coordinates that are relative to the viewport zoom i.e. a peeps x, y position after transforming
     // from its x, y, z
     [[nodiscard]] constexpr bool Contains(const ScreenCoordsXY& vpos) const
     {
         return (
-            vpos.y >= viewPos.y && vpos.y < viewPos.y + view_height && vpos.x >= viewPos.x && vpos.x < viewPos.x + view_width);
+            vpos.y >= viewPos.y && vpos.y < viewPos.y + ViewHeight() && vpos.x >= viewPos.x
+            && vpos.x < viewPos.x + ViewWidth());
     }
 
     // Use this function on coordinates that are relative to the screen that is been drawn i.e. the cursor position
@@ -181,25 +190,6 @@ struct Viewport
     void Invalidate() const;
 };
 
-/**
- * Scroll structure
- * size: 0x12
- */
-struct ScrollBar
-{
-    uint16_t flags{};
-    int32_t h_left{};
-    int32_t h_right{};
-    int32_t h_thumb_left{};
-    int32_t h_thumb_right{};
-    int32_t v_top{};
-    int32_t v_bottom{};
-    int32_t v_thumb_top{};
-    int32_t v_thumb_bottom{};
-};
-
-constexpr auto WINDOW_SCROLL_UNDEFINED = std::numeric_limits<int32_t>::max();
-
 struct Focus
 {
     using CoordinateFocus = CoordsXYZ;
@@ -208,7 +198,8 @@ struct Focus
     ZoomLevel zoom{};
     std::variant<CoordinateFocus, EntityFocus> data;
 
-    template<typename T> constexpr explicit Focus(T newValue, ZoomLevel newZoom = {})
+    template<typename T>
+    constexpr explicit Focus(T newValue, ZoomLevel newZoom = {})
     {
         data = newValue;
         zoom = newZoom;
@@ -274,36 +265,6 @@ enum WINDOW_FLAGS
     WF_CENTRE_SCREEN = (1 << 17),
 };
 
-enum SCROLL_FLAGS
-{
-    HSCROLLBAR_VISIBLE = (1 << 0),
-    HSCROLLBAR_THUMB_PRESSED = (1 << 1),
-    HSCROLLBAR_LEFT_PRESSED = (1 << 2),
-    HSCROLLBAR_RIGHT_PRESSED = (1 << 3),
-    VSCROLLBAR_VISIBLE = (1 << 4),
-    VSCROLLBAR_THUMB_PRESSED = (1 << 5),
-    VSCROLLBAR_UP_PRESSED = (1 << 6),
-    VSCROLLBAR_DOWN_PRESSED = (1 << 7),
-};
-
-#define SCROLLBAR_SIZE 16
-
-enum
-{
-    SCROLL_PART_NONE = -1,
-    SCROLL_PART_VIEW = 0,
-    SCROLL_PART_HSCROLLBAR_LEFT = 1,
-    SCROLL_PART_HSCROLLBAR_RIGHT = 2,
-    SCROLL_PART_HSCROLLBAR_LEFT_TROUGH = 3,
-    SCROLL_PART_HSCROLLBAR_RIGHT_TROUGH = 4,
-    SCROLL_PART_HSCROLLBAR_THUMB = 5,
-    SCROLL_PART_VSCROLLBAR_TOP = 6,
-    SCROLL_PART_VSCROLLBAR_BOTTOM = 7,
-    SCROLL_PART_VSCROLLBAR_TOP_TROUGH = 8,
-    SCROLL_PART_VSCROLLBAR_BOTTOM_TROUGH = 9,
-    SCROLL_PART_VSCROLLBAR_THUMB = 10,
-};
-
 enum
 {
     WV_PARK_AWARDS,
@@ -358,7 +319,7 @@ constexpr int32_t WC_PEEP__WIDX_ACTION_LBL = 13;
 constexpr int32_t WC_PEEP__WIDX_PICKUP = 14;
 constexpr int32_t WC_TRACK_DESIGN_LIST__WIDX_ROTATE = 8;
 constexpr int32_t WC_TRACK_DESIGN_PLACE__WIDX_ROTATE = 3;
-constexpr int32_t WC_MAP__WIDX_ROTATE_90 = 24;
+constexpr int32_t WC_EDITOR_PARK_ENTRANCE__WIDX_ROTATE_ENTRANCE_BUTTON = 6;
 constexpr int32_t WC_EDITOR_OBJECT_SELECTION__WIDX_TAB_1 = 22;
 constexpr int32_t WC_STAFF__WIDX_PICKUP = 9;
 constexpr int32_t WC_TILE_INSPECTOR__WIDX_BUTTON_ROTATE = 13;
@@ -470,7 +431,18 @@ enum class Tool
     WalkDown = 22,
     PaintDown = 23,
     EntranceDown = 24,
+    Bulldozer = 27,
 };
+
+struct WidgetRef
+{
+    WindowClass window_classification;
+    rct_windownumber window_number;
+    WidgetIndex widget_index;
+};
+
+extern Tool gCurrentToolId;
+extern WidgetRef gCurrentToolWidget;
 
 using modal_callback = void (*)(int32_t result);
 using close_callback = void (*)();
@@ -484,8 +456,6 @@ extern WindowBase* gWindowAudioExclusive;
 extern uint32_t gWindowUpdateTicks;
 
 extern colour_t gCurrentWindowColours[3];
-
-extern bool gDisableErrorWindowSound;
 
 std::list<std::shared_ptr<WindowBase>>::iterator WindowGetIterator(const WindowBase* w);
 void WindowVisitEach(std::function<void(WindowBase*)> func);
@@ -544,6 +514,11 @@ void WindowZoomSet(WindowBase& w, ZoomLevel zoomLevel, bool atCursor);
 void WindowDrawAll(DrawPixelInfo& dpi, int32_t left, int32_t top, int32_t right, int32_t bottom);
 void WindowDraw(DrawPixelInfo& dpi, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
 
+bool isToolActive(WindowClass cls);
+bool isToolActive(WindowClass cls, rct_windownumber number);
+bool isToolActive(WindowClass cls, WidgetIndex widgetIndex);
+bool isToolActive(WindowClass cls, WidgetIndex widgetIndex, rct_windownumber number);
+bool isToolActive(const WindowBase& w, WidgetIndex widgetIndex);
 bool ToolSet(const WindowBase& w, WidgetIndex widgetIndex, Tool tool);
 void ToolCancel();
 
@@ -561,20 +536,9 @@ void TextinputCancel();
 
 bool WindowIsVisible(WindowBase& w);
 
-bool SceneryToolIsActive();
-
 Viewport* WindowGetPreviousViewport(Viewport* current);
 void WindowResetVisibilities();
 void WindowInitAll();
 
 void WindowFollowSprite(WindowBase& w, EntityId spriteIndex);
 void WindowUnfollowSprite(WindowBase& w);
-
-bool WindowRideConstructionUpdateState(
-    int32_t* trackType, int32_t* trackDirection, RideId* rideIndex, int32_t* _liftHillAndAlternativeState, CoordsXYZ* trackPos,
-    int32_t* properties);
-money64 PlaceProvisionalTrackPiece(
-    RideId rideIndex, int32_t trackType, int32_t trackDirection, int32_t liftHillAndAlternativeState,
-    const CoordsXYZ& trackPos);
-
-extern OpenRCT2::RideConstructionState _rideConstructionState2;

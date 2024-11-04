@@ -10,8 +10,8 @@
 #pragma once
 
 #include "../core/JsonFwd.hpp"
-#include "../core/String.hpp"
-#include "../util/Util.h"
+#include "../core/StringTypes.h"
+#include "../drawing/ImageIndexType.h"
 #include "ImageTable.h"
 #include "ObjectAsset.h"
 #include "ObjectTypes.h"

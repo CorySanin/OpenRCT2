@@ -107,7 +107,7 @@ static void PaintCarousel(
 
 static void PaintMerryGoRound(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -175,7 +175,7 @@ static void PaintMerryGoRound(
     PaintUtilSetGeneralSupportHeight(session, height + 64);
 }
 
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionMerryGoRound(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionMerryGoRound(OpenRCT2::TrackElemType trackType)
 {
     if (trackType != TrackElemType::FlatTrack3x3)
     {

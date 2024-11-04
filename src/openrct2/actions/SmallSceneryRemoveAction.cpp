@@ -22,6 +22,7 @@
 #include "../ride/Ride.h"
 #include "../world/Park.h"
 #include "../world/TileElementsView.h"
+#include "../world/tile_element/SmallSceneryElement.h"
 #include "GameAction.h"
 #include "SmallSceneryPlaceAction.h"
 
@@ -132,8 +133,6 @@ GameActions::Result SmallSceneryRemoveAction::Execute() const
         return GameActions::Result(
             GameActions::Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
     }
-
-    res.Position.z = TileElementHeight(res.Position);
 
     MapInvalidateTileFull(_loc);
     TileElementRemove(tileElement);

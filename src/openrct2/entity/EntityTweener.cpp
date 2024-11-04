@@ -97,13 +97,12 @@ void EntityTweener::Tween(float alpha)
         if (posA == posB)
             continue;
 
-        EntitySetCoordinates(
-            { static_cast<int32_t>(std::round(posB.x * alpha + posA.x * inv)),
-              static_cast<int32_t>(std::round(posB.y * alpha + posA.y * inv)),
-              static_cast<int32_t>(std::round(posB.z * alpha + posA.z * inv)) },
-            ent);
-        ent->Invalidate();
+        ent->MoveTo({ static_cast<int32_t>(std::round(posB.x * alpha + posA.x * inv)),
+                      static_cast<int32_t>(std::round(posB.y * alpha + posA.y * inv)),
+                      static_cast<int32_t>(std::round(posB.z * alpha + posA.z * inv)) });
     }
+
+    UpdateEntitiesSpatialIndex();
 }
 
 void EntityTweener::Restore()
@@ -114,6 +113,7 @@ void EntityTweener::Restore()
         if (ent == nullptr)
             continue;
 
+        ent->Invalidate();
         EntitySetCoordinates(PostPos[i], ent);
         ent->Invalidate();
     }

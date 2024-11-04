@@ -9,13 +9,12 @@
 
 #pragma once
 
-#include "core/String.hpp"
+#include "core/StringTypes.h"
 #include "interface/WindowClasses.h"
 #include "localisation/StringIdType.h"
 #include "world/Location.hpp"
 
 #include <memory>
-#include <string>
 
 struct IObjectManager;
 struct IObjectRepository;
@@ -233,5 +232,4 @@ void ContextHandleInput();
 void ContextInputHandleKeyboard(bool isTitle);
 void ContextQuit();
 bool ContextLoadParkFromStream(void* stream);
-bool ContextOpenCommonFileDialog(utf8* outFilename, OpenRCT2::Ui::FileDialogDesc& desc, size_t outSize);
 u8string ContextOpenCommonFileDialog(OpenRCT2::Ui::FileDialogDesc& desc);

@@ -38,7 +38,7 @@ enum
 /** rct2: 0x008B0E40 */
 static void PaintBoatHireTrackFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
 
@@ -71,22 +71,13 @@ static void PaintBoatHireTrackFlat(
 /** rct2: 0x008B0E50 */
 static void PaintBoatHireStation(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     const auto* stationObj = ride.GetStationObject();
 
-    if (direction & 1)
-    {
-        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
-        TrackPaintUtilDrawPier(
-            session, ride, stationObj, session.MapPosition, direction, height, trackElement, session.CurrentRotation);
-    }
-    else
-    {
-        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
-        TrackPaintUtilDrawPier(
-            session, ride, stationObj, session.MapPosition, direction, height, trackElement, session.CurrentRotation);
-    }
+    TrackPaintUtilDrawStationTunnel(session, direction, height);
+    TrackPaintUtilDrawPier(
+        session, ride, stationObj, session.MapPosition, direction, height, trackElement, session.CurrentRotation);
 
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
@@ -95,7 +86,7 @@ static void PaintBoatHireStation(
 /** rct2: 0x008B0E80 */
 static void PaintBoatHireTrackLeftQuarterTurn1Tile(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     ImageId imageId;
     const auto offset = CoordsXYZ{ 0, 0, height };
@@ -142,15 +133,16 @@ static void PaintBoatHireTrackLeftQuarterTurn1Tile(
 /** rct2: 0x008B0E90 */
 static void PaintBoatHireTrackRightQuarterTurn1Tile(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
-    PaintBoatHireTrackLeftQuarterTurn1Tile(session, ride, trackSequence, (direction + 3) % 4, height, trackElement);
+    PaintBoatHireTrackLeftQuarterTurn1Tile(
+        session, ride, trackSequence, (direction + 3) % 4, height, trackElement, supportType);
 }
 
 /**
  * rct2: 0x008B0D60
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionBoatHire(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionBoatHire(OpenRCT2::TrackElemType trackType)
 {
     switch (trackType)
     {
@@ -166,7 +158,7 @@ TRACK_PAINT_FUNCTION GetTrackPaintFunctionBoatHire(int32_t trackType)
             return PaintBoatHireTrackLeftQuarterTurn1Tile;
         case TrackElemType::RightQuarterTurn1Tile:
             return PaintBoatHireTrackRightQuarterTurn1Tile;
+        default:
+            return nullptr;
     }
-
-    return nullptr;
 }

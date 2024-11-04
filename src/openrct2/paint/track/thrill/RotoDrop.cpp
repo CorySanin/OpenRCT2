@@ -12,6 +12,8 @@
 #include "../../../ride/Track.h"
 #include "../../../ride/TrackPaint.h"
 #include "../../../ride/Vehicle.h"
+#include "../../../world/tile_element/TileElement.h"
+#include "../../../world/tile_element/TrackElement.h"
 #include "../../Paint.h"
 #include "../../support/WoodenSupports.h"
 #include "../../tile_element/Segment.h"
@@ -36,7 +38,7 @@ enum
 /** rct2: 0x00886194 */
 static void PaintRotoDropBase(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     trackSequence = kTrackMap3x3[direction][trackSequence];
 
@@ -121,7 +123,7 @@ static void PaintRotoDropBase(
 /** rct2: 0x008861A4 */
 static void PaintRotoDropTowerSection(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
-    const TrackElement& trackElement)
+    const TrackElement& trackElement, SupportType supportType)
 {
     if (trackSequence == 1)
     {
@@ -155,7 +157,7 @@ static void PaintRotoDropTowerSection(
 /**
  * rct2: 0x00886074
  */
-TRACK_PAINT_FUNCTION GetTrackPaintFunctionRotoDrop(int32_t trackType)
+TRACK_PAINT_FUNCTION GetTrackPaintFunctionRotoDrop(OpenRCT2::TrackElemType trackType)
 {
     switch (trackType)
     {
@@ -164,7 +166,7 @@ TRACK_PAINT_FUNCTION GetTrackPaintFunctionRotoDrop(int32_t trackType)
 
         case TrackElemType::TowerSection:
             return PaintRotoDropTowerSection;
+        default:
+            return nullptr;
     }
-
-    return nullptr;
 }

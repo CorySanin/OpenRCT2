@@ -30080,6 +30080,7 @@ static constexpr const VehicleInfoList *TrackVehicleInfoListDefault[] = {
      &TrackVehicleInfoRightEighthBankToOrthogonalDown250, &TrackVehicleInfoRightEighthBankToOrthogonalDown251, &TrackVehicleInfoRightEighthBankToOrthogonalDown252, &TrackVehicleInfoRightEighthBankToOrthogonalDown253, // TrackElemType::RightEighthBankBankToOrthogonalDown25
     &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBrakes
     &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBlockBrakes
+    &TrackVehicleInfo_8C27B2, &TrackVehicleInfo_8C28D4, &TrackVehicleInfo_8C29F6, &TrackVehicleInfo_8C2B18,  // SlopedBrakes
 };
 static_assert(std::size(TrackVehicleInfoListDefault) == VehicleTrackSubpositionSizeDefault);
 

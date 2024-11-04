@@ -13,13 +13,16 @@
 #include "../Context.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
+#include "../core/UnitConversion.h"
 #include "../interface/Window.h"
 #include "../localisation/Localisation.Date.h"
 #include "../profiling/Profiling.h"
 #include "../scripting/ScriptEngine.h"
 #include "../world/Footpath.h"
 #include "../world/Map.h"
-#include "../world/Surface.h"
+#include "../world/tile_element/PathElement.h"
+#include "../world/tile_element/SurfaceElement.h"
+#include "../world/tile_element/TrackElement.h"
 #include "Ride.h"
 #include "RideData.h"
 #include "Station.h"
@@ -352,7 +355,7 @@ static void ride_ratings_update_state_2(RideRatingUpdateState& state)
     }
 
     auto loc = state.Proximity;
-    track_type_t trackType = state.ProximityTrackType;
+    OpenRCT2::TrackElemType trackType = state.ProximityTrackType;
 
     TileElement* tileElement = MapGetFirstElementAt(loc);
     if (tileElement == nullptr)
@@ -371,7 +374,7 @@ static void ride_ratings_update_state_2(RideRatingUpdateState& state)
         if (tileElement->AsTrack()->GetRideIndex() != ride->id)
         {
             // Only check that the track belongs to the same ride if ride does not have buildable track
-            if (!ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_TRACK))
+            if (!ride->GetRideTypeDescriptor().HasFlag(RtdFlag::hasTrack))
                 continue;
         }
 
@@ -458,7 +461,7 @@ static void ride_ratings_update_state_5(RideRatingUpdateState& state)
     }
 
     auto loc = state.Proximity;
-    track_type_t trackType = state.ProximityTrackType;
+    OpenRCT2::TrackElemType trackType = state.ProximityTrackType;
 
     TileElement* tileElement = MapGetFirstElementAt(loc);
     if (tileElement == nullptr)
@@ -477,7 +480,7 @@ static void ride_ratings_update_state_5(RideRatingUpdateState& state)
         if (tileElement->AsTrack()->GetRideIndex() != ride->id)
         {
             // Only check that the track belongs to the same ride if ride does not have buildable track
-            if (!ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_TRACK))
+            if (!ride->GetRideTypeDescriptor().HasFlag(RtdFlag::hasTrack))
                 continue;
         }
 
@@ -523,7 +526,7 @@ static void ride_ratings_begin_proximity_loop(RideRatingUpdateState& state)
     }
 
     const auto& rtd = ride->GetRideTypeDescriptor();
-    if (rtd.HasFlag(RIDE_TYPE_FLAG_IS_MAZE))
+    if (rtd.HasFlag(RtdFlag::isMaze))
     {
         state.State = RIDE_RATINGS_STATE_CALCULATE;
         return;
@@ -863,6 +866,8 @@ static void ride_ratings_score_close_proximity(RideRatingUpdateState& state, Til
         case TrackElemType::RightReverser:
             state.AmountOfReversers++;
             break;
+        default:
+            break;
     }
 }
 
@@ -1048,7 +1053,7 @@ static void RideRatingsCalculate(RideRatingUpdateState& state, Ride& ride)
     ride.window_invalidate_flags |= RIDE_INVALIDATE_RIDE_INCOME;
 
 #ifdef ORIGINAL_RATINGS
-    if (!ride.ratings.excitement.isNull())
+    if (!ride.ratings.isNull())
     {
         // Address underflows allowed by original RCT2 code
         ride.ratings.excitement = std::max<uint16_t>(0, ride.ratings.excitement);
@@ -1197,7 +1202,7 @@ static money64 RideComputeUpkeep(RideRatingUpdateState& state, const Ride& ride)
     auto trackCost = ride.GetRideTypeDescriptor().UpkeepCosts.CostPerTrackPiece;
     upkeep += trackCost * ride.getNumPoweredLifts();
 
-    uint32_t totalLength = ride.GetTotalLength() >> 16;
+    uint32_t totalLength = ToHumanReadableRideLength(ride.GetTotalLength());
 
     // The data originally here was 20's and 0's. The 20's all represented
     // rides that had tracks. The 0's were fixed rides like crooked house or
@@ -1282,7 +1287,7 @@ static void RideRatingsApplyAdjustments(const Ride& ride, RatingTuple& ratings)
 
     // Apply total air time
 #ifdef ORIGINAL_RATINGS
-    if (ride.GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_AIR_TIME))
+    if (ride.GetRideTypeDescriptor().HasFlag(RtdFlag::hasAirTime))
     {
         uint16_t totalAirTime = ride.totalAirTime;
         if (rideEntry->flags & RIDE_ENTRY_FLAG_LIMIT_AIRTIME_BONUS)
@@ -1301,7 +1306,7 @@ static void RideRatingsApplyAdjustments(const Ride& ride, RatingTuple& ratings)
         }
     }
 #else
-    if (ride.GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_AIR_TIME))
+    if (ride.GetRideTypeDescriptor().HasFlag(RtdFlag::hasAirTime))
     {
         int32_t excitementModifier;
         if (rideEntry->flags & RIDE_ENTRY_FLAG_LIMIT_AIRTIME_BONUS)
@@ -1764,7 +1769,7 @@ static int32_t ride_ratings_get_scenery_score(const Ride& ride)
     }
 
     const auto& rtd = ride.GetRideTypeDescriptor();
-    if (rtd.HasFlag(RIDE_TYPE_FLAG_IS_MAZE))
+    if (rtd.HasFlag(RtdFlag::isMaze))
     {
         location = ride.GetStation().Entrance.ToCoordsXY();
     }
@@ -1833,7 +1838,9 @@ static void RideRatingsAdd(RatingTuple& ratings, int32_t excitement, int32_t int
 
 static void RideRatingsApplyBonusLength(RatingTuple& ratings, const Ride& ride, RatingsModifier modifier)
 {
-    RideRatingsAdd(ratings, (std::min(ride.GetTotalLength() >> 16, modifier.threshold) * modifier.excitement) >> 16, 0, 0);
+    RideRatingsAdd(
+        ratings, (std::min(ToHumanReadableRideLength(ride.GetTotalLength()), modifier.threshold) * modifier.excitement) >> 16,
+        0, 0);
 }
 
 static void RideRatingsApplyBonusSynchronisation(RatingTuple& ratings, const Ride& ride, RatingsModifier modifier)
@@ -1936,7 +1943,7 @@ static void RideRatingsApplyBonusGoKartRace(RatingTuple& ratings, const Ride& ri
 
 static void RideRatingsApplyBonusTowerRide(RatingTuple& ratings, const Ride& ride, RatingsModifier modifier)
 {
-    int32_t lengthFactor = (ride.GetTotalLength() >> 16);
+    int32_t lengthFactor = ToHumanReadableRideLength(ride.GetTotalLength());
     RideRatingsAdd(
         ratings, (lengthFactor * modifier.excitement) >> 16, (lengthFactor * modifier.intensity) >> 16,
         (lengthFactor * modifier.nausea) >> 16);
@@ -1944,7 +1951,7 @@ static void RideRatingsApplyBonusTowerRide(RatingTuple& ratings, const Ride& rid
 
 static void RideRatingsApplyBonusRotoDrop(RatingTuple& ratings, const Ride& ride)
 {
-    int32_t lengthFactor = ((ride.GetTotalLength() >> 16) * 209715) >> 16;
+    int32_t lengthFactor = (ToHumanReadableRideLength(ride.GetTotalLength()) * 209715) >> 16;
     RideRatingsAdd(ratings, lengthFactor, lengthFactor * 2, lengthFactor * 2);
 }
 
@@ -2062,7 +2069,7 @@ static void RideRatingsApplyBonusOperationOptionFreefall(RatingTuple& ratings, c
 static void RideRatingsApplyBonusLaunchedFreefallSpecial(
     RatingTuple& ratings, const Ride& ride, RideRatingUpdateState& state, RatingsModifier modifier)
 {
-    int32_t excitement = ((ride.GetTotalLength() >> 16) * 32768) >> 16;
+    int32_t excitement = (ToHumanReadableRideLength(ride.GetTotalLength()) * 32768) >> 16;
     RideRatingsAdd(ratings, excitement, 0, 0);
 
 #ifdef ORIGINAL_RATINGS
@@ -2078,7 +2085,7 @@ static void RideRatingsApplyBonusLaunchedFreefallSpecial(
         // Fix #3282: When the ride mode is in downward launch mode, the intensity and
         //            nausea were fixed regardless of how high the ride is. The following
         //            calculation is based on roto-drop which is a similar mechanic.
-        int32_t lengthFactor = ((ride.GetTotalLength() >> 16) * 209715) >> 16;
+        int32_t lengthFactor = (ToHumanReadableRideLength(ride.GetTotalLength()) * 209715) >> 16;
         RideRatingsAdd(ratings, lengthFactor, lengthFactor * 2, lengthFactor * 2);
     }
 #endif

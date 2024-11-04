@@ -23,11 +23,13 @@
 #include "../../profiling/Profiling.h"
 #include "../../ride/RideData.h"
 #include "../../ride/TrackDesign.h"
+#include "../../sprites.h"
 #include "../../world/Banner.h"
 #include "../../world/Entrance.h"
 #include "../../world/Footpath.h"
 #include "../../world/Park.h"
 #include "../../world/TileInspector.h"
+#include "../../world/tile_element/EntranceElement.h"
 #include "../support/WoodenSupports.h"
 #include "Paint.TileElement.h"
 #include "Segment.h"
@@ -220,9 +222,10 @@ static void PaintParkEntranceScrollingText(
         return;
 
     auto ft = Formatter();
-    if (GetGameState().Park.Flags & PARK_FLAGS_PARK_OPEN)
+    auto& gameState = GetGameState();
+    if (gameState.Park.Flags & PARK_FLAGS_PARK_OPEN)
     {
-        const auto& park = OpenRCT2::GetGameState().Park;
+        const auto& park = gameState.Park;
         auto name = park.Name.c_str();
         ft.Add<StringId>(STR_STRING);
         ft.Add<const char*>(name);
@@ -244,7 +247,7 @@ static void PaintParkEntranceScrollingText(
     }
 
     auto stringWidth = GfxGetStringWidth(text, FontStyle::Tiny);
-    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
+    auto scroll = stringWidth > 0 ? (gameState.CurrentTicks / 2) % stringWidth : 0;
     auto imageIndex = ScrollingTextSetup(
         session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode + direction / 2, COLOUR_BLACK);
     auto textHeight = height + entrance.GetTextHeight();
@@ -284,7 +287,8 @@ static void PaintParkEntrance(PaintSession& session, uint8_t direction, int32_t 
     }
 
     auto& objManager = GetContext()->GetObjectManager();
-    auto entrance = reinterpret_cast<EntranceObject*>(objManager.GetLoadedObject(ObjectType::ParkEntrance, 0));
+    auto entrance = reinterpret_cast<EntranceObject*>(
+        objManager.GetLoadedObject(ObjectType::ParkEntrance, entranceEl.getEntryIndex()));
     auto sequence = entranceEl.GetSequenceIndex();
     switch (sequence)
     {

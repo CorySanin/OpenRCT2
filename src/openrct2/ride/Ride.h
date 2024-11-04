@@ -40,6 +40,8 @@ struct Staff;
 struct Vehicle;
 struct RideObjectEntry;
 struct ResultWithMessage;
+struct TileElement;
+struct TrackElement;
 
 constexpr uint8_t kRideAdjacencyCheckDistance = 5;
 
@@ -166,8 +168,7 @@ struct Ride
     // bit 6: log reverser, waterfall
     // bit 7: whirlpool
     uint8_t special_track_elements{};
-    // Divide this value by 29127 to get the human-readable max speed
-    // (in RCT2, display_speed = (max_speed * 9) >> 18)
+    // Use ToHumanReadableSpeed if converting to display
     int32_t max_speed{};
     int32_t average_speed{};
     uint8_t current_test_segment{};
@@ -618,6 +619,7 @@ enum
     RIDE_TYPE_ALPINE_COASTER,
     RIDE_TYPE_CLASSIC_WOODEN_ROLLER_COASTER,
     RIDE_TYPE_CLASSIC_STAND_UP_ROLLER_COASTER,
+    RIDE_TYPE_LSM_LAUNCHED_ROLLER_COASTER,
 
     RIDE_TYPE_COUNT
 };
@@ -898,9 +900,6 @@ constexpr uint16_t kTurnMask2Elements = 0x00E0;
 constexpr uint16_t kTurnMask3Elements = 0x0700;
 constexpr uint16_t kTurnMask4PlusElements = 0xF800;
 
-constexpr uint32_t CONSTRUCTION_LIFT_HILL_SELECTED = 1 << 0;
-constexpr uint32_t CONSTRUCTION_INVERTED_TRACK_SELECTED = 1 << 1;
-
 Ride* GetRide(RideId index);
 
 struct RideManager
@@ -1058,7 +1057,7 @@ void BlockBrakeSetLinkedBrakesClosed(const CoordsXYZ& vehicleTrackLocation, Trac
 uint8_t RideEntryGetVehicleAtPosition(int32_t rideEntryIndex, int32_t numCarsPerTrain, int32_t position);
 void RideUpdateVehicleColours(const Ride& ride);
 
-OpenRCT2::BitSet<TRACK_GROUP_COUNT> RideEntryGetSupportedTrackPieces(const RideObjectEntry& rideEntry);
+OpenRCT2::BitSet<EnumValue(TrackGroup::count)> RideEntryGetSupportedTrackPieces(const RideObjectEntry& rideEntry);
 
 enum class RideSetSetting : uint8_t;
 money64 SetOperatingSetting(RideId rideId, RideSetSetting setting, uint8_t value);
