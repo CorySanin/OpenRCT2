@@ -30078,9 +30078,10 @@ static constexpr const VehicleInfoList *TrackVehicleInfoListDefault[] = {
      &TrackVehicleInfoRightEighthBankToOrthogonalUp250, &TrackVehicleInfoRightEighthBankToOrthogonalUp251, &TrackVehicleInfoRightEighthBankToOrthogonalUp252, &TrackVehicleInfoRightEighthBankToOrthogonalUp253, // TrackElemType::RightEighthBankBankToOrthogonalUp25
      &TrackVehicleInfoLeftEighthBankToOrthogonalDown250, &TrackVehicleInfoLeftEighthBankToOrthogonalDown251, &TrackVehicleInfoLeftEighthBankToOrthogonalDown252, &TrackVehicleInfoLeftEighthBankToOrthogonalDown253, // TrackElemType::LeftEighthBankBankToOrthogonalDown25
      &TrackVehicleInfoRightEighthBankToOrthogonalDown250, &TrackVehicleInfoRightEighthBankToOrthogonalDown251, &TrackVehicleInfoRightEighthBankToOrthogonalDown252, &TrackVehicleInfoRightEighthBankToOrthogonalDown253, // TrackElemType::RightEighthBankBankToOrthogonalDown25
-    &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBrakes
-    &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBlockBrakes
-    &TrackVehicleInfo_8C27B2, &TrackVehicleInfo_8C28D4, &TrackVehicleInfo_8C29F6, &TrackVehicleInfo_8C2B18,  // SlopedBrakes
+     &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBrakes
+     &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBlockBrakes
+     &TrackVehicleInfo_8C27B2, &TrackVehicleInfo_8C28D4, &TrackVehicleInfo_8C29F6, &TrackVehicleInfo_8C2B18,  // SlopedBrakes
+     &TrackVehicleInfo_9162E6, &TrackVehicleInfo_916408, &TrackVehicleInfo_91652A, &TrackVehicleInfo_91664C,  // DiagBooster
 };
 static_assert(std::size(TrackVehicleInfoListDefault) == VehicleTrackSubpositionSizeDefault);
 
