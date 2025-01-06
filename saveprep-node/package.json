@@ -1,6 +1,6 @@
 {
   "name": "saveprep-node",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Prepare OpenRCT2 saves for use with FFA Tycoon multiplayer servers",
   "main": "index.js",
   "scripts": {
@@ -8,15 +8,15 @@
     "watch": "node build.js --watch"
   },
   "dependencies": {
-    "dayjs": "1.11.12",
+    "dayjs": "1.11.13",
     "ejs": "3.1.10",
-    "express": "4.19.2",
+    "express": "4.21.2",
     "express-fileupload": "1.5.1"
   },
   "devDependencies": {
     "csso": "5.0.5",
-    "sass": "1.77.8",
-    "uglify-js": "3.19.1"
+    "sass": "1.83.1",
+    "uglify-js": "3.19.3"
   },
   "repository": {
     "type": "git",

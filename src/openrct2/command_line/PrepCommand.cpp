@@ -214,7 +214,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     CheatSetAction(CheatType::DisableLittering, 0).Execute();
     CheatSetAction(CheatType::DisablePlantAging, 0).Execute();
     CheatSetAction(CheatType::MakeDestructible, 0).Execute();
-    CheatSetAction(CheatType::NeverEndingMarketing, 0).Execute();
+    CheatSetAction(CheatType::NeverendingMarketing, 0).Execute();
     CheatSetAction(CheatType::AllowArbitraryRideTypeChanges, 0).Execute();
     CheatSetAction(CheatType::DisableRideValueAging, 0).Execute();
     CheatSetAction(CheatType::IgnoreResearchStatus, 0).Execute();
