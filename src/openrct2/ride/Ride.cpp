@@ -123,6 +123,7 @@ static constexpr auto kRideModeBlockSectionedCounterpart = std::to_array(
         RideMode::continuousCircuitBlockSectioned, // RideMode::continuousCircuitBlockSectioned,
         RideMode::poweredLaunchBlockSectioned,     // RideMode::poweredLaunch,
         RideMode::poweredLaunchBlockSectioned,     // RideMode::poweredLaunchBlockSectioned,
+        RideMode::inMotionBoarding,                // RideMode::inMotionBoarding
     });
 static_assert(kRideModeBlockSectionedCounterpart.size() == EnumValue(RideMode::count));
 
@@ -881,8 +882,14 @@ void updateChairlift(Ride& ride)
         return;
 
     uint16_t oldChairliftBullwheelRotation = ride.chairliftBullwheelRotation >> 14;
-    ride.chairliftBullwheelRotation += ride.speed * 2048;
-    if (oldChairliftBullwheelRotation == ride.speed / 8)
+    uint8_t stationSpeed = ride.speed;
+    if (ride.mode == RideMode::inMotionBoarding)
+    {
+        uint8_t max_station_speed = 2;
+        stationSpeed = std::min(stationSpeed, max_station_speed);
+    }
+    ride.chairliftBullwheelRotation += stationSpeed * 2048;
+    if (oldChairliftBullwheelRotation == stationSpeed / 8)
         return;
 
     auto bullwheelLoc = ride.chairliftBullwheelLocation[0].ToCoordsXYZ();
@@ -3214,6 +3221,11 @@ static bool VehicleCreateTrains(Ride& ride, const CoordsXYZ& trainsPos, TrackEle
         {
             remainingDistance = 0;
         }
+        else if (ride.mode == RideMode::inMotionBoarding && ride.status != RideStatus::simulating && numberOfTrains > 1)
+        {
+            int32_t total_length = ride.getTotalLength();
+            remainingDistance = -vehicleIndex * total_length / (ride.numTrains - 1);
+        }
         TrainReference train = VehicleCreateTrain(ride, trainsPos, vehicleIndex, &remainingDistance, trackElement);
         if (train.head == nullptr || train.tail == nullptr)
         {
@@ -4902,7 +4914,8 @@ void Ride::updateMaxVehicles()
                     totalLength += trainLength;
                 } while (totalLength <= stationLength);
 
-                if ((mode != RideMode::stationToStation && mode != RideMode::continuousCircuit)
+                if ((mode != RideMode::stationToStation && mode != RideMode::inMotionBoarding
+                     && mode != RideMode::continuousCircuit)
                     || !rtd.flags.has(RtdFlag::allowMoreVehiclesThanStationFits))
                 {
                     maxNumTrains = std::min(maxNumTrains, int32_t(Limits::kMaxTrainsPerRide));

@@ -220,6 +220,11 @@ void Vehicle::CheckAndApplyBlockSectionStopSite()
 
     auto trackType = GetTrackType();
 
+    if (curRide->mode == RideMode::inMotionBoarding && trackTypeIsStation(trackType))
+    {
+        velocity = std::min(velocity, 2 << 16);
+    }
+
     TileElement* trackElement = MapGetTrackElementAtOfType(TrackLocation, trackType);
 
     if (trackElement == nullptr)

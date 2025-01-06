@@ -285,6 +285,7 @@ namespace OpenRCT2::GameActions
         switch (ride.mode)
         {
             case RideMode::stationToStation:
+            case RideMode::inMotionBoarding:
                 return STR_CANT_CHANGE_SPEED;
             case RideMode::race:
                 return STR_CANT_CHANGE_NUMBER_OF_LAPS;

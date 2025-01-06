@@ -2612,6 +2612,31 @@ namespace OpenRCT2
                 break;
             }
         }
+        else if (ride.mode == RideMode::inMotionBoarding)
+        {
+            for (int32_t i = 0; i < ride.numTrains; ++i)
+            {
+                Vehicle* vehicle = getGameState().entities.GetEntity<Vehicle>(ride.vehicles[i]);
+                if (vehicle == nullptr)
+                    continue;
+
+                if (vehicle->next_free_seat >= vehicle->num_seats && vehicle->num_seats > 0) // TODO: is necessary?
+                    continue;
+
+                if (vehicle->status != Vehicle::Status::waitingForPassengers
+                    && vehicle->status != Vehicle::Status::movingToEndOfStation)
+                    continue;
+
+                if (vehicle->current_station != guest.CurrentRideStation)
+                    continue;
+                chosen_train = i;
+                break;
+            }
+            if (chosen_train == RideStation::kNoTrain)
+            {
+                chosen_train = ride.getStation(guest.CurrentRideStation).TrainAtStation;
+            }
+        }
         else
         {
             chosen_train = ride.getStation(guest.CurrentRideStation).TrainAtStation;
@@ -3831,21 +3856,44 @@ namespace OpenRCT2
 
         auto destination = GetDestination();
         auto loadPositionWithReversal = (vehicle->flags.has(VehicleFlag::carIsReversed)) ? -load_position : load_position;
-        switch (vehicle->Orientation / 8)
+        if (ride->mode == RideMode::inMotionBoarding)
         {
-            case 0:
-                destination.x = vehicle->x - loadPositionWithReversal;
-                break;
-            case 1:
-                destination.y = vehicle->y + loadPositionWithReversal;
-                break;
-            case 2:
-                destination.x = vehicle->x + loadPositionWithReversal;
-                break;
-            case 3:
-                destination.y = vehicle->y - loadPositionWithReversal;
-                break;
+            auto station = ride->getStation(CurrentRideStation);
+            destination = CoordsXY{ station.Start.x + 16, station.Start.y + 16 };
+            switch (vehicle->Orientation / 8)
+            {
+                case 1: // TODO: fine tune this
+                    destination.x -= loadPositionWithReversal;
+                    break;
+                case 2:
+                    destination.y += loadPositionWithReversal;
+                    break;
+                case 3:
+                    destination.x += loadPositionWithReversal;
+                    break;
+                case 0:
+                    destination.y -= loadPositionWithReversal;
+                    break;
+            }
         }
+        else
+        {
+            switch (vehicle->Orientation / 8)
+            {
+                case 0:
+                    destination.x = vehicle->x - loadPositionWithReversal;
+                    break;
+                case 1:
+                    destination.y = vehicle->y + loadPositionWithReversal;
+                    break;
+                case 2:
+                    destination.x = vehicle->x + loadPositionWithReversal;
+                    break;
+                case 3:
+                    destination.y = vehicle->y - loadPositionWithReversal;
+                    break;
+            }
+    }
         SetDestination(destination);
 
         RideSubState = PeepRideSubState::approachVehicle;
@@ -4140,6 +4188,29 @@ namespace OpenRCT2
                 if (vehicle->IsUsedInPairs())
                 {
                     auto* seatedGuest = gameState.entities.GetEntity<Guest>(vehicle->peep[CurrentSeat ^ 1]);
+                    // vehicle->status == Vehicle::Status::MovingToEndOfStation
+                    if (ride->mode == RideMode::inMotionBoarding && vehicle->current_station == CurrentRideStation)
+                    {
+                        for (auto* trackElement : TileElementsView<TrackElement>(vehicle->TrackLocation))
+                        {
+                            if (trackElement->GetBaseZ() != vehicle->TrackLocation.z)
+                                continue;
+
+                            if (trackElement->GetStationIndex() != CurrentRideStation)
+                                continue;
+
+                            if (trackElement->IsStation())
+                            {
+                                auto station = ride->getStation(CurrentRideStation);
+                                if (CoordsXY{ vehicle->TrackLocation } != station.Start)
+                                {
+                                    Action = PeepActionType::idle;
+                                    Orientation = vehicle->GetTrackDirection() << 3;
+                                    return;
+                                }
+                            }
+                        }
+                    }
                     if (seatedGuest != nullptr)
                     {
                         if (seatedGuest->RideSubState != PeepRideSubState::enterVehicle)

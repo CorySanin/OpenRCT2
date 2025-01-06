@@ -33,7 +33,7 @@ constexpr RideTypeDescriptor ChairliftRTD =
                      RtdFlag::supportsMultipleColourSchemes, RtdFlag::allowMusic, RtdFlag::hasEntranceAndExit,
                      RtdFlag::allowMoreVehiclesThanStationFits, RtdFlag::isTransportRide, RtdFlag::showInTrackDesigner,
                      RtdFlag::slightlyInterestingToLookAt, RtdFlag::isSuspended, RtdFlag::runningSpeedAffectsReliability),
-    .RideModes = EnumsToFlags(RideMode::stationToStation),
+    .RideModes = EnumsToFlags(RideMode::stationToStation, RideMode::inMotionBoarding),
     .DefaultMode = RideMode::stationToStation,
     .OperatingSettings = { 1, 4 },
     .Naming = { STR_RIDE_NAME_CHAIRLIFT, STR_RIDE_DESCRIPTION_CHAIRLIFT },
@@ -57,7 +57,7 @@ constexpr RideTypeDescriptor ChairliftRTD =
     .ColourPreview = { SPR_RIDE_DESIGN_PREVIEW_CHAIRLIFT_TRACK, SPR_RIDE_DESIGN_PREVIEW_CHAIRLIFT_SUPPORTS },
     .ColourKey = RideColourKey::Ride,
     .Name = "chairlift",
-    .RatingsData = 
+    .RatingsData =
     {
         RatingsCalculationType::Normal,
         { RideRating::make(1, 60), RideRating::make(0, 40), RideRating::make(0, 50) },

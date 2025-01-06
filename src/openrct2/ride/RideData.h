@@ -617,13 +617,13 @@ constexpr const RideComponentName& GetRideComponentName(const RideComponentType 
 constexpr uint64_t kAllRideModesAvailable = EnumsToFlags(
     RideMode::continuousCircuit, RideMode::continuousCircuitBlockSectioned, RideMode::reverseInclineLaunchedShuttle,
     RideMode::poweredLaunchPasstrough, RideMode::shuttle, RideMode::normal, RideMode::boatHire, RideMode::upwardLaunch,
-    RideMode::rotatingLift, RideMode::stationToStation, RideMode::singleRidePerAdmission, RideMode::unlimitedRidesPerAdmission,
-    RideMode::maze, RideMode::race, RideMode::dodgems, RideMode::swing, RideMode::shopStall, RideMode::rotation,
-    RideMode::forwardRotation, RideMode::backwardRotation, RideMode::filmAvengingAviators, RideMode::mouseTails3DFilm,
-    RideMode::spaceRings, RideMode::beginners, RideMode::limPoweredLaunch, RideMode::filmThrillRiders,
-    RideMode::stormChasers3DFilm, RideMode::spaceRaiders3DFilm, RideMode::intense, RideMode::berserk, RideMode::hauntedHouse,
-    RideMode::circus, RideMode::downwardLaunch, RideMode::crookedHouse, RideMode::freefallDrop, RideMode::poweredLaunch,
-    RideMode::poweredLaunchBlockSectioned);
+    RideMode::rotatingLift, RideMode::stationToStation, RideMode::inMotionBoarding, RideMode::singleRidePerAdmission,
+    RideMode::unlimitedRidesPerAdmission, RideMode::maze, RideMode::race, RideMode::dodgems, RideMode::swing,
+    RideMode::shopStall, RideMode::rotation, RideMode::forwardRotation, RideMode::backwardRotation,
+    RideMode::filmAvengingAviators, RideMode::mouseTails3DFilm, RideMode::spaceRings, RideMode::beginners,
+    RideMode::limPoweredLaunch, RideMode::filmThrillRiders, RideMode::stormChasers3DFilm, RideMode::spaceRaiders3DFilm,
+    RideMode::intense, RideMode::berserk, RideMode::hauntedHouse, RideMode::circus, RideMode::downwardLaunch,
+    RideMode::crookedHouse, RideMode::freefallDrop, RideMode::poweredLaunch, RideMode::poweredLaunchBlockSectioned);
 
 extern const CarEntry kCableLiftVehicle;
 

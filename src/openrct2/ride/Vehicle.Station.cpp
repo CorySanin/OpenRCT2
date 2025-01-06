@@ -390,9 +390,12 @@ void Vehicle::UpdateMovingToEndOfStation()
         case RideMode::crookedHouse:
         case RideMode::circus:
             current_station = StationIndex::FromUnderlying(0);
-            velocity = 0;
-            acceleration = 0;
             SetState(Status::waitingForPassengers);
+            if (curRide->mode != RideMode::inMotionBoarding)
+            {
+                velocity = 0;
+                acceleration = 0;
+            }
             break;
         default:
         {
@@ -514,11 +517,20 @@ void Vehicle::TrainReadyToDepart(uint8_t num_peeps_on_train, uint8_t num_used_se
  */
 void Vehicle::UpdateWaitingForPassengers()
 {
-    velocity = 0;
-
     auto curRide = GetRide();
     if (curRide == nullptr)
         return;
+
+    if (curRide->mode != RideMode::inMotionBoarding)
+    {
+        velocity = 0;
+    }
+    else if (sub_state != 2)
+    {
+        auto& station = curRide->getStation(current_station);
+        station.TrainAtStation = RideStation::kNoTrain;
+        sub_state = 2;
+    }
 
     if (sub_state == 0)
     {
@@ -663,18 +675,17 @@ void Vehicle::UpdateWaitingForPassengers()
         return;
     }
 
-    if (!CloseRestraints())
+    if (!CloseRestraints() && curRide->mode != RideMode::inMotionBoarding)
         return;
 
-    velocity = 0;
+    SetState(curRide->mode == RideMode::inMotionBoarding ? Vehicle::Status::departing : Vehicle::Status::waitingToDepart);
+
     flags.unset(VehicleFlag::waitingOnAdjacentStation);
 
     if (curRide->departFlags & RIDE_DEPART_SYNCHRONISE_WITH_ADJACENT_STATIONS)
     {
         flags.set(VehicleFlag::waitingOnAdjacentStation);
     }
-
-    SetState(Status::waitingToDepart);
 }
 
 /**
@@ -1363,6 +1374,11 @@ void Vehicle::UpdateTravelling()
         return;
     }
 
+    if (curRide->mode == RideMode::inMotionBoarding)
+    {
+        CloseRestraints();
+    }
+
     uint32_t curFlags = UpdateTrackMotion(nullptr);
 
     bool skipCheck = false;
@@ -1609,6 +1625,9 @@ void Vehicle::UpdateArriving()
 
     switch (curRide->mode)
     {
+        case RideMode::inMotionBoarding:
+            UpdateUnloadingPassengers();
+            break;
         case RideMode::swing:
         case RideMode::rotation:
         case RideMode::forwardRotation:

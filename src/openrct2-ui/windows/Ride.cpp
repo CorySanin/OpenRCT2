@@ -3395,6 +3395,7 @@ namespace OpenRCT2::Ui::Windows
                 case RideMode::upwardLaunch:
                 case RideMode::poweredLaunchBlockSectioned:
                 case RideMode::stationToStation:
+                case RideMode::inMotionBoarding:
                 case RideMode::dodgems:
                     return;
                 default:
@@ -3578,7 +3579,7 @@ namespace OpenRCT2::Ui::Windows
 
             // Leave if another vehicle arrives at station
             if (ride->getRideTypeDescriptor().flags.has(RtdFlag::hasLeaveWhenAnotherVehicleArrivesAtStation)
-                && ride->numTrains > 1 && !ride->isBlockSectioned())
+                && ride->numTrains > 1 && !ride->isBlockSectioned() && ride->mode != RideMode::inMotionBoarding)
             {
                 widgets[WIDX_LEAVE_WHEN_ANOTHER_ARRIVES_CHECKBOX].type = WidgetType::checkbox;
                 widgets[WIDX_LEAVE_WHEN_ANOTHER_ARRIVES_CHECKBOX].tooltip = STR_LEAVE_IF_ANOTHER_VEHICLE_ARRIVES_TIP;
@@ -3593,7 +3594,8 @@ namespace OpenRCT2::Ui::Windows
             }
 
             // Synchronise with adjacent stations
-            if (ride->getRideTypeDescriptor().flags.has(RtdFlag::canSynchroniseWithAdjacentStations))
+            if (ride->getRideTypeDescriptor().flags.has(RtdFlag::canSynchroniseWithAdjacentStations)
+                && ride->mode != RideMode::inMotionBoarding)
             {
                 widgets[WIDX_SYNCHRONISE_WITH_ADJACENT_STATIONS_CHECKBOX].type = WidgetType::checkbox;
                 widgets[WIDX_SYNCHRONISE_WITH_ADJACENT_STATIONS_CHECKBOX].text = STR_SYNCHRONISE_WITH_ADJACENT_STATIONS;
@@ -3609,7 +3611,7 @@ namespace OpenRCT2::Ui::Windows
 
             // Waiting
             widgets[WIDX_LOAD].text = VehicleLoadNames[(ride->departFlags & RIDE_DEPART_WAIT_FOR_LOAD_MASK)];
-            if (ride->getRideTypeDescriptor().flags.has(RtdFlag::hasLoadOptions))
+            if (ride->getRideTypeDescriptor().flags.has(RtdFlag::hasLoadOptions) && ride->mode != RideMode::inMotionBoarding)
             {
                 widgets[WIDX_LOAD_CHECKBOX].type = WidgetType::checkbox;
                 widgets[WIDX_LOAD].type = WidgetType::dropdownMenu;
@@ -3674,11 +3676,19 @@ namespace OpenRCT2::Ui::Windows
                     caption = STR_LAUNCH_SPEED;
                     tooltip = STR_LAUNCH_SPEED_TIP;
                     break;
+                case RideMode::inMotionBoarding:
                 case RideMode::stationToStation:
-                    tweakValue = ((ride->speed * 9) / 4);
-                    format = STR_VELOCITY;
-                    caption = STR_SPEED;
-                    tooltip = STR_SPEED_TIP;
+                    if (ride->type == RIDE_TYPE_CHAIRLIFT)
+                    {
+                        tweakValue = ((ride->speed * 9) / 4);
+                        format = STR_VELOCITY;
+                        caption = STR_SPEED;
+                        tooltip = STR_SPEED_TIP;
+                    }
+                    else
+                    {
+                        format = kStringIdEmpty;
+                    }
                     break;
                 case RideMode::race:
                     tweakValue = ride->numLaps;
