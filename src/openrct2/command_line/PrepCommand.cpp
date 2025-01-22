@@ -26,6 +26,7 @@
 #include "../management/NewsItem.h"
 #include "../object/ObjectManager.h"
 #include "../object/ObjectRepository.h"
+#include "../ride/RideManager.hpp"
 #include "../park/ParkFile.h"
 #include "../scenario/Scenario.h"
 #include "../world/Park.h"
@@ -60,11 +61,11 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     bool prepSandbox = false;
     bool prepEcon = false;
     uint32_t econBudget = 0;
-    if (String::Equals(rawPrepType, "sandbox", true))
+    if (String::equals(rawPrepType, "sandbox", true))
     {
         prepSandbox = true;
     }
-    else if (String::Equals(rawPrepType, "economy", true))
+    else if (String::equals(rawPrepType, "economy", true))
     {
         prepEcon = true;
         if (!enumerator->TryPopString(&rawArg))
