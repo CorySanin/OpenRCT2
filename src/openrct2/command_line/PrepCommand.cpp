@@ -32,6 +32,7 @@
 #include "../world/Park.h"
 #include "../world/tile_element/SurfaceElement.h"
 #include "../world/tile_element/TrackElement.h"
+#include "../ui/WindowManager.h"
 #include "CommandLine.hpp"
 
 #include <memory>
@@ -241,7 +242,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             if (rideRef.type == RIDE_TYPE_CASH_MACHINE)
             {
                 rideRef.type = RIDE_TYPE_FIRST_AID;
-                rideRef.subtype = RideGetEntryIndex(RIDE_TYPE_FIRST_AID, OBJECT_ENTRY_INDEX_NULL);
+                rideRef.subtype = RideGetEntryIndex(RIDE_TYPE_FIRST_AID, kObjectEntryIndexNull);
             }
         }
         UpdateTrackElementsRideType();
@@ -276,7 +277,8 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         // HACK remove the main window so it saves the park with the
         //      correct initial view
         //      taken from ConvertCommand.cpp
-        WindowCloseByClass(WindowClass::MainWindow);
+        auto* windowMgr = Ui::GetWindowManager();
+        windowMgr->CloseByClass(WindowClass::MainWindow);
 
         SaveGameWithName(destinationPath);
     }
