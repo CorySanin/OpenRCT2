@@ -134,6 +134,7 @@ const CommandLineCommand CommandLine::kRootCommands[]
 #endif
     DefineCommand("set-rct2", "<path>",                 kStandardOptions, HandleCommandSetRCT2),
     DefineCommand("convert",  "<source> <destination>", kStandardOptions, CommandLine::HandleCommandConvert),
+    DefineCommand("prep", "<type> <starting funds (if econ)> <source> <destination>", kStandardOptions, CommandLine::HandleCommandPrep),
     DefineCommand("scan-objects", "<path>",             kStandardOptions, HandleCommandScanObjects),
     DefineCommand("handle-uri", "openrct2://.../",      kStandardOptions, CommandLine::HandleCommandUri),
 
