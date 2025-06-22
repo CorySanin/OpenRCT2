@@ -34,6 +34,7 @@
 #include "../world/tile_element/TrackElement.h"
 #include "../ui/WindowManager.h"
 #include "CommandLine.hpp"
+#include "../entity/EntityList.h"
 
 #include <memory>
 
@@ -142,7 +143,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     context->Initialise();
 
     auto& objManager = context->GetObjectManager();
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
 
     try
     {
@@ -154,7 +155,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             case FileExtension::SV6:
             {
                 auto importer = ParkImporter::Create(sourcePath);
-                auto loadResult = importer->Load(sourcePath.c_str());
+                auto loadResult = importer->Load(sourcePath.c_str(), false);
 
                 objManager.LoadObjects(loadResult.RequiredObjects);
 
@@ -164,7 +165,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             case FileExtension::PARK:
             {
                 std::unique_ptr<IParkImporter> importer = ParkImporter::CreateParkFile(context->GetObjectRepository());
-                auto loadResult = importer->Load(sourcePath.c_str());
+                auto loadResult = importer->Load(sourcePath.c_str(), false);
 
                 objManager.LoadObjects(loadResult.RequiredObjects);
 
@@ -185,7 +186,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     ScenarioBegin(gameState);
 
-    gameState.LastEntranceStyle = objManager.GetLoadedObjectEntryIndex("rct2.station.plain");
+    gameState.lastEntranceStyle = objManager.GetLoadedObjectEntryIndex("rct2.station.plain");
 
     CheatSetAction(CheatType::SetGrassLength, GRASS_LENGTH_CLEAR_0).Execute();
     CheatSetAction(CheatType::WaterPlants).Execute();
@@ -228,13 +229,13 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     gGamePaused = 0;
 
-    gameState.NewsItems.Clear();
+    gameState.newsItems.Clear();
 
     if (prepSandbox)
     {
         const ObjectRepositoryItem* items = ObjectRepositoryGetItems();
         int32_t numObjects = static_cast<int32_t>(ObjectRepositoryGetItemsCount());
-        int32_t flags = INPUT_FLAG_EDITOR_OBJECT_1 | INPUT_FLAG_EDITOR_OBJECT_SELECT_OBJECTS_IN_SCENERY_GROUP;
+        EditorInputFlags inputFlags = { EditorInputFlag::unk1, EditorInputFlag::selectObjectsInSceneryGroup };
         CheatSetAction(CheatType::NoMoney, 1).Execute();
 
         for (auto& rideRef : GetRideManager())
@@ -253,12 +254,12 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             const ObjectRepositoryItem* item = &items[i];
             if (item->Name == "Cash Machine")
             {
-                WindowEditorObjectSelectionSelectObject(0, flags, item);
+                WindowEditorObjectSelectionSelectObject(0, inputFlags, item);
             }
         }
 
         UnloadUnselectedObjects();
-        EditorObjectFlagsFree();
+        EditorObjectFlagsClear();
     }
     if (prepEcon)
     {
@@ -267,7 +268,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         ScenarioSetSettingAction(ScenarioSetSetting::InitialLoan, 0).Execute();
         ScenarioSetSettingAction(ScenarioSetSetting::MaximumLoanSize, 0).Execute();
         ScenarioSetSettingAction(ScenarioSetSetting::AnnualInterestRate, 0).Execute();
-        gameState.Cash = econBudget;
+        gameState.cash = econBudget;
     }
 
     DetectProblems(gameState);
@@ -294,10 +295,10 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
 static void UpdateTrackElementsRideType()
 {
-    auto& gameState = GetGameState();
-    for (int32_t y = 0; y < gameState.MapSize.y; y++)
+    auto& gameState = getGameState();
+    for (int32_t y = 0; y < gameState.mapSize.y; y++)
     {
-        for (int32_t x = 0; x < gameState.MapSize.x; x++)
+        for (int32_t x = 0; x < gameState.mapSize.x; x++)
         {
             TileElement* tileElement = MapGetFirstElementAt(TileCoordsXY{ x, y });
             if (tileElement == nullptr)
@@ -327,15 +328,15 @@ static void DetectProblems(GameState_t& gameState)
     bool ride = false;
     for (auto& rideRef : GetRideManager())
     {
-        if (rideRef.mode == RideMode::ShopStall)
+        if (rideRef.mode == RideMode::shopStall)
         {
-            food = food || (rideRef.type == RIDE_TYPE_FOOD_STALL && rideRef.status == RideStatus::Open);
-            drink = drink || (rideRef.type == RIDE_TYPE_DRINK_STALL && rideRef.status == RideStatus::Open);
-            restroom = restroom || (rideRef.type == RIDE_TYPE_TOILETS && rideRef.status == RideStatus::Open);
+            food = food || (rideRef.type == RIDE_TYPE_FOOD_STALL && rideRef.status == RideStatus::open);
+            drink = drink || (rideRef.type == RIDE_TYPE_DRINK_STALL && rideRef.status == RideStatus::open);
+            restroom = restroom || (rideRef.type == RIDE_TYPE_TOILETS && rideRef.status == RideStatus::open);
         }
         else
         {
-            ride = ride || rideRef.status == RideStatus::Open;
+            ride = ride || rideRef.status == RideStatus::open;
         }
     }
 
@@ -348,7 +349,7 @@ static void DetectProblems(GameState_t& gameState)
         }
     }
 
-    if (hmen < static_cast<uint32_t>(gameState.MapSize.x * gameState.MapSize.y / 800))
+    if (hmen < static_cast<uint32_t>(gameState.mapSize.x * gameState.mapSize.y / 800))
     {
         Console::Error::WriteLine("Consider adding more handymen to the park.");
     }

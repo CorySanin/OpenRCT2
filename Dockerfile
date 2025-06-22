@@ -10,12 +10,9 @@ COPY . .
 
 RUN mkdir build \
  && cd build \
- && cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib -DDISABLE_OPENGL=ON -DDISABLE_GUI=ON \
- && make -j4 install \
- && rm /openrct2-install/usr/lib/libopenrct2.a \
- # HACK due to issue in cmakelists, move content from cli
- && mv /openrct2-install/usr/share/openrct2-cli/* /openrct2-install/usr/share/openrct2 \
- && rm -rf /openrct2-install/usr/share/openrct2-cli
+ && cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/openrct2-install/usr -DCMAKE_INSTALL_LIBDIR=/openrct2-install/usr/lib -DDISABLE_OPENGL=ON -DDISABLE_GUI=ON -DENABLE_HEADERS_CHECK=OFF \
+ && make -j8 graphics install \
+ && rm /openrct2-install/usr/lib/libopenrct2.a
 
 
 # Build runtime image
