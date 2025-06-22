@@ -58,6 +58,7 @@ namespace OpenRCT2::Ui::Windows
         void OnOpen() override
         {
             SetWidgets(PatrolAreaWidgets);
+
             hold_down_widgets = (1uLL << WIDX_INCREMENT) | (1uLL << WIDX_DECREMENT);
             WindowInitScrollWidgets(*this);
             WindowPushOthersBelow(*this);
@@ -134,9 +135,9 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_PREVIEW].image = ImageId(LandTool::SizeToSpriteIndex(gLandToolSize));
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
             // Draw number for tool sizes bigger than 7
             if (gLandToolSize > kLandToolMaximumSizeWithSprite)
@@ -146,7 +147,7 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<uint16_t>(gLandToolSize);
                 DrawTextBasic(
-                    dpi, screenCoords - ScreenCoordsXY{ 0, 2 }, STR_LAND_TOOL_SIZE_VALUE, ft, { TextAlignment::CENTRE });
+                    rt, screenCoords - ScreenCoordsXY{ 0, 2 }, STR_LAND_TOOL_SIZE_VALUE, ft, { TextAlignment::CENTRE });
             }
         }
 
@@ -248,10 +249,10 @@ namespace OpenRCT2::Ui::Windows
             }
             else
             {
-                if (!ToolSet(*this, 0, Tool::WalkDown))
+                if (!ToolSet(*this, 0, Tool::walkDown))
                 {
                     ShowGridlines();
-                    InputSetFlag(INPUT_FLAG_6, true);
+                    gInputFlags.set(InputFlag::unk6);
                     SetPatrolAreaToRender(_staffId);
                     GfxInvalidateScreen();
                 }
@@ -284,11 +285,6 @@ namespace OpenRCT2::Ui::Windows
         {
             auto coords = FootpathGetCoordinatesFromPos(pos, nullptr, nullptr);
             return coords.IsNull() ? std::nullopt : std::make_optional(coords);
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
         }
     };
 

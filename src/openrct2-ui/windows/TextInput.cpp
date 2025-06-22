@@ -172,7 +172,7 @@ namespace OpenRCT2::Ui::Windows
             int32_t newHeight = CalculateWindowHeight(_buffer.data());
             if (newHeight != height)
             {
-                WindowSetResize(*this, WW, newHeight, WW, newHeight);
+                WindowSetResize(*this, { WW, newHeight }, { WW, newHeight });
             }
 
             widgets[WIDX_OKAY].top = newHeight - 22;
@@ -194,12 +194,11 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
-            ScreenCoordsXY screenCoords;
-            screenCoords.y = windowPos.y + 25;
+            auto screenCoords = windowPos + ScreenCoordsXY{ WW / 2, widgets[WIDX_TITLE].bottom + 13 };
 
             int32_t no_lines = 0;
 
@@ -207,14 +206,12 @@ namespace OpenRCT2::Ui::Windows
             {
                 auto ft = Formatter();
                 ft.Add<const char*>(_description.c_str());
-                DrawTextWrapped(
-                    dpi, { windowPos.x + WW / 2, screenCoords.y }, WW, STR_STRING, ft, { colours[1], TextAlignment::CENTRE });
+                DrawTextWrapped(rt, screenCoords, WW, STR_STRING, ft, { colours[1], TextAlignment::CENTRE });
             }
             else
             {
                 DrawTextWrapped(
-                    dpi, { windowPos.x + WW / 2, screenCoords.y }, WW, _descriptionStringId, _descriptionArgs,
-                    { colours[1], TextAlignment::CENTRE });
+                    rt, screenCoords, WW, _descriptionStringId, _descriptionArgs, { colours[1], TextAlignment::CENTRE });
             }
 
             screenCoords.y += 25;
@@ -226,7 +223,7 @@ namespace OpenRCT2::Ui::Windows
                 u8string_view{ _buffer.data(), _buffer.size() }, WW - (24 + 13), FontStyle::Medium, &wrappedString, &no_lines);
 
             GfxFillRectInset(
-                dpi,
+                rt,
                 { { windowPos.x + 10, screenCoords.y }, { windowPos.x + WW - 10, screenCoords.y + 10 * (no_lines + 1) + 3 } },
                 colours[1], INSET_RECT_F_60);
 
@@ -242,7 +239,7 @@ namespace OpenRCT2::Ui::Windows
             for (int32_t line = 0; line <= no_lines; line++)
             {
                 screenCoords.x = windowPos.x + 12;
-                DrawText(dpi, screenCoords, { colours[1], FontStyle::Medium, TextAlignment::LEFT }, wrapPointer, true);
+                DrawText(rt, screenCoords, { colours[1], FontStyle::Medium, TextAlignment::LEFT }, wrapPointer, true);
 
                 size_t string_length = GetStringSize(wrapPointer) - 1;
                 if (!cur_drawn && (textInput->SelectionStart <= char_count + string_length))
@@ -269,7 +266,7 @@ namespace OpenRCT2::Ui::Windows
                         uint8_t colour = ColourMapA[colours[1].colour].mid_light;
                         // TODO: palette index addition
                         GfxFillRect(
-                            dpi, { { cursorX, screenCoords.y + 9 }, { cursorX + textWidth, screenCoords.y + 9 } }, colour + 5);
+                            rt, { { cursorX, screenCoords.y + 9 }, { cursorX + textWidth, screenCoords.y + 9 } }, colour + 5);
                     }
 
                     cur_drawn++;
@@ -286,7 +283,7 @@ namespace OpenRCT2::Ui::Windows
 
             if (!cur_drawn)
             {
-                cursorX = dpi.lastStringPos.x;
+                cursorX = rt.lastStringPos.x;
                 cursorY = screenCoords.y - 10;
             }
 
@@ -304,17 +301,14 @@ namespace OpenRCT2::Ui::Windows
             Close();
         }
 
-        static int32_t CalculateWindowHeight(std::string_view text)
+        int32_t CalculateWindowHeight(std::string_view text)
         {
             // String length needs to add 12 either side of box +13 for cursor when max length.
             int32_t numLines{};
             GfxWrapString(text, WW - (24 + 13), FontStyle::Medium, nullptr, &numLines);
-            return numLines * 10 + WH;
-        }
 
-        void OnResize() override
-        {
-            ResizeFrame();
+            const auto textHeight = numLines * 10;
+            return WH + textHeight + getTitleBarDiffNormal();
         }
 
     private:
@@ -376,8 +370,7 @@ namespace OpenRCT2::Ui::Windows
         auto* windowMgr = GetWindowManager();
         windowMgr->CloseByClass(WindowClass::Textinput);
 
-        auto height = TextInputWindow::CalculateWindowHeight(existing_text);
-        auto w = windowMgr->Create<TextInputWindow>(WindowClass::Textinput, WW, height, WF_CENTRE_SCREEN | WF_STICK_TO_FRONT);
+        auto w = windowMgr->Create<TextInputWindow>(WindowClass::Textinput, WW, WH + 10, WF_CENTRE_SCREEN | WF_STICK_TO_FRONT);
         if (w != nullptr)
         {
             w->SetParentWindow(call_w, call_widget);
@@ -391,8 +384,7 @@ namespace OpenRCT2::Ui::Windows
         std::function<void(std::string_view)> callback, std::function<void()> cancelCallback)
     {
         auto* windowMgr = GetWindowManager();
-        auto height = TextInputWindow::CalculateWindowHeight(initialValue);
-        auto w = windowMgr->Create<TextInputWindow>(WindowClass::Textinput, WW, height, WF_CENTRE_SCREEN | WF_STICK_TO_FRONT);
+        auto w = windowMgr->Create<TextInputWindow>(WindowClass::Textinput, WW, WH + 10, WF_CENTRE_SCREEN | WF_STICK_TO_FRONT);
         if (w != nullptr)
         {
             w->SetTitle(title, description);

@@ -244,9 +244,9 @@ namespace OpenRCT2::Ui::Windows
                     case DDIDX_OPEN_CONTENT_FOLDER:
                     {
                         auto context = OpenRCT2::GetContext();
-                        auto env = context->GetPlatformEnvironment();
-                        auto uiContext = context->GetUiContext();
-                        uiContext->OpenFolder(env->GetDirectoryPath(OpenRCT2::DIRBASE::USER));
+                        auto& env = context->GetPlatformEnvironment();
+                        auto& uiContext = context->GetUiContext();
+                        uiContext.OpenFolder(env.GetDirectoryPath(OpenRCT2::DirBase::user));
                         break;
                     }
                     default:
@@ -273,10 +273,10 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            GfxFilterRect(dpi, _filterRect, FilterPaletteID::Palette51);
-            DrawWidgets(dpi);
+            GfxFilterRect(rt, _filterRect, FilterPaletteID::Palette51);
+            DrawWidgets(rt);
         }
     };
 
@@ -290,6 +290,6 @@ namespace OpenRCT2::Ui::Windows
         auto* windowMgr = GetWindowManager();
         return windowMgr->Create<TitleMenuWindow>(
             WindowClass::TitleMenu, ScreenCoordsXY(0, ContextGetHeight() - 182), 0, windowHeight,
-            WF_STICK_TO_BACK | WF_TRANSPARENT | WF_NO_BACKGROUND);
+            WF_STICK_TO_BACK | WF_TRANSPARENT | WF_NO_BACKGROUND | WF_NO_TITLE_BAR);
     }
 } // namespace OpenRCT2::Ui::Windows

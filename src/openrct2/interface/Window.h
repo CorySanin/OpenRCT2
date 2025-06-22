@@ -21,13 +21,11 @@
 #include <functional>
 #include <list>
 #include <memory>
-#include <variant>
 
-struct DrawPixelInfo;
+struct RenderTarget;
 struct TrackDesignFileRef;
 struct ScenarioIndexEntry;
 
-enum class VisibilityCache : uint8_t;
 enum class CursorID : uint8_t;
 enum class CloseWindowModifier : uint8_t;
 
@@ -90,13 +88,14 @@ namespace OpenRCT2
         WF_10 = (1 << 10),
         WF_WHITE_BORDER_ONE = (1 << 12),
         WF_WHITE_BORDER_MASK = (1 << 12) | (1 << 13),
-
+        WF_NO_TITLE_BAR = (1 << 14),
         WF_NO_SNAPPING = (1 << 15),
 
-        // Create only flags
+        // *ONLY* create only flags below
         WF_AUTO_POSITION = (1 << 16),
         WF_CENTRE_SCREEN = (1 << 17),
     };
+    using WindowFlags = uint32_t;
 
     enum
     {
@@ -194,11 +193,11 @@ constexpr int32_t WC_TILE_INSPECTOR__WIDX_BANNER_SPINNER_HEIGHT_DECREASE = 30;
 
 enum class PromptMode : uint8_t
 {
-    SaveBeforeLoad = 0,
-    SaveBeforeQuit,
-    SaveBeforeQuit2,
-    SaveBeforeNewGame,
-    Quit
+    saveBeforeLoad = 0,
+    saveBeforeQuit,
+    saveBeforeQuit2,
+    saveBeforeNewGame,
+    quit
 };
 
 enum BTM_TOOLBAR_DIRTY_FLAGS
@@ -210,62 +209,57 @@ enum BTM_TOOLBAR_DIRTY_FLAGS
     BTM_TB_DIRTY_FLAG_PARK_RATING = (1 << 4)
 };
 
-// 000N_TTTL
-enum
+enum class LoadSaveAction : uint8_t
 {
-    LOADSAVETYPE_LOAD = 0 << 0,
-    LOADSAVETYPE_SAVE = 1 << 0,
-
-    LOADSAVETYPE_GAME = 0 << 1,
-    LOADSAVETYPE_LANDSCAPE = 1 << 1,
-    LOADSAVETYPE_SCENARIO = 2 << 1,
-    LOADSAVETYPE_TRACK = 3 << 1,
-    LOADSAVETYPE_HEIGHTMAP = 4 << 1,
+    load,
+    save,
 };
 
-enum
+enum class LoadSaveType : uint8_t
 {
-    MODAL_RESULT_FAIL = -1,
-    MODAL_RESULT_CANCEL,
-    MODAL_RESULT_OK
+    park,
+    landscape,
+    scenario,
+    track,
+    heightmap,
 };
 
-enum class VisibilityCache : uint8_t
+enum class ModalResult : int8_t
 {
-    Unknown,
-    Visible,
-    Covered
+    fail = -1,
+    cancel,
+    ok,
 };
 
 enum class CloseWindowModifier : uint8_t
 {
-    None,
-    Shift,
-    Control
+    none,
+    shift,
+    control
 };
 
 enum class GuestListFilterType : int32_t
 {
-    GuestsOnRide,
-    GuestsInQueue,
-    GuestsThinkingAboutRide,
-    GuestsThinkingX,
+    guestsOnRide,
+    guestsInQueue,
+    guestsThinkingAboutRide,
+    guestsThinkingX,
 };
 
 enum class Tool
 {
-    Arrow = 0,
-    UpArrow = 2,
-    UpDownArrow = 3,
-    Picker = 7,
-    Crosshair = 12,
-    PathDown = 17,
-    DigDown = 18,
-    WaterDown = 19,
-    WalkDown = 22,
-    PaintDown = 23,
-    EntranceDown = 24,
-    Bulldozer = 27,
+    arrow = 0,
+    upArrow = 2,
+    upDownArrow = 3,
+    picker = 7,
+    crosshair = 12,
+    pathDown = 17,
+    digDown = 18,
+    waterDown = 19,
+    walkDown = 22,
+    paintDown = 23,
+    entranceDown = 24,
+    bulldozer = 27,
 };
 
 namespace OpenRCT2
@@ -280,7 +274,6 @@ namespace OpenRCT2
     extern Tool gCurrentToolId;
     extern WidgetRef gCurrentToolWidget;
 
-    using modal_callback = void (*)(int32_t result);
     using CloseCallback = void (*)();
 
     constexpr int8_t kWindowLimitMin = 4;
@@ -293,7 +286,7 @@ namespace OpenRCT2
 
     extern colour_t gCurrentWindowColours[3];
 
-    std::list<std::shared_ptr<WindowBase>>::iterator WindowGetIterator(const WindowBase* w);
+    std::vector<std::unique_ptr<WindowBase>>::iterator WindowGetIterator(const WindowBase* w);
     void WindowVisitEach(std::function<void(WindowBase*)> func);
 
     void WindowSetFlagForAllViewports(uint32_t viewportFlag, bool enabled);
@@ -319,8 +312,8 @@ namespace OpenRCT2
     void WindowCheckAllValidZoom();
     void WindowZoomSet(WindowBase& w, ZoomLevel zoomLevel, bool atCursor);
 
-    void WindowDrawAll(DrawPixelInfo& dpi, int32_t left, int32_t top, int32_t right, int32_t bottom);
-    void WindowDraw(DrawPixelInfo& dpi, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
+    void WindowDrawAll(RenderTarget& rt, int32_t left, int32_t top, int32_t right, int32_t bottom);
+    void WindowDraw(RenderTarget& rt, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
 
     bool isToolActive(WindowClass cls);
     bool isToolActive(WindowClass cls, rct_windownumber number);
@@ -340,13 +333,8 @@ namespace OpenRCT2
 
     void TextinputCancel();
 
-    bool WindowIsVisible(WindowBase& w);
-
-    Viewport* WindowGetPreviousViewport(Viewport* current);
-    void WindowResetVisibilities();
     void WindowInitAll();
 
     void WindowFollowSprite(WindowBase& w, EntityId spriteIndex);
     void WindowUnfollowSprite(WindowBase& w);
-
 } // namespace OpenRCT2

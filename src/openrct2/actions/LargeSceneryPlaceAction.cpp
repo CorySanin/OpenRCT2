@@ -74,7 +74,7 @@ GameActions::Result LargeSceneryPlaceAction::Query() const
 
     auto resultData = LargeSceneryPlaceActionResult{};
 
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
 
     money64 supportsCost = 0;
 
@@ -118,7 +118,7 @@ GameActions::Result LargeSceneryPlaceAction::Query() const
 
     res.Position.z = maxHeight;
 
-    if (sceneryEntry->scrolling_mode != SCROLLING_MODE_NONE)
+    if (sceneryEntry->scrolling_mode != kScrollingModeNone)
     {
         if (HasReachedBannerLimit())
         {
@@ -152,7 +152,7 @@ GameActions::Result LargeSceneryPlaceAction::Query() const
 
         const auto clearanceData = canBuild.GetData<ConstructClearResult>();
         int32_t tempSceneryGroundFlags = clearanceData.GroundFlags & (ELEMENT_IS_ABOVE_GROUND | ELEMENT_IS_UNDERGROUND);
-        if (!gameState.Cheats.disableClearanceChecks)
+        if (!gameState.cheats.disableClearanceChecks)
         {
             if ((clearanceData.GroundFlags & ELEMENT_IS_UNDERWATER) || (clearanceData.GroundFlags & ELEMENT_IS_UNDERGROUND))
             {
@@ -174,8 +174,8 @@ GameActions::Result LargeSceneryPlaceAction::Query() const
             return GameActions::Result(GameActions::Status::Disallowed, STR_CANT_POSITION_THIS_HERE, STR_OFF_EDGE_OF_MAP);
         }
 
-        if (!(gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) && !MapIsLocationOwned({ curTile, zLow })
-            && !gameState.Cheats.sandboxMode)
+        if (gLegacyScene != LegacyScene::scenarioEditor && !MapIsLocationOwned({ curTile, zLow })
+            && !gameState.cheats.sandboxMode)
         {
             return GameActions::Result(
                 GameActions::Status::Disallowed, STR_CANT_POSITION_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);
@@ -190,7 +190,7 @@ GameActions::Result LargeSceneryPlaceAction::Query() const
     }
 
     // Force ride construction to recheck area
-    _currentTrackSelectionFlags |= TRACK_SELECTION_FLAG_RECHECK;
+    _currentTrackSelectionFlags.set(TrackSelectionFlag::recheck);
 
     res.Cost = sceneryEntry->price + supportsCost;
     res.SetData(std::move(resultData));
@@ -238,7 +238,7 @@ GameActions::Result LargeSceneryPlaceAction::Execute() const
 
     // Allocate banner
     Banner* banner = nullptr;
-    if (sceneryEntry->scrolling_mode != SCROLLING_MODE_NONE)
+    if (sceneryEntry->scrolling_mode != kScrollingModeNone)
     {
         banner = CreateBanner();
         if (banner == nullptr)
@@ -250,16 +250,16 @@ GameActions::Result LargeSceneryPlaceAction::Execute() const
 
         banner->text = {};
         banner->colour = 2;
-        banner->text_colour = 2;
-        banner->flags = BANNER_FLAG_IS_LARGE_SCENERY;
+        banner->textColour = TextColour::white;
+        banner->flags = { BannerFlag::isLargeScenery };
         banner->type = 0;
         banner->position = TileCoordsXY(_loc);
 
         RideId rideIndex = BannerGetClosestRideIndex({ _loc, maxHeight });
         if (!rideIndex.IsNull())
         {
-            banner->ride_index = rideIndex;
-            banner->flags |= BANNER_FLAG_LINKED_TO_RIDE;
+            banner->rideIndex = rideIndex;
+            banner->flags.set(BannerFlag::linkedToRide);
         }
 
         resultData.bannerId = banner->id;
@@ -297,7 +297,7 @@ GameActions::Result LargeSceneryPlaceAction::Execute() const
         if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST))
         {
             FootpathRemoveLitter({ curTile, zLow });
-            if (!GetGameState().Cheats.disableClearanceChecks)
+            if (!getGameState().cheats.disableClearanceChecks)
             {
                 WallRemoveAt({ curTile, zLow, zHigh });
             }
@@ -324,7 +324,7 @@ GameActions::Result LargeSceneryPlaceAction::Execute() const
     }
 
     // Force ride construction to recheck area
-    _currentTrackSelectionFlags |= TRACK_SELECTION_FLAG_RECHECK;
+    _currentTrackSelectionFlags.set(TrackSelectionFlag::recheck);
 
     res.Cost = sceneryEntry->price + supportsCost;
     res.SetData(std::move(resultData));

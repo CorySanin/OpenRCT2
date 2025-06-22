@@ -20,7 +20,6 @@
 #include "Banner.h"
 #include "Footpath.h"
 #include "Location.hpp"
-#include "Map.h"
 #include "MapAnimation.h"
 #include "Park.h"
 #include "Scenery.h"
@@ -240,7 +239,7 @@ namespace OpenRCT2::TileInspector
                     if (ride != nullptr)
                     {
                         auto stationIndex = tileElement->AsEntrance()->GetStationIndex();
-                        auto& station = ride->GetStation(stationIndex);
+                        auto& station = ride->getStation(stationIndex);
                         auto entrance = station.Entrance;
                         auto exit = station.Exit;
                         uint8_t entranceType = tileElement->AsEntrance()->GetEntranceType();
@@ -332,10 +331,10 @@ namespace OpenRCT2::TileInspector
                 newBanner->id = newId;
 
                 // If the linked ride has been destroyed since copying, unlink the pasted banner
-                if (newBanner->flags & BANNER_FLAG_LINKED_TO_RIDE && GetRide(newBanner->ride_index) == nullptr)
+                if (newBanner->flags.has(BannerFlag::linkedToRide) && GetRide(newBanner->rideIndex) == nullptr)
                 {
-                    newBanner->flags &= ~BANNER_FLAG_LINKED_TO_RIDE;
-                    newBanner->ride_index = RideId::GetNull();
+                    newBanner->flags.unset(BannerFlag::linkedToRide);
+                    newBanner->rideIndex = RideId::GetNull();
                 }
 
                 // Use the new banner index
@@ -470,7 +469,7 @@ namespace OpenRCT2::TileInspector
                     if (ride != nullptr)
                     {
                         auto entranceIndex = tileElement->AsEntrance()->GetStationIndex();
-                        auto& station = ride->GetStation(entranceIndex);
+                        auto& station = ride->getStation(entranceIndex);
                         const auto& entranceLoc = station.Entrance;
                         const auto& exitLoc = station.Exit;
                         uint8_t z = tileElement->BaseHeight;
@@ -653,7 +652,7 @@ namespace OpenRCT2::TileInspector
         if (isExecuting)
         {
             auto stationIndex = entranceElement->AsEntrance()->GetStationIndex();
-            auto& station = ride->GetStation(stationIndex);
+            auto& station = ride->getStation(stationIndex);
 
             switch (entranceElement->AsEntrance()->GetEntranceType())
             {

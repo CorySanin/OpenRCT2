@@ -33,7 +33,7 @@ namespace OpenRCT2::Ui::Windows
 
     // clang-format off
     static constexpr Widget window_overwrite_prompt_widgets[] = {
-        WINDOW_SHIM_WHITE(STR_FILEBROWSER_OVERWRITE_TITLE, OVERWRITE_WW, OVERWRITE_WH),
+        WINDOW_SHIM(STR_FILEBROWSER_OVERWRITE_TITLE, OVERWRITE_WW, OVERWRITE_WH),
         MakeWidget({                10, OVERWRITE_WH - 20 }, { 84, 11 }, WindowWidgetType::Button, WindowColour::Primary, STR_FILEBROWSER_OVERWRITE_TITLE),
         MakeWidget({ OVERWRITE_WW - 95, OVERWRITE_WH - 20 }, { 85, 11 }, WindowWidgetType::Button, WindowColour::Primary, STR_SAVE_PROMPT_CANCEL),
     };
@@ -43,14 +43,17 @@ namespace OpenRCT2::Ui::Windows
     {
         std::string _name;
         std::string _path;
-        int32_t _type;
+        LoadSaveAction _action;
+        LoadSaveType _type;
         TrackDesign* _trackDesign;
 
     public:
         OverwritePromptWindow(
-            const std::string_view name, const std::string_view path, int32_t type, TrackDesign* trackDesignPtr)
+            const std::string_view name, const std::string_view path, LoadSaveAction action, LoadSaveType type,
+            TrackDesign* trackDesignPtr)
             : _name(name)
             , _path(path)
+            , _action(action)
             , _type(type)
             , _trackDesign(trackDesignPtr)
         {
@@ -67,7 +70,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 case WIDX_OVERWRITE_OVERWRITE:
                 {
-                    FileBrowser::Select(_path.c_str(), _type, _trackDesign);
+                    FileBrowser::Select(_path.c_str(), _action, _type, _trackDesign);
 
                     // As the LoadSaveWindow::Select function can change the order of the
                     // windows we can't use WindowClose(w).
@@ -83,28 +86,29 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
             auto ft = Formatter();
             ft.Add<StringId>(STR_STRING);
             ft.Add<char*>(_name.c_str());
 
             ScreenCoordsXY stringCoords(windowPos.x + width / 2, windowPos.y + (height / 2) - 3);
-            DrawTextWrapped(dpi, stringCoords, width - 4, STR_FILEBROWSER_OVERWRITE_PROMPT, ft, { TextAlignment::CENTRE });
+            DrawTextWrapped(rt, stringCoords, width - 4, STR_FILEBROWSER_OVERWRITE_PROMPT, ft, { TextAlignment::CENTRE });
         }
     };
 
     WindowBase* WindowOverwritePromptOpen(
-        const std::string_view name, const std::string_view path, int32_t type, TrackDesign* trackDesignPtr)
+        const std::string_view name, const std::string_view path, LoadSaveAction action, LoadSaveType type,
+        TrackDesign* trackDesignPtr)
     {
         auto* windowMgr = Ui::GetWindowManager();
         windowMgr->CloseByClass(WindowClass::LoadsaveOverwritePrompt);
 
         return windowMgr->Create<OverwritePromptWindow>(
             WindowClass::LoadsaveOverwritePrompt, OVERWRITE_WW, OVERWRITE_WH,
-            WF_TRANSPARENT | WF_STICK_TO_FRONT | WF_CENTRE_SCREEN, name, path, type, trackDesignPtr);
+            WF_TRANSPARENT | WF_STICK_TO_FRONT | WF_CENTRE_SCREEN, name, path, action, type, trackDesignPtr);
     }
 
     void WindowLoadSaveOverwritePromptInputKey(WindowBase* w, uint32_t keycode)

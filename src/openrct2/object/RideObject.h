@@ -17,6 +17,8 @@
 
 #include <vector>
 
+enum class RideCategory : uint8_t;
+
 class RideObject final : public Object
 {
 private:
@@ -42,7 +44,7 @@ public:
     void Load() override;
     void Unload() override;
 
-    void DrawPreview(DrawPixelInfo& dpi, int32_t width, int32_t height) const override;
+    void DrawPreview(RenderTarget& rt, int32_t width, int32_t height) const override;
 
     std::string GetDescription() const;
     std::string GetCapacity() const;
@@ -64,8 +66,8 @@ private:
     static uint8_t CalculateNumVerticalFrames(const CarEntry& carEntry);
     static uint8_t CalculateNumHorizontalFrames(const CarEntry& carEntry);
 
-    static bool IsRideTypeShopOrFacility(ride_type_t rideType);
-    static uint8_t ParseRideCategory(const std::string& s);
+    static bool isRideTypeShopOrFacility(ride_type_t rideType);
+    static RideCategory ParseRideCategory(const std::string& s);
     static ShopItem ParseShopItem(const std::string& s);
     static colour_t ParseColour(const std::string& s);
 

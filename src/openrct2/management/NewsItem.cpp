@@ -53,7 +53,7 @@ bool News::IsValidIndex(int32_t index)
 
 News::Item* News::GetItem(int32_t index)
 {
-    return GetGameState().NewsItems.At(index);
+    return getGameState().newsItems.At(index);
 }
 
 News::Item& News::ItemQueues::operator[](size_t index)
@@ -86,7 +86,7 @@ const News::Item* News::ItemQueues::At(int32_t index) const
 
 bool News::IsQueueEmpty()
 {
-    return GetGameState().NewsItems.IsEmpty();
+    return getGameState().newsItems.IsEmpty();
 }
 
 bool News::ItemQueues::IsEmpty() const
@@ -104,14 +104,13 @@ void News::ItemQueues::Clear()
     Archived.clear();
 }
 
-void News::InitQueue()
+void News::InitQueue(GameState_t& gameState)
 {
-    auto& gameState = GetGameState();
-    gameState.NewsItems.Clear();
-    assert(gameState.NewsItems.IsEmpty());
+    gameState.newsItems.Clear();
+    assert(gameState.newsItems.IsEmpty());
 
     // Throttles for warning types (PEEP_*_WARNING)
-    for (auto& warningThrottle : gameState.PeepWarningThrottle)
+    for (auto& warningThrottle : gameState.peepWarningThrottle)
     {
         warningThrottle = 0;
     }
@@ -122,14 +121,14 @@ void News::InitQueue()
 
 uint16_t News::ItemQueues::IncrementTicks()
 {
-    return ++Current().Ticks;
+    return ++Current().ticks;
 }
 
 static void TickCurrent()
 {
-    int32_t ticks = GetGameState().NewsItems.IncrementTicks();
+    int32_t ticks = getGameState().newsItems.IncrementTicks();
     // Only play news item sound when in normal playing mode
-    if (ticks == 1 && (gScreenFlags == SCREEN_FLAGS_PLAYING))
+    if (ticks == 1 && (gLegacyScene == LegacyScene::playing))
     {
         // Play sound
         OpenRCT2::Audio::Play(OpenRCT2::Audio::SoundId::NewsItem, 0, ContextGetWidth() / 2);
@@ -138,7 +137,7 @@ static void TickCurrent()
 
 int32_t News::ItemQueues::RemoveTime() const
 {
-    if (!Recent[5].IsEmpty() && !Recent[4].IsEmpty() && !Recent[3].IsEmpty() && !Recent[2].IsEmpty())
+    if (!Recent[5].isEmpty() && !Recent[4].isEmpty() && !Recent[3].isEmpty() && !Recent[2].isEmpty())
     {
         return 256;
     }
@@ -147,7 +146,7 @@ int32_t News::ItemQueues::RemoveTime() const
 
 bool News::ItemQueues::CurrentShouldBeArchived() const
 {
-    return Current().Ticks >= RemoveTime();
+    return Current().ticks >= RemoveTime();
 }
 
 /**
@@ -158,9 +157,9 @@ void News::UpdateCurrentItem()
 {
     PROFILED_FUNCTION();
 
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
     // Check if there is a current news item
-    if (gameState.NewsItems.IsEmpty())
+    if (gameState.newsItems.IsEmpty())
         return;
 
     auto intent = Intent(INTENT_ACTION_INVALIDATE_TICKER_NEWS);
@@ -170,8 +169,8 @@ void News::UpdateCurrentItem()
     TickCurrent();
 
     // Removal of current news item
-    if (gameState.NewsItems.CurrentShouldBeArchived())
-        gameState.NewsItems.ArchiveCurrent();
+    if (gameState.newsItems.CurrentShouldBeArchived())
+        gameState.newsItems.ArchiveCurrent();
 }
 
 /**
@@ -180,7 +179,7 @@ void News::UpdateCurrentItem()
  */
 void News::CloseCurrentItem()
 {
-    GetGameState().NewsItems.ArchiveCurrent();
+    getGameState().newsItems.ArchiveCurrent();
 }
 
 void News::ItemQueues::ArchiveCurrent()
@@ -215,18 +214,18 @@ std::optional<CoordsXYZ> News::GetSubjectLocation(News::ItemType type, int32_t s
 
     switch (type)
     {
-        case News::ItemType::Ride:
+        case News::ItemType::ride:
         {
             Ride* ride = GetRide(RideId::FromUnderlying(subject));
-            if (ride == nullptr || ride->overall_view.IsNull())
+            if (ride == nullptr || ride->overallView.IsNull())
             {
                 break;
             }
-            auto rideViewCentre = ride->overall_view.ToTileCentre();
+            auto rideViewCentre = ride->overallView.ToTileCentre();
             subjectLoc = CoordsXYZ{ rideViewCentre, TileElementHeight(rideViewCentre) };
             break;
         }
-        case News::ItemType::PeepOnRide:
+        case News::ItemType::peepOnRide:
         {
             auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(subject));
             if (peep == nullptr)
@@ -244,7 +243,7 @@ std::optional<CoordsXYZ> News::GetSubjectLocation(News::ItemType type, int32_t s
 
             // Find which ride peep is on
             Ride* ride = GetRide(peep->CurrentRide);
-            if (ride == nullptr || !(ride->lifecycle_flags & RIDE_LIFECYCLE_ON_TRACK))
+            if (ride == nullptr || !(ride->lifecycleFlags & RIDE_LIFECYCLE_ON_TRACK))
             {
                 subjectLoc = std::nullopt;
                 break;
@@ -263,7 +262,7 @@ std::optional<CoordsXYZ> News::GetSubjectLocation(News::ItemType type, int32_t s
             }
             break;
         }
-        case News::ItemType::Peep:
+        case News::ItemType::peep:
         {
             auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(subject));
             if (peep != nullptr)
@@ -272,7 +271,7 @@ std::optional<CoordsXYZ> News::GetSubjectLocation(News::ItemType type, int32_t s
             }
             break;
         }
-        case News::ItemType::Blank:
+        case News::ItemType::blank:
         {
             auto subjectUnsigned = static_cast<uint32_t>(subject);
             auto subjectXY = CoordsXY{ static_cast<int16_t>(subjectUnsigned & 0xFFFF),
@@ -300,7 +299,7 @@ News::Item* News::ItemQueues::FirstOpenOrNewSlot()
     // The for loop above guarantees there is always an extra element to use
     assert(Recent.capacity() - Recent.size() >= 2);
     auto newsItem = res + 1;
-    newsItem->Type = News::ItemType::Null;
+    newsItem->type = News::ItemType::null;
 
     return &*res;
 }
@@ -327,14 +326,14 @@ News::Item* News::AddItemToQueue(ItemType type, StringId string_id, EntityId ass
 News::Item* News::AddItemToQueue(News::ItemType type, const utf8* text, uint32_t assoc)
 {
     auto& date = GetDate();
-    News::Item* newsItem = GetGameState().NewsItems.FirstOpenOrNewSlot();
-    newsItem->Type = type;
-    newsItem->Flags = 0;
-    newsItem->Assoc = assoc; // Make optional for Award, Money, Graph and Null
-    newsItem->Ticks = 0;
-    newsItem->MonthYear = static_cast<uint16_t>(date.GetMonthsElapsed());
-    newsItem->Day = date.GetDay() + 1;
-    newsItem->Text = text;
+    News::Item* newsItem = getGameState().newsItems.FirstOpenOrNewSlot();
+    newsItem->type = type;
+    newsItem->flags = 0;
+    newsItem->assoc = assoc; // Make optional for Award, Money, Graph and Null
+    newsItem->ticks = 0;
+    newsItem->monthYear = static_cast<uint16_t>(date.GetMonthsElapsed());
+    newsItem->day = date.GetDay() + 1;
+    newsItem->text = text;
 
     return newsItem;
 }
@@ -348,10 +347,10 @@ bool News::CheckIfItemRequiresAssoc(News::ItemType type)
 {
     switch (type)
     {
-        case News::ItemType::Null:
-        case News::ItemType::Award:
-        case News::ItemType::Money:
-        case News::ItemType::Graph:
+        case News::ItemType::null:
+        case News::ItemType::award:
+        case News::ItemType::money:
+        case News::ItemType::graph:
             return false;
         default:
             return true; // Everything else requires assoc
@@ -368,15 +367,15 @@ void News::OpenSubject(News::ItemType type, int32_t subject)
 {
     switch (type)
     {
-        case News::ItemType::Ride:
+        case News::ItemType::ride:
         {
             auto intent = Intent(WindowClass::Ride);
             intent.PutExtra(INTENT_EXTRA_RIDE_ID, subject);
             ContextOpenIntent(&intent);
             break;
         }
-        case News::ItemType::PeepOnRide:
-        case News::ItemType::Peep:
+        case News::ItemType::peepOnRide:
+        case News::ItemType::peep:
         {
             auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(subject));
             if (peep != nullptr)
@@ -387,13 +386,13 @@ void News::OpenSubject(News::ItemType type, int32_t subject)
             }
             break;
         }
-        case News::ItemType::Money:
+        case News::ItemType::money:
             ContextOpenWindow(WindowClass::Finances);
             break;
-        case News::ItemType::Campaign:
+        case News::ItemType::campaign:
             ContextOpenWindowView(WV_FINANCE_MARKETING);
             break;
-        case News::ItemType::Research:
+        case News::ItemType::research:
         {
             auto item = ResearchItem(subject, ResearchCategory::Transport, 0);
             if (item.type == Research::EntryType::Ride)
@@ -410,23 +409,23 @@ void News::OpenSubject(News::ItemType type, int32_t subject)
             ContextOpenIntent(&intent);
             break;
         }
-        case News::ItemType::Peeps:
+        case News::ItemType::peeps:
         {
             auto intent = Intent(WindowClass::GuestList);
-            intent.PutExtra(INTENT_EXTRA_GUEST_LIST_FILTER, static_cast<int32_t>(GuestListFilterType::GuestsThinkingX));
+            intent.PutExtra(INTENT_EXTRA_GUEST_LIST_FILTER, static_cast<int32_t>(GuestListFilterType::guestsThinkingX));
             intent.PutExtra(INTENT_EXTRA_RIDE_ID, subject);
             ContextOpenIntent(&intent);
             break;
         }
-        case News::ItemType::Award:
+        case News::ItemType::award:
             ContextOpenWindowView(WV_PARK_AWARDS);
             break;
-        case News::ItemType::Graph:
+        case News::ItemType::graph:
             ContextOpenWindowView(WV_PARK_RATING);
             break;
-        case News::ItemType::Null:
-        case News::ItemType::Blank:
-        case News::ItemType::Count:
+        case News::ItemType::null:
+        case News::ItemType::blank:
+        case News::ItemType::count:
             break;
     }
 }
@@ -437,13 +436,13 @@ void News::OpenSubject(News::ItemType type, int32_t subject)
  */
 void News::DisableNewsItems(News::ItemType type, uint32_t assoc)
 {
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
     // TODO: write test invalidating windows
-    gameState.NewsItems.ForeachRecentNews([type, assoc, &gameState](auto& newsItem) {
-        if (type == newsItem.Type && assoc == newsItem.Assoc)
+    gameState.newsItems.ForeachRecentNews([type, assoc, &gameState](auto& newsItem) {
+        if (type == newsItem.type && assoc == newsItem.assoc)
         {
-            newsItem.SetFlags(News::ItemFlags::HasButton);
-            if (&newsItem == &gameState.NewsItems.Current())
+            newsItem.setFlags(News::ItemFlags::hasButton);
+            if (&newsItem == &gameState.newsItems.Current())
             {
                 auto intent = Intent(INTENT_ACTION_INVALIDATE_TICKER_NEWS);
                 ContextBroadcastIntent(&intent);
@@ -451,10 +450,10 @@ void News::DisableNewsItems(News::ItemType type, uint32_t assoc)
         }
     });
 
-    gameState.NewsItems.ForeachArchivedNews([type, assoc](auto& newsItem) {
-        if (type == newsItem.Type && assoc == newsItem.Assoc)
+    gameState.newsItems.ForeachArchivedNews([type, assoc](auto& newsItem) {
+        if (type == newsItem.type && assoc == newsItem.assoc)
         {
-            newsItem.SetFlags(News::ItemFlags::HasButton);
+            newsItem.setFlags(News::ItemFlags::hasButton);
             auto* windowMgr = Ui::GetWindowManager();
             windowMgr->InvalidateByClass(WindowClass::RecentNews);
         }
@@ -463,7 +462,7 @@ void News::DisableNewsItems(News::ItemType type, uint32_t assoc)
 
 void News::AddItemToQueue(News::Item* newNewsItem)
 {
-    News::Item* newsItem = GetGameState().NewsItems.FirstOpenOrNewSlot();
+    News::Item* newsItem = getGameState().newsItems.FirstOpenOrNewSlot();
     *newsItem = *newNewsItem;
 }
 
@@ -472,15 +471,30 @@ void News::RemoveItem(int32_t index)
     if (index < 0 || index >= News::MaxItems)
         return;
 
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
     // News item is already null, no need to remove it
-    if (gameState.NewsItems[index].Type == News::ItemType::Null)
+    if (gameState.newsItems[index].type == News::ItemType::null)
         return;
 
     size_t newsBoundary = index < News::ItemHistoryStart ? News::ItemHistoryStart : News::MaxItems;
     for (size_t i = index; i < newsBoundary - 1; i++)
     {
-        gameState.NewsItems[i] = gameState.NewsItems[i + 1];
+        gameState.newsItems[i] = gameState.newsItems[i + 1];
     }
-    gameState.NewsItems[newsBoundary - 1].Type = News::ItemType::Null;
+    gameState.newsItems[newsBoundary - 1].type = News::ItemType::null;
+}
+
+void News::importNewsItems(
+    GameState_t& gameState, const std::span<const News::Item> recent, const std::span<const News::Item> archived)
+{
+    gameState.newsItems.Clear();
+
+    for (size_t i = 0; i < std::min<size_t>(recent.size(), News::ItemHistoryStart); i++)
+    {
+        gameState.newsItems[i] = recent[i];
+    }
+    for (size_t i = 0; i < std::min<size_t>(archived.size(), News::MaxItemsArchive); i++)
+    {
+        gameState.newsItems[News::ItemHistoryStart + i] = archived[i];
+    }
 }

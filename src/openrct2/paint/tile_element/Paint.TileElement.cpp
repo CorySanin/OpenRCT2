@@ -195,7 +195,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
 
     if (element->GetType() == TileElementType::Surface && (element->AsSurface()->GetWaterHeight() > 0))
     {
-        max_height = element->AsSurface()->GetWaterHeight();
+        max_height = std::max(max_height, static_cast<uint16_t>(element->AsSurface()->GetWaterHeight()));
     }
 
     if (partOfVirtualFloor)
@@ -360,9 +360,9 @@ void PaintUtilForceSetGeneralSupportHeight(PaintSession& session, int16_t height
 }
 
 const uint16_t kSegmentOffsets[9] = {
-    EnumToFlag(PaintSegment::topCorner),    EnumToFlag(PaintSegment::leftCorner),     EnumToFlag(PaintSegment::rightCorner),
-    EnumToFlag(PaintSegment::bottomCorner), EnumToFlag(PaintSegment::centre),         EnumToFlag(PaintSegment::topLeftSide),
-    EnumToFlag(PaintSegment::topRightSide), EnumToFlag(PaintSegment::bottomLeftSide), EnumToFlag(PaintSegment::bottomRightSide),
+    EnumToFlag(PaintSegment::top),      EnumToFlag(PaintSegment::left),       EnumToFlag(PaintSegment::right),
+    EnumToFlag(PaintSegment::bottom),   EnumToFlag(PaintSegment::centre),     EnumToFlag(PaintSegment::topLeft),
+    EnumToFlag(PaintSegment::topRight), EnumToFlag(PaintSegment::bottomLeft), EnumToFlag(PaintSegment::bottomRight),
 };
 
 void PaintUtilSetSegmentSupportHeight(PaintSession& session, int32_t segments, uint16_t height, uint8_t slope)
@@ -392,6 +392,6 @@ uint16_t PaintUtilRotateSegments(uint16_t segments, uint8_t rotation)
 
 bool PaintShouldShowHeightMarkers(const PaintSession& session, const uint32_t viewportFlag)
 {
-    auto dpi = &session.DPI;
-    return (session.ViewFlags & viewportFlag) && (dpi->zoom_level <= ZoomLevel{ 0 });
+    auto rt = &session.DPI;
+    return (session.ViewFlags & viewportFlag) && (rt->zoom_level <= ZoomLevel{ 0 });
 }

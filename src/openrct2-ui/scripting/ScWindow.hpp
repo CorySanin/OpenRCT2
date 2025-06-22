@@ -14,7 +14,7 @@
     #include "ScWidget.hpp"
 
     #include <openrct2/interface/Window.h>
-    #include <openrct2/interface/Window_internal.h>
+    #include <openrct2/interface/WindowBase.h>
     #include <openrct2/scripting/Duktape.hpp>
 
 namespace OpenRCT2::Scripting
@@ -99,11 +99,11 @@ namespace OpenRCT2::Scripting
             {
                 if (WindowCanResize(*w))
                 {
-                    WindowResize(*w, value - w->width, 0);
+                    WindowResizeByDelta(*w, value - w->width, 0);
                 }
                 else
                 {
-                    WindowSetResize(*w, value, w->min_height, value, w->max_height);
+                    WindowSetResize(*w, { value, w->min_height }, { value, w->max_height });
                 }
             }
         }
@@ -112,7 +112,7 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                return w->height;
+                return w->height - w->getTitleBarDiffNormal();
             }
             return 0;
         }
@@ -121,13 +121,14 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
+                value += w->getTitleBarDiffNormal();
                 if (WindowCanResize(*w))
                 {
-                    WindowResize(*w, 0, value - w->height);
+                    WindowResizeByDelta(*w, 0, value - w->height);
                 }
                 else
                 {
-                    WindowSetResize(*w, w->min_width, value, w->max_width, value);
+                    WindowSetResize(*w, { w->min_width, value }, { w->max_width, value });
                 }
             }
         }
@@ -145,7 +146,7 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                WindowSetResize(*w, value, w->min_height, w->max_width, w->max_height);
+                WindowSetResize(*w, { value, w->min_height }, { w->max_width, w->max_height });
             }
         }
         int32_t maxWidth_get() const
@@ -162,7 +163,7 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                WindowSetResize(*w, w->min_width, w->min_height, value, w->max_height);
+                WindowSetResize(*w, { w->min_width, w->min_height }, { value, w->max_height });
             }
         }
         int32_t minHeight_get() const
@@ -170,7 +171,7 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                return w->min_height;
+                return w->min_height - w->getTitleBarDiffNormal();
             }
             return 0;
         }
@@ -179,7 +180,8 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                WindowSetResize(*w, w->min_width, value, w->max_width, w->max_height);
+                value += w->getTitleBarDiffNormal();
+                WindowSetResize(*w, { w->min_width, value }, { w->max_width, w->max_height });
             }
         }
         int32_t maxHeight_get() const
@@ -187,7 +189,7 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                return w->max_height;
+                return w->max_height - w->getTitleBarDiffNormal();
             }
             return 0;
         }
@@ -196,7 +198,8 @@ namespace OpenRCT2::Scripting
             auto w = GetWindow();
             if (w != nullptr)
             {
-                WindowSetResize(*w, w->min_width, w->min_height, w->max_width, value);
+                value += w->getTitleBarDiffNormal();
+                WindowSetResize(*w, { w->min_width, w->min_height }, { w->max_width, value });
             }
         }
         bool isSticky_get() const

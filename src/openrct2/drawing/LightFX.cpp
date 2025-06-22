@@ -16,7 +16,7 @@
 #include "../entity/EntityRegistry.h"
 #include "../interface/Viewport.h"
 #include "../interface/Window.h"
-#include "../interface/Window_internal.h"
+#include "../interface/WindowBase.h"
 #include "../paint/Paint.h"
 #include "../ride/Ride.h"
 #include "../ride/RideData.h"
@@ -39,7 +39,7 @@ namespace OpenRCT2::Drawing::LightFx
     static uint8_t _bakedLightTexture_spot_1[64 * 64];
     static uint8_t _bakedLightTexture_spot_2[128 * 128];
     static uint8_t _bakedLightTexture_spot_3[256 * 256];
-    static DrawPixelInfo _pixelInfo;
+    static RenderTarget _pixelInfo;
     static bool _lightfxAvailable = false;
 
     static void* _light_rendered_buffer_back = nullptr;
@@ -182,7 +182,7 @@ namespace OpenRCT2::Drawing::LightFx
         CalcRescaleLightHalf(_bakedLightTexture_spot_0, _bakedLightTexture_spot_1, 32, 32);
     }
 
-    void UpdateBuffers(DrawPixelInfo& info)
+    void UpdateBuffers(RenderTarget& info)
     {
         _light_rendered_buffer_front = realloc(_light_rendered_buffer_front, info.width * info.height);
         _light_rendered_buffer_back = realloc(_light_rendered_buffer_back, info.width * info.height);
@@ -298,21 +298,26 @@ namespace OpenRCT2::Drawing::LightFx
                     if (w != nullptr)
                     {
                         // based on GetMapCoordinatesFromPosWindow
-                        DrawPixelInfo dpi;
-                        dpi.zoom_level = _current_view_zoom_front;
-                        dpi.x = _current_view_zoom_front.ApplyInversedTo(entry.viewCoords.x + offsetPattern[0 + pat * 2]);
-                        dpi.y = _current_view_zoom_front.ApplyInversedTo(entry.viewCoords.y + offsetPattern[1 + pat * 2]);
-                        dpi.height = 1;
-                        dpi.width = 1;
+                        RenderTarget rt;
+                        rt.zoom_level = _current_view_zoom_front;
+                        rt.x = _current_view_zoom_front.ApplyInversedTo(entry.viewCoords.x + offsetPattern[0 + pat * 2]);
+                        rt.y = _current_view_zoom_front.ApplyInversedTo(entry.viewCoords.y + offsetPattern[1 + pat * 2]);
+                        rt.height = 1;
+                        rt.width = 1;
 
-                        PaintSession* session = PaintSessionAlloc(dpi, w->viewport->flags, w->viewport->rotation);
+                        rt.cullingX = rt.x;
+                        rt.cullingY = rt.y;
+                        rt.cullingWidth = rt.width;
+                        rt.cullingHeight = rt.height;
+
+                        PaintSession* session = PaintSessionAlloc(rt, w->viewport->flags, w->viewport->rotation);
                         PaintSessionGenerate(*session);
                         PaintSessionArrange(*session);
                         auto info = SetInteractionInfoFromPaintSession(
                             session, w->viewport->flags, kViewportInteractionItemAll);
                         PaintSessionFree(session);
 
-                        //  LOG_WARNING("[%i, %i]", dpi->x, dpi->y);
+                        //  LOG_WARNING("[%i, %i]", rt.x, rt.y);
 
                         mapCoord = info.Loc;
                         mapCoord.x += tileOffsetX;
@@ -835,7 +840,7 @@ namespace OpenRCT2::Drawing::LightFx
 
     void ApplyPaletteFilter(uint8_t i, uint8_t* r, uint8_t* g, uint8_t* b)
     {
-        auto& gameState = GetGameState();
+        auto& gameState = getGameState();
 
         float night = static_cast<float>(pow(gDayNightCycle, 1.5));
 
@@ -866,9 +871,9 @@ namespace OpenRCT2::Drawing::LightFx
 
         //  overExpose += ((lightMax - lightAvg) / lightMax) * 0.01f;
 
-        if (gameState.WeatherCurrent.temperature > 20)
+        if (gameState.weatherCurrent.temperature > 20)
         {
-            float offset = (static_cast<float>(gameState.WeatherCurrent.temperature - 20)) * 0.04f;
+            float offset = (static_cast<float>(gameState.weatherCurrent.temperature - 20)) * 0.04f;
             offset *= 1.0f - night;
             lightAvg /= 1.0f + offset;
             //      overExpose += offset * 0.1f;
@@ -890,12 +895,12 @@ namespace OpenRCT2::Drawing::LightFx
         natLightB *= 1.0f + overExpose;
         overExpose *= 255.0f;
 
-        float targetFogginess = static_cast<float>(gameState.WeatherCurrent.level) / 8.0f;
+        float targetFogginess = static_cast<float>(gameState.weatherCurrent.level) / 8.0f;
         targetFogginess += (night * night) * 0.15f;
 
-        if (gameState.WeatherCurrent.temperature < 10)
+        if (gameState.weatherCurrent.temperature < 10)
         {
-            targetFogginess += (static_cast<float>(10 - gameState.WeatherCurrent.temperature)) * 0.01f;
+            targetFogginess += (static_cast<float>(10 - gameState.weatherCurrent.temperature)) * 0.01f;
         }
 
         fogginess -= (fogginess - targetFogginess) * 0.00001f;
@@ -933,7 +938,7 @@ namespace OpenRCT2::Drawing::LightFx
         natLightG /= 1.0f + lightPolution;
         natLightB /= 1.0f + lightPolution;
 
-        reduceColourLit += static_cast<float>(gameState.WeatherCurrent.level) / 2.0f;
+        reduceColourLit += static_cast<float>(gameState.weatherCurrent.level) / 2.0f;
 
         reduceColourNat /= 1.0f + fogginess;
         reduceColourLit /= 1.0f + fogginess;

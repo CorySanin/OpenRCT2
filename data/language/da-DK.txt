@@ -1740,7 +1740,7 @@ STR_2392    :{BLACK}At opnå en månedlig indkomst fra forlystelser på mindst {
 STR_2393    :{BLACK}At have 10 forskellige typer rutschebaner i gang i parken på samme tid, hver med en minimums længde på {LENGTH}, og en spændings vurdering på mindst 7.00
 STR_2394    :{BLACK}At færdiggøre alle 5 af de delvist færdige byggede rutschebaner i denne park, design dem til at have at opnå en spændings vurdering på mindst {POP16}{POP16}{COMMA2DP32} hver
 STR_2395    :{BLACK}At tilbagebetale dit lån og opnå en park vurdering på mindst {POP16}{POP16}{CURRENCY}
-STR_2396    :{BLACK}At opnå en månedlig profit far mad, drikkevarer og merchandise salg på mindst {POP16}{POP16}{CURRENCY}
+STR_2396    :{BLACK}At opnå en månedlig profit for mad, drikkevarer og merchandise salg på mindst {POP16}{POP16}{CURRENCY}
 STR_2397    :Ingen
 STR_2398    :Antal gæster ved en given dato
 STR_2399    :Park værdi ved en given dato
@@ -2237,10 +2237,8 @@ STR_3230    :Blokbremser kan ikke bruges lige efter hinanden
 STR_3231    :Blokbremser kan ikke bruges lige efter toppen af en løftekæde
 STR_3232    :Indstillinger - Finansiel
 STR_3233    :Indstillinger - Gæster
-STR_3234    :Indstillinger - Park
 STR_3235    :Vis finansindstillinger
 STR_3236    :Vis gæsteindstillinger
-STR_3237    :Vis parkindstillinger
 STR_3238    :Ingen penge
 STR_3239    :Gør denne park til en ‘pengeløs’ park, unde finansielle restriktioner
 STR_3240    :{WINDOW_COLOUR_2}Startkapital:
@@ -2259,10 +2257,6 @@ STR_3252    :Kan ikke forøge maksimum lånestørrelse yderligere!
 STR_3253    :Kan ikke reducere maksimum lånestørrelse yderligere!
 STR_3254    :Kan ikke forøge rentesats yderligere!
 STR_3255    :Kan ikke reducere rentesats yderligere!
-STR_3256    :Gæster foretrækker mindre intense forlystelser
-STR_3257    :Vælg om gæster generelt foretrækker mindre intense forlystelser
-STR_3258    :Gæster foretrækker mere intense forlystelser
-STR_3259    :Vælg om gæster generelt foretrækker mere intense forlystelser
 STR_3260    :{WINDOW_COLOUR_2}Penge per gæst (gennemsnit):
 STR_3261    :{WINDOW_COLOUR_2}Gæsters start-glæde:
 STR_3262    :{WINDOW_COLOUR_2}Gæsters start-sult:
@@ -2285,18 +2279,10 @@ STR_3278    :{WINDOW_COLOUR_2}Pris for at købe byggerettigheder:
 STR_3279    :Gratis park entré / Betal for forlystelser
 STR_3280    :Betal Park entré / Gratis forlystelser
 STR_3281    :{WINDOW_COLOUR_2}Entré pris:
-STR_3282    :Vælg mål og park navn
 STR_3283    :vælg forlystelser der skal bevares
-STR_3284    :Målindstillinger
 STR_3285    :Bevarede forlystelser
 STR_3286    :Vælg mål for dette scenarie
 STR_3287    :{WINDOW_COLOUR_2}Mål:
-STR_3288    :Vælg klima
-STR_3289    :{WINDOW_COLOUR_2}Klima:
-STR_3290    :Koldt og vådt
-STR_3291    :Varmt
-STR_3292    :Varmt og tørt
-STR_3293    :Koldt
 STR_3294    :Skift…
 STR_3295    :Skift navn på parken
 STR_3296    :Skift navn på scenarie

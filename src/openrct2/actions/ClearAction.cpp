@@ -106,7 +106,7 @@ GameActions::Result ClearAction::QueryExecute(bool executing) const
         }
     }
 
-    if (_itemsToClear & CLEARABLE_ITEMS::SCENERY_LARGE)
+    if (_itemsToClear & CLEARABLE_ITEMS::kSceneryLarge)
     {
         ResetClearLargeSceneryFlag();
     }
@@ -141,7 +141,7 @@ money64 ClearAction::ClearSceneryFromTile(const CoordsXY& tilePos, bool executin
             switch (tileElement->GetType())
             {
                 case TileElementType::Path:
-                    if (_itemsToClear & CLEARABLE_ITEMS::SCENERY_FOOTPATH)
+                    if (_itemsToClear & CLEARABLE_ITEMS::kSceneryFootpath)
                     {
                         auto footpathRemoveAction = FootpathRemoveAction({ tilePos, tileElement->GetBaseZ() });
                         footpathRemoveAction.SetFlags(GetFlags());
@@ -157,7 +157,7 @@ money64 ClearAction::ClearSceneryFromTile(const CoordsXY& tilePos, bool executin
                     }
                     break;
                 case TileElementType::SmallScenery:
-                    if (_itemsToClear & CLEARABLE_ITEMS::SCENERY_SMALL)
+                    if (_itemsToClear & CLEARABLE_ITEMS::kScenerySmall)
                     {
                         auto removeSceneryAction = SmallSceneryRemoveAction(
                             { tilePos, tileElement->GetBaseZ() }, tileElement->AsSmallScenery()->GetSceneryQuadrant(),
@@ -175,7 +175,7 @@ money64 ClearAction::ClearSceneryFromTile(const CoordsXY& tilePos, bool executin
                     }
                     break;
                 case TileElementType::Wall:
-                    if (_itemsToClear & CLEARABLE_ITEMS::SCENERY_SMALL)
+                    if (_itemsToClear & CLEARABLE_ITEMS::kScenerySmall)
                     {
                         CoordsXYZD wallLocation = { tilePos, tileElement->GetBaseZ(), tileElement->GetDirection() };
                         auto wallRemoveAction = WallRemoveAction(wallLocation);
@@ -192,7 +192,7 @@ money64 ClearAction::ClearSceneryFromTile(const CoordsXY& tilePos, bool executin
                     }
                     break;
                 case TileElementType::LargeScenery:
-                    if (_itemsToClear & CLEARABLE_ITEMS::SCENERY_LARGE)
+                    if (_itemsToClear & CLEARABLE_ITEMS::kSceneryLarge)
                     {
                         auto removeSceneryAction = LargeSceneryRemoveAction(
                             { tilePos, tileElement->GetBaseZ(), tileElement->GetDirection() },
@@ -220,11 +220,11 @@ money64 ClearAction::ClearSceneryFromTile(const CoordsXY& tilePos, bool executin
 
 void ClearAction::ResetClearLargeSceneryFlag()
 {
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
     // TODO: Improve efficiency of this
-    for (int32_t y = 0; y < gameState.MapSize.y; y++)
+    for (int32_t y = 0; y < gameState.mapSize.y; y++)
     {
-        for (int32_t x = 0; x < gameState.MapSize.x; x++)
+        for (int32_t x = 0; x < gameState.mapSize.x; x++)
         {
             auto tileElement = MapGetFirstElementAt(TileCoordsXY{ x, y });
             do
@@ -242,6 +242,6 @@ void ClearAction::ResetClearLargeSceneryFlag()
 
 bool ClearAction::MapCanClearAt(const CoordsXY& location)
 {
-    return (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || GetGameState().Cheats.sandboxMode
+    return gLegacyScene == LegacyScene::scenarioEditor || getGameState().cheats.sandboxMode
         || MapIsLocationOwnedOrHasRights(location);
 }

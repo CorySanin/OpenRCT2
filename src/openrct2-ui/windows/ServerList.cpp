@@ -30,11 +30,11 @@
 
 namespace OpenRCT2::Ui::Windows
 {
-    #define WWIDTH_MIN 500
-    #define WHEIGHT_MIN 300
-    #define WWIDTH_MAX 1200
-    #define WHEIGHT_MAX 800
-    #define ITEM_HEIGHT (3 + 9 + 3)
+    static constexpr int32_t kWindowWidthMin = 500;
+    static constexpr int32_t kWindowHeightMin = 288;
+    static constexpr int32_t kWindowWidthMax = 1200;
+    static constexpr int32_t kWindowHeightMax = 788;
+    static constexpr int32_t kItemHeight = (3 + 9 + 3);
 
     constexpr size_t MaxPlayerNameLength = 32;
 
@@ -64,9 +64,7 @@ namespace OpenRCT2::Ui::Windows
 
     // clang-format off
     static constexpr Widget _serverListWidgets[] = {
-        MakeWidget({  0,  0}, {341,  91}, WindowWidgetType::Frame,    WindowColour::Primary                                           ), // panel / background
-        MakeWidget({  1,  1}, {338,  14}, WindowWidgetType::Caption,  WindowColour::Primary,   STR_SERVER_LIST,   STR_WINDOW_TITLE_TIP), // title bar
-        MakeWidget({327,  2}, { 11,  12}, WindowWidgetType::CloseBox, WindowColour::Primary,   STR_CLOSE_X,       STR_CLOSE_WINDOW_TIP), // close x button
+        WINDOW_SHIM(STR_SERVER_LIST, 340, 90),
         MakeWidget({100, 20}, {245,  12}, WindowWidgetType::TextBox,  WindowColour::Secondary                                         ), // player name text box
         MakeWidget({  6, 37}, {489, 226}, WindowWidgetType::Scroll,   WindowColour::Secondary                                         ), // server list
         MakeWidget({  6, 53}, {101,  14}, WindowWidgetType::Button,   WindowColour::Secondary, STR_FETCH_SERVERS                      ), // fetch servers button
@@ -98,18 +96,14 @@ namespace OpenRCT2::Ui::Windows
             SetWidgets(_serverListWidgets);
             widgets[WIDX_PLAYER_NAME_INPUT].string = const_cast<utf8*>(_playerName.c_str());
             InitScrollWidgets();
+
             no_list_items = 0;
             selected_list_item = -1;
             frame_no = 0;
-            min_width = 320;
-            min_height = 90;
-            max_width = min_width;
-            max_height = min_height;
-
             page = 0;
             list_information_type = 0;
 
-            WindowSetResize(*this, WWIDTH_MIN, WHEIGHT_MIN, WWIDTH_MAX, WHEIGHT_MAX);
+            WindowSetResize(*this, { kWindowWidthMin, kWindowHeightMin }, { kWindowWidthMax, kWindowHeightMax });
 
             no_list_items = static_cast<uint16_t>(_serverList.GetCount());
 
@@ -166,7 +160,7 @@ namespace OpenRCT2::Ui::Windows
 
         void OnResize() override
         {
-            WindowSetResize(*this, WWIDTH_MIN, WHEIGHT_MIN, WWIDTH_MAX, WHEIGHT_MAX);
+            WindowSetResize(*this, { kWindowWidthMin, kWindowHeightMin }, { kWindowWidthMax, kWindowHeightMax });
         }
 
         void OnDropdown(WidgetIndex widgetIndex, int32_t selectedIndex) override
@@ -215,7 +209,7 @@ namespace OpenRCT2::Ui::Windows
 
         ScreenSize OnScrollGetSize(int32_t scrollIndex) override
         {
-            return { 0, no_list_items * ITEM_HEIGHT };
+            return { 0, no_list_items * kItemHeight };
         }
 
         void OnScrollMouseDown(int32_t scrollIndex, const ScreenCoordsXY& screenCoords) override
@@ -248,7 +242,7 @@ namespace OpenRCT2::Ui::Windows
         {
             auto& listWidget = widgets[WIDX_LIST];
 
-            int32_t itemIndex = screenCoords.y / ITEM_HEIGHT;
+            int32_t itemIndex = screenCoords.y / kItemHeight;
             bool showNetworkVersionTooltip = false;
             if (itemIndex < 0 || itemIndex >= no_list_items)
             {
@@ -313,12 +307,12 @@ namespace OpenRCT2::Ui::Windows
             return { fallback, ft };
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
             DrawTextBasic(
-                dpi, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_PLAYER_NAME_INPUT].top }, STR_PLAYER_NAME, {},
+                rt, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_PLAYER_NAME_INPUT].top }, STR_PLAYER_NAME, {},
                 { COLOUR_WHITE });
 
             // Draw version number
@@ -326,18 +320,18 @@ namespace OpenRCT2::Ui::Windows
             auto ft = Formatter();
             ft.Add<const char*>(version.c_str());
             DrawTextBasic(
-                dpi, windowPos + ScreenCoordsXY{ 324, widgets[WIDX_START_SERVER].top + 1 }, STR_NETWORK_VERSION, ft,
+                rt, windowPos + ScreenCoordsXY{ 324, widgets[WIDX_START_SERVER].top + 1 }, STR_NETWORK_VERSION, ft,
                 { COLOUR_WHITE });
 
             ft = Formatter();
             ft.Add<uint32_t>(_numPlayersOnline);
-            DrawTextBasic(dpi, windowPos + ScreenCoordsXY{ 8, height - 15 }, _statusText, ft, { COLOUR_WHITE });
+            DrawTextBasic(rt, windowPos + ScreenCoordsXY{ 8, height - 15 }, _statusText, ft, { COLOUR_WHITE });
         }
 
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
             uint8_t paletteIndex = ColourMapA[colours[1].colour].mid_light;
-            GfxClear(dpi, paletteIndex);
+            GfxClear(rt, paletteIndex);
 
             auto& listWidget = widgets[WIDX_LIST];
             int32_t listWidgetWidth = listWidget.width();
@@ -346,7 +340,7 @@ namespace OpenRCT2::Ui::Windows
             screenCoords.y = 0;
             for (int32_t i = 0; i < no_list_items; i++)
             {
-                if (screenCoords.y >= dpi.y + dpi.height)
+                if (screenCoords.y >= rt.y + rt.height)
                     continue;
 
                 const auto& serverDetails = _serverList.GetServer(i);
@@ -356,7 +350,7 @@ namespace OpenRCT2::Ui::Windows
                 if (highlighted)
                 {
                     GfxFilterRect(
-                        dpi, { 0, screenCoords.y, listWidgetWidth, screenCoords.y + ITEM_HEIGHT },
+                        rt, { 0, screenCoords.y, listWidgetWidth, screenCoords.y + kItemHeight },
                         FilterPaletteID::PaletteDarken1);
                     _version = serverDetails.Version;
                 }
@@ -395,7 +389,7 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<const char*>(serverInfoToShow);
                 DrawTextEllipsised(
-                    dpi, screenCoords + ScreenCoordsXY{ 0, 3 }, spaceAvailableForInfo, STR_STRING, ft, { colour });
+                    rt, screenCoords + ScreenCoordsXY{ 0, 3 }, spaceAvailableForInfo, STR_STRING, ft, { colour });
 
                 int32_t right = listWidgetWidth - 7 - kScrollBarWidth;
 
@@ -413,22 +407,22 @@ namespace OpenRCT2::Ui::Windows
                     bool correctVersion = serverDetails.Version == NetworkGetVersion();
                     compatibilitySpriteId = correctVersion ? SPR_G2_RCT1_OPEN_BUTTON_2 : SPR_G2_RCT1_CLOSE_BUTTON_2;
                 }
-                GfxDrawSprite(dpi, ImageId(compatibilitySpriteId), { right, screenCoords.y + 1 });
+                GfxDrawSprite(rt, ImageId(compatibilitySpriteId), { right, screenCoords.y + 1 });
                 right -= 4;
 
                 // Draw lock icon
                 right -= 8;
                 if (serverDetails.RequiresPassword)
                 {
-                    GfxDrawSprite(dpi, ImageId(SPR_G2_LOCKED), { right, screenCoords.y + 4 });
+                    GfxDrawSprite(rt, ImageId(SPR_G2_LOCKED), { right, screenCoords.y + 4 });
                 }
                 right -= 6;
 
                 // Draw number of players
                 screenCoords.x = right - numPlayersStringWidth;
-                DrawText(dpi, screenCoords + ScreenCoordsXY{ 0, 3 }, { colours[1] }, players);
+                DrawText(rt, screenCoords + ScreenCoordsXY{ 0, 3 }, { colours[1] }, players);
 
-                screenCoords.y += ITEM_HEIGHT;
+                screenCoords.y += kItemHeight;
             }
         }
 
@@ -521,8 +515,6 @@ namespace OpenRCT2::Ui::Windows
 
         void OnPrepareDraw() override
         {
-            ResizeFrame();
-
             int32_t margin = 6;
             int32_t buttonHeight = 13;
             int32_t buttonTop = height - margin - buttonHeight - 13;
@@ -553,7 +545,7 @@ namespace OpenRCT2::Ui::Windows
             return window;
 
         window = windowMgr->Create<ServerListWindow>(
-            WindowClass::ServerList, WWIDTH_MIN, WHEIGHT_MIN, WF_10 | WF_RESIZABLE | WF_CENTRE_SCREEN);
+            WindowClass::ServerList, kWindowWidthMin, kWindowHeightMin, WF_10 | WF_RESIZABLE | WF_CENTRE_SCREEN);
 
         return window;
     }

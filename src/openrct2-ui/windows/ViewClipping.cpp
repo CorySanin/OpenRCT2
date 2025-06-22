@@ -118,7 +118,7 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_CLIP_SELECTOR:
                     // Activate the selection tool
-                    ToolSet(*this, WIDX_BACKGROUND, Tool::Crosshair);
+                    ToolSet(*this, WIDX_BACKGROUND, Tool::crosshair);
                     _toolActive = true;
                     _dragging = false;
 
@@ -290,13 +290,13 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            WindowDrawWidgets(*this, dpi);
+            WindowDrawWidgets(*this, rt);
 
             // Clip height value
             auto screenCoords = this->windowPos + ScreenCoordsXY{ 8, this->widgets[WIDX_CLIP_HEIGHT_VALUE].top };
-            DrawTextBasic(dpi, screenCoords, STR_VIEW_CLIPPING_HEIGHT_VALUE, {}, { this->colours[0] });
+            DrawTextBasic(rt, screenCoords, STR_VIEW_CLIPPING_HEIGHT_VALUE, {}, { this->colours[0] });
 
             screenCoords = this->windowPos
                 + ScreenCoordsXY{ this->widgets[WIDX_CLIP_HEIGHT_VALUE].left + 1, this->widgets[WIDX_CLIP_HEIGHT_VALUE].top };
@@ -310,7 +310,7 @@ namespace OpenRCT2::Ui::Windows
                     ft.Add<int32_t>(static_cast<int32_t>(gClipHeight));
 
                     // Printing the raw value.
-                    DrawTextBasic(dpi, screenCoords, STR_FORMAT_INTEGER, ft, { this->colours[0] });
+                    DrawTextBasic(rt, screenCoords, STR_FORMAT_INTEGER, ft, { this->colours[0] });
                     break;
                 }
                 case DisplayType::DisplayUnits:
@@ -322,7 +322,7 @@ namespace OpenRCT2::Ui::Windows
                         auto ft = Formatter();
                         ft.Add<fixed16_1dp>((MakeFixed1dp<fixed16_1dp>(gClipHeight, 0) / 2 - MakeFixed1dp<fixed16_1dp>(7, 0)));
                         DrawTextBasic(
-                            dpi, screenCoords, STR_UNIT1DP_NO_SUFFIX, ft,
+                            rt, screenCoords, STR_UNIT1DP_NO_SUFFIX, ft,
                             { this->colours[0] }); // Printing the value in Height Units.
                     }
                     else
@@ -337,7 +337,7 @@ namespace OpenRCT2::Ui::Windows
                                 auto ft = Formatter();
                                 ft.Add<fixed32_2dp>(
                                     MakeFixed2dp<fixed32_2dp>(gClipHeight, 0) / 2 * 1.5f - MakeFixed2dp<fixed32_2dp>(10, 50));
-                                DrawTextBasic(dpi, screenCoords, STR_UNIT2DP_SUFFIX_METRES, ft, { this->colours[0] });
+                                DrawTextBasic(rt, screenCoords, STR_UNIT2DP_SUFFIX_METRES, ft, { this->colours[0] });
                                 break;
                             }
                             case MeasurementFormat::Imperial:
@@ -345,7 +345,7 @@ namespace OpenRCT2::Ui::Windows
                                 auto ft = Formatter();
                                 ft.Add<fixed16_1dp>(
                                     MakeFixed1dp<fixed16_1dp>(gClipHeight, 0) / 2.0f * 5 - MakeFixed1dp<fixed16_1dp>(35, 0));
-                                DrawTextBasic(dpi, screenCoords, STR_UNIT1DP_SUFFIX_FEET, ft, { this->colours[0] });
+                                DrawTextBasic(rt, screenCoords, STR_UNIT1DP_SUFFIX_FEET, ft, { this->colours[0] });
                                 break;
                             }
                         }
@@ -362,6 +362,7 @@ namespace OpenRCT2::Ui::Windows
         void OnOpen() override
         {
             SetWidgets(_viewClippingWidgets);
+
             this->hold_down_widgets = (1uLL << WIDX_CLIP_HEIGHT_INCREASE) | (1uL << WIDX_CLIP_HEIGHT_DECREASE);
             WindowInitScrollWidgets(*this);
 
@@ -381,11 +382,6 @@ namespace OpenRCT2::Ui::Windows
                 mainWindow->viewport->flags |= VIEWPORT_FLAG_CLIP_VIEW;
                 mainWindow->Invalidate();
             }
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
         }
 
     private:

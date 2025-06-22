@@ -149,7 +149,7 @@ namespace OpenRCT2
      */
     static void WindowViewportWheelInput(WindowBase& w, int32_t wheel)
     {
-        if (gScreenFlags & (SCREEN_FLAGS_TRACK_MANAGER | SCREEN_FLAGS_TITLE_DEMO))
+        if (gLegacyScene == LegacyScene::trackDesignsManager || gLegacyScene == LegacyScene::titleSequence)
             return;
 
         if (wheel < 0)
@@ -273,7 +273,7 @@ namespace OpenRCT2
             return;
 
         // Check window cursor is over
-        if (!(InputTestFlag(INPUT_FLAG_5)))
+        if (!gInputFlags.has(InputFlag::unk5))
         {
             auto* windowMgr = GetWindowManager();
             WindowBase* w = windowMgr->FindFromPoint(cursorState->position);
@@ -322,23 +322,6 @@ namespace OpenRCT2
         Config::Get().general.DisableScreensaver ? SDL_DisableScreenSaver() : SDL_EnableScreenSaver();
     }
 
-    /**
-     *
-     *  rct2: 0x006EA776
-     */
-    static void WindowInvalidatePressedImageButton(const WindowBase& w)
-    {
-        for (WidgetIndex widgetIndex = 0; widgetIndex < w.widgets.size(); widgetIndex++)
-        {
-            auto& widget = w.widgets[widgetIndex];
-            if (widget.type != WindowWidgetType::ImgBtn)
-                continue;
-
-            if (WidgetIsPressed(w, widgetIndex) || isToolActive(w, widgetIndex))
-                GfxSetDirtyBlocks({ w.windowPos, w.windowPos + ScreenCoordsXY{ w.width, w.height } });
-        }
-    }
-
     void Window::ScrollToViewport()
     {
         if (viewport == nullptr || !focus.has_value())
@@ -351,14 +334,14 @@ namespace OpenRCT2
             WindowScrollToLocation(*mainWindow, newCoords);
     }
 
-    void Window::OnDraw(DrawPixelInfo& dpi)
+    void Window::OnDraw(RenderTarget& rt)
     {
-        Windows::WindowDrawWidgets(*this, dpi);
+        Windows::WindowDrawWidgets(*this, rt);
     }
 
-    void Window::OnDrawWidget(WidgetIndex widgetIndex, DrawPixelInfo& dpi)
+    void Window::OnDrawWidget(WidgetIndex widgetIndex, RenderTarget& rt)
     {
-        WidgetDraw(dpi, *this, widgetIndex);
+        WidgetDraw(rt, *this, widgetIndex);
     }
 
     void Window::InitScrollWidgets()
@@ -412,20 +395,20 @@ namespace OpenRCT2
         SetWidgetPressed(widgetIndex, value);
     }
 
-    void Window::DrawWidgets(DrawPixelInfo& dpi)
+    void Window::DrawWidgets(RenderTarget& rt)
     {
-        Windows::WindowDrawWidgets(*this, dpi);
+        Windows::WindowDrawWidgets(*this, rt);
     }
 
     void Window::Close()
     {
         CloseWindowModifier modifier = GetCloseModifier();
 
-        if (modifier == CloseWindowModifier::Shift)
+        if (modifier == CloseWindowModifier::shift)
         {
             CloseOthers();
         }
-        else if (modifier == CloseWindowModifier::Control)
+        else if (modifier == CloseWindowModifier::control)
         {
             CloseOthersOfThisClass();
         }
@@ -450,14 +433,14 @@ namespace OpenRCT2
 
     CloseWindowModifier Window::GetCloseModifier()
     {
-        CloseWindowModifier lastModifier = CloseWindowModifier::None;
+        CloseWindowModifier lastModifier = CloseWindowModifier::none;
 
         if (gLastCloseModifier.window.number == number && gLastCloseModifier.window.classification == classification)
         {
             lastModifier = gLastCloseModifier.modifier;
         }
 
-        gLastCloseModifier.modifier = CloseWindowModifier::None;
+        gLastCloseModifier.modifier = CloseWindowModifier::none;
 
         return lastModifier;
     }
@@ -468,34 +451,6 @@ namespace OpenRCT2
     {
         OpenRCT2::Ui::Windows::WindowTextInputOpen(
             this, callWidget, title, description, descriptionArgs, existingText, existingArgs, maxLength);
-    }
-
-    void Window::ResizeFrame()
-    {
-        // Frame
-        widgets[0].right = width - 1;
-        widgets[0].bottom = height - 1;
-        // Title
-        widgets[1].right = width - 2;
-        // Close button
-        if (Config::Get().interface.WindowButtonsOnTheLeft)
-        {
-            widgets[2].left = 2;
-            widgets[2].right = 2 + kCloseButtonWidth;
-        }
-        else
-        {
-            widgets[2].left = width - 3 - kCloseButtonWidth;
-            widgets[2].right = width - 3;
-        }
-    }
-
-    void Window::ResizeFrameWithPage()
-    {
-        ResizeFrame();
-        // Page background
-        widgets[3].right = width - 1;
-        widgets[3].bottom = height - 1;
     }
 
     void Window::ResizeSpinner(WidgetIndex widgetIndex, const ScreenCoordsXY& origin, const ScreenSize& size)
@@ -564,7 +519,7 @@ namespace OpenRCT2
 
     ScreenCoordsXY WindowGetViewportSoundIconPos(WindowBase& w)
     {
-        const uint8_t buttonOffset = (Config::Get().interface.WindowButtonsOnTheLeft) ? kCloseButtonWidth + 2 : 0;
+        const uint8_t buttonOffset = (Config::Get().interface.WindowButtonsOnTheLeft) ? kCloseButtonSize + 2 : 0;
         return w.windowPos + ScreenCoordsXY{ 2 + buttonOffset, 2 };
     }
 } // namespace OpenRCT2
@@ -678,7 +633,7 @@ namespace OpenRCT2::Ui::Windows
         return _currentTextBox;
     }
 
-    void WindowResize(WindowBase& w, int16_t dw, int16_t dh)
+    void WindowResizeByDelta(WindowBase& w, int16_t dw, int16_t dh)
     {
         if (dw == 0 && dh == 0)
             return;
@@ -691,6 +646,7 @@ namespace OpenRCT2::Ui::Windows
         w.height = std::clamp<int16_t>(w.height + dh, w.min_height, w.max_height);
 
         w.OnResize();
+        w.ResizeFrame();
         w.OnPrepareDraw();
 
         // Update scroll widgets
@@ -914,7 +870,7 @@ namespace OpenRCT2::Ui::Windows
     void WindowMoveAndSnap(WindowBase& w, ScreenCoordsXY newWindowCoords, int32_t snapProximity)
     {
         auto originalPos = w.windowPos;
-        int32_t minY = (gScreenFlags & SCREEN_FLAGS_TITLE_DEMO) ? 1 : kTopToolbarHeight + 2;
+        int32_t minY = gLegacyScene == LegacyScene::titleSequence ? 1 : kTopToolbarHeight + 2;
 
         newWindowCoords.y = std::clamp(newWindowCoords.y, minY, ContextGetHeight() - 34);
 
@@ -1002,16 +958,32 @@ namespace OpenRCT2::Ui::Windows
         });
     }
 
-    void WindowSetResize(WindowBase& w, int16_t minWidth, int16_t minHeight, int16_t maxWidth, int16_t maxHeight)
+    bool WindowSetResize(WindowBase& w, ScreenSize minSize, ScreenSize maxSize)
     {
-        w.min_width = minWidth;
-        w.min_height = minHeight;
-        w.max_width = maxWidth;
-        w.max_height = maxHeight;
+        w.min_width = std::min(minSize.width, maxSize.width);
+        w.min_height = std::min(minSize.height, maxSize.height);
+        w.max_width = std::max(minSize.width, maxSize.width);
+        w.max_height = std::max(minSize.height, maxSize.height);
+
+        if (Config::Get().interface.EnlargedUi)
+        {
+            // Not sure why plugin windows have to be treated differently,
+            // but they currently show a deviation if we don't.
+            if (w.classification == WindowClass::Custom)
+            {
+                w.min_height += w.getTitleBarDiffTarget();
+                w.max_height += w.getTitleBarDiffTarget();
+            }
+            else
+            {
+                w.min_height += w.getTitleBarDiffNormal();
+                w.max_height += w.getTitleBarDiffNormal();
+            }
+        }
 
         // Clamp width and height to minimum and maximum
-        int16_t width = std::clamp<int16_t>(w.width, std::min(minWidth, maxWidth), std::max(minWidth, maxWidth));
-        int16_t height = std::clamp<int16_t>(w.height, std::min(minHeight, maxHeight), std::max(minHeight, maxHeight));
+        int16_t width = std::clamp<int16_t>(w.width, w.min_width, w.max_width);
+        int16_t height = std::clamp<int16_t>(w.height, w.min_height, w.max_height);
 
         // Resize window if size has changed
         if (w.width != width || w.height != height)
@@ -1019,8 +991,12 @@ namespace OpenRCT2::Ui::Windows
             w.Invalidate();
             w.width = width;
             w.height = height;
+            w.ResizeFrame();
             w.Invalidate();
+            return true;
         }
+
+        return false;
     }
 
     bool WindowCanResize(const WindowBase& w)
@@ -1034,11 +1010,7 @@ namespace OpenRCT2::Ui::Windows
      */
     void InvalidateAllWindowsAfterInput()
     {
-        WindowVisitEach([](WindowBase* w) {
-            Windows::WindowUpdateScrollWidgets(*w);
-            WindowInvalidatePressedImageButton(*w);
-            w->OnResize();
-        });
+        WindowVisitEach([](WindowBase* w) { Windows::WindowUpdateScrollWidgets(*w); });
     }
 
     /**
@@ -1048,20 +1020,20 @@ namespace OpenRCT2::Ui::Windows
      * @param dpi (edi)
      * @param w (esi)
      */
-    void WindowDrawViewport(DrawPixelInfo& dpi, WindowBase& w)
+    void WindowDrawViewport(RenderTarget& rt, WindowBase& w)
     {
-        ViewportRender(dpi, w.viewport);
+        ViewportRender(rt, w.viewport);
     }
 
     /**
      *
      *  rct2: 0x006EB15C
      */
-    void WindowDrawWidgets(WindowBase& w, DrawPixelInfo& dpi)
+    void WindowDrawWidgets(WindowBase& w, RenderTarget& rt)
     {
         if ((w.flags & WF_TRANSPARENT) && !(w.flags & WF_NO_BACKGROUND))
             GfxFilterRect(
-                dpi, { w.windowPos, w.windowPos + ScreenCoordsXY{ w.width - 1, w.height - 1 } }, FilterPaletteID::Palette51);
+                rt, { w.windowPos, w.windowPos + ScreenCoordsXY{ w.width - 1, w.height - 1 } }, FilterPaletteID::Palette51);
 
         // todo: some code missing here? Between 006EB18C and 006EB260
         for (WidgetIndex widgetIndex = 0; widgetIndex < w.widgets.size(); widgetIndex++)
@@ -1073,11 +1045,11 @@ namespace OpenRCT2::Ui::Windows
             }
 
             // Check if widget is outside the draw region
-            if (w.windowPos.x + widget.left < dpi.x + dpi.width && w.windowPos.x + widget.right >= dpi.x)
+            if (w.windowPos.x + widget.left < rt.x + rt.width && w.windowPos.x + widget.right >= rt.x)
             {
-                if (w.windowPos.y + widget.top < dpi.y + dpi.height && w.windowPos.y + widget.bottom >= dpi.y)
+                if (w.windowPos.y + widget.top < rt.y + rt.height && w.windowPos.y + widget.bottom >= rt.y)
                 {
-                    w.OnDrawWidget(widgetIndex, dpi);
+                    w.OnDrawWidget(widgetIndex, rt);
                 }
             }
         }
@@ -1087,7 +1059,7 @@ namespace OpenRCT2::Ui::Windows
         if (w.flags & WF_WHITE_BORDER_MASK)
         {
             GfxFillRectInset(
-                dpi, { w.windowPos, w.windowPos + ScreenCoordsXY{ w.width - 1, w.height - 1 } }, { COLOUR_WHITE },
+                rt, { w.windowPos, w.windowPos + ScreenCoordsXY{ w.width - 1, w.height - 1 } }, { COLOUR_WHITE },
                 INSET_RECT_FLAG_FILL_NONE);
         }
     }
@@ -1116,13 +1088,13 @@ namespace OpenRCT2::Ui::Windows
         if (mainWindow == nullptr)
             return;
 
-        if (gScreenFlags & SCREEN_FLAGS_TITLE_DEMO)
+        if (gLegacyScene == LegacyScene::titleSequence)
             return;
 
-        if (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR && GetGameState().EditorStep != EditorStep::LandscapeEditor)
+        if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::LandscapeEditor)
             return;
 
-        if (gScreenFlags & SCREEN_FLAGS_TRACK_MANAGER)
+        if (gLegacyScene == LegacyScene::trackDesignsManager)
             return;
 
         if (zoomIn)
@@ -1130,5 +1102,4 @@ namespace OpenRCT2::Ui::Windows
         else
             WindowZoomOut(*mainWindow, atCursor);
     }
-
 } // namespace OpenRCT2::Ui::Windows

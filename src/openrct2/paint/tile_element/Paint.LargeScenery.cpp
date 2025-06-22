@@ -218,7 +218,7 @@ static void PaintLargeScenery3DText(
 
     char signString[256];
     auto ft = Formatter();
-    banner->FormatTextTo(ft);
+    banner->formatTextTo(ft);
     OpenRCT2::FormatStringLegacy(signString, sizeof(signString), STR_STRINGID, ft.Data());
 
     auto offsetY = text->offset[(direction & 1)].y * 2;
@@ -315,7 +315,7 @@ static void PaintLargeSceneryScrollingText(
         return;
 
     auto ft = Formatter();
-    banner->FormatTextTo(ft);
+    banner->formatTextTo(ft);
 
     char text[256];
     if (Config::Get().general.UpperCaseBanners)
@@ -329,7 +329,7 @@ static void PaintLargeSceneryScrollingText(
 
     auto scrollMode = sceneryEntry.scrolling_mode + ((direction + 1) & 3);
     auto stringWidth = GfxGetStringWidth(text, FontStyle::Tiny);
-    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
+    auto scroll = stringWidth > 0 ? (getGameState().currentTicks / 2) % stringWidth : 0;
     auto imageId = ScrollingTextSetup(session, STR_SCROLLING_SIGN_TEXT, ft, scroll, scrollMode, textPaletteIndex);
     PaintAddImageAsChild(session, imageId, { 0, 0, height + 25 }, { bbOffset, { 1, 1, 21 } });
 }
@@ -405,7 +405,7 @@ void PaintLargeScenery(PaintSession& session, uint8_t direction, uint16_t height
     auto imageIndex = sceneryEntry->image + 4 + (sequenceNum << 2) + direction;
     PaintAddImageAsParent(session, imageTemplate.WithIndex(imageIndex), { 0, 0, height }, { bbOffset, bbLength });
 
-    if (sceneryEntry->scrolling_mode != SCROLLING_MODE_NONE && direction != 1 && direction != 2)
+    if (sceneryEntry->scrolling_mode != kScrollingModeNone && direction != 1 && direction != 2)
     {
         if (sceneryEntry->flags & LARGE_SCENERY_FLAG_3D_TEXT)
         {

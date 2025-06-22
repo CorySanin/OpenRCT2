@@ -90,6 +90,7 @@ namespace OpenRCT2::Ui::Windows
         void OnOpen() override
         {
             SetWidgets(window_land_widgets);
+
             hold_down_widgets = (1uLL << WIDX_DECREMENT) | (1uLL << WIDX_INCREMENT);
             WindowInitScrollWidgets(*this);
             WindowPushOthersBelow(*this);
@@ -250,15 +251,15 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_PREVIEW].image = ImageId(LandTool::SizeToSpriteIndex(gLandToolSize));
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
             ScreenCoordsXY screenCoords;
             int32_t numTiles;
             money64 price;
             Widget* previewWidget = &widgets[WIDX_PREVIEW];
 
-            DrawWidgets(dpi);
-            DrawDropdownButtons(dpi);
+            DrawWidgets(rt);
+            DrawDropdownButtons(rt);
 
             // Draw number for tool sizes bigger than 7
             if (gLandToolSize > kLandToolMaximumSizeWithSprite)
@@ -267,27 +268,27 @@ namespace OpenRCT2::Ui::Windows
                 ft.Add<uint16_t>(gLandToolSize);
                 screenCoords = { windowPos.x + previewWidget->midX(), windowPos.y + previewWidget->midY() };
                 DrawTextBasic(
-                    dpi, screenCoords - ScreenCoordsXY{ 0, 2 }, STR_LAND_TOOL_SIZE_VALUE, ft, { TextAlignment::CENTRE });
+                    rt, screenCoords - ScreenCoordsXY{ 0, 2 }, STR_LAND_TOOL_SIZE_VALUE, ft, { TextAlignment::CENTRE });
             }
             else if (_landToolMountainMode)
             {
                 screenCoords = { windowPos.x + previewWidget->left, windowPos.y + previewWidget->top };
                 auto sprite = ImageId(gLandToolSize % 2 == 0 ? SPR_G2_MOUNTAIN_TOOL_EVEN : SPR_G2_MOUNTAIN_TOOL_ODD);
-                GfxDrawSprite(dpi, sprite, screenCoords);
-                WidgetDraw(dpi, *this, WIDX_DECREMENT);
-                WidgetDraw(dpi, *this, WIDX_INCREMENT);
+                GfxDrawSprite(rt, sprite, screenCoords);
+                WidgetDraw(rt, *this, WIDX_DECREMENT);
+                WidgetDraw(rt, *this, WIDX_INCREMENT);
             }
 
             screenCoords = { windowPos.x + previewWidget->midX(), windowPos.y + previewWidget->bottom + 5 };
 
-            if (!(GetGameState().Park.Flags & PARK_FLAGS_NO_MONEY))
+            if (!(getGameState().park.Flags & PARK_FLAGS_NO_MONEY))
             {
                 // Draw raise cost amount
                 if (_landToolRaiseCost != kMoney64Undefined && _landToolRaiseCost != 0)
                 {
                     auto ft = Formatter();
                     ft.Add<money64>(_landToolRaiseCost);
-                    DrawTextBasic(dpi, screenCoords, STR_RAISE_COST_AMOUNT, ft, { TextAlignment::CENTRE });
+                    DrawTextBasic(rt, screenCoords, STR_RAISE_COST_AMOUNT, ft, { TextAlignment::CENTRE });
                 }
                 screenCoords.y += 10;
 
@@ -296,7 +297,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<money64>(_landToolLowerCost);
-                    DrawTextBasic(dpi, screenCoords, STR_LOWER_COST_AMOUNT, ft, { TextAlignment::CENTRE });
+                    DrawTextBasic(rt, screenCoords, STR_LOWER_COST_AMOUNT, ft, { TextAlignment::CENTRE });
                 }
                 screenCoords.y += 50;
 
@@ -306,8 +307,7 @@ namespace OpenRCT2::Ui::Windows
                 if (gLandToolTerrainSurface != kObjectEntryIndexNull)
                 {
                     auto& objManager = GetContext()->GetObjectManager();
-                    const auto surfaceObj = static_cast<TerrainSurfaceObject*>(
-                        objManager.GetLoadedObject(ObjectType::terrainSurface, gLandToolTerrainSurface));
+                    const auto* surfaceObj = objManager.GetLoadedObject<TerrainSurfaceObject>(gLandToolTerrainSurface);
                     if (surfaceObj != nullptr)
                     {
                         price += numTiles * static_cast<money64>(surfaceObj->Price);
@@ -321,14 +321,9 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<money64>(price);
-                    DrawTextBasic(dpi, screenCoords, STR_COST_AMOUNT, ft, { TextAlignment::CENTRE });
+                    DrawTextBasic(rt, screenCoords, STR_COST_AMOUNT, ft, { TextAlignment::CENTRE });
                 }
             }
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
         }
 
     private:
@@ -533,7 +528,7 @@ namespace OpenRCT2::Ui::Windows
 
                         GameActions::Execute(&surfaceSetStyleAction);
 
-                        gCurrentToolId = Tool::UpDownArrow;
+                        gCurrentToolId = Tool::upDownArrow;
                     }
                     else
                     {
@@ -562,7 +557,7 @@ namespace OpenRCT2::Ui::Windows
 
                             // The tool is set to 12 here instead of 3 so that the dragging cursor is not the elevation change
                             // cursor
-                            gCurrentToolId = Tool::Crosshair;
+                            gCurrentToolId = Tool::crosshair;
                         }
                     }
                     else
@@ -585,7 +580,7 @@ namespace OpenRCT2::Ui::Windows
                 case WIDX_BACKGROUND:
                     MapInvalidateSelectionRect();
                     gMapSelectFlags &= ~MAP_SELECT_FLAG_ENABLE;
-                    gCurrentToolId = Tool::DigDown;
+                    gCurrentToolId = Tool::digDown;
                     break;
             }
         }
@@ -612,7 +607,7 @@ namespace OpenRCT2::Ui::Windows
 
             MapInvalidateSelectionRect();
 
-            if (gCurrentToolId == Tool::UpDownArrow)
+            if (gCurrentToolId == Tool::upDownArrow)
             {
                 if (!(gMapSelectFlags & MAP_SELECT_FLAG_ENABLE))
                     return;
@@ -840,11 +835,10 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void DrawDropdownButtons(DrawPixelInfo& dpi)
+        void DrawDropdownButtons(RenderTarget& rt)
         {
             auto& objManager = GetContext()->GetObjectManager();
-            const auto surfaceObj = static_cast<TerrainSurfaceObject*>(
-                objManager.GetLoadedObject(ObjectType::terrainSurface, _selectedFloorTexture));
+            const auto* surfaceObj = objManager.GetLoadedObject<TerrainSurfaceObject>(_selectedFloorTexture);
             ImageId surfaceImage;
             if (surfaceObj != nullptr)
             {
@@ -853,22 +847,21 @@ namespace OpenRCT2::Ui::Windows
                     surfaceImage = surfaceImage.WithPrimary(surfaceObj->Colour);
             }
 
-            const auto edgeObj = static_cast<TerrainEdgeObject*>(
-                objManager.GetLoadedObject(ObjectType::terrainEdge, _selectedWallTexture));
+            const auto edgeObj = objManager.GetLoadedObject<TerrainEdgeObject>(_selectedWallTexture);
             ImageId edgeImage;
             if (edgeObj != nullptr)
             {
                 edgeImage = ImageId(edgeObj->IconImageId);
             }
 
-            DrawDropdownButton(dpi, WIDX_FLOOR, surfaceImage);
-            DrawDropdownButton(dpi, WIDX_WALL, edgeImage);
+            DrawDropdownButton(rt, WIDX_FLOOR, surfaceImage);
+            DrawDropdownButton(rt, WIDX_WALL, edgeImage);
         }
 
-        void DrawDropdownButton(DrawPixelInfo& dpi, WidgetIndex widgetIndex, ImageId image)
+        void DrawDropdownButton(RenderTarget& rt, WidgetIndex widgetIndex, ImageId image)
         {
             const auto& widget = widgets[widgetIndex];
-            GfxDrawSprite(dpi, image, { windowPos.x + widget.left, windowPos.y + widget.top });
+            GfxDrawSprite(rt, image, { windowPos.x + widget.left, windowPos.y + widget.top });
         }
     };
 
@@ -892,8 +885,8 @@ namespace OpenRCT2::Ui::Windows
         {
             ShowGridlines();
             auto* toolWindow = ContextOpenWindow(WindowClass::Land);
-            ToolSet(*toolWindow, WIDX_BACKGROUND, Tool::DigDown);
-            InputSetFlag(INPUT_FLAG_6, true);
+            ToolSet(*toolWindow, WIDX_BACKGROUND, Tool::digDown);
+            gInputFlags.set(InputFlag::unk6);
         }
     }
 } // namespace OpenRCT2::Ui::Windows

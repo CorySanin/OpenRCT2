@@ -95,12 +95,12 @@ namespace OpenRCT2::Ui::Windows
             std::string rideAName = "";
             auto rideA = GetRide(a);
             if (rideA != nullptr)
-                rideAName = rideA->GetName();
+                rideAName = rideA->getName();
 
             std::string rideBName = "";
             auto rideB = GetRide(b);
             if (rideB != nullptr)
-                rideBName = rideB->GetName();
+                rideBName = rideB->getName();
 
             return String::logicalCmp(rideAName.c_str(), rideBName.c_str()) < 0;
         }
@@ -114,7 +114,7 @@ namespace OpenRCT2::Ui::Windows
             BitSet<EnumValue(ShopItem::Count)> items = {};
             for (auto& curRide : GetRideManager())
             {
-                auto rideEntry = curRide.GetRideEntry();
+                auto rideEntry = curRide.getRideEntry();
                 if (rideEntry != nullptr)
                 {
                     for (const auto itemType : rideEntry->shop_item)
@@ -144,9 +144,9 @@ namespace OpenRCT2::Ui::Windows
             RideList.clear();
             for (const auto& curRide : GetRideManager())
             {
-                if (curRide.status == RideStatus::Open)
+                if (curRide.status == RideStatus::open)
                 {
-                    const auto& rtd = curRide.GetRideTypeDescriptor();
+                    const auto& rtd = curRide.getRideTypeDescriptor();
                     if (rtd.HasFlag(RtdFlag::isShopOrFacility))
                         continue;
                     if (rtd.HasFlag(RtdFlag::sellsFood))
@@ -234,14 +234,14 @@ namespace OpenRCT2::Ui::Windows
                                 // HACK until dropdown items have longer argument buffers
                                 gDropdownItems[numItems].Format = STR_DROPDOWN_MENU_LABEL;
                                 Formatter ft(reinterpret_cast<uint8_t*>(&gDropdownItems[numItems].Args));
-                                if (curRide->custom_name.empty())
+                                if (curRide->customName.empty())
                                 {
-                                    curRide->FormatNameTo(ft);
+                                    curRide->formatNameTo(ft);
                                 }
                                 else
                                 {
                                     gDropdownItems[numItems].Format = STR_OPTIONS_DROPDOWN_ITEM;
-                                    ft.Add<const char*>(curRide->custom_name.c_str());
+                                    ft.Add<const char*>(curRide->customName.c_str());
                                 }
                                 numItems++;
                             }
@@ -337,7 +337,7 @@ namespace OpenRCT2::Ui::Windows
                             widgets[WIDX_RIDE_DROPDOWN].text = STR_STRINGID;
 
                             auto ft = Formatter::Common();
-                            curRide->FormatNameTo(ft);
+                            curRide->formatNameTo(ft);
                         }
                     }
                     break;
@@ -362,37 +362,32 @@ namespace OpenRCT2::Ui::Windows
                 WidgetSetDisabled(*this, WIDX_START_BUTTON, true);
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
             ScreenCoordsXY screenCoords{};
 
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
             // Number of weeks
             Widget* spinnerWidget = &widgets[WIDX_WEEKS_SPINNER];
             auto ft = Formatter();
             ft.Add<int16_t>(Campaign.no_weeks);
             DrawTextBasic(
-                dpi, windowPos + ScreenCoordsXY{ spinnerWidget->left + 1, spinnerWidget->top },
+                rt, windowPos + ScreenCoordsXY{ spinnerWidget->left + 1, spinnerWidget->top },
                 Campaign.no_weeks == 1 ? STR_MARKETING_1_WEEK : STR_X_WEEKS, ft, { colours[0] });
 
-            screenCoords = windowPos + ScreenCoordsXY{ 14, 60 };
+            screenCoords = windowPos + ScreenCoordsXY{ 14, spinnerWidget->bottom + 6 };
 
             // Price per week
             ft = Formatter();
             ft.Add<money64>(AdvertisingCampaignPricePerWeek[Campaign.campaign_type]);
-            DrawTextBasic(dpi, screenCoords, STR_MARKETING_COST_PER_WEEK, ft);
+            DrawTextBasic(rt, screenCoords, STR_MARKETING_COST_PER_WEEK, ft);
             screenCoords.y += 13;
 
             // Total price
             ft = Formatter();
             ft.Add<money64>(AdvertisingCampaignPricePerWeek[Campaign.campaign_type] * Campaign.no_weeks);
-            DrawTextBasic(dpi, screenCoords, STR_MARKETING_TOTAL_COST, ft);
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
+            DrawTextBasic(rt, screenCoords, STR_MARKETING_TOTAL_COST, ft);
         }
 
         int16_t GetCampaignType() const

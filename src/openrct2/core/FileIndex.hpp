@@ -23,7 +23,7 @@
 #include <chrono>
 #include <list>
 #include <string>
-#include <tuple>
+#include <utility>
 #include <vector>
 
 template<typename TItem>
@@ -210,7 +210,7 @@ private:
         return allItems;
     }
 
-    std::tuple<bool, std::vector<TItem>> ReadIndexFile(int32_t language, const DirectoryStats& stats) const
+    std::pair<bool, std::vector<TItem>> ReadIndexFile(int32_t language, const DirectoryStats& stats) const
     {
         bool loadedItems = false;
         std::vector<TItem> items;
@@ -219,7 +219,7 @@ private:
             try
             {
                 LOG_VERBOSE("FileIndex:Loading index: '%s'", _indexPath.c_str());
-                auto fs = OpenRCT2::FileStream(_indexPath, OpenRCT2::FILE_MODE_OPEN);
+                auto fs = OpenRCT2::FileStream(_indexPath, OpenRCT2::FileMode::open);
 
                 // Read header, check if we need to re-scan
                 auto header = fs.ReadValue<FileIndexHeader>();
@@ -251,7 +251,7 @@ private:
                 OpenRCT2::Console::Error::WriteLine("%s", e.what());
             }
         }
-        return std::make_tuple(loadedItems, std::move(items));
+        return { loadedItems, std::move(items) };
     }
 
     void WriteIndexFile(int32_t language, const DirectoryStats& stats, const std::vector<TItem>& items) const
@@ -260,7 +260,7 @@ private:
         {
             LOG_VERBOSE("FileIndex:Writing index: '%s'", _indexPath.c_str());
             OpenRCT2::Path::CreateDirectory(OpenRCT2::Path::GetDirectory(_indexPath));
-            auto fs = OpenRCT2::FileStream(_indexPath, OpenRCT2::FILE_MODE_WRITE);
+            auto fs = OpenRCT2::FileStream(_indexPath, OpenRCT2::FileMode::write);
 
             // Write header
             FileIndexHeader header;

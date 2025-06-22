@@ -64,10 +64,8 @@ namespace OpenRCT2::Ui::Windows
     // clang-format off
 
     #define MAIN_MULTIPLAYER_WIDGETS \
-        MakeWidget({  0,  0}, {340, 240}, WindowWidgetType::Frame,    WindowColour::Primary                                        ), /* panel / background */ \
-        MakeWidget({  1,  1}, {338,  14}, WindowWidgetType::Caption,  WindowColour::Primary,  kStringIdNone,    STR_WINDOW_TITLE_TIP    ), /* title bar */ \
-        MakeWidget({327,  2}, { 11,  12}, WindowWidgetType::CloseBox, WindowColour::Primary,  STR_CLOSE_X, STR_CLOSE_WINDOW_TIP    ), /* close x button */ \
-        MakeWidget({  0, 43}, {340, 197}, WindowWidgetType::Resize,   WindowColour::Secondary                                      ), /* content panel */ \
+        WINDOW_SHIM(kStringIdNone, 340, 240), \
+        MakeWidget({  0, 43}, {340, 197}, WindowWidgetType::Resize, WindowColour::Secondary                          ), /* content panel */ \
         MakeTab   ({  3, 17},                                                                STR_SHOW_SERVER_INFO_TIP), /* tab */ \
         MakeTab   ({ 34, 17},                                                                STR_PLAYERS_TIP         ), /* tab */ \
         MakeTab   ({ 65, 17},                                                                STR_GROUPS_TIP          ), /* tab */ \
@@ -142,24 +140,24 @@ namespace OpenRCT2::Ui::Windows
     class MultiplayerWindow final : public Window
     {
     private:
-        std::optional<ScreenCoordsXY> _windowInformationSize;
+        std::optional<ScreenSize> _windowInformationSize;
         uint8_t _selectedGroup{ 0 };
 
     private:
         void ResetPressedWidgets();
 
-        void InformationPaint(DrawPixelInfo& dpi);
-        void PlayersPaint(DrawPixelInfo& dpi);
-        void GroupsPaint(DrawPixelInfo& dpi);
+        void InformationPaint(RenderTarget& rt);
+        void PlayersPaint(RenderTarget& rt);
+        void GroupsPaint(RenderTarget& rt);
 
-        void DrawTabImage(DrawPixelInfo& dpi, int32_t page_number, int32_t spriteIndex);
-        void DrawTabImages(DrawPixelInfo& dpi);
+        void DrawTabImage(RenderTarget& rt, int32_t page_number, int32_t spriteIndex);
+        void DrawTabImages(RenderTarget& rt);
 
-        void PlayersScrollPaint(int32_t scrollIndex, DrawPixelInfo& dpi) const;
-        void GroupsScrollPaint(int32_t scrollIndex, DrawPixelInfo& dpi) const;
+        void PlayersScrollPaint(int32_t scrollIndex, RenderTarget& rt) const;
+        void GroupsScrollPaint(int32_t scrollIndex, RenderTarget& rt) const;
 
         void ShowGroupDropdown(WidgetIndex widgetIndex);
-        ScreenCoordsXY InformationGetSize();
+        ScreenSize InformationGetSize();
 
     public:
         void OnOpen() override;
@@ -170,7 +168,7 @@ namespace OpenRCT2::Ui::Windows
         void OnResize() override;
         void OnUpdate() override;
         void OnPrepareDraw() override;
-        void OnDraw(DrawPixelInfo& dpi) override;
+        void OnDraw(RenderTarget& rt) override;
 
         void OnDropdown(WidgetIndex widgetIndex, int32_t selectedIndex) override;
         void OnTextInput(WidgetIndex widgetIndex, std::string_view text) override;
@@ -179,7 +177,7 @@ namespace OpenRCT2::Ui::Windows
         ScreenSize OnScrollGetSize(int32_t scrollIndex) override;
         void OnScrollMouseDown(int32_t scrollIndex, const ScreenCoordsXY& screenCoords) override;
         void OnScrollMouseOver(int32_t scrollIndex, const ScreenCoordsXY& screenCoords) override;
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override;
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override;
     };
 
     WindowBase* MultiplayerOpen()
@@ -203,6 +201,10 @@ namespace OpenRCT2::Ui::Windows
 
     void MultiplayerWindow::SetPage(int32_t page_number)
     {
+        // Skip setting page if we're already on this page, unless we're initialising the window
+        if (page == page_number && !widgets.empty())
+            return;
+
         _windowInformationSize.reset();
 
         page = page_number;
@@ -289,7 +291,7 @@ namespace OpenRCT2::Ui::Windows
         }
     }
 
-    ScreenCoordsXY MultiplayerWindow::InformationGetSize()
+    ScreenSize MultiplayerWindow::InformationGetSize()
     {
         assert(!_windowInformationSize.has_value());
 
@@ -342,12 +344,12 @@ namespace OpenRCT2::Ui::Windows
             case WINDOW_MULTIPLAYER_PAGE_INFORMATION:
             {
                 auto size = _windowInformationSize ? _windowInformationSize.value() : InformationGetSize();
-                WindowSetResize(*this, size.x, size.y, size.x, size.y);
+                WindowSetResize(*this, size, size);
                 break;
             }
             case WINDOW_MULTIPLAYER_PAGE_PLAYERS:
             {
-                WindowSetResize(*this, 420, 124, 500, 450);
+                WindowSetResize(*this, { 420, 124 }, { 500, 450 });
 
                 no_list_items = (IsServerPlayerInvisible() ? NetworkGetNumVisiblePlayers() : NetworkGetNumPlayers());
 
@@ -359,7 +361,7 @@ namespace OpenRCT2::Ui::Windows
             }
             case WINDOW_MULTIPLAYER_PAGE_GROUPS:
             {
-                WindowSetResize(*this, 320, 200, 320, 500);
+                WindowSetResize(*this, { 320, 200 }, { 320, 500 });
 
                 no_list_items = NetworkGetNumActions();
 
@@ -369,7 +371,7 @@ namespace OpenRCT2::Ui::Windows
             }
             case WINDOW_MULTIPLAYER_PAGE_OPTIONS:
             {
-                WindowSetResize(*this, 300, 100, 300, 100);
+                WindowSetResize(*this, { 300, 100 }, { 300, 100 });
                 break;
             }
         }
@@ -393,7 +395,6 @@ namespace OpenRCT2::Ui::Windows
     {
         ResetPressedWidgets();
         SetWidgetPressed(WIDX_TAB1 + page, true);
-        ResizeFrameWithPage();
         switch (page)
         {
             case WINDOW_MULTIPLAYER_PAGE_INFORMATION:
@@ -438,25 +439,25 @@ namespace OpenRCT2::Ui::Windows
         }
     }
 
-    void MultiplayerWindow::OnDraw(DrawPixelInfo& dpi)
+    void MultiplayerWindow::OnDraw(RenderTarget& rt)
     {
-        DrawWidgets(dpi);
-        DrawTabImages(dpi);
+        DrawWidgets(rt);
+        DrawTabImages(rt);
         switch (page)
         {
             case WINDOW_MULTIPLAYER_PAGE_INFORMATION:
             {
-                InformationPaint(dpi);
+                InformationPaint(rt);
                 break;
             }
             case WINDOW_MULTIPLAYER_PAGE_PLAYERS:
             {
-                PlayersPaint(dpi);
+                PlayersPaint(rt);
                 break;
             }
             case WINDOW_MULTIPLAYER_PAGE_GROUPS:
             {
-                GroupsPaint(dpi);
+                GroupsPaint(rt);
                 break;
             }
         }
@@ -657,26 +658,26 @@ namespace OpenRCT2::Ui::Windows
         }
     }
 
-    void MultiplayerWindow::OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi)
+    void MultiplayerWindow::OnScrollDraw(int32_t scrollIndex, RenderTarget& rt)
     {
         switch (page)
         {
             case WINDOW_MULTIPLAYER_PAGE_PLAYERS:
-                PlayersScrollPaint(scrollIndex, dpi);
+                PlayersScrollPaint(scrollIndex, rt);
                 break;
 
             case WINDOW_MULTIPLAYER_PAGE_GROUPS:
-                GroupsScrollPaint(scrollIndex, dpi);
+                GroupsScrollPaint(scrollIndex, rt);
                 break;
         }
     }
 
-    void MultiplayerWindow::InformationPaint(DrawPixelInfo& dpi)
+    void MultiplayerWindow::InformationPaint(RenderTarget& rt)
     {
-        DrawPixelInfo clippedDPI;
-        if (ClipDrawPixelInfo(clippedDPI, dpi, windowPos, width, height))
+        RenderTarget clippedDPI;
+        if (ClipDrawPixelInfo(clippedDPI, rt, windowPos, width, height))
         {
-            auto screenCoords = ScreenCoordsXY{ 3, 50 };
+            auto screenCoords = ScreenCoordsXY{ 3, widgets[WIDX_CONTENT_PANEL].top + 7 };
             int32_t newWidth = width - 6;
 
             const auto& name = NetworkGetServerName();
@@ -724,17 +725,17 @@ namespace OpenRCT2::Ui::Windows
         }
     }
 
-    void MultiplayerWindow::PlayersPaint(DrawPixelInfo& dpi)
+    void MultiplayerWindow::PlayersPaint(RenderTarget& rt)
     {
         // Number of players
         StringId stringId = no_list_items == 1 ? STR_MULTIPLAYER_PLAYER_COUNT : STR_MULTIPLAYER_PLAYER_COUNT_PLURAL;
         auto screenCoords = windowPos + ScreenCoordsXY{ 4, widgets[WIDX_LIST].bottom + 2 };
         auto ft = Formatter();
         ft.Add<uint16_t>(no_list_items);
-        DrawTextBasic(dpi, screenCoords, stringId, ft, { colours[2] });
+        DrawTextBasic(rt, screenCoords, stringId, ft, { colours[2] });
     }
 
-    void MultiplayerWindow::PlayersScrollPaint(int32_t scrollIndex, DrawPixelInfo& dpi) const
+    void MultiplayerWindow::PlayersScrollPaint(int32_t scrollIndex, RenderTarget& rt) const
     {
         ScreenCoordsXY screenCoords;
         screenCoords.y = 0;
@@ -744,12 +745,12 @@ namespace OpenRCT2::Ui::Windows
 
         for (int32_t player = firstPlayerInList; player < NetworkGetNumPlayers(); player++)
         {
-            if (screenCoords.y > dpi.y + dpi.height)
+            if (screenCoords.y > rt.y + rt.height)
             {
                 break;
             }
 
-            if (screenCoords.y + kScrollableRowHeight + 1 >= dpi.y)
+            if (screenCoords.y + kScrollableRowHeight + 1 >= rt.y)
             {
                 thread_local std::string _buffer;
                 _buffer.reserve(512);
@@ -760,7 +761,7 @@ namespace OpenRCT2::Ui::Windows
                 if (listPosition == selected_list_item)
                 {
                     GfxFilterRect(
-                        dpi, { 0, screenCoords.y, 800, screenCoords.y + kScrollableRowHeight - 1 },
+                        rt, { 0, screenCoords.y, 800, screenCoords.y + kScrollableRowHeight - 1 },
                         FilterPaletteID::PaletteDarken1);
                     _buffer += NetworkGetPlayerName(player);
                     colour = colours[2];
@@ -779,7 +780,7 @@ namespace OpenRCT2::Ui::Windows
                 }
                 screenCoords.x = 0;
                 GfxClipString(_buffer.data(), 230, FontStyle::Medium);
-                DrawText(dpi, screenCoords, { colour }, _buffer.c_str());
+                DrawText(rt, screenCoords, { colour }, _buffer.c_str());
 
                 // Draw group name
                 _buffer.resize(0);
@@ -790,7 +791,7 @@ namespace OpenRCT2::Ui::Windows
                     screenCoords.x = 173;
                     _buffer += NetworkGetGroupName(group);
                     GfxClipString(_buffer.data(), 80, FontStyle::Medium);
-                    DrawText(dpi, screenCoords, { colour }, _buffer.c_str());
+                    DrawText(rt, screenCoords, { colour }, _buffer.c_str());
                 }
 
                 // Draw last action
@@ -804,7 +805,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     ft.Add<StringId>(STR_ACTION_NA);
                 }
-                DrawTextEllipsised(dpi, { 256, screenCoords.y }, 100, STR_BLACK_STRING, ft);
+                DrawTextEllipsised(rt, { 256, screenCoords.y }, 100, STR_BLACK_STRING, ft);
 
                 // Draw ping
                 _buffer.resize(0);
@@ -827,14 +828,14 @@ namespace OpenRCT2::Ui::Windows
                 _buffer += pingBuffer;
 
                 screenCoords.x = 356;
-                DrawText(dpi, screenCoords, { colour }, _buffer.c_str());
+                DrawText(rt, screenCoords, { colour }, _buffer.c_str());
             }
             screenCoords.y += kScrollableRowHeight;
             listPosition++;
         }
     }
 
-    void MultiplayerWindow::GroupsPaint(DrawPixelInfo& dpi)
+    void MultiplayerWindow::GroupsPaint(RenderTarget& rt)
     {
         thread_local std::string _buffer;
 
@@ -848,19 +849,19 @@ namespace OpenRCT2::Ui::Windows
             auto ft = Formatter();
             ft.Add<const char*>(_buffer.c_str());
             DrawTextEllipsised(
-                dpi, windowPos + ScreenCoordsXY{ widget->midX() - 5, widget->top }, widget->width() - 8, STR_STRING, ft,
+                rt, windowPos + ScreenCoordsXY{ widget->midX() - 5, widget->top }, widget->width() - 8, STR_STRING, ft,
                 { TextAlignment::CENTRE });
         }
 
         auto screenPos = windowPos
             + ScreenCoordsXY{ widgets[WIDX_CONTENT_PANEL].left + 4, widgets[WIDX_CONTENT_PANEL].top + 4 };
 
-        DrawTextBasic(dpi, screenPos, STR_DEFAULT_GROUP, {}, { colours[2] });
+        DrawTextBasic(rt, screenPos, STR_DEFAULT_GROUP, {}, { colours[2] });
 
         screenPos.y += 20;
 
         GfxFillRectInset(
-            dpi, { screenPos - ScreenCoordsXY{ 0, 6 }, screenPos + ScreenCoordsXY{ 310, -5 } }, colours[1],
+            rt, { screenPos - ScreenCoordsXY{ 0, 6 }, screenPos + ScreenCoordsXY{ 310, -5 } }, colours[1],
             INSET_RECT_FLAG_BORDER_INSET);
 
         widget = &widgets[WIDX_SELECTED_GROUP];
@@ -872,18 +873,18 @@ namespace OpenRCT2::Ui::Windows
             auto ft = Formatter();
             ft.Add<const char*>(_buffer.c_str());
             DrawTextEllipsised(
-                dpi, windowPos + ScreenCoordsXY{ widget->midX() - 5, widget->top }, widget->width() - 8, STR_STRING, ft,
+                rt, windowPos + ScreenCoordsXY{ widget->midX() - 5, widget->top }, widget->width() - 8, STR_STRING, ft,
                 { TextAlignment::CENTRE });
         }
     }
 
-    void MultiplayerWindow::GroupsScrollPaint(int32_t scrollIndex, DrawPixelInfo& dpi) const
+    void MultiplayerWindow::GroupsScrollPaint(int32_t scrollIndex, RenderTarget& rt) const
     {
         auto screenCoords = ScreenCoordsXY{ 0, 0 };
 
-        auto dpiCoords = ScreenCoordsXY{ dpi.x, dpi.y };
+        auto rtCoords = ScreenCoordsXY{ rt.x, rt.y };
         GfxFillRect(
-            dpi, { dpiCoords, dpiCoords + ScreenCoordsXY{ dpi.width - 1, dpi.height - 1 } },
+            rt, { rtCoords, rtCoords + ScreenCoordsXY{ rt.width - 1, rt.height - 1 } },
             ColourMapA[colours[1].colour].mid_light);
 
         for (int32_t i = 0; i < NetworkGetNumActions(); i++)
@@ -891,15 +892,14 @@ namespace OpenRCT2::Ui::Windows
             if (i == selected_list_item)
             {
                 GfxFilterRect(
-                    dpi, { 0, screenCoords.y, 800, screenCoords.y + kScrollableRowHeight - 1 },
-                    FilterPaletteID::PaletteDarken1);
+                    rt, { 0, screenCoords.y, 800, screenCoords.y + kScrollableRowHeight - 1 }, FilterPaletteID::PaletteDarken1);
             }
-            if (screenCoords.y > dpi.y + dpi.height)
+            if (screenCoords.y > rt.y + rt.height)
             {
                 break;
             }
 
-            if (screenCoords.y + kScrollableRowHeight + 1 >= dpi.y)
+            if (screenCoords.y + kScrollableRowHeight + 1 >= rt.y)
             {
                 int32_t groupindex = NetworkGetGroupIndex(_selectedGroup);
                 if (groupindex != -1)
@@ -907,20 +907,20 @@ namespace OpenRCT2::Ui::Windows
                     if (NetworkCanPerformAction(groupindex, static_cast<NetworkPermission>(i)))
                     {
                         screenCoords.x = 0;
-                        DrawText(dpi, screenCoords, {}, u8"{WINDOW_COLOUR_2}✓");
+                        DrawText(rt, screenCoords, {}, u8"{WINDOW_COLOUR_2}✓");
                     }
                 }
 
                 // Draw action name
                 auto ft = Formatter();
                 ft.Add<uint16_t>(NetworkGetActionNameStringID(i));
-                DrawTextBasic(dpi, { 10, screenCoords.y }, STR_WINDOW_COLOUR_2_STRINGID, ft);
+                DrawTextBasic(rt, { 10, screenCoords.y }, STR_WINDOW_COLOUR_2_STRINGID, ft);
             }
             screenCoords.y += kScrollableRowHeight;
         }
     }
 
-    void MultiplayerWindow::DrawTabImage(DrawPixelInfo& dpi, int32_t page_number, int32_t spriteIndex)
+    void MultiplayerWindow::DrawTabImage(RenderTarget& rt, int32_t page_number, int32_t spriteIndex)
     {
         WidgetIndex widgetIndex = WIDX_TAB1 + page_number;
 
@@ -937,15 +937,15 @@ namespace OpenRCT2::Ui::Windows
             }
 
             GfxDrawSprite(
-                dpi, ImageId(spriteIndex), windowPos + ScreenCoordsXY{ widgets[widgetIndex].left, widgets[widgetIndex].top });
+                rt, ImageId(spriteIndex), windowPos + ScreenCoordsXY{ widgets[widgetIndex].left, widgets[widgetIndex].top });
         }
     }
 
-    void MultiplayerWindow::DrawTabImages(DrawPixelInfo& dpi)
+    void MultiplayerWindow::DrawTabImages(RenderTarget& rt)
     {
-        DrawTabImage(dpi, WINDOW_MULTIPLAYER_PAGE_INFORMATION, SPR_TAB_KIOSKS_AND_FACILITIES_0);
-        DrawTabImage(dpi, WINDOW_MULTIPLAYER_PAGE_PLAYERS, SPR_TAB_GUESTS_0);
-        DrawTabImage(dpi, WINDOW_MULTIPLAYER_PAGE_GROUPS, SPR_TAB_STAFF_OPTIONS_0);
-        DrawTabImage(dpi, WINDOW_MULTIPLAYER_PAGE_OPTIONS, SPR_TAB_GEARS_0);
+        DrawTabImage(rt, WINDOW_MULTIPLAYER_PAGE_INFORMATION, SPR_TAB_KIOSKS_AND_FACILITIES_0);
+        DrawTabImage(rt, WINDOW_MULTIPLAYER_PAGE_PLAYERS, SPR_TAB_GUESTS_0);
+        DrawTabImage(rt, WINDOW_MULTIPLAYER_PAGE_GROUPS, SPR_TAB_STAFF_OPTIONS_0);
+        DrawTabImage(rt, WINDOW_MULTIPLAYER_PAGE_OPTIONS, SPR_TAB_GEARS_0);
     }
 } // namespace OpenRCT2::Ui::Windows

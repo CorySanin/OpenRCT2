@@ -46,7 +46,7 @@ namespace OpenRCT2::Ui::Windows
             Invalidate();
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
             StringId stringId;
             std::memcpy(&stringId, _mapTooltipArgs.Data(), sizeof(StringId));
@@ -56,7 +56,7 @@ namespace OpenRCT2::Ui::Windows
             }
 
             auto stringCoords = windowPos + ScreenCoordsXY{ width / 2, height / 2 };
-            DrawTextWrapped(dpi, stringCoords, width, STR_MAP_TOOLTIP_STRINGID, _mapTooltipArgs, { TextAlignment::CENTRE });
+            DrawTextWrapped(rt, stringCoords, width, STR_MAP_TOOLTIP_STRINGID, _mapTooltipArgs, { TextAlignment::CENTRE });
         }
     };
 
@@ -86,7 +86,7 @@ namespace OpenRCT2::Ui::Windows
 
         // Check for cursor movement
         _cursorHoldDuration++;
-        if (abs(cursorChange.x) > 5 || abs(cursorChange.y) > 5 || (InputTestFlag(INPUT_FLAG_5))
+        if (abs(cursorChange.x) > 5 || abs(cursorChange.y) > 5 || (gInputFlags.has(InputFlag::unk5))
             || InputGetState() == InputState::ViewportRight)
             _cursorHoldDuration = 0;
 
@@ -128,7 +128,8 @@ namespace OpenRCT2::Ui::Windows
         else
         {
             w = windowMgr->Create<MapTooltip>(
-                WindowClass::MapTooltip, pos, width, height, WF_STICK_TO_FRONT | WF_TRANSPARENT | WF_NO_BACKGROUND);
+                WindowClass::MapTooltip, pos, width, height,
+                WF_STICK_TO_FRONT | WF_TRANSPARENT | WF_NO_BACKGROUND | WF_NO_TITLE_BAR);
         }
     }
 } // namespace OpenRCT2::Ui::Windows

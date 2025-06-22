@@ -80,8 +80,6 @@ public:
                 return EditorInventionsListOpen();
             case WindowClass::EditorObjectSelection:
                 return EditorObjectSelectionOpen();
-            case WindowClass::EditorObjectiveOptions:
-                return EditorObjectiveOptionsOpen();
             case WindowClass::EditorScenarioOptions:
                 return EditorScenarioOptionsOpen();
             case WindowClass::Finances:
@@ -257,14 +255,15 @@ public:
                     intent->GetSIntExtra(INTENT_EXTRA_RIDE_ID));
             case WindowClass::Loadsave:
             {
-                uint32_t type = intent->GetUIntExtra(INTENT_EXTRA_LOADSAVE_TYPE);
+                auto action = intent->GetEnumExtra<LoadSaveAction>(INTENT_EXTRA_LOADSAVE_ACTION);
+                auto type = intent->GetEnumExtra<LoadSaveType>(INTENT_EXTRA_LOADSAVE_TYPE);
                 std::string defaultPath = intent->GetStringExtra(INTENT_EXTRA_PATH);
                 LoadSaveCallback callback = reinterpret_cast<LoadSaveCallback>(
                     intent->GetCloseCallbackExtra(INTENT_EXTRA_CALLBACK));
                 TrackDesign* trackDesign = static_cast<TrackDesign*>(intent->GetPointerExtra(INTENT_EXTRA_TRACK_DESIGN));
                 auto* w = FileBrowser::OpenPreferred(
-                    type, defaultPath,
-                    [callback](int32_t result, std::string_view path) {
+                    action, type, defaultPath,
+                    [callback](ModalResult result, std::string_view path) {
                         if (callback != nullptr)
                         {
                             callback(result, std::string(path).c_str());
@@ -585,6 +584,10 @@ public:
     {
         switch (windowClass)
         {
+            case WindowClass::EditorObjectSelection:
+                EditorObjectSelectionClose();
+                break;
+
             case WindowClass::NetworkStatus:
                 WindowNetworkStatusClose();
                 break;
@@ -636,9 +639,6 @@ public:
             mainWindow->savedViewPos.x -= viewport->ViewWidth() / 2;
             mainWindow->savedViewPos.y -= viewport->ViewHeight() / 2;
 
-            // Make sure the viewport has correct coordinates set.
-            ViewportUpdatePosition(mainWindow);
-
             mainWindow->Invalidate();
         }
     }
@@ -687,7 +687,7 @@ public:
     {
         if (loc.x < 0)
             return false;
-        if (loc.y <= kTopToolbarHeight && !(gScreenFlags & SCREEN_FLAGS_TITLE_DEMO))
+        if (loc.y <= kTopToolbarHeight && gLegacyScene != LegacyScene::titleSequence)
             return false;
         if (loc.x + width > ContextGetWidth())
             return false;
@@ -708,7 +708,7 @@ public:
         unk = screenWidth + (unk * 2);
         if (loc.x > unk)
             return false;
-        if (loc.y <= kTopToolbarHeight && !(gScreenFlags & SCREEN_FLAGS_TITLE_DEMO))
+        if (loc.y <= kTopToolbarHeight && gLegacyScene != LegacyScene::titleSequence)
             return false;
         unk = screenHeight - (height / 4);
         if (loc.y > unk)
@@ -726,7 +726,7 @@ public:
         else if (screenPos.x + width > screenWidth)
             screenPos.x = screenWidth - width;
 
-        auto toolbarAllowance = (gScreenFlags & SCREEN_FLAGS_TITLE_DEMO) ? 0 : (kTopToolbarHeight + 1);
+        auto toolbarAllowance = gLegacyScene == LegacyScene::titleSequence ? 0 : (kTopToolbarHeight + 1);
         if (height - toolbarAllowance > screenHeight || screenPos.y < toolbarAllowance)
             screenPos.y = toolbarAllowance;
         else if (screenPos.y + height - toolbarAllowance > screenHeight)
@@ -737,9 +737,9 @@ public:
 
     static ScreenCoordsXY GetAutoPositionForNewWindow(int32_t width, int32_t height)
     {
-        auto uiContext = GetContext()->GetUiContext();
-        auto screenWidth = uiContext->GetWidth();
-        auto screenHeight = uiContext->GetHeight();
+        auto& uiContext = GetContext()->GetUiContext();
+        auto screenWidth = uiContext.GetWidth();
+        auto screenHeight = uiContext.GetHeight();
 
         // Place window in an empty corner of the screen
         const ScreenCoordsXY cornerPositions[] = {
@@ -827,16 +827,18 @@ public:
 
     static ScreenCoordsXY GetCentrePositionForNewWindow(int32_t width, int32_t height)
     {
-        auto uiContext = GetContext()->GetUiContext();
-        auto screenWidth = uiContext->GetWidth();
-        auto screenHeight = uiContext->GetHeight();
+        auto& uiContext = GetContext()->GetUiContext();
+        auto screenWidth = uiContext.GetWidth();
+        auto screenHeight = uiContext.GetHeight();
         return ScreenCoordsXY{ (screenWidth - width) / 2, std::max(kTopToolbarHeight + 1, (screenHeight - height) / 2) };
     }
 
     WindowBase* Create(
         std::unique_ptr<WindowBase>&& wp, WindowClass cls, ScreenCoordsXY pos, int32_t width, int32_t height,
-        uint32_t flags) override
+        WindowFlags flags) override
     {
+        height += wp->getTitleBarDiffTarget();
+
         if (flags & WF_AUTO_POSITION)
         {
             if (flags & WF_CENTRE_SCREEN)
@@ -848,6 +850,8 @@ public:
                 pos = GetAutoPositionForNewWindow(width, height);
             }
         }
+
+        height -= wp->getTitleBarDiffTarget();
 
         // Check if there are any window slots left
         // include kWindowLimitReserved for items such as the main viewport and toolbars to not appear to be counted.
@@ -930,6 +934,12 @@ public:
      */
     void Close(WindowBase& w) override
     {
+        if (!w.CanClose())
+        {
+            // Something's preventing this window from closing -- bail out early
+            return;
+        }
+
         w.OnClose();
 
         // Remove viewport
@@ -1025,9 +1035,9 @@ public:
     {
         CloseByClass(WindowClass::Dropdown);
 
-        if (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR)
+        if (gLegacyScene == LegacyScene::scenarioEditor)
         {
-            if (GetGameState().EditorStep != EditorStep::LandscapeEditor)
+            if (getGameState().editorStep != EditorStep::LandscapeEditor)
                 return;
         }
 
@@ -1057,7 +1067,7 @@ public:
     /**
      * Closes all windows, save for those having any of the passed flags.
      */
-    void CloseAllExceptFlags(uint16_t flags) override
+    void CloseAllExceptFlags(WindowFlags flags) override
     {
         CloseByCondition([flags](WindowBase* w) -> bool { return !(w->flags & flags); });
     }
@@ -1311,14 +1321,22 @@ public:
                 for (auto it = g_window_list.rbegin(); it != g_window_list.rend(); it++)
                 {
                     auto& w2 = *it;
+                    if (w2->flags & WF_DEAD)
+                    {
+                        continue;
+                    }
                     if (!(w2->flags & WF_STICK_TO_FRONT))
                     {
-                        itDestPos = it.base();
+                        // base() returns the next element in the list, so we need to decrement it.
+                        itDestPos = std::prev(it.base());
                         break;
                     }
                 }
 
-                g_window_list.splice(itDestPos, g_window_list, itSourcePos);
+                if (itSourcePos != itDestPos)
+                {
+                    std::iter_swap(itSourcePos, itDestPos);
+                }
                 w.Invalidate();
 
                 if (w.windowPos.x + w.width < 20)
@@ -1334,7 +1352,7 @@ public:
         return &w;
     }
 
-    WindowBase* BringToFrontByClassWithFlags(WindowClass cls, uint16_t flags) override
+    WindowBase* BringToFrontByClassWithFlags(WindowClass cls, WindowFlags flags) override
     {
         WindowBase* w = FindByClass(cls);
         if (w != nullptr)

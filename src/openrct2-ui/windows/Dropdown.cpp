@@ -46,11 +46,13 @@ namespace OpenRCT2::Ui::Windows
         MakeWidget({ 0, 0 }, { 1, 1 }, WindowWidgetType::ImgBtn, WindowColour::Primary),
     };
 
+    std::array<Dropdown::Item, Dropdown::kItemsMaxSize> gDropdownItems;
+    std::array<StringId, Dropdown::kItemsMaxSize> gDropdownTooltips;
+    static std::array<ImageId, Dropdown::kItemsMaxSize> _dropdownItemsImages;
+
     int32_t gDropdownNumItems;
-    Dropdown::Item gDropdownItems[Dropdown::kItemsMaxSize];
-    static ImageId _dropdownItemsImages[Dropdown::kItemsMaxSize];
-    bool gDropdownIsColour;
-    int32_t gDropdownLastColourHover;
+    bool gDropdownHasTooltips;
+    int32_t gDropdownLastTooltipHover;
     int32_t gDropdownHighlightedIndex;
     int32_t gDropdownDefaultIndex;
     static bool _dropdownPrepareUseImages;
@@ -80,7 +82,7 @@ namespace OpenRCT2::Ui::Windows
             // Input state
             gDropdownHighlightedIndex = -1;
             ResetDropdownFlags();
-            gDropdownIsColour = false;
+            gDropdownHasTooltips = false;
             gDropdownDefaultIndex = -1;
             InputSetState(InputState::DropdownActive);
         }
@@ -95,9 +97,9 @@ namespace OpenRCT2::Ui::Windows
             return Config::Get().interface.EnlargedUi ? 6 : 0;
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
             int32_t highlightedIndex = gDropdownHighlightedIndex;
             for (int32_t i = 0; i < gDropdownNumItems; i++)
@@ -120,15 +122,14 @@ namespace OpenRCT2::Ui::Windows
                     if (colours[0].hasFlag(ColourFlag::translucent))
                     {
                         TranslucentWindowPalette palette = TranslucentWindowPalettes[colours[0].colour];
-                        GfxFilterRect(dpi, { leftTop, rightBottom }, palette.highlight);
-                        GfxFilterRect(dpi, { leftTop + shadowOffset, rightBottom + shadowOffset }, palette.shadow);
+                        GfxFilterRect(rt, { leftTop, rightBottom }, palette.highlight);
+                        GfxFilterRect(rt, { leftTop + shadowOffset, rightBottom + shadowOffset }, palette.shadow);
                     }
                     else
                     {
-                        GfxFillRect(dpi, { leftTop, rightBottom }, ColourMapA[colours[0].colour].mid_dark);
+                        GfxFillRect(rt, { leftTop, rightBottom }, ColourMapA[colours[0].colour].mid_dark);
                         GfxFillRect(
-                            dpi, { leftTop + shadowOffset, rightBottom + shadowOffset },
-                            ColourMapA[colours[0].colour].lightest);
+                            rt, { leftTop + shadowOffset, rightBottom + shadowOffset }, ColourMapA[colours[0].colour].lightest);
                     }
                 }
                 else
@@ -137,7 +138,7 @@ namespace OpenRCT2::Ui::Windows
                     {
                         // Darken the cell's background slightly when highlighted
                         const ScreenCoordsXY rightBottom = screenCoords + ScreenCoordsXY{ ItemWidth - 1, ItemHeight - 1 };
-                        GfxFilterRect(dpi, { screenCoords, rightBottom }, FilterPaletteID::PaletteDarken3);
+                        GfxFilterRect(rt, { screenCoords, rightBottom }, FilterPaletteID::PaletteDarken3);
                     }
 
                     StringId item = gDropdownItems[i].Format;
@@ -148,7 +149,7 @@ namespace OpenRCT2::Ui::Windows
                                                : ImageId(static_cast<uint32_t>(gDropdownItems[i].Args));
                         if (item == Dropdown::kFormatColourPicker && highlightedIndex == i)
                             image = image.WithIndexOffset(1);
-                        GfxDrawSprite(dpi, image, screenCoords);
+                        GfxDrawSprite(rt, image, screenCoords);
                     }
                     else
                     {
@@ -167,7 +168,7 @@ namespace OpenRCT2::Ui::Windows
                         auto yOffset = GetAdditionalRowPadding();
                         Formatter ft(reinterpret_cast<uint8_t*>(&gDropdownItems[i].Args));
                         DrawTextEllipsised(
-                            dpi, { screenCoords.x + 2, screenCoords.y + yOffset }, width - 7, item, ft, { colour });
+                            rt, { screenCoords.x + 2, screenCoords.y + yOffset }, width - 7, item, ft, { colour });
                     }
                 }
             }
@@ -355,15 +356,16 @@ namespace OpenRCT2::Ui::Windows
         const ScreenCoordsXY& screenPos, int32_t extray, ColourWithFlags colour, uint8_t customItemHeight, uint8_t flags,
         size_t num_items, int32_t width, size_t prefRowsPerColumn)
     {
-        InputSetFlag(static_cast<INPUT_FLAGS>(INPUT_FLAG_DROPDOWN_STAY_OPEN | INPUT_FLAG_DROPDOWN_MOUSE_UP), false);
+        gInputFlags.unset(InputFlag::dropdownStayOpen, InputFlag::dropdownMouseUp);
         if (flags & Dropdown::Flag::StayOpen || Config::Get().interface.TouchEnhancements)
-            InputSetFlag(INPUT_FLAG_DROPDOWN_STAY_OPEN, true);
+            gInputFlags.set(InputFlag::dropdownStayOpen);
 
         WindowDropdownClose();
 
         // Create the window (width/height position are set later)
         auto* windowMgr = GetWindowManager();
-        auto* w = windowMgr->Create<DropdownWindow>(WindowClass::Dropdown, width, customItemHeight, WF_STICK_TO_FRONT);
+        auto* w = windowMgr->Create<DropdownWindow>(
+            WindowClass::Dropdown, width, customItemHeight, WF_STICK_TO_FRONT | WF_NO_TITLE_BAR);
         if (w != nullptr)
         {
             auto numRowsPerColumn = prefRowsPerColumn > 0 ? static_cast<int32_t>(prefRowsPerColumn) : Dropdown::kItemsMaxSize;
@@ -389,9 +391,9 @@ namespace OpenRCT2::Ui::Windows
         int32_t x, int32_t y, int32_t extray, ColourWithFlags colour, uint8_t flags, int32_t numItems, int32_t itemWidth,
         int32_t itemHeight, int32_t numColumns)
     {
-        InputSetFlag(static_cast<INPUT_FLAGS>(INPUT_FLAG_DROPDOWN_STAY_OPEN | INPUT_FLAG_DROPDOWN_MOUSE_UP), false);
+        gInputFlags.unset(InputFlag::dropdownStayOpen, InputFlag::dropdownMouseUp);
         if (flags & Dropdown::Flag::StayOpen || Config::Get().interface.TouchEnhancements)
-            InputSetFlag(INPUT_FLAG_DROPDOWN_STAY_OPEN, true);
+            gInputFlags.set(InputFlag::dropdownStayOpen);
 
         // Close existing dropdown
         WindowDropdownClose();
@@ -491,6 +493,71 @@ namespace OpenRCT2::Ui::Windows
         COLOUR_VOID,
     };
 
+    constexpr std::array kColourTooltips = {
+        STR_COLOUR_BLACK_TIP,
+        STR_COLOUR_SATURATED_RED_TIP,
+        STR_COLOUR_DARK_ORANGE_TIP,
+        STR_COLOUR_DARK_YELLOW_TIP,
+        STR_COLOUR_GRASS_GREEN_DARK_TIP,
+        STR_COLOUR_SATURATED_GREEN_TIP,
+        STR_COLOUR_AQUA_DARK_TIP,
+        STR_COLOUR_DARK_BLUE_TIP,
+        STR_COLOUR_SATURATED_PURPLE_DARK_TIP,
+
+        STR_COLOUR_GREY_TIP,
+        STR_COLOUR_BRIGHT_RED_TIP,
+        STR_COLOUR_LIGHT_ORANGE_TIP,
+        STR_COLOUR_YELLOW_TIP,
+        STR_COLOUR_MOSS_GREEN_TIP,
+        STR_COLOUR_BRIGHT_GREEN_TIP,
+        STR_COLOUR_TEAL_TIP,
+        STR_COLOUR_LIGHT_BLUE_TIP,
+        STR_COLOUR_BRIGHT_PURPLE_TIP,
+
+        STR_COLOUR_WHITE_TIP,
+        STR_COLOUR_LIGHT_PINK_TIP,
+        STR_COLOUR_ORANGE_LIGHT_TIP,
+        STR_COLOUR_BRIGHT_YELLOW_TIP,
+        STR_COLOUR_GRASS_GREEN_LIGHT_TIP,
+        STR_COLOUR_SATURATED_GREEN_LIGHT_TIP,
+        STR_COLOUR_AQUAMARINE_TIP,
+        STR_COLOUR_ICY_BLUE_TIP,
+        STR_COLOUR_SATURATED_PURPLE_LIGHT_TIP,
+
+        STR_COLOUR_DULL_BROWN_DARK_TIP,
+        STR_COLOUR_BORDEAUX_RED_DARK_TIP,
+        STR_COLOUR_TAN_DARK_TIP,
+        STR_COLOUR_SATURATED_BROWN_TIP,
+        STR_COLOUR_DARK_OLIVE_DARK_TIP,
+        STR_COLOUR_OLIVE_DARK_TIP,
+        STR_COLOUR_DULL_GREEN_DARK_TIP,
+        STR_COLOUR_DARK_PURPLE_TIP,
+        STR_COLOUR_DARK_PINK_TIP,
+
+        STR_COLOUR_DARK_BROWN_TIP,
+        STR_COLOUR_BORDEAUX_RED_TIP,
+        STR_COLOUR_SALMON_PINK_TIP,
+        STR_COLOUR_LIGHT_BROWN_TIP,
+        STR_COLOUR_DARK_OLIVE_GREEN_TIP,
+        STR_COLOUR_OLIVE_GREEN_TIP,
+        STR_COLOUR_DARK_GREEN_TIP,
+        STR_COLOUR_LIGHT_PURPLE_TIP,
+        STR_COLOUR_BRIGHT_PINK_TIP,
+
+        STR_COLOUR_DULL_BROWN_LIGHT_TIP,
+        STR_COLOUR_BORDEAUX_RED_LIGHT_TIP,
+        STR_COLOUR_TAN_LIGHT_TIP,
+        STR_COLOUR_SATURATED_BROWN_LIGHT_TIP,
+        STR_COLOUR_DARK_OLIVE_LIGHT_TIP,
+        STR_COLOUR_OLIVE_LIGHT_TIP,
+        STR_COLOUR_DULL_GREEN_LIGHT_TIP,
+        STR_COLOUR_DULL_PURPLE_LIGHT_TIP,
+        STR_COLOUR_MAGENTA_LIGHT_TIP,
+
+        STR_COLOUR_INVISIBLE_TIP,
+        STR_COLOUR_VOID_TIP,
+    };
+
     colour_t ColourDropDownIndexToColour(uint8_t ddidx)
     {
         return kColoursDropdownOrder[ddidx];
@@ -504,7 +571,7 @@ namespace OpenRCT2::Ui::Windows
     {
         int32_t defaultIndex = -1;
 
-        const bool specialColoursEnabled = !alwaysHideSpecialColours && GetGameState().Cheats.allowSpecialColourSchemes;
+        const bool specialColoursEnabled = !alwaysHideSpecialColours && getGameState().cheats.allowSpecialColourSchemes;
         auto numColours = specialColoursEnabled ? static_cast<uint8_t>(COLOUR_COUNT) : kColourNumNormal;
         // Set items
         for (uint64_t i = 0; i < numColours; i++)
@@ -528,8 +595,10 @@ namespace OpenRCT2::Ui::Windows
             Dropdown::Flag::StayOpen, numColours, squareSize, squareSize,
             DropdownGetAppropriateImageDropdownItemsPerRow(static_cast<uint32_t>(numColours)));
 
-        gDropdownIsColour = true;
-        gDropdownLastColourHover = -1;
+        std::copy(kColourTooltips.begin(), kColourTooltips.end(), gDropdownTooltips.begin());
+
+        gDropdownHasTooltips = true;
+        gDropdownLastTooltipHover = -1;
         gDropdownDefaultIndex = defaultIndex;
     }
 

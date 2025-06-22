@@ -27,48 +27,48 @@ using namespace OpenRCT2;
 static constexpr TunnelGroup kTunnelGroup = TunnelGroup::Square;
 
 static constexpr uint32_t kLatticeTriangleAltBrakeImages[kNumOrthogonalDirections][2] = {
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_NE_SW, SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_NE_SW },
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_NW_SE, SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_NW_SE },
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_SW_NE, SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_SW_NE },
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_SE_NW, SPR_G2_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_SE_NW },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_NE_SW, SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_NE_SW },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_NW_SE, SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_NW_SE },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_SW_NE, SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_SW_NE },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_OPEN_SE_NW, SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BRAKE_ALT_CLOSED_SE_NW },
 };
 
 static constexpr uint32_t kLatticeTriangleAltBlockBrakeImages[kNumOrthogonalDirections][2] = {
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_NE_SW, SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_NE_SW },
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_NW_SE, SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_NW_SE },
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_SW_NE, SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_SW_NE },
-    { SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_SE_NW, SPR_G2_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_SE_NW },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_NE_SW,
+      SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_NE_SW },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_NW_SE,
+      SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_NW_SE },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_SW_NE,
+      SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_SW_NE },
+    { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_OPEN_SE_NW,
+      SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BLOCK_BRAKE_ALT_CLOSED_SE_NW },
 };
 
 static void LatticeTriangleTrackAltStation(
     PaintSession& session, const Ride& ride, [[maybe_unused]] uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    if (ride.mode == RideMode::PoweredLaunch || ride.mode == RideMode::PoweredLaunchBlockSectioned
-        || ride.mode == RideMode::PoweredLaunchPasstrough)
+    if (ride.mode == RideMode::poweredLaunch || ride.mode == RideMode::poweredLaunchBlockSectioned
+        || ride.mode == RideMode::poweredLaunchPasstrough)
     {
-        static constexpr uint32_t imageIds[4][2] = {
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NE_SW, SPR_STATION_BASE_A_SW_NE },
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NW_SE, SPR_STATION_BASE_A_NW_SE },
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SW_NE, SPR_STATION_BASE_A_SW_NE },
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SE_NW, SPR_STATION_BASE_A_NW_SE },
+        static constexpr ImageIndex imageIds[4] = {
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NE_SW,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NW_SE,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SW_NE,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SE_NW,
         };
 
         PaintAddImageAsParentRotated(
-            session, direction, session.TrackColours.WithIndex(imageIds[direction][0]), { 0, 0, height },
+            session, direction, session.TrackColours.WithIndex(imageIds[direction]), { 0, 0, height },
             { { 0, 6, height + 3 }, { 32, 20, 1 } });
-
-        PaintAddImageAsParentRotated(
-            session, direction, GetStationColourScheme(session, trackElement).WithIndex(imageIds[direction][1]),
-            { 0, 0, height }, { 32, 32, 1 });
     }
     else
     {
-        static constexpr uint32_t imageIds[4][2] = {
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_NE_SW, SPR_STATION_BASE_A_SW_NE },
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_NW_SE, SPR_STATION_BASE_A_NW_SE },
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_SW_NE, SPR_STATION_BASE_A_SW_NE },
-            { SPR_G2_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_SE_NW, SPR_STATION_BASE_A_NW_SE },
+        static constexpr uint32_t imageIds[4] = {
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_NE_SW,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_NW_SE,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_SW_NE,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DRIVE_TYRE_SE_NW,
         };
         if (trackElement.GetTrackType() == TrackElemType::EndStation)
         {
@@ -80,16 +80,19 @@ static void LatticeTriangleTrackAltStation(
         else
         {
             PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(imageIds[direction][0]), { 0, 0, height },
+                session, direction, session.TrackColours.WithIndex(imageIds[direction]), { 0, 0, height },
                 { { 0, 6, height + 3 }, { 32, 20, 1 } });
         }
-
-        PaintAddImageAsParentRotated(
-            session, direction, GetStationColourScheme(session, trackElement).WithIndex(imageIds[direction][1]),
-            { 0, 0, height }, { 32, 32, 1 });
     }
-    DrawSupportsSideBySide(session, direction, height, session.SupportColours, supportType.metal);
-    TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, 9, 11);
+    if (TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, StationBaseType::a, 0, 9, 11))
+    {
+        DrawSupportsSideBySide(session, direction, height, session.SupportColours, supportType.metal);
+    }
+    else if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+    {
+        MetalASupportsPaintSetupRotated(
+            session, supportType.metal, MetalSupportPlace::Centre, direction, 0, height, session.SupportColours);
+    }
     TrackPaintUtilDrawStationTunnel(session, direction, height);
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
@@ -141,22 +144,22 @@ static void LatticeTriangleTrackAltBooster(
     {
         case 0:
             PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NE_SW),
+                session, direction, session.TrackColours.WithIndex(SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NE_SW),
                 { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
             break;
         case 1:
             PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NW_SE),
+                session, direction, session.TrackColours.WithIndex(SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_NW_SE),
                 { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
             break;
         case 2:
             PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SW_NE),
+                session, direction, session.TrackColours.WithIndex(SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SW_NE),
                 { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
             break;
         case 3:
             PaintAddImageAsParentRotated(
-                session, direction, session.TrackColours.WithIndex(SPR_G2_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SE_NW),
+                session, direction, session.TrackColours.WithIndex(SPR_TRACKS_LATTICE_TRIANGLE_TRACK_BOOSTER_ALT_SE_NW),
                 { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
             break;
     }
@@ -175,7 +178,7 @@ static void LatticeTriangleTrackAltPoweredLift(
     const TrackElement& trackElement, SupportType supportType)
 {
     PaintAddImageAsParentRotated(
-        session, direction, session.TrackColours.WithIndex(SPR_G2_LATTICE_TRIANGLE_TRACK_POWERED_LIFT_ALT_1 + direction),
+        session, direction, session.TrackColours.WithIndex(SPR_TRACKS_LATTICE_TRIANGLE_TRACK_POWERED_LIFT_ALT_1 + direction),
         { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
 
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
@@ -198,10 +201,10 @@ static void LatticeTriangleTrackAltDiagBooster(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    constexpr ImageIndex images[kNumOrthogonalDirections] = { SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_1,
-                                                              SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_2,
-                                                              SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_3,
-                                                              SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_4 };
+    constexpr ImageIndex images[kNumOrthogonalDirections] = { SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_1,
+                                                              SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_2,
+                                                              SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_3,
+                                                              SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BOOSTER_ALT_4 };
 
     TrackPaintUtilDiagTilesPaintExtra(session, 3, height, direction, trackSequence, images, supportType.metal);
 }
@@ -212,16 +215,16 @@ static void LatticeTriangleTrackAltDiagBlockBrake(
 {
     constexpr ImageIndex images[2][kNumOrthogonalDirections] = {
         {
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_1,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_2,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_3,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_4,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_1,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_2,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_3,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_OPEN_ALT_4,
         },
         {
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_1,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_2,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_3,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_4,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_1,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_2,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_3,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BLOCK_BRAKE_CLOSED_ALT_4,
         },
     };
 
@@ -235,16 +238,16 @@ static void LatticeTriangleTrackAltDiagBrake(
 {
     constexpr ImageIndex images[2][kNumOrthogonalDirections] = {
         {
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_1,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_2,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_3,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_4,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_1,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_2,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_3,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_OPEN_ALT_4,
         },
         {
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_1,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_2,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_3,
-            SPR_G2_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_4,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_1,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_2,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_3,
+            SPR_TRACKS_LATTICE_TRIANGLE_TRACK_DIAG_BRAKE_CLOSED_ALT_4,
         },
     };
 

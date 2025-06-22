@@ -212,8 +212,8 @@ NetworkUser* NetworkUserManager::GetOrAddUser(const std::string& hash)
 
 u8string NetworkUserManager::GetStorePath()
 {
-    auto env = OpenRCT2::GetContext()->GetPlatformEnvironment();
-    return Path::Combine(env->GetDirectoryPath(OpenRCT2::DIRBASE::USER), kUserStoreFilename);
+    auto& env = OpenRCT2::GetContext()->GetPlatformEnvironment();
+    return Path::Combine(env.GetDirectoryPath(OpenRCT2::DirBase::user), kUserStoreFilename);
 }
 
 #endif

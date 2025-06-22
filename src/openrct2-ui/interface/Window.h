@@ -10,16 +10,18 @@
 #pragma once
 
 #include <openrct2/interface/Window.h>
-#include <openrct2/interface/Window_internal.h>
+#include <openrct2/interface/WindowBase.h>
 
 struct TextInputSession;
 
 namespace OpenRCT2
 {
+    constexpr ScreenSize kMaxWindowSize = { 5000, 5000 };
+
     struct Window : WindowBase
     {
-        void OnDraw(DrawPixelInfo& dpi) override;
-        void OnDrawWidget(WidgetIndex widgetIndex, DrawPixelInfo& dpi) override;
+        void OnDraw(RenderTarget& rt) override;
+        void OnDrawWidget(WidgetIndex widgetIndex, RenderTarget& rt) override;
 
         void ScrollToViewport();
         void InitScrollWidgets();
@@ -31,7 +33,7 @@ namespace OpenRCT2
         void SetWidgetDisabledAndInvalidate(WidgetIndex widgetIndex, bool value);
         void SetWidgetPressed(WidgetIndex widgetIndex, bool value);
         void SetCheckboxValue(WidgetIndex widgetIndex, bool value);
-        void DrawWidgets(DrawPixelInfo& dpi);
+        void DrawWidgets(RenderTarget& rt);
         void Close();
         void CloseOthers();
         void CloseOthersOfThisClass();
@@ -39,9 +41,6 @@ namespace OpenRCT2
         void TextInputOpen(
             WidgetIndex callWidget, StringId title, StringId description, const Formatter& descriptionArgs,
             StringId existingText, uintptr_t existingArgs, int32_t maxLength);
-
-        void ResizeFrame();
-        void ResizeFrameWithPage();
 
         void ResizeSpinner(WidgetIndex widgetIndex, const ScreenCoordsXY& origin, const ScreenSize& size);
         void ResizeDropdown(WidgetIndex widgetIndex, const ScreenCoordsXY& origin, const ScreenSize& size);
@@ -71,7 +70,7 @@ namespace OpenRCT2::Ui::Windows
     bool TextBoxCaretIsFlashed();
     const WidgetIdentifier& GetCurrentTextBox();
 
-    void WindowResize(WindowBase& w, int16_t dw, int16_t dh);
+    void WindowResizeByDelta(WindowBase& w, int16_t dw, int16_t dh);
     void WindowInitScrollWidgets(WindowBase& w);
     void WindowUpdateScrollWidgets(WindowBase& w);
 
@@ -80,13 +79,13 @@ namespace OpenRCT2::Ui::Windows
     void WindowMoveAndSnap(WindowBase& w, ScreenCoordsXY newWindowCoords, int32_t snapProximity);
     void WindowRelocateWindows(int32_t width, int32_t height);
 
-    void WindowSetResize(WindowBase& w, int16_t minWidth, int16_t minHeight, int16_t maxWidth, int16_t maxHeight);
+    bool WindowSetResize(WindowBase& w, ScreenSize minSize, ScreenSize maxSize);
     bool WindowCanResize(const WindowBase& w);
 
     void InvalidateAllWindowsAfterInput();
 
-    void WindowDrawWidgets(WindowBase& w, DrawPixelInfo& dpi);
-    void WindowDrawViewport(DrawPixelInfo& dpi, WindowBase& w);
+    void WindowDrawWidgets(WindowBase& w, RenderTarget& rt);
+    void WindowDrawViewport(RenderTarget& rt, WindowBase& w);
 
     void WindowZoomIn(WindowBase& w, bool atCursor);
     void WindowZoomOut(WindowBase& w, bool atCursor);

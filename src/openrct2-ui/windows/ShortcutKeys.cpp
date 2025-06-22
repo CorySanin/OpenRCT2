@@ -122,11 +122,11 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
-            ScreenCoordsXY stringCoords(windowPos.x + 125, windowPos.y + 30);
+            ScreenCoordsXY stringCoords(windowPos.x + 125, windowPos.y + widgets[WIDX_TITLE].bottom + 16);
 
             auto ft = Formatter();
             if (_shortcutCustomName.empty())
@@ -138,7 +138,7 @@ namespace OpenRCT2::Ui::Windows
                 ft.Add<StringId>(STR_STRING);
                 ft.Add<const char*>(_shortcutCustomName.c_str());
             }
-            DrawTextWrapped(dpi, stringCoords, 242, STR_SHORTCUT_CHANGE_PROMPT, ft, { TextAlignment::CENTRE });
+            DrawTextWrapped(rt, stringCoords, 242, STR_SHORTCUT_CHANGE_PROMPT, ft, { TextAlignment::CENTRE });
         }
 
     private:
@@ -189,11 +189,6 @@ namespace OpenRCT2::Ui::Windows
             InitialiseTabs();
             InitialiseWidgets();
             InitialiseList();
-
-            min_width = WW;
-            min_height = WH;
-            max_width = WW_SC_MAX;
-            max_height = WH_SC_MAX;
         }
 
         void OnClose() override
@@ -204,7 +199,7 @@ namespace OpenRCT2::Ui::Windows
 
         void OnResize() override
         {
-            WindowSetResize(*this, min_width, min_height, max_width, max_height);
+            WindowSetResize(*this, { WW, WH }, { WW_SC_MAX, WH_SC_MAX });
         }
 
         void OnUpdate() override
@@ -243,7 +238,6 @@ namespace OpenRCT2::Ui::Windows
 
         void OnPrepareDraw() override
         {
-            ResizeFrameWithPage();
             widgets[WIDX_SCROLL].right = width - 5;
             widgets[WIDX_SCROLL].bottom = height - 19;
             widgets[WIDX_RESET].top = height - 16;
@@ -258,10 +252,10 @@ namespace OpenRCT2::Ui::Windows
             SetWidgetPressed(static_cast<WidgetIndex>(WIDX_TAB_0 + _currentTabIndex), true);
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
-            DrawTabImages(dpi);
+            DrawWidgets(rt);
+            DrawTabImages(rt);
         }
 
         ScreenSize OnScrollGetSize(int32_t scrollIndex) override
@@ -304,11 +298,11 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
-            auto dpiCoords = ScreenCoordsXY{ dpi.x, dpi.y };
+            auto rtCoords = ScreenCoordsXY{ rt.x, rt.y };
             GfxFillRect(
-                dpi, { dpiCoords, dpiCoords + ScreenCoordsXY{ dpi.width - 1, dpi.height - 1 } },
+                rt, { rtCoords, rtCoords + ScreenCoordsXY{ rt.width - 1, rt.height - 1 } },
                 ColourMapA[colours[1].colour].mid_light);
 
             // TODO: the line below is a workaround for what is presumably a bug with dpi->width
@@ -318,12 +312,12 @@ namespace OpenRCT2::Ui::Windows
             for (size_t i = 0; i < _list.size(); ++i)
             {
                 auto y = static_cast<int32_t>(1 + i * kScrollableRowHeight);
-                if (y > dpi.y + dpi.height)
+                if (y > rt.y + rt.height)
                 {
                     break;
                 }
 
-                if (y + kScrollableRowHeight < dpi.y)
+                if (y + kScrollableRowHeight < rt.y)
                 {
                     continue;
                 }
@@ -331,14 +325,19 @@ namespace OpenRCT2::Ui::Windows
                 // Is this a separator?
                 if (_list[i].ShortcutId.empty())
                 {
-                    DrawSeparator(dpi, y, scrollWidth);
+                    DrawSeparator(rt, y, scrollWidth);
                 }
                 else
                 {
                     auto isHighlighted = _highlightedItem == static_cast<int_fast16_t>(i);
-                    DrawItem(dpi, y, scrollWidth, _list[i], isHighlighted);
+                    DrawItem(rt, y, scrollWidth, _list[i], isHighlighted);
                 }
             }
+        }
+
+        void OnLanguageChange() override
+        {
+            InitialiseList();
         }
 
         void RefreshBindings()
@@ -461,6 +460,7 @@ namespace OpenRCT2::Ui::Windows
             }
 
             WindowInitScrollWidgets(*this);
+            ResizeFrame();
         }
 
         void SetTab(size_t index)
@@ -473,15 +473,15 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void DrawTabImages(DrawPixelInfo& dpi) const
+        void DrawTabImages(RenderTarget& rt) const
         {
             for (size_t i = 0; i < _tabs.size(); i++)
             {
-                DrawTabImage(dpi, i);
+                DrawTabImage(rt, i);
             }
         }
 
-        void DrawTabImage(DrawPixelInfo& dpi, size_t tabIndex) const
+        void DrawTabImage(RenderTarget& rt, size_t tabIndex) const
         {
             const auto& tabDesc = _tabs[tabIndex];
             auto widgetIndex = static_cast<WidgetIndex>(WIDX_TAB_0 + tabIndex);
@@ -497,26 +497,25 @@ namespace OpenRCT2::Ui::Windows
                     }
 
                     const auto& widget = widgets[widgetIndex];
-                    GfxDrawSprite(dpi, ImageId(imageId), windowPos + ScreenCoordsXY{ widget.left, widget.top });
+                    GfxDrawSprite(rt, ImageId(imageId), windowPos + ScreenCoordsXY{ widget.left, widget.top });
                 }
             }
         }
 
-        void DrawSeparator(DrawPixelInfo& dpi, int32_t y, int32_t scrollWidth)
+        void DrawSeparator(RenderTarget& rt, int32_t y, int32_t scrollWidth)
         {
             const int32_t top = y + (kScrollableRowHeight / 2) - 1;
-            GfxFillRect(dpi, { { 0, top }, { scrollWidth, top } }, ColourMapA[colours[0].colour].mid_dark);
-            GfxFillRect(dpi, { { 0, top + 1 }, { scrollWidth, top + 1 } }, ColourMapA[colours[0].colour].lightest);
+            GfxFillRect(rt, { { 0, top }, { scrollWidth, top } }, ColourMapA[colours[0].colour].mid_dark);
+            GfxFillRect(rt, { { 0, top + 1 }, { scrollWidth, top + 1 } }, ColourMapA[colours[0].colour].lightest);
         }
 
-        void DrawItem(
-            DrawPixelInfo& dpi, int32_t y, int32_t scrollWidth, const ShortcutStringPair& shortcut, bool isHighlighted)
+        void DrawItem(RenderTarget& rt, int32_t y, int32_t scrollWidth, const ShortcutStringPair& shortcut, bool isHighlighted)
         {
             auto format = STR_BLACK_STRING;
             if (isHighlighted)
             {
                 format = STR_WINDOW_COLOUR_2_STRINGID;
-                GfxFilterRect(dpi, { 0, y - 1, scrollWidth, y + (kScrollableRowHeight - 2) }, FilterPaletteID::PaletteDarken1);
+                GfxFilterRect(rt, { 0, y - 1, scrollWidth, y + (kScrollableRowHeight - 2) }, FilterPaletteID::PaletteDarken1);
             }
 
             auto bindingOffset = (scrollWidth * 2) / 3;
@@ -531,14 +530,14 @@ namespace OpenRCT2::Ui::Windows
                 ft.Add<StringId>(STR_STRING);
                 ft.Add<const char*>(shortcut.CustomString.c_str());
             }
-            DrawTextEllipsised(dpi, { 0, y - 1 }, bindingOffset, format, ft);
+            DrawTextEllipsised(rt, { 0, y - 1 }, bindingOffset, format, ft);
 
             if (!shortcut.Binding.empty())
             {
                 ft = Formatter();
                 ft.Add<StringId>(STR_STRING);
                 ft.Add<const char*>(shortcut.Binding.c_str());
-                DrawTextEllipsised(dpi, { bindingOffset, y - 1 }, 150, format, ft);
+                DrawTextEllipsised(rt, { bindingOffset, y - 1 }, 150, format, ft);
             }
         }
     };
@@ -579,7 +578,7 @@ namespace OpenRCT2::Ui::Windows
     };
 
     static constexpr Widget WindowResetShortcutKeysPromptWidgets[] = {
-        WINDOW_SHIM_WHITE(STR_SHORTCUT_ACTION_RESET, RESET_PROMPT_WW, RESET_PROMPT_WH),
+        WINDOW_SHIM(STR_SHORTCUT_ACTION_RESET, RESET_PROMPT_WW, RESET_PROMPT_WH),
         MakeWidget(
             { 2, 30 }, { RESET_PROMPT_WW - 4, 12 }, WindowWidgetType::LabelCentred, WindowColour::Primary,
             STR_RESET_SHORTCUT_KEYS_PROMPT),

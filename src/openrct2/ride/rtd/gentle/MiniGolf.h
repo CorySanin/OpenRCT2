@@ -17,7 +17,7 @@
 // clang-format off
 constexpr RideTypeDescriptor MiniGolfRTD =
 {
-    .Category = RIDE_CATEGORY_GENTLE,
+    .Category = RideCategory::gentle,
     .StartTrackPiece = OpenRCT2::TrackElemType::EndStation,
     .TrackPaintFunctions = TrackDrawerDescriptor({
         .trackStyle = TrackStyle::miniGolf,
@@ -29,8 +29,8 @@ constexpr RideTypeDescriptor MiniGolfRTD =
     .Flags = kRtdFlagsHasThreeColours | EnumsToFlags(RtdFlag::noTestMode, RtdFlag::hasTrack, RtdFlag::hasOneStation,
                      RtdFlag::supportsMultipleColourSchemes, RtdFlag::allowMusic, RtdFlag::hasEntranceAndExit,
                      RtdFlag::slightlyInterestingToLookAt),
-    .RideModes = EnumsToFlags(RideMode::ContinuousCircuit),
-    .DefaultMode = RideMode::ContinuousCircuit,
+    .RideModes = EnumsToFlags(RideMode::continuousCircuit),
+    .DefaultMode = RideMode::continuousCircuit,
     .Naming = { STR_RIDE_NAME_MINI_GOLF, STR_RIDE_DESCRIPTION_MINI_GOLF },
     .NameConvention = { RideComponentType::Player, RideComponentType::Course, RideComponentType::Station },
     .AvailableBreakdowns = 0,
@@ -61,10 +61,12 @@ constexpr RideTypeDescriptor MiniGolfRTD =
         {
             { RatingsModifierType::BonusLength,      6000, 873, 0, 0 },
             { RatingsModifierType::BonusTurns,       0,    14860, 0, 0 },
+            // The first six holes used to benefit from bonuses intended for inversions.
+            { RatingsModifierType::BonusHoles,       6,    6, 0, 0 },
             { RatingsModifierType::BonusSheltered,   0,    5140, 6553, 4681 },
             { RatingsModifierType::BonusProximity,   0,    15657, 0, 0 },
             { RatingsModifierType::BonusScenery,     0,    27887, 0, 0 },
-            { RatingsModifierType::BonusHoles,       0,    5, 0, 0 },
+            { RatingsModifierType::BonusHoles,       31,   5, 0, 0 },
             { RatingsModifierType::RequirementHoles, 1,    8, 2, 2 },
         },
     },
@@ -73,7 +75,7 @@ constexpr RideTypeDescriptor MiniGolfRTD =
     .StartRideMusic = OpenRCT2::RideAudio::DefaultStartRideMusicChannel,
     .DesignCreateMode = TrackDesignCreateMode::Default,
     .MusicUpdateFunction = DefaultMusicUpdate,
-    .Classification = RideClassification::Ride,
+    .Classification = RideClassification::ride,
     .UpdateLeaveEntrance = PeepUpdateRideLeaveEntranceDefault,
     .SpecialElementRatingAdjustment = SpecialTrackElementRatingsAjustment_Default,
     .GetGuestWaypointLocation = GetGuestWaypointLocationDefault,

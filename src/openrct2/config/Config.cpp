@@ -101,7 +101,6 @@ namespace OpenRCT2::Config
     });
 
     static const auto Enum_DrawingEngine = ConfigEnum<DrawingEngine>({
-        ConfigEnumEntry<DrawingEngine>("SOFTWARE", DrawingEngine::Software),
         ConfigEnumEntry<DrawingEngine>("SOFTWARE_HWD", DrawingEngine::SoftwareWithHardwareDisplay),
         ConfigEnumEntry<DrawingEngine>("OPENGL", DrawingEngine::OpenGL),
     });
@@ -122,6 +121,11 @@ namespace OpenRCT2::Config
         ConfigEnumEntry<VirtualFloorStyles>("OFF", VirtualFloorStyles::Off),
         ConfigEnumEntry<VirtualFloorStyles>("CLEAR", VirtualFloorStyles::Clear),
         ConfigEnumEntry<VirtualFloorStyles>("GLASSY", VirtualFloorStyles::Glassy),
+    });
+
+    static const auto Enum_ScenarioSelectMode = ConfigEnum<ScenarioSelectMode>({
+        ConfigEnumEntry<ScenarioSelectMode>("ORIGIN", ScenarioSelectMode::origin),
+        ConfigEnumEntry<ScenarioSelectMode>("DIFFICULTY", ScenarioSelectMode::difficulty),
     });
 
     /**
@@ -207,9 +211,9 @@ namespace OpenRCT2::Config
 
             // Default config setting is false until the games canvas can be separated from the effect
             model->DayNightCycle = reader->GetBoolean("day_night_cycle", false);
-            const bool isHardware = model->DrawingEngine != DrawingEngine::Software;
-            model->EnableLightFx = isHardware && reader->GetBoolean("enable_light_fx", false);
-            model->EnableLightFxForVehicles = isHardware && reader->GetBoolean("enable_light_fx_for_vehicles", false);
+            const bool supportsLightFx = model->DrawingEngine == DrawingEngine::SoftwareWithHardwareDisplay;
+            model->EnableLightFx = supportsLightFx && reader->GetBoolean("enable_light_fx", false);
+            model->EnableLightFxForVehicles = supportsLightFx && reader->GetBoolean("enable_light_fx_for_vehicles", false);
             model->UpperCaseBanners = reader->GetBoolean("upper_case_banners", false);
             model->DisableLightningEffect = reader->GetBoolean("disable_lightning_effect", false);
             model->SteamOverlayPause = reader->GetBoolean("steam_overlay_pause", true);
@@ -224,7 +228,8 @@ namespace OpenRCT2::Config
 #endif // _DEBUG
             model->TrapCursor = reader->GetBoolean("trap_cursor", false);
             model->AutoOpenShops = reader->GetBoolean("auto_open_shops", false);
-            model->ScenarioSelectMode = reader->GetInt32("scenario_select_mode", SCENARIO_SELECT_MODE_ORIGIN);
+            model->scenarioSelectMode = reader->GetEnum(
+                "scenario_select_mode", ScenarioSelectMode::origin, Enum_ScenarioSelectMode);
             model->ScenarioUnlockingEnabled = reader->GetBoolean("scenario_unlocking_enabled", true);
             model->ScenarioHideMegaPark = reader->GetBoolean("scenario_hide_mega_park", true);
             model->LastSaveGameDirectory = reader->GetString("last_game_directory", "");
@@ -258,6 +263,7 @@ namespace OpenRCT2::Config
             model->FileBrowserHeight = reader->GetInt32("file_browser_height", 0);
             model->FileBrowserShowSizeColumn = reader->GetBoolean("file_browser_show_size_column", true);
             model->FileBrowserShowDateColumn = reader->GetBoolean("file_browser_show_date_column", true);
+            model->FileBrowserShowPreviews = reader->GetBoolean("file_browser_show_previews", true);
         }
     }
 
@@ -316,7 +322,7 @@ namespace OpenRCT2::Config
         writer->WriteBoolean("multithreading", model->MultiThreading);
         writer->WriteBoolean("trap_cursor", model->TrapCursor);
         writer->WriteBoolean("auto_open_shops", model->AutoOpenShops);
-        writer->WriteInt32("scenario_select_mode", model->ScenarioSelectMode);
+        writer->WriteEnum<ScenarioSelectMode>("scenario_select_mode", model->scenarioSelectMode, Enum_ScenarioSelectMode);
         writer->WriteBoolean("scenario_unlocking_enabled", model->ScenarioUnlockingEnabled);
         writer->WriteBoolean("scenario_hide_mega_park", model->ScenarioHideMegaPark);
         writer->WriteString("last_game_directory", model->LastSaveGameDirectory);
@@ -348,6 +354,7 @@ namespace OpenRCT2::Config
         writer->WriteInt32("file_browser_height", model->FileBrowserHeight);
         writer->WriteBoolean("file_browser_show_size_column", model->FileBrowserShowSizeColumn);
         writer->WriteBoolean("file_browser_show_date_column", model->FileBrowserShowDateColumn);
+        writer->WriteBoolean("file_browser_show_previews", model->FileBrowserShowPreviews);
     }
 
     static void ReadInterface(IIniReader* reader)
@@ -639,7 +646,7 @@ namespace OpenRCT2::Config
     {
         try
         {
-            auto fs = FileStream(path, FILE_MODE_OPEN);
+            auto fs = FileStream(path, FileMode::open);
             auto reader = CreateIniReader(&fs);
             ReadGeneral(reader.get());
             ReadInterface(reader.get());
@@ -663,7 +670,7 @@ namespace OpenRCT2::Config
             auto directory = Path::GetDirectory(path);
             Path::CreateDirectory(directory);
 
-            auto fs = FileStream(path, FILE_MODE_WRITE);
+            auto fs = FileStream(path, FileMode::write);
             auto writer = CreateIniWriter(&fs);
             WriteGeneral(writer.get());
             WriteInterface(writer.get());
@@ -745,9 +752,15 @@ namespace OpenRCT2::Config
             {
                 return location;
             }
+
+            std::string location2 = Path::Combine(steamPath, Platform::GetRCTClassicSteamDir());
+            if (Platform::OriginalGameDataExists(location2))
+            {
+                return location2;
+            }
         }
 
-        auto discordPath = Platform::GetFolderPath(SPECIAL_FOLDER::RCT2_DISCORD);
+        auto discordPath = Platform::GetFolderPath(SpecialFolder::rct2Discord);
         if (!discordPath.empty() && Platform::OriginalGameDataExists(discordPath))
         {
             return discordPath;
@@ -769,7 +782,7 @@ namespace OpenRCT2::Config
         desc.Filters.emplace_back(LanguageGetString(STR_GOG_INSTALLER), "*.exe");
         desc.Filters.emplace_back(LanguageGetString(STR_ALL_FILES), "*");
 
-        const auto userHomePath = Platform::GetFolderPath(SPECIAL_FOLDER::USER_HOME);
+        const auto userHomePath = Platform::GetFolderPath(SpecialFolder::userHome);
         desc.InitialDirectory = userHomePath;
 
         return ContextOpenCommonFileDialog(desc);
@@ -810,8 +823,8 @@ namespace OpenRCT2::Config
 
     u8string GetDefaultPath()
     {
-        auto env = GetContext()->GetPlatformEnvironment();
-        return Path::Combine(env->GetDirectoryPath(DIRBASE::USER), u8"config.ini");
+        auto& env = GetContext()->GetPlatformEnvironment();
+        return Path::Combine(env.GetDirectoryPath(DirBase::user), u8"config.ini");
     }
 
     bool SaveToPath(u8string_view path)
@@ -839,10 +852,10 @@ namespace OpenRCT2::Config
                 return false;
             }
 
-            auto uiContext = GetContext()->GetUiContext();
-            if (!uiContext->HasFilePicker())
+            auto& uiContext = GetContext()->GetUiContext();
+            if (!uiContext.HasFilePicker())
             {
-                uiContext->ShowMessageBox(LanguageGetString(STR_NEEDS_RCT2_FILES_MANUAL));
+                uiContext.ShowMessageBox(LanguageGetString(STR_NEEDS_RCT2_FILES_MANUAL));
                 return false;
             }
 
@@ -851,18 +864,18 @@ namespace OpenRCT2::Config
                 const char* g1DatPath = PATH_SEPARATOR "Data" PATH_SEPARATOR "g1.dat";
                 while (true)
                 {
-                    uiContext->ShowMessageBox(LanguageGetString(STR_NEEDS_RCT2_FILES));
+                    uiContext.ShowMessageBox(LanguageGetString(STR_NEEDS_RCT2_FILES));
                     std::string gog = LanguageGetString(STR_OWN_ON_GOG);
                     std::string hdd = LanguageGetString(STR_INSTALLED_ON_HDD);
 
                     std::vector<std::string> options;
                     std::string chosenOption;
 
-                    if (uiContext->HasMenuSupport())
+                    if (uiContext.HasMenuSupport())
                     {
                         options.push_back(hdd);
                         options.push_back(gog);
-                        int optionIndex = uiContext->ShowMenuDialog(
+                        int optionIndex = uiContext.ShowMenuDialog(
                             options, LanguageGetString(STR_OPENRCT2_SETUP), LanguageGetString(STR_WHICH_APPLIES_BEST));
                         if (optionIndex < 0 || static_cast<uint32_t>(optionIndex) >= options.size())
                         {
@@ -879,10 +892,10 @@ namespace OpenRCT2::Config
                         chosenOption = hdd;
                     }
 
-                    std::string installPath;
+                    std::vector<std::string> possibleInstallPaths{};
                     if (chosenOption == hdd)
                     {
-                        installPath = uiContext->ShowDirectoryDialog(LanguageGetString(STR_PICK_RCT2_DIR));
+                        possibleInstallPaths.emplace_back(uiContext.ShowDirectoryDialog(LanguageGetString(STR_PICK_RCT2_DIR)));
                     }
                     else if (chosenOption == gog)
                     {
@@ -890,16 +903,16 @@ namespace OpenRCT2::Config
                         std::string dummy;
                         if (!Platform::FindApp("innoextract", &dummy))
                         {
-                            uiContext->ShowMessageBox(LanguageGetString(STR_INSTALL_INNOEXTRACT));
+                            uiContext.ShowMessageBox(LanguageGetString(STR_INSTALL_INNOEXTRACT));
                             return false;
                         }
 
                         const std::string dest = Path::Combine(
-                            GetContext()->GetPlatformEnvironment()->GetDirectoryPath(DIRBASE::CONFIG), "rct2");
+                            GetContext()->GetPlatformEnvironment().GetDirectoryPath(DirBase::config), "rct2");
 
                         while (true)
                         {
-                            uiContext->ShowMessageBox(LanguageGetString(STR_PLEASE_SELECT_GOG_INSTALLER));
+                            uiContext.ShowMessageBox(LanguageGetString(STR_PLEASE_SELECT_GOG_INSTALLER));
                             auto gogPath = SelectGogInstaller();
                             if (gogPath.empty())
                             {
@@ -907,28 +920,33 @@ namespace OpenRCT2::Config
                                 return false;
                             }
 
-                            uiContext->ShowMessageBox(LanguageGetString(STR_THIS_WILL_TAKE_A_FEW_MINUTES));
+                            uiContext.ShowMessageBox(LanguageGetString(STR_THIS_WILL_TAKE_A_FEW_MINUTES));
 
                             if (ExtractGogInstaller(gogPath, dest))
                                 break;
 
-                            uiContext->ShowMessageBox(LanguageGetString(STR_NOT_THE_GOG_INSTALLER));
+                            uiContext.ShowMessageBox(LanguageGetString(STR_NOT_THE_GOG_INSTALLER));
                         }
 
-                        installPath = Path::Combine(dest, u8"app");
+                        // New installer extracts to ‘dest’, old installer installs in ‘dest/app’.
+                        possibleInstallPaths.emplace_back(dest);
+                        possibleInstallPaths.emplace_back(Path::Combine(dest, u8"app"));
                     }
-                    if (installPath.empty())
+                    if (possibleInstallPaths.empty())
                     {
                         return false;
                     }
-                    Get().general.RCT2Path = installPath;
 
-                    if (Platform::OriginalGameDataExists(installPath))
+                    for (const auto& possiblePath : possibleInstallPaths)
                     {
-                        return true;
+                        if (Platform::OriginalGameDataExists(possiblePath))
+                        {
+                            Get().general.RCT2Path = possiblePath;
+                            return true;
+                        }
                     }
 
-                    uiContext->ShowMessageBox(FormatStringIDLegacy(STR_COULD_NOT_FIND_AT_PATH, &g1DatPath));
+                    uiContext.ShowMessageBox(FormatStringIDLegacy(STR_COULD_NOT_FIND_AT_PATH, &g1DatPath));
                 }
             }
             catch (const std::exception& ex)

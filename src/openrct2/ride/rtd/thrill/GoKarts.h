@@ -18,20 +18,20 @@
 // clang-format off
 constexpr RideTypeDescriptor GoKartsRTD =
 {
-    .Category = RIDE_CATEGORY_THRILL,
+    .Category = RideCategory::thrill,
     .StartTrackPiece = OpenRCT2::TrackElemType::EndStation,
     .TrackPaintFunctions = TrackDrawerDescriptor({
         .trackStyle = TrackStyle::goKarts,
         .supportType = WoodenSupportType::Truss,
-        .enabledTrackGroups = {TrackGroup::straight, TrackGroup::stationEnd, TrackGroup::slope, TrackGroup::curveVerySmall},
-        .extraTrackGroups = {},
+        .enabledTrackGroups = {TrackGroup::straight, TrackGroup::stationEnd, TrackGroup::slope, TrackGroup::curveVerySmall, TrackGroup::curveSmall, TrackGroup::curve, TrackGroup::curveLarge, TrackGroup::slopeCurve, TrackGroup::slopeCurveLarge, TrackGroup::sBend},
+        .extraTrackGroups = {TrackGroup::slopeSteepUp, TrackGroup::slopeSteepDown, TrackGroup::slopeSteepLong},
     }),
     .InvertedTrackPaintFunctions = {},
     .Flags = EnumsToFlags(RtdFlag::hasTrackColourMain, RtdFlag::hasTrackColourSupports, RtdFlag::noTestMode, RtdFlag::hasOneStation,
                      RtdFlag::noWallsAroundTrack, RtdFlag::guestsWillRideAgain, RtdFlag::hasVehicleColours, RtdFlag::hasTrack,
                      RtdFlag::supportsMultipleColourSchemes, RtdFlag::allowMusic, RtdFlag::hasEntranceAndExit, RtdFlag::interestingToLookAt),
-    .RideModes = EnumsToFlags(RideMode::Race, RideMode::ContinuousCircuit),
-    .DefaultMode = RideMode::Race,
+    .RideModes = EnumsToFlags(RideMode::race, RideMode::continuousCircuit),
+    .DefaultMode = RideMode::race,
     .OperatingSettings = { 1, 10 },
     .Naming = { STR_RIDE_NAME_GO_KARTS, STR_RIDE_DESCRIPTION_GO_KARTS },
     .NameConvention = { RideComponentType::Car, RideComponentType::Track, RideComponentType::Station },

@@ -94,27 +94,27 @@ namespace OpenRCT2::Ui::Windows
 
             size_t j = _pressedNewsItemIndex;
             _pressedNewsItemIndex = -1;
-            auto& gameState = GetGameState();
+            auto& gameState = getGameState();
 
-            if (j >= gameState.NewsItems.GetArchived().size())
+            if (j >= gameState.newsItems.GetArchived().size())
             {
                 return;
             }
 
-            const auto& newsItem = gameState.NewsItems.GetArchived()[j];
-            if (newsItem.HasButton())
+            const auto& newsItem = gameState.newsItems.GetArchived()[j];
+            if (newsItem.hasButton())
             {
                 return;
             }
 
             if (_pressedButtonIndex == 1)
             {
-                News::OpenSubject(newsItem.Type, newsItem.Assoc);
+                News::OpenSubject(newsItem.type, newsItem.assoc);
             }
             else if (_pressedButtonIndex > 1)
             {
                 static WindowBase* _mainWindow;
-                auto subjectLoc = News::GetSubjectLocation(newsItem.Type, newsItem.Assoc);
+                auto subjectLoc = News::GetSubjectLocation(newsItem.type, newsItem.assoc);
                 if (subjectLoc.has_value() && (_mainWindow = WindowGetMain()) != nullptr)
                 {
                     WindowScrollToLocation(*_mainWindow, subjectLoc.value());
@@ -124,7 +124,7 @@ namespace OpenRCT2::Ui::Windows
 
         ScreenSize OnScrollGetSize(int32_t scrollIndex) override
         {
-            int32_t scrollHeight = static_cast<int32_t>(GetGameState().NewsItems.GetArchived().size()) * CalculateItemHeight();
+            int32_t scrollHeight = static_cast<int32_t>(getGameState().newsItems.GetArchived().size()) * CalculateItemHeight();
             return { WW, scrollHeight };
         }
 
@@ -134,22 +134,22 @@ namespace OpenRCT2::Ui::Windows
             int32_t i = 0;
             int32_t buttonIndex = 0;
             auto mutableScreenCoords = screenCoords;
-            for (const auto& newsItem : GetGameState().NewsItems.GetArchived())
+            for (const auto& newsItem : getGameState().newsItems.GetArchived())
             {
                 if (mutableScreenCoords.y < itemHeight)
                 {
-                    if (newsItem.HasButton() || mutableScreenCoords.y < 14 || mutableScreenCoords.y >= 38
+                    if (newsItem.hasButton() || mutableScreenCoords.y < 14 || mutableScreenCoords.y >= 38
                         || mutableScreenCoords.x < 328)
                     {
                         buttonIndex = 0;
                         break;
                     }
-                    if (mutableScreenCoords.x < 351 && newsItem.TypeHasSubject())
+                    if (mutableScreenCoords.x < 351 && newsItem.typeHasSubject())
                     {
                         buttonIndex = 1;
                         break;
                     }
-                    if (mutableScreenCoords.x < 376 && newsItem.TypeHasLocation())
+                    if (mutableScreenCoords.x < 376 && newsItem.typeHasLocation())
                     {
                         buttonIndex = 2;
                         break;
@@ -169,23 +169,23 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
         }
 
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
             int32_t lineHeight = FontGetLineHeight(FontStyle::Small);
             int32_t itemHeight = CalculateItemHeight();
             int32_t y = 0;
             int32_t i = 0;
 
-            for (const auto& newsItem : GetGameState().NewsItems.GetArchived())
+            for (const auto& newsItem : getGameState().newsItems.GetArchived())
             {
-                if (y >= dpi.y + dpi.height)
+                if (y >= rt.y + rt.height)
                     break;
-                if (y + itemHeight < dpi.y)
+                if (y + itemHeight < rt.y)
                 {
                     y += itemHeight;
                     i++;
@@ -194,26 +194,26 @@ namespace OpenRCT2::Ui::Windows
 
                 // Background
                 GfxFillRectInset(
-                    dpi, { -1, y, 383, y + itemHeight - 1 }, colours[1],
+                    rt, { -1, y, 383, y + itemHeight - 1 }, colours[1],
                     (INSET_RECT_FLAG_BORDER_INSET | INSET_RECT_FLAG_FILL_GREY));
 
                 // Date text
                 {
                     auto ft = Formatter();
-                    ft.Add<StringId>(DateDayNames[newsItem.Day - 1]);
-                    ft.Add<StringId>(DateGameMonthNames[DateGetMonth(newsItem.MonthYear)]);
-                    DrawTextBasic(dpi, { 2, y }, STR_NEWS_DATE_FORMAT, ft, { COLOUR_WHITE, FontStyle::Small });
+                    ft.Add<StringId>(DateDayNames[newsItem.day - 1]);
+                    ft.Add<StringId>(DateGameMonthNames[DateGetMonth(newsItem.monthYear)]);
+                    DrawTextBasic(rt, { 2, y }, STR_NEWS_DATE_FORMAT, ft, { COLOUR_WHITE, FontStyle::Small });
                 }
                 // Item text
                 {
                     auto ft = Formatter();
-                    ft.Add<const char*>(newsItem.Text.c_str());
+                    ft.Add<const char*>(newsItem.text.c_str());
                     DrawTextWrapped(
-                        dpi, { 2, y + lineHeight }, 325, STR_BOTTOM_TOOLBAR_NEWS_TEXT, ft,
+                        rt, { 2, y + lineHeight }, 325, STR_BOTTOM_TOOLBAR_NEWS_TEXT, ft,
                         { COLOUR_BRIGHT_GREEN, FontStyle::Small });
                 }
                 // Subject button
-                if ((newsItem.TypeHasSubject()) && !(newsItem.HasButton()))
+                if ((newsItem.typeHasSubject()) && !(newsItem.hasButton()))
                 {
                     auto screenCoords = ScreenCoordsXY{ 328, y + lineHeight + 4 };
 
@@ -226,23 +226,23 @@ namespace OpenRCT2::Ui::Windows
                             press = INSET_RECT_FLAG_BORDER_INSET;
                         }
                     }
-                    GfxFillRectInset(dpi, { screenCoords, screenCoords + ScreenCoordsXY{ 23, 23 } }, colours[2], press);
+                    GfxFillRectInset(rt, { screenCoords, screenCoords + ScreenCoordsXY{ 23, 23 } }, colours[2], press);
 
-                    switch (newsItem.Type)
+                    switch (newsItem.type)
                     {
-                        case News::ItemType::Ride:
-                            GfxDrawSprite(dpi, ImageId(SPR_RIDE), screenCoords);
+                        case News::ItemType::ride:
+                            GfxDrawSprite(rt, ImageId(SPR_RIDE), screenCoords);
                             break;
-                        case News::ItemType::Peep:
-                        case News::ItemType::PeepOnRide:
+                        case News::ItemType::peep:
+                        case News::ItemType::peepOnRide:
                         {
-                            DrawPixelInfo cliped_dpi;
-                            if (!ClipDrawPixelInfo(cliped_dpi, dpi, screenCoords + ScreenCoordsXY{ 1, 1 }, 22, 22))
+                            RenderTarget clippedRT;
+                            if (!ClipDrawPixelInfo(clippedRT, rt, screenCoords + ScreenCoordsXY{ 1, 1 }, 22, 22))
                             {
                                 break;
                             }
 
-                            auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(newsItem.Assoc));
+                            auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(newsItem.assoc));
                             if (peep == nullptr)
                             {
                                 break;
@@ -268,35 +268,34 @@ namespace OpenRCT2::Ui::Windows
 
                             ImageIndex imageId = animObj->GetPeepAnimation(spriteType).base_image + 1;
                             auto image = ImageId(imageId, peep->TshirtColour, peep->TrousersColour);
-                            GfxDrawSprite(cliped_dpi, image, clipCoords);
+                            GfxDrawSprite(clippedRT, image, clipCoords);
                             break;
                         }
-                        case News::ItemType::Money:
-                        case News::ItemType::Campaign:
-                            GfxDrawSprite(dpi, ImageId(SPR_FINANCE), screenCoords);
+                        case News::ItemType::money:
+                        case News::ItemType::campaign:
+                            GfxDrawSprite(rt, ImageId(SPR_FINANCE), screenCoords);
                             break;
-                        case News::ItemType::Research:
-                            GfxDrawSprite(
-                                dpi, ImageId(newsItem.Assoc < 0x10000 ? SPR_NEW_SCENERY : SPR_NEW_RIDE), screenCoords);
+                        case News::ItemType::research:
+                            GfxDrawSprite(rt, ImageId(newsItem.assoc < 0x10000 ? SPR_NEW_SCENERY : SPR_NEW_RIDE), screenCoords);
                             break;
-                        case News::ItemType::Peeps:
-                            GfxDrawSprite(dpi, ImageId(SPR_GUESTS), screenCoords);
+                        case News::ItemType::peeps:
+                            GfxDrawSprite(rt, ImageId(SPR_GUESTS), screenCoords);
                             break;
-                        case News::ItemType::Award:
-                            GfxDrawSprite(dpi, ImageId(SPR_AWARD), screenCoords);
+                        case News::ItemType::award:
+                            GfxDrawSprite(rt, ImageId(SPR_AWARD), screenCoords);
                             break;
-                        case News::ItemType::Graph:
-                            GfxDrawSprite(dpi, ImageId(SPR_GRAPH), screenCoords);
+                        case News::ItemType::graph:
+                            GfxDrawSprite(rt, ImageId(SPR_GRAPH), screenCoords);
                             break;
-                        case News::ItemType::Null:
-                        case News::ItemType::Blank:
-                        case News::ItemType::Count:
+                        case News::ItemType::null:
+                        case News::ItemType::blank:
+                        case News::ItemType::count:
                             break;
                     }
                 }
 
                 // Location button
-                if ((newsItem.TypeHasLocation()) && !(newsItem.HasButton()))
+                if ((newsItem.typeHasLocation()) && !(newsItem.hasButton()))
                 {
                     auto screenCoords = ScreenCoordsXY{ 352, y + lineHeight + 4 };
 
@@ -307,18 +306,13 @@ namespace OpenRCT2::Ui::Windows
                         if (i == _pressedNewsItemIndex && _pressedButtonIndex == 2)
                             press = 0x20;
                     }
-                    GfxFillRectInset(dpi, { screenCoords, screenCoords + ScreenCoordsXY{ 23, 23 } }, colours[2], press);
-                    GfxDrawSprite(dpi, ImageId(SPR_LOCATE), screenCoords);
+                    GfxFillRectInset(rt, { screenCoords, screenCoords + ScreenCoordsXY{ 23, 23 } }, colours[2], press);
+                    GfxDrawSprite(rt, ImageId(SPR_LOCATE), screenCoords);
                 }
 
                 y += itemHeight;
                 i++;
             }
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
         }
     };
 

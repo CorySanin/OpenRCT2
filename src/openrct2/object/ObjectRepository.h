@@ -22,13 +22,14 @@ namespace OpenRCT2
 } // namespace OpenRCT2
 
 class Object;
+enum class RideCategory : uint8_t;
 
 namespace OpenRCT2::Localisation
 {
     class LocalisationService;
 }
 
-struct DrawPixelInfo;
+struct RenderTarget;
 
 enum ObjectItemFlags : uint8_t
 {
@@ -52,7 +53,6 @@ struct ObjectRepositoryItem
     struct
     {
         uint8_t RideFlags;
-        uint8_t RideCategory[OpenRCT2::RCT2::ObjectLimits::kMaxCategoriesPerRide];
         ride_type_t RideType[OpenRCT2::RCT2::ObjectLimits::kMaxRideTypesPerRideEntry];
     } RideInfo;
     struct
@@ -101,8 +101,7 @@ struct IObjectRepository
     virtual void ExportPackedObject(OpenRCT2::IStream* stream) = 0;
 };
 
-[[nodiscard]] std::unique_ptr<IObjectRepository> CreateObjectRepository(
-    const std::shared_ptr<OpenRCT2::IPlatformEnvironment>& env);
+[[nodiscard]] std::unique_ptr<IObjectRepository> CreateObjectRepository(OpenRCT2::IPlatformEnvironment& env);
 
 [[nodiscard]] bool IsObjectCustom(const ObjectRepositoryItem* object);
 

@@ -2166,7 +2166,6 @@ STR_3136    :Advertencia: este aspecto crearase cun tipo de vehículo alternativ
 STR_3137    :Seleccionar. Escenario próximo
 STR_3138    :Restablecer selección.
 STR_3139    :O cable de elevación non pode funcionar neste modo
-STR_3140    :O cable do telecadeira debe comezar inmediatamente despois da estación
 STR_3141    :Multicircuíto por atracción. non é posible cun cable de elevación
 STR_3142    :{WINDOW_COLOUR_2}Capacidade: {BLACK}{STRINGID}
 STR_3143    :Mostrar visitantes no mapa
@@ -2237,12 +2236,10 @@ STR_3228    :Establecer a posición inicial das persoas
 STR_3229    :O bloque de freada non debe usarse despois da estación
 STR_3230    :O bloque de freado non debe usarse despois do outro
 STR_3231    :O bloque de freo non debe usarse despois do final da cadea de elevación.
-STR_3232    :Opcións - Finanzas
-STR_3233    :Opcións - Visitantes
-STR_3234    :Opcións - Aparcar
+STR_3232    :Opcións do escenario - Finanzas
+STR_3233    :Opcións do escenario - Visitantes
 STR_3235    :Opcións de financiamento
 STR_3236    :Opcións de visitante
-STR_3237    :Opcións de estacionamento
 STR_3238    :Sen cartos
 STR_3239    :Eliminar as restricións financeiras deste parque
 STR_3240    :{WINDOW_COLOUR_2}Efectivo inicial:
@@ -2261,10 +2258,6 @@ STR_3252    :O préstamo máximo non se pode aumentar máis!
 STR_3253    :O préstamo máximo non se pode reducir máis!
 STR_3254    :O tipo de interese non se pode aumentar máis!
 STR_3255    :O tipo de interese non se pode reducir máis!
-STR_3256    :Os visitantes prefiren as atraccións tranquilas
-STR_3257    :Os visitantes adoitan preferir atraccións de baixa intensidade
-STR_3258    :Os visitantes prefiren atraccións intensas
-STR_3259    :Os visitantes adoitan preferir atraccións de alta intensidade
 STR_3260    :{WINDOW_COLOUR_2}Efectivo por visitante (media):
 STR_3261    :{WINDOW_COLOUR_2}Felicidade inicial do visitante:
 STR_3262    :{WINDOW_COLOUR_2}Fame inicial do visitante:
@@ -2287,18 +2280,10 @@ STR_3278    :{WINDOW_COLOUR_2}Custo dos dereitos de construción:
 STR_3279    :Entrada gratuíta / Atraccións de pago
 STR_3280    :Pagar para entrar / Atraccións gratuítas
 STR_3281    :{WINDOW_COLOUR_2}Prezo de entrada:
-STR_3282    :Seleccione o nome do destino e do parque
 STR_3283    :Selecciona as atraccións para conservar
-STR_3284    :Selección de destino
-STR_3285    :Atraccións preservadas
+STR_3285    :Opcións do escenario - Atraccións preservadas
 STR_3286    :Seleccione obxectivos para este escenario
 STR_3287    :{WINDOW_COLOUR_2}Obxecto:
-STR_3288    :Selecciona o tempo
-STR_3289    :{WINDOW_COLOUR_2}O tempo:
-STR_3290    :Frío e húmido
-STR_3291    :Quente
-STR_3292    :Quente e seco
-STR_3293    :Frío
 STR_3294    :Cambiar...
 STR_3295    :Cambiar o nome do parque
 STR_3296    :Cambiar o nome do escenario
@@ -2525,7 +2510,7 @@ STR_5265    :Selecciona que contidos son visibles
 STR_5266    :Gráficos
 STR_5267    :Idioma e unidades
 STR_5268    :Audio
-STR_5269    :Interface e controis
+STR_5269    :Controis
 STR_5270    :Outras opcións
 STR_5272    :Pequena decoración
 STR_5273    :Decoración grande
@@ -3214,7 +3199,7 @@ STR_6102    :O valor dunha atracción non diminúe co paso do tempo, polo que os
 STR_6103    :Esta opción está desactivada durante unha partida multixogador.
 STR_6105    :Hiper montaña rusa
 STR_6107    :Camións Monstro
-STR_6109    :Hyper-Twister
+STR_6109    :Montaña Rusa Hiper-Twister
 STR_6111    :Mini montaña rusa clásica
 STR_6113    :Unha montaña rusa alta e non invertible con grandes caídas, coches de alta velocidade e cómodos con só unhas poucas barras para agarrarse
 STR_6115    :Camións 4x4 autopropulsados ​​xigantes que poden escalar outeiros impresionantes
@@ -3608,7 +3593,6 @@ STR_6547    :Todos os escenarios
 STR_6548    :Mostrar pasamáns nas interseccións
 STR_6549    :Non se poden seleccionar obxectos de compatibilidade!
 STR_6550    :Inclúese esta entrada para garantir a compatibilidade con obxectos antigos ou danados. Non se pode seleccionar, só deseleccionar.
-
 STR_6551    :Verde exército
 STR_6552    :Melón
 STR_6553    :Tan
@@ -3769,6 +3753,8 @@ STR_6707    :(Ningún escollido)
 STR_6708    :Intensidade de suavizado
 STR_6709    :Introduce a intensidade de suavizado entre {COMMA16} e {COMMA16}
 STR_6710    :Ordenación estable
+STR_6711    :Nome do ficheiro:
+STR_6712    :Gardar
 STR_6713    :{COMMA32} {STRINGID}
 STR_6714    :Nome do ficheiro
 STR_6715    :Data de modificación
@@ -3784,5 +3770,53 @@ STR_6724    :Textos do escenario
 STR_6725    :X:
 STR_6726    :Y:
 STR_6727    :Bucle de mergullo (esquerda)
-STR_6728    :Loop de mergullo (dereita)
+STR_6728    :Bucle de mergullo (dereita)
 STR_6729    :A subida da telecadeira debe comezar inmediatamente despois da estación ou do freno de bloqueo
+STR_6730    :Exportar datos de Emscripten
+STR_6731    :Importar datos de Emscripten
+STR_6732    :Amosar un botón na barra de ferramentas para xirar a vista en sentido antihorario
+STR_6733    :Translúcido
+STR_6734    :Os elementos do mapa que están a altura de corte ou por riba renderízanse translúcidos.
+STR_6735    :Sube ao cartafol principal
+STR_6736    :Vista previa
+STR_6737    :Non hai vista previa dispoñible
+STR_6738    :{WINDOW_COLOUR_2}Valoración do parque: {BLACK}{UINT16}
+STR_6739    :{WINDOW_COLOUR_2}Data: {BLACK}{STRINGID}
+STR_6740    :{WINDOW_COLOUR_2}Efectivo: {BLACK}{CURRENCY2DP}
+STR_6741    :{WINDOW_COLOUR_2}Núm. de atraccións: {BLACK}{UINT16}
+STR_6742    :{WINDOW_COLOUR_2}Núm. de visitantes: {BLACK}{UINT16}
+STR_6743    :Clima
+STR_6744    :{WINDOW_COLOUR_2}{UINT16}%
+STR_6745    :{WINDOW_COLOUR_2}Preferencias de intensidade dos visitantes:
+STR_6746    :Sen preferencias
+STR_6747    :Preferencias variadas (por defecto)
+STR_6748    :Só atraccións pouco intensas
+STR_6749    :Só atraccións moi intensas
+STR_6750    :Selecciona a intensidade de atracción que prefiren os novos visitantes.
+STR_6751    :Non se poden usar camiños de cola para pasos a nivel!
+STR_6752    :Opcións do escenario - Obxectivo
+STR_6753    :Opcións do escenario - Detalles do escenario
+STR_6754    :Opcións do escenario - Restricións de terras
+STR_6755    :Amosa opcións do obxectivo
+STR_6756    :Amosa opcións de detalles do escenario
+STR_6757    :Amosa opcións de restricións de terras
+STR_6758    :Opcións de préstamo
+STR_6759    :Modelo de negocio
+STR_6760    :Ganancias:
+STR_6761    :Detalles do escenario
+STR_6762    :Interface
+STR_6763    :RollerCoaster Tycoon 1
+STR_6764    :Gardar e gardados automáticos
+STR_6765    :Avanzado
+STR_6766    :Limpar
+STR_6767    :Xanela
+STR_6768    :Renderizado
+STR_6769    :Comportamento
+STR_6770    :Límite de fotogramas:
+STR_6771    :Velocidade interna (por defecto)
+STR_6772    :Sincronización vertical
+STR_6773    :Sen restricións
+STR_6774    :Tempo desde a última inspección
+STR_6775    :{COMMA16} minuto
+STR_6776    :{COMMA16} minutos
+STR_6777    :máis de 4 horas

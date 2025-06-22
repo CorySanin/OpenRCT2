@@ -28,7 +28,7 @@ void StationObject::Load()
     {
         BaseImageId = LoadImages();
 
-        uint32_t shelterOffset = (Flags & STATION_OBJECT_FLAGS::IS_TRANSPARENT) ? 32 : 16;
+        uint32_t shelterOffset = (Flags & StationObjectFlags::isTransparent) ? 32 : 16;
         if (numImages > shelterOffset)
         {
             ShelterImageId = BaseImageId + shelterOffset;
@@ -46,7 +46,7 @@ void StationObject::Unload()
     ShelterImageId = kImageIndexUndefined;
 }
 
-void StationObject::DrawPreview(DrawPixelInfo& dpi, int32_t width, int32_t height) const
+void StationObject::DrawPreview(RenderTarget& rt, int32_t width, int32_t height) const
 {
     auto screenCoords = ScreenCoordsXY{ width / 2, (height / 2) + 16 };
 
@@ -56,25 +56,25 @@ void StationObject::DrawPreview(DrawPixelInfo& dpi, int32_t width, int32_t heigh
 
     auto imageId = ImageId(BaseImageId);
     auto tImageId = ImageId(BaseImageId + 16).WithTransparency(tcolour0);
-    if (Flags & STATION_OBJECT_FLAGS::HAS_PRIMARY_COLOUR)
+    if (Flags & StationObjectFlags::hasPrimaryColour)
     {
         imageId = imageId.WithPrimary(colour0);
     }
-    if (Flags & STATION_OBJECT_FLAGS::HAS_SECONDARY_COLOUR)
+    if (Flags & StationObjectFlags::hasSecondaryColour)
     {
         imageId = imageId.WithSecondary(colour1);
     }
 
-    GfxDrawSprite(dpi, imageId, screenCoords);
-    if (Flags & STATION_OBJECT_FLAGS::IS_TRANSPARENT)
+    GfxDrawSprite(rt, imageId, screenCoords);
+    if (Flags & StationObjectFlags::isTransparent)
     {
-        GfxDrawSprite(dpi, tImageId, screenCoords);
+        GfxDrawSprite(rt, tImageId, screenCoords);
     }
 
-    GfxDrawSprite(dpi, imageId.WithIndexOffset(4), screenCoords);
-    if (Flags & STATION_OBJECT_FLAGS::IS_TRANSPARENT)
+    GfxDrawSprite(rt, imageId.WithIndexOffset(4), screenCoords);
+    if (Flags & StationObjectFlags::isTransparent)
     {
-        GfxDrawSprite(dpi, tImageId.WithIndexOffset(4), screenCoords);
+        GfxDrawSprite(rt, tImageId.WithIndexOffset(4), screenCoords);
     }
 }
 
@@ -87,15 +87,15 @@ void StationObject::ReadJson(IReadObjectContext* context, json_t& root)
     if (properties.is_object())
     {
         Height = Json::GetNumber<int32_t>(properties["height"]);
-        ScrollingMode = Json::GetNumber<uint8_t>(properties["scrollingMode"], SCROLLING_MODE_NONE);
+        ScrollingMode = Json::GetNumber<uint8_t>(properties["scrollingMode"], kScrollingModeNone);
         Flags = Json::GetFlags<uint32_t>(
             properties,
             {
-                { "hasPrimaryColour", STATION_OBJECT_FLAGS::HAS_PRIMARY_COLOUR },
-                { "hasSecondaryColour", STATION_OBJECT_FLAGS::HAS_SECONDARY_COLOUR },
-                { "isTransparent", STATION_OBJECT_FLAGS::IS_TRANSPARENT },
-                { "noPlatforms", STATION_OBJECT_FLAGS::NO_PLATFORMS },
-                { "hasShelter", STATION_OBJECT_FLAGS::HAS_SHELTER },
+                { "hasPrimaryColour", StationObjectFlags::hasPrimaryColour },
+                { "hasSecondaryColour", StationObjectFlags::hasSecondaryColour },
+                { "isTransparent", StationObjectFlags::isTransparent },
+                { "noPlatforms", StationObjectFlags::noPlatforms },
+                { "hasShelter", StationObjectFlags::hasShelter },
             });
     }
 

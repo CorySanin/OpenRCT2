@@ -11,6 +11,7 @@
 
 #include "../Context.h"
 #include "../Diagnostic.h"
+#include "../localisation/StringIdType.h"
 #include "../management/Finance.h"
 #include "../windows/Intent.h"
 #include "../world/Banner.h"
@@ -47,14 +48,19 @@ void BannerSetStyleAction::Serialise(DataSerialiser& stream)
 
 GameActions::Result BannerSetStyleAction::Query() const
 {
+    StringId errorTitle = STR_CANT_REPAINT_THIS;
+    if (_type == BannerSetStyleType::NoEntry)
+    {
+        errorTitle = STR_CANT_RENAME_BANNER;
+    }
+
     auto res = GameActions::Result();
 
     auto banner = GetBanner(_bannerIndex);
     if (banner == nullptr)
     {
         LOG_ERROR("Banner not found for bannerIndex %d", _bannerIndex);
-        return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_CANT_REPAINT_THIS, STR_ERR_BANNER_ELEMENT_NOT_FOUND);
+        return GameActions::Result(GameActions::Status::InvalidParameters, errorTitle, STR_ERR_BANNER_ELEMENT_NOT_FOUND);
     }
 
     res.Expenditure = ExpenditureType::Landscaping;
@@ -66,8 +72,19 @@ GameActions::Result BannerSetStyleAction::Query() const
     if (tileElement == nullptr)
     {
         LOG_ERROR("Banner tile element not found for bannerIndex %d", _bannerIndex);
-        return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_CANT_REPAINT_THIS, STR_ERR_BANNER_ELEMENT_NOT_FOUND);
+        return GameActions::Result(GameActions::Status::InvalidParameters, errorTitle, STR_ERR_BANNER_ELEMENT_NOT_FOUND);
+    }
+
+    BannerElement* bannerElement = tileElement->AsBanner();
+    CoordsXYZ loc = { banner->position.ToCoordsXY(), bannerElement->GetBaseZ() };
+
+    if (!LocationValid(loc))
+    {
+        return GameActions::Result(GameActions::Status::InvalidParameters, errorTitle, STR_OFF_EDGE_OF_MAP);
+    }
+    if (!MapCanBuildAt({ loc.x, loc.y, loc.z - 16 }))
+    {
+        return GameActions::Result(GameActions::Status::NotOwned, errorTitle, STR_LAND_NOT_OWNED_BY_PARK);
     }
 
     switch (_type)
@@ -93,7 +110,7 @@ GameActions::Result BannerSetStyleAction::Query() const
             if (tileElement->AsBanner() == nullptr)
             {
                 LOG_ERROR("Tile element was not a banner.");
-                return GameActions::Result(GameActions::Status::Unknown, STR_CANT_REPAINT_THIS, kStringIdNone);
+                return GameActions::Result(GameActions::Status::Unknown, STR_CANT_RENAME_BANNER, kStringIdNone);
             }
             break;
         default:
@@ -134,7 +151,7 @@ GameActions::Result BannerSetStyleAction::Execute() const
             banner->colour = _parameter;
             break;
         case BannerSetStyleType::TextColour:
-            banner->text_colour = _parameter;
+            banner->textColour = static_cast<TextColour>(_parameter);
             break;
         case BannerSetStyleType::NoEntry:
         {
@@ -146,10 +163,9 @@ GameActions::Result BannerSetStyleAction::Execute() const
                     GameActions::Status::Unknown, STR_CANT_REPAINT_THIS, STR_ERR_BANNER_ELEMENT_NOT_FOUND);
             }
 
-            banner->flags &= ~BANNER_FLAG_NO_ENTRY;
-            banner->flags |= (_parameter != 0) ? BANNER_FLAG_NO_ENTRY : 0;
+            banner->flags.set(BannerFlag::noEntry, (_parameter != 0));
             uint8_t allowedEdges = 0xF;
-            if (banner->flags & BANNER_FLAG_NO_ENTRY)
+            if (banner->flags.has(BannerFlag::noEntry))
             {
                 allowedEdges &= ~(1 << bannerElement->GetPosition());
             }

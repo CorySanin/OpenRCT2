@@ -35,7 +35,7 @@ namespace OpenRCT2::Ui::Windows
     // clang-format off
     static constexpr Widget window_ride_demolish_widgets[] =
     {
-        WINDOW_SHIM_WHITE(STR_DEMOLISH_RIDE, WW, WH),
+        WINDOW_SHIM(STR_DEMOLISH_RIDE, WW, WH),
         MakeWidget({     10, WH - 22}, {85, 14}, WindowWidgetType::Button, WindowColour::Primary, STR_DEMOLISH          ),
         MakeWidget({WW - 95, WH - 22}, {85, 14}, WindowWidgetType::Button, WindowColour::Primary, STR_SAVE_PROMPT_CANCEL),
     };
@@ -64,7 +64,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 case WIDX_DEMOLISH:
                 {
-                    auto gameAction = RideDemolishAction(rideId, RIDE_MODIFY_DEMOLISH);
+                    auto gameAction = RideDemolishAction(rideId, RideModifyType::demolish);
                     GameActions::Execute(&gameAction);
                     break;
                 }
@@ -75,27 +75,22 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            WindowDrawWidgets(*this, dpi);
+            WindowDrawWidgets(*this, rt);
 
             auto currentRide = GetRide(rideId);
             if (currentRide != nullptr)
             {
-                auto stringId = (GetGameState().Park.Flags & PARK_FLAGS_NO_MONEY) ? STR_DEMOLISH_RIDE_ID
+                auto stringId = (getGameState().park.Flags & PARK_FLAGS_NO_MONEY) ? STR_DEMOLISH_RIDE_ID
                                                                                   : STR_DEMOLISH_RIDE_ID_MONEY;
                 auto ft = Formatter();
-                currentRide->FormatNameTo(ft);
+                currentRide->formatNameTo(ft);
                 ft.Add<money64>(_demolishRideCost);
 
                 ScreenCoordsXY stringCoords(windowPos.x + WW / 2, windowPos.y + (WH / 2) - 3);
-                DrawTextWrapped(dpi, stringCoords, WW - 4, stringId, ft, { TextAlignment::CENTRE });
+                DrawTextWrapped(rt, stringCoords, WW - 4, stringId, ft, { TextAlignment::CENTRE });
             }
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
         }
     };
 

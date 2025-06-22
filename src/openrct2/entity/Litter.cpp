@@ -53,8 +53,8 @@ static bool IsLocationLitterable(const CoordsXYZ& mapPos)
  */
 void Litter::Create(const CoordsXYZD& litterPos, Type type)
 {
-    auto& gameState = GetGameState();
-    if (gameState.Cheats.disableLittering)
+    auto& gameState = getGameState();
+    if (gameState.cheats.disableLittering)
         return;
 
     auto offsetLitterPos = litterPos
@@ -94,7 +94,7 @@ void Litter::Create(const CoordsXYZD& litterPos, Type type)
     litter->SpriteData.HeightMax = 3;
     litter->SubType = type;
     litter->MoveTo(offsetLitterPos);
-    litter->creationTick = gameState.CurrentTicks;
+    litter->creationTick = gameState.currentTicks;
 }
 
 /**
@@ -147,7 +147,7 @@ StringId Litter::GetName() const
 
 uint32_t Litter::GetAge() const
 {
-    return GetGameState().CurrentTicks - creationTick;
+    return getGameState().currentTicks - creationTick;
 }
 
 void Litter::Serialise(DataSerialiser& stream)
@@ -184,8 +184,8 @@ void Litter::Paint(PaintSession& session, int32_t imageDirection) const
 {
     PROFILED_FUNCTION();
 
-    DrawPixelInfo& dpi = session.DPI;
-    if (dpi.zoom_level > ZoomLevel{ 0 })
+    RenderTarget& rt = session.DPI;
+    if (rt.zoom_level > ZoomLevel{ 0 })
         return; // If zoomed at all no litter drawn
 
     // litter has no sprite direction so remove that

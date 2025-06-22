@@ -12,6 +12,7 @@
 #include <openrct2-ui/windows/Windows.h>
 #include <openrct2/Context.h>
 #include <openrct2/SpriteIds.h>
+#include <openrct2/audio/Audio.h>
 #include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Text.h>
 #include <openrct2/localisation/Formatting.h>
@@ -34,9 +35,7 @@ namespace OpenRCT2::Ui::Windows
 
     // clang-format off
     static constexpr Widget kProgressWindowWidgets[] = {
-        MakeWidget({                0, 0}, {    kWindowWidth, kWindowHeight}, WindowWidgetType::Frame,    WindowColour::Primary                                     ), // panel / background
-        MakeWidget({                1, 1}, {kWindowWidth - 3,            14}, WindowWidgetType::Caption,  WindowColour::Primary, STR_STRINGID,  STR_WINDOW_TITLE_TIP), // title bar
-        MakeWidget({kWindowWidth - 12, 2}, {              11,            12}, WindowWidgetType::CloseBox, WindowColour::Primary, STR_CLOSE_X,   STR_CLOSE_WINDOW_TIP), // close x button
+        WINDOW_SHIM(STR_STRINGID, kWindowWidth, kWindowHeight)
     };
 
     struct LoaderVehicleStyle
@@ -72,27 +71,26 @@ namespace OpenRCT2::Ui::Windows
     private:
         CloseCallback _onClose = nullptr;
 
-        StringId _progressFormat;
+        StringId _progressFormat{ kStringIdEmpty };
         std::string _progressTitle;
         std::string _currentCaption;
 
-        uint32_t _currentProgress;
-        uint32_t _totalCount;
+        uint32_t _currentProgress{};
+        uint32_t _totalCount{};
         int8_t style = -1;
 
     public:
         void OnOpen() override
         {
+            Audio::StopSFX();
+
             SetWidgets(kProgressWindowWidgets);
-            WindowInitScrollWidgets(*this);
+            WindowSetResize(*this, { kWindowWidth, kWindowHeight }, { kWindowWidth, kWindowHeight });
 
             frame_no = 0;
-            min_width = kWindowWidth;
-            min_height = kWindowHeight;
-            max_width = min_width;
-            max_height = min_height;
 
             ApplyStyle();
+            ResizeFrame();
         }
 
         void OnClose() override
@@ -121,11 +119,10 @@ namespace OpenRCT2::Ui::Windows
         void OnPrepareDraw() override
         {
             if (_onClose != nullptr)
-                widgets[WIDX_CLOSE].type = WindowWidgetType::Button;
+                widgets[WIDX_CLOSE].type = WindowWidgetType::CloseBox;
             else
                 widgets[WIDX_CLOSE].type = WindowWidgetType::Empty;
 
-            ResizeFrame();
             PrepareCaption();
         }
 
@@ -170,15 +167,15 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            WindowDrawWidgets(*this, dpi);
+            WindowDrawWidgets(*this, rt);
 
             auto& widget = widgets[WIDX_TITLE];
             auto screenCoords = windowPos + ScreenCoordsXY{ widget.left, widget.bottom + 1 };
 
-            DrawPixelInfo clipDPI;
-            if (!ClipDrawPixelInfo(clipDPI, dpi, screenCoords, width - 3, height - widget.bottom - 3))
+            RenderTarget clipDPI;
+            if (!ClipDrawPixelInfo(clipDPI, rt, screenCoords, width - 3, height - widget.bottom - 3))
                 return;
 
             auto& variant = kVehicleStyles[style];

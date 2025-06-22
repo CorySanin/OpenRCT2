@@ -12,13 +12,16 @@
 // Structures shared between both RCT1 and RCT2.
 
 #include "../core/EnumUtils.hpp"
+#include "../core/FlagHolder.hpp"
 #include "../core/Money.hpp"
+#include "../entity/Fountain.h"
 #include "../management/Research.h"
 #include "../object/Object.h"
 #include "../ride/RideTypes.h"
 #include "../world/tile_element/TileElementType.h"
 #include "Limits.h"
 
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -29,9 +32,19 @@ class ObjectList;
 namespace OpenRCT2
 {
     enum class TrackElemType : uint16_t;
-}
+    enum class TextColour : uint8_t;
+} // namespace OpenRCT2
 namespace OpenRCT2::RCT12
 {
+    enum class ClimateType : uint8_t
+    {
+        coolAndWet,
+        warm,
+        hotAndDry,
+        cold,
+        count
+    };
+
     class EntryList;
 
     enum class TrackElemType : uint8_t
@@ -309,54 +322,54 @@ namespace OpenRCT2::RCT12
     };
 } // namespace OpenRCT2::RCT12
 
-enum
-{
-    MAP_ELEM_TRACK_SEQUENCE_GREEN_LIGHT = (1 << 7),
-};
+constexpr uint8_t kRCT12StringFormatArgStart = 123;
+constexpr uint8_t kRCT12StringFormatArgEnd = 141;
+constexpr uint8_t kRCT12StringFormatColourStart = 142;
+constexpr uint8_t kRCT12StringFormatColourEnd = 156;
 
-constexpr uint8_t RCT2_STRING_FORMAT_ARG_START = 123;
-constexpr uint8_t RCT2_STRING_FORMAT_ARG_END = 141;
-constexpr uint8_t RCT2_STRING_FORMAT_COLOUR_START = 142;
-constexpr uint8_t RCT2_STRING_FORMAT_COLOUR_END = 156;
-
-constexpr uint8_t RCT12_SOUND_ID_NULL = 0xFF;
+constexpr uint8_t kRCT12SoundIdNull = 0xFF;
 
 using RCT12RideId = uint8_t;
-constexpr RCT12RideId RCT12_RIDE_ID_NULL = 255;
+constexpr RCT12RideId kRCT12RideIdNull = 255;
 
-constexpr uint8_t RCT12_BANNER_INDEX_NULL = std::numeric_limits<uint8_t>::max();
+constexpr uint8_t kRCT12BannerIndexNull = std::numeric_limits<uint8_t>::max();
 
-constexpr uint8_t RCT12_TILE_ELEMENT_SURFACE_EDGE_STYLE_MASK = 0xE0;   // in RCT12TileElement.properties.surface.slope
-constexpr uint8_t RCT12_TILE_ELEMENT_SURFACE_WATER_HEIGHT_MASK = 0x1F; // in RCT12TileElement.properties.surface.terrain
-constexpr uint8_t RCT12_TILE_ELEMENT_SURFACE_TERRAIN_MASK = 0xE0;      // in RCT12TileElement.properties.surface.terrain
+constexpr uint8_t kRCT12SurfaceElementEdgeStyleMask = 0xE0;         // in RCT12TileElement.properties.surface.slope
+constexpr uint8_t kRCT12SurfaceElementWaterHeightMask = 0x1F;       // in RCT12TileElement.properties.surface.terrain
+constexpr uint8_t kRCT12SurfaceElementTerrainMask = 0xE0;           // in RCT12TileElement.properties.surface.terrain
+constexpr uint8_t kRCT12SurfaceElementTypeSurfaceMask = 0b00000011; // in RCT12TileElement.properties.surface.type
+constexpr uint8_t kRCT12SurfaceElementTypeEdgeMask = 0b01000000;    // in RCT12TileElement.properties.surface.type
 
-constexpr uint8_t RCT12_SMALL_SCENERY_ELEMENT_NEEDS_SUPPORTS_FLAG = 0x20;
-constexpr uint8_t RCT12_TILE_ELEMENT_COLOUR_MASK = 0b0001'1111;
+constexpr uint8_t kRCT12SmallSceneryElementNeedsSupportsFlag = 0x20;
+constexpr uint8_t kRCT12TileElementColourMask = 0b0001'1111;
 
-constexpr uint16_t RCT12_TILE_ELEMENT_LARGE_TYPE_MASK = 0x3FF;
+constexpr uint16_t kRCT12TileElementLargeTypeMask = 0x3FF;
 
-constexpr uint16_t const RCT12_XY8_UNDEFINED = 0xFFFF;
+constexpr uint8_t kRCT12TrackElementTypeFlagChainLift = 1 << 7;
+constexpr uint8_t kRCT12TrackElementSequenceGreenLight = 1 << 7;
+
+constexpr uint16_t const kRCT12xy8Undefined = 0xFFFF;
 
 using RCT12ObjectEntryIndex = uint8_t;
 constexpr RCT12ObjectEntryIndex kRCT12ObjectEntryIndexNull = 255;
 
 // Everything before this point has been researched
-constexpr uint32_t RCT12_RESEARCHED_ITEMS_SEPARATOR = 0xFFFFFFFF;
+constexpr uint32_t kRCT12ResearchedItemsSeparator = 0xFFFFFFFF;
 // Everything before this point and after separator still requires research
-constexpr uint32_t RCT12_RESEARCHED_ITEMS_END = 0xFFFFFFFE;
+constexpr uint32_t kRCT12ResearchedItemsEnd = 0xFFFFFFFE;
 // Extra end of list entry. Leftover from RCT1.
-constexpr uint32_t RCT12_RESEARCHED_ITEMS_END_2 = 0xFFFFFFFD;
+constexpr uint32_t kRCT12ResearchedItemsEnd2 = 0xFFFFFFFD;
 
-constexpr uint16_t RCT12_PEEP_SPAWN_UNDEFINED = 0xFFFF;
+constexpr uint16_t kRCT12PeepSpawnUndefined = 0xFFFF;
 
-constexpr uint16_t RCT12VehicleTrackDirectionMask = 0b0000000000000011;
-constexpr uint16_t RCT12VehicleTrackTypeMask = 0b1111111111111100;
+constexpr uint16_t kRCT12VehicleTrackDirectionMask = 0b0000000000000011;
+constexpr uint16_t kRCT12VehicleTrackTypeMask = 0b1111111111111100;
 
-constexpr uint8_t RCT12PeepThoughtItemNone = std::numeric_limits<uint8_t>::max();
+constexpr uint8_t kRCT12PeepThoughtItemNone = std::numeric_limits<uint8_t>::max();
 
-constexpr uint8_t RCT12GuestsInParkHistoryFactor = 20;
-constexpr uint8_t RCT12ParkRatingHistoryFactor = 4;
-constexpr uint8_t RCT12ParkHistoryUndefined = std::numeric_limits<uint8_t>::max();
+constexpr uint8_t kRCT12GuestsInParkHistoryFactor = 20;
+constexpr uint8_t kRCT12ParkRatingHistoryFactor = 4;
+constexpr uint8_t kRCT12ParkHistoryUndefined = std::numeric_limits<uint8_t>::max();
 
 constexpr uint8_t kTD46RatingsMultiplier = 10;
 constexpr uint8_t kTD46GForcesMultiplier = 32;
@@ -364,23 +377,9 @@ constexpr uint8_t kTD46GForcesMultiplier = 32;
 constexpr uint8_t kRCT12InversionAndHoleMask = 0b00011111;
 constexpr uint8_t kRCT12RideNumDropsMask = 0b00111111;
 
-struct TrackDesign;
-struct TrackDesignTrackElement;
 enum class RideColourScheme : uint8_t;
-
-enum class RCT12TrackDesignVersion : uint8_t
-{
-    TD4,
-    TD4_AA,
-    TD6,
-    unknown
-};
-
-enum
-{
-    RCT12_SURFACE_ELEMENT_TYPE_SURFACE_MASK = 0b00000011,
-    RCT12_SURFACE_ELEMENT_TYPE_EDGE_MASK = 0b01000000,
-};
+enum class BannerFlag : uint8_t;
+using BannerFlags = FlagHolder<uint8_t, BannerFlag>;
 
 enum
 {
@@ -391,11 +390,6 @@ enum
     RCT12_TILE_ELEMENT_FLAG_BLOCKED_BY_VEHICLE = (1 << 6),
     RCT12_TILE_ELEMENT_FLAG_LARGE_SCENERY_ACCOUNTED = (1 << 6),
     RCT12_TILE_ELEMENT_FLAG_LAST_TILE = (1 << 7)
-};
-
-enum
-{
-    RCT12_TRACK_ELEMENT_TYPE_FLAG_CHAIN_LIFT = 1 << 7,
 };
 
 enum
@@ -495,55 +489,15 @@ struct RCT12xy8
 
     bool IsNull() const
     {
-        return xy == RCT12_XY8_UNDEFINED;
+        return xy == kRCT12xy8Undefined;
     }
 
     void SetNull()
     {
-        xy = RCT12_XY8_UNDEFINED;
+        xy = kRCT12xy8Undefined;
     }
 };
 static_assert(sizeof(RCT12xy8) == 2);
-
-enum class TD46MazeElementType : uint8_t
-{
-    Entrance = (1 << 3),
-    Exit = (1 << 7)
-};
-
-/* Maze Element entry   size: 0x04 */
-struct TD46MazeElement
-{
-    union
-    {
-        uint32_t All;
-        struct
-        {
-            int8_t x;
-            int8_t y;
-            union
-            {
-                uint16_t MazeEntry;
-                struct
-                {
-                    uint8_t Direction;
-                    uint8_t Type;
-                };
-            };
-        };
-    };
-
-    constexpr bool IsEntrance() const
-    {
-        return Type == EnumValue(TD46MazeElementType::Entrance);
-    }
-
-    constexpr bool IsExit() const
-    {
-        return Type == EnumValue(TD46MazeElementType::Exit);
-    }
-};
-static_assert(sizeof(TD46MazeElement) == 0x04);
 
 /* Track Element entry  size: 0x02 */
 struct TD46TrackElement
@@ -1107,9 +1061,9 @@ struct RCT12EntityJumpingFountain : RCT12EntityBase
     uint8_t NumTicksAlive; // 0x26
     uint8_t Frame;         // 0x27
     uint8_t Pad28[0x2F - 0x28];
-    uint8_t FountainFlags; // 0x2F
-    int16_t TargetX;       // 0x30
-    int16_t TargetY;       // 0x32
+    OpenRCT2::FountainFlags fountainFlags{}; // 0x2F
+    int16_t TargetX;                         // 0x30
+    int16_t TargetY;                         // 0x32
     uint8_t Pad34[0x46 - 0x34];
     uint16_t Iteration; // 0x46
 };
@@ -1189,16 +1143,16 @@ static_assert(sizeof(RCT12RideMeasurement) == 0x4B0C);
 struct RCT12Banner
 {
     RCT12ObjectEntryIndex Type;
-    uint8_t Flags;       // 0x01
+    BannerFlags flags;   // 0x01
     ::StringId StringID; // 0x02
     union
     {
         uint8_t Colour;    // 0x04
         uint8_t RideIndex; // 0x04
     };
-    uint8_t TextColour; // 0x05
-    uint8_t x;          // 0x06
-    uint8_t y;          // 0x07
+    OpenRCT2::TextColour textColour; // 0x05
+    uint8_t x;                       // 0x06
+    uint8_t y;                       // 0x07
 };
 static_assert(sizeof(RCT12Banner) == 8);
 
@@ -1255,7 +1209,7 @@ std::string_view GetStationIdentifierFromStyle(uint8_t style);
 uint8_t GetStationStyleFromIdentifier(u8string_view identifier);
 std::optional<uint8_t> GetStyleFromMusicIdentifier(std::string_view identifier);
 void RCT12AddDefaultObjects(ObjectList& objectList);
-void AppendRequiredObjects(ObjectList& objectList, ObjectType objectType, const std::vector<std::string_view>& objectNames);
+void AppendRequiredObjects(ObjectList& objectList, ObjectType objectType, std::span<const std::string_view> objectNames);
 void AppendRequiredObjects(ObjectList& objectList, ObjectType objectType, const OpenRCT2::RCT12::EntryList& entryList);
 bool IsUserStringID(StringId stringId);
 
@@ -1289,19 +1243,6 @@ std::vector<RideId> RCT12GetRidesBeenOn(T* srcPeep)
     }
     return ridesBeenOn;
 }
-
-enum class TD46Flags : uint8_t
-{
-    StationId = 0b00000011,
-    SpeedOrSeatRotation = 0b00001111,
-    ColourScheme = 0b00110000,
-    IsInverted = 0b01000000,
-    HasChain = 0b10000000,
-};
-
-void ConvertFromTD46Flags(TrackDesignTrackElement& target, uint8_t flags);
-uint8_t ConvertToTD46Flags(const TrackDesignTrackElement& source);
-void ImportMazeElement(TrackDesign& td, const TD46MazeElement& td46MazeElement);
 
 namespace OpenRCT2::RCT12
 {

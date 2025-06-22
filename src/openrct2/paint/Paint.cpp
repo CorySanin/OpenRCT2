@@ -103,38 +103,40 @@ static void PaintSessionAddPSToQuadrant(PaintSession& session, PaintStruct* ps)
     session.QuadrantFrontIndex = std::max(session.QuadrantFrontIndex, paintQuadrantIndex);
 }
 
-static constexpr bool ImageWithinDPI(const ScreenCoordsXY& imagePos, const G1Element& g1, const DrawPixelInfo& dpi)
+static constexpr bool imageWithinDPI(const ScreenCoordsXY& imagePos, const G1Element& g1, const RenderTarget& rt)
 {
-    int32_t left = imagePos.x + g1.x_offset;
-    int32_t bottom = imagePos.y + g1.y_offset;
+    const int32_t left = imagePos.x + g1.x_offset;
+    const int32_t bottom = imagePos.y + g1.y_offset;
 
-    int32_t right = left + g1.width;
-    int32_t top = bottom + g1.height;
+    const int32_t right = left + g1.width;
+    const int32_t top = bottom + g1.height;
 
     // mber: It is possible to use only the bottom else block here if you change <= and >= to simply < and >.
     // However, since this is used to cull paint structs, I'd prefer to keep the condition strict and calculate
     // the culling differently for minifying and magnifying.
-    auto zoom = dpi.zoom_level;
+    const auto zoom = rt.zoom_level;
     if (zoom > ZoomLevel{ 0 })
     {
-        if (right <= dpi.WorldX())
+        const int32_t x = zoom.ApplyTo(rt.cullingX);
+        const int32_t y = zoom.ApplyTo(rt.cullingY);
+        if (right <= x)
             return false;
-        if (top <= dpi.WorldY())
+        if (top <= y)
             return false;
-        if (left >= dpi.WorldX() + dpi.WorldWidth())
+        if (left >= x + zoom.ApplyTo(rt.cullingWidth))
             return false;
-        if (bottom >= dpi.WorldY() + dpi.WorldHeight())
+        if (bottom >= y + zoom.ApplyTo(rt.cullingHeight))
             return false;
     }
     else
     {
-        if (zoom.ApplyInversedTo(right) <= dpi.x)
+        if (zoom.ApplyInversedTo(right) <= rt.cullingX)
             return false;
-        if (zoom.ApplyInversedTo(top) <= dpi.y)
+        if (zoom.ApplyInversedTo(top) <= rt.cullingY)
             return false;
-        if (zoom.ApplyInversedTo(left) >= dpi.x + dpi.width)
+        if (zoom.ApplyInversedTo(left) >= rt.cullingX + rt.cullingWidth)
             return false;
-        if (zoom.ApplyInversedTo(bottom) >= dpi.y + dpi.height)
+        if (zoom.ApplyInversedTo(bottom) >= rt.cullingY + rt.cullingHeight)
             return false;
     }
     return true;
@@ -184,7 +186,7 @@ static PaintStruct* CreateNormalPaintStruct(
 
     const auto imagePos = Translate3DTo2DWithZ(session.CurrentRotation, swappedRotCoord);
 
-    if (!ImageWithinDPI(imagePos, *g1, session.DPI))
+    if (!imageWithinDPI(imagePos, *g1, session.DPI))
     {
         return nullptr;
     }
@@ -199,6 +201,54 @@ static PaintStruct* CreateNormalPaintStruct(
     }
 
     ps->image_id = image_id;
+    ps->ScreenPos = imagePos;
+    ps->Bounds.x_end = rotBoundBoxSize.x + rotBoundBoxOffset.x + session.SpritePosition.x;
+    ps->Bounds.y_end = rotBoundBoxSize.y + rotBoundBoxOffset.y + session.SpritePosition.y;
+    ps->Bounds.z_end = rotBoundBoxSize.z + rotBoundBoxOffset.z;
+    ps->Bounds.x = rotBoundBoxOffset.x + session.SpritePosition.x;
+    ps->Bounds.y = rotBoundBoxOffset.y + session.SpritePosition.y;
+    ps->Bounds.z = rotBoundBoxOffset.z;
+    ps->Attached = nullptr;
+    ps->Children = nullptr;
+    ps->NextQuadrantEntry = nullptr;
+    ps->InteractionItem = session.InteractionType;
+    ps->MapPos = session.MapPosition;
+    ps->Element = session.CurrentlyDrawnTileElement;
+    ps->Entity = session.CurrentlyDrawnEntity;
+
+    return ps;
+}
+
+static PaintStruct* CreateNormalPaintStructHeight(
+    PaintSession& session, const ImageId imageId, const int32_t height, const CoordsXYZ& offset, const BoundBoxXYZ& boundBox)
+{
+    auto* const g1 = GfxGetG1Element(imageId);
+    if (g1 == nullptr)
+    {
+        return nullptr;
+    }
+
+    const auto swappedRotation = DirectionFlipXAxis(session.CurrentRotation);
+    auto swappedRotCoord = CoordsXYZ{ offset.Rotate(swappedRotation), offset.z + height };
+    swappedRotCoord += session.SpritePosition;
+
+    const auto imagePos = Translate3DTo2DWithZ(session.CurrentRotation, swappedRotCoord);
+
+    if (!imageWithinDPI(imagePos, *g1, session.DPI))
+    {
+        return nullptr;
+    }
+
+    const auto rotBoundBoxOffset = CoordsXYZ{ boundBox.offset.Rotate(swappedRotation), boundBox.offset.z + height };
+    const auto rotBoundBoxSize = RotateBoundBoxSize(boundBox.length, session.CurrentRotation);
+
+    auto* ps = session.AllocateNormalPaintEntry();
+    if (ps == nullptr)
+    {
+        return nullptr;
+    }
+
+    ps->image_id = imageId;
     ps->ScreenPos = imagePos;
     ps->Bounds.x_end = rotBoundBoxSize.x + rotBoundBoxOffset.x + session.SpritePosition.x;
     ps->Bounds.y_end = rotBoundBoxSize.y + rotBoundBoxOffset.y + session.SpritePosition.y;
@@ -633,7 +683,7 @@ void PaintSessionArrange(PaintSessionCore& session)
     return _paintArrangeFuncsLegacy[session.CurrentRotation](session);
 }
 
-static inline void PaintAttachedPS(DrawPixelInfo& dpi, PaintStruct* ps, uint32_t viewFlags)
+static inline void PaintAttachedPS(RenderTarget& rt, PaintStruct* ps, uint32_t viewFlags)
 {
     AttachedPaintStruct* attached_ps = ps->Attached;
     for (; attached_ps != nullptr; attached_ps = attached_ps->NextEntry)
@@ -643,11 +693,11 @@ static inline void PaintAttachedPS(DrawPixelInfo& dpi, PaintStruct* ps, uint32_t
         auto imageId = PaintPSColourifyImage(ps, attached_ps->image_id, viewFlags);
         if (attached_ps->IsMasked)
         {
-            GfxDrawSpriteRawMasked(dpi, screenCoords, imageId, attached_ps->ColourImageId);
+            GfxDrawSpriteRawMasked(rt, screenCoords, imageId, attached_ps->ColourImageId);
         }
         else
         {
-            GfxDrawSprite(dpi, imageId, screenCoords);
+            GfxDrawSprite(rt, imageId, screenCoords);
         }
     }
 }
@@ -704,7 +754,7 @@ void PaintDrawStructs(PaintSession& session)
 
 static void PaintPSImageWithBoundingBoxes(PaintSession& session, PaintStruct* ps, ImageId imageId, int32_t x, int32_t y)
 {
-    auto& dpi = session.DPI;
+    auto& rt = session.DPI;
 
     const uint8_t colour = BoundBoxDebugColours[EnumValue(ps->InteractionItem)];
     const uint8_t rotation = session.CurrentRotation;
@@ -766,28 +816,28 @@ static void PaintPSImageWithBoundingBoxes(PaintSession& session, PaintStruct* ps
     const auto screenCoordBackBottom = Translate3DTo2DWithZ(rotation, backBottom);
 
     // bottom square
-    GfxDrawLine(dpi, { screenCoordFrontBottom, screenCoordLeftBottom }, colour);
-    GfxDrawLine(dpi, { screenCoordBackBottom, screenCoordLeftBottom }, colour);
-    GfxDrawLine(dpi, { screenCoordBackBottom, screenCoordRightBottom }, colour);
-    GfxDrawLine(dpi, { screenCoordFrontBottom, screenCoordRightBottom }, colour);
+    GfxDrawLine(rt, { screenCoordFrontBottom, screenCoordLeftBottom }, colour);
+    GfxDrawLine(rt, { screenCoordBackBottom, screenCoordLeftBottom }, colour);
+    GfxDrawLine(rt, { screenCoordBackBottom, screenCoordRightBottom }, colour);
+    GfxDrawLine(rt, { screenCoordFrontBottom, screenCoordRightBottom }, colour);
 
     // vertical back + sides
-    GfxDrawLine(dpi, { screenCoordBackTop, screenCoordBackBottom }, colour);
-    GfxDrawLine(dpi, { screenCoordLeftTop, screenCoordLeftBottom }, colour);
-    GfxDrawLine(dpi, { screenCoordRightTop, screenCoordRightBottom }, colour);
+    GfxDrawLine(rt, { screenCoordBackTop, screenCoordBackBottom }, colour);
+    GfxDrawLine(rt, { screenCoordLeftTop, screenCoordLeftBottom }, colour);
+    GfxDrawLine(rt, { screenCoordRightTop, screenCoordRightBottom }, colour);
 
     // top square back
-    GfxDrawLine(dpi, { screenCoordBackTop, screenCoordLeftTop }, colour);
-    GfxDrawLine(dpi, { screenCoordBackTop, screenCoordRightTop }, colour);
+    GfxDrawLine(rt, { screenCoordBackTop, screenCoordLeftTop }, colour);
+    GfxDrawLine(rt, { screenCoordBackTop, screenCoordRightTop }, colour);
 
-    GfxDrawSprite(dpi, imageId, { x, y });
+    GfxDrawSprite(rt, imageId, { x, y });
 
     // vertical front
-    GfxDrawLine(dpi, { screenCoordFrontTop, screenCoordFrontBottom }, colour);
+    GfxDrawLine(rt, { screenCoordFrontTop, screenCoordFrontBottom }, colour);
 
     // top square
-    GfxDrawLine(dpi, { screenCoordFrontTop, screenCoordLeftTop }, colour);
-    GfxDrawLine(dpi, { screenCoordFrontTop, screenCoordRightTop }, colour);
+    GfxDrawLine(rt, { screenCoordFrontTop, screenCoordLeftTop }, colour);
+    GfxDrawLine(rt, { screenCoordFrontTop, screenCoordRightTop }, colour);
 }
 
 static ImageId PaintPSColourifyImage(const PaintStruct* ps, ImageId imageId, uint32_t viewFlags)
@@ -804,9 +854,9 @@ static ImageId PaintPSColourifyImage(const PaintStruct* ps, ImageId imageId, uin
     }
 }
 
-PaintSession* PaintSessionAlloc(DrawPixelInfo& dpi, uint32_t viewFlags, uint8_t rotation)
+PaintSession* PaintSessionAlloc(RenderTarget& rt, uint32_t viewFlags, uint8_t rotation)
 {
-    return GetContext()->GetPainter()->CreateSession(dpi, viewFlags, rotation);
+    return GetContext()->GetPainter()->CreateSession(rt, viewFlags, rotation);
 }
 
 void PaintSessionFree(PaintSession* session)
@@ -905,6 +955,23 @@ PaintStruct* PaintAddImageAsChild(
     }
 
     parentPS->Children = ps;
+
+    return ps;
+}
+
+PaintStruct* PaintAddImageAsParentHeight(
+    PaintSession& session, const ImageId imageId, const int32_t height, const CoordsXYZ& offset, const BoundBoxXYZ& boundBox)
+{
+    session.LastPS = nullptr;
+    session.LastAttachedPS = nullptr;
+
+    auto* const ps = CreateNormalPaintStructHeight(session, imageId, height, offset, boundBox);
+    if (ps == nullptr)
+    {
+        return nullptr;
+    }
+
+    PaintSessionAddPSToQuadrant(session, ps);
 
     return ps;
 }
@@ -1014,7 +1081,7 @@ void PaintFloatingMoneyEffect(
  *
  *  rct2: 0x006860C3
  */
-void PaintDrawMoneyStructs(DrawPixelInfo& dpi, PaintStringStruct* ps)
+void PaintDrawMoneyStructs(RenderTarget& rt, PaintStringStruct* ps)
 {
     do
     {
@@ -1030,7 +1097,7 @@ void PaintDrawMoneyStructs(DrawPixelInfo& dpi, PaintStringStruct* ps)
         }
 
         GfxDrawStringWithYOffsets(
-            dpi, buffer, { COLOUR_BLACK }, ps->ScreenPos, reinterpret_cast<int8_t*>(ps->y_offsets), forceSpriteFont,
+            rt, buffer, { COLOUR_BLACK }, ps->ScreenPos, reinterpret_cast<int8_t*>(ps->y_offsets), forceSpriteFont,
             FontStyle::Medium);
     } while ((ps = ps->NextEntry) != nullptr);
 }

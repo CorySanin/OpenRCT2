@@ -2236,12 +2236,10 @@ STR_3228    :Definir posição inicial para pessoas
 STR_3229    :Freios Bloqueadores não podem ser usados diretamente depois da estação
 STR_3230    :Freios Bloqueadores não podem ser usados diretamente um após o outro
 STR_3231    :Freios Bloqueadores não podem ser usados diretamente após a corrente de elevação
-STR_3232    :Opções - Financeiro
-STR_3233    :Opções - Visitantes
-STR_3234    :Opções - Parque
+STR_3232    :Opções de cenário - Financeiro
+STR_3233    :Opções de cenário - Visitantes
 STR_3235    :Mostrar opções financeiras
 STR_3236    :Mostrar opções de visitante
-STR_3237    :Mostrar opções do parque
 STR_3238    :Não necessita dinheiro
 STR_3239    :Fazer este parque sem restrições financeiras
 STR_3240    :{WINDOW_COLOUR_2}Dinheiro inicial:
@@ -2260,10 +2258,6 @@ STR_3252    :Impossível aumentar ainda mais o tamanho do empréstimo!
 STR_3253    :Impossível diminuir ainda mais o tamanho do empréstimo!
 STR_3254    :Impossível aumentar ainda mais a taxa de juros!
 STR_3255    :Impossível diminuir ainda mais a taxa de juros!
-STR_3256    :Visitantes preferem atrações menos intensas
-STR_3257    :Selecionar se os visitantes geralmente preferem somente atrações menos intensas
-STR_3258    :Visitantes preferem atrações mais intensas
-STR_3259    :Selecionar se os visitantes geralmente preferem somente atrações mais intensas
 STR_3260    :{WINDOW_COLOUR_2}Dinheiro por visitante (em média):
 STR_3261    :{WINDOW_COLOUR_2}Felicidade inicial dos visitantes:
 STR_3262    :{WINDOW_COLOUR_2}Fome inicial dos visitantes:
@@ -2286,18 +2280,10 @@ STR_3278    :{WINDOW_COLOUR_2}Custo para comprar direitos:
 STR_3279    :Entrada gratuita / Atrações pagas
 STR_3280    :Entrada paga / Atrações gratuitas
 STR_3281    :{WINDOW_COLOUR_2}Preço de entrada:
-STR_3282    :Selecione o objetivo e nome do parque
 STR_3283    :Selecione as atrações a serem preservadas
-STR_3284    :Seleção de Objetivo
-STR_3285    :Atrações Preservadas
+STR_3285    :Opções de cenário - Atrações Preservadas
 STR_3286    :Selecione o objetivo para este cenário
 STR_3287    :{WINDOW_COLOUR_2}Objetivo:
-STR_3288    :Selecione o clima
-STR_3289    :{WINDOW_COLOUR_2}Clima:
-STR_3290    :Frio e úmido
-STR_3291    :Morno
-STR_3292    :Quente e seco
-STR_3293    :Frio
 STR_3294    :Mudar…
 STR_3295    :Mudar nome do parque
 STR_3296    :Mudar nome do cenário
@@ -2524,7 +2510,7 @@ STR_5265    :Selecione quais fontes de conteúdo são visíveis
 STR_5266    :Exibição
 STR_5267    :Idioma e Unidades
 STR_5268    :Áudio
-STR_5269    :Controles e interface
+STR_5269    :Controles
 STR_5270    :Variados
 STR_5272    :Cenário Pequeno
 STR_5273    :Cenário Grande
@@ -3792,3 +3778,45 @@ STR_6732    :Mostrar um botão na barra de ferramentas para girar a visualizaç�
 STR_6733    :Ver através
 STR_6734    :Elementos do mapa que estiverem na altura de corte ou superior são desenhados translúcidos.
 STR_6735    :Ir para pasta acima
+STR_6736    :Pré-visualização
+STR_6737    :Nenhuma pré-visualização disponível
+STR_6738    :{WINDOW_COLOUR_2}Classifiação do parque: {BLACK}{UINT16}
+STR_6739    :{WINDOW_COLOUR_2}Data: {BLACK}{STRINGID}
+STR_6740    :{WINDOW_COLOUR_2}Dinheiro: {BLACK}{CURRENCY2DP}
+STR_6741    :{WINDOW_COLOUR_2}Núm. atrações: {BLACK}{UINT16}
+STR_6742    :{WINDOW_COLOUR_2}Núm. visitantes: {BLACK}{UINT16}
+STR_6743    :Clima
+STR_6744    :{WINDOW_COLOUR_2}{UINT16}%
+STR_6745    :{WINDOW_COLOUR_2}Preferências de intensidade dos visitantes:
+STR_6746    :Sem preferências
+STR_6747    :Preferências variam (padrão)
+STR_6748    :Apenas atrações menos intensas
+STR_6749    :Apenas atrações mais intensas
+STR_6750    :Selecionar que tipo de intensidade de atração visitantes recém criados preferem.
+STR_6751    :Filas de espera não podem ser usadas em passagens de níveis!
+STR_6752    :Opções de cenário - Objetivo
+STR_6753    :Opções de cenário - Detalhes do Cenário
+STR_6754    :Opções de cenário - Restrições de Terreno
+STR_6755    :Mostrar opções de objetivo
+STR_6756    :Mostrar opções de detalhes do cenário
+STR_6757    :Mostrar opções de restrições de terreno
+STR_6758    :Opções de empréstimo
+STR_6759    :Modelo de negócios
+STR_6760    :Proventos:
+STR_6761    :Detalhes do cenário
+STR_6762    :Interface
+STR_6763    :RollerCoaster Tycoon 1
+STR_6764    :Salvamento e autosalvamentos
+STR_6765    :Avançado
+STR_6766    :Limpar
+STR_6767    :Janela
+STR_6768    :Renderização
+STR_6769    :Comportamento
+STR_6770    :Limite da taxa de quadros:
+STR_6771    :Velocidade interna (padrão)
+STR_6772    :Sincronização vertical
+STR_6773    :Irrestrita
+STR_6774    :Tempo desde a última inspeção
+STR_6775    :{COMMA16} minuto
+STR_6776    :{COMMA16} minutos
+STR_6777    :mais de 4 horas

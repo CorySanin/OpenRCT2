@@ -18,6 +18,7 @@
 #include "../drawing/Text.h"
 #include "../localisation/Formatting.h"
 #include "../paint/Paint.h"
+#include "../paint/VirtualFloor.h"
 #include "../profiling/Profiling.h"
 #include "../scenes/intro/IntroScene.h"
 #include "../ui/UiContext.h"
@@ -29,7 +30,7 @@ using namespace OpenRCT2::Drawing;
 using namespace OpenRCT2::Paint;
 using namespace OpenRCT2::Ui;
 
-Painter::Painter(const std::shared_ptr<IUiContext>& uiContext)
+Painter::Painter(IUiContext& uiContext)
     : _uiContext(uiContext)
 {
 }
@@ -38,20 +39,22 @@ void Painter::Paint(IDrawingEngine& de)
 {
     PROFILED_FUNCTION();
 
-    auto dpi = de.GetDrawingPixelInfo();
+    auto rt = de.GetDrawingPixelInfo();
 
     if (IntroIsPlaying())
     {
-        IntroDraw(*dpi);
+        IntroDraw(*rt);
     }
     else
     {
+        VirtualFloorInvalidate(false);
+
         de.PaintWindows();
 
         UpdatePaletteEffects();
-        _uiContext->Draw(*dpi);
+        _uiContext.Draw(*rt);
 
-        GfxDrawPickedUpPeep(*dpi);
+        GfxDrawPickedUpPeep(*rt);
         GfxInvalidatePickedUpPeep();
 
         de.PaintWeather();
@@ -68,18 +71,18 @@ void Painter::Paint(IDrawingEngine& de)
         text = "Normalising...";
 
     if (text != nullptr)
-        PaintReplayNotice(*dpi, text);
+        PaintReplayNotice(*rt, text);
 
     if (Config::Get().general.ShowFPS)
     {
-        PaintFPS(*dpi);
+        PaintFPS(*rt);
     }
     gCurrentDrawCount++;
 }
 
-void Painter::PaintReplayNotice(DrawPixelInfo& dpi, const char* text)
+void Painter::PaintReplayNotice(RenderTarget& rt, const char* text)
 {
-    ScreenCoordsXY screenCoords(_uiContext->GetWidth() / 2, _uiContext->GetHeight() - 44);
+    ScreenCoordsXY screenCoords(_uiContext.GetWidth() / 2, _uiContext.GetHeight() - 44);
 
     char buffer[64]{};
     FormatStringToBuffer(buffer, sizeof(buffer), "{OUTLINE}{RED}{STRING}", text);
@@ -87,8 +90,8 @@ void Painter::PaintReplayNotice(DrawPixelInfo& dpi, const char* text)
     auto stringWidth = GfxGetStringWidth(buffer, FontStyle::Medium);
     screenCoords.x = screenCoords.x - stringWidth;
 
-    if (((GetGameState().CurrentTicks >> 1) & 0xF) > 4)
-        DrawText(dpi, screenCoords, { COLOUR_SATURATED_RED }, buffer);
+    if (((getGameState().currentTicks >> 1) & 0xF) > 4)
+        DrawText(rt, screenCoords, { COLOUR_SATURATED_RED }, buffer);
 
     // Make area dirty so the text doesn't get drawn over the last
     GfxSetDirtyBlocks({ screenCoords, screenCoords + ScreenCoordsXY{ stringWidth, 16 } });
@@ -96,14 +99,14 @@ void Painter::PaintReplayNotice(DrawPixelInfo& dpi, const char* text)
 
 static bool ShouldShowFPS()
 {
-    if (gScreenFlags & SCREEN_FLAGS_TITLE_DEMO)
+    if (gLegacyScene == LegacyScene::titleSequence)
         return true;
 
     auto* windowMgr = Ui::GetWindowManager();
     return windowMgr->FindByClass(WindowClass::TopToolbar);
 }
 
-void Painter::PaintFPS(DrawPixelInfo& dpi)
+void Painter::PaintFPS(RenderTarget& rt)
 {
     if (!ShouldShowFPS())
         return;
@@ -115,20 +118,20 @@ void Painter::PaintFPS(DrawPixelInfo& dpi)
     const int32_t stringWidth = GfxGetStringWidth(buffer, FontStyle::Medium);
 
     // Figure out where counter should be rendered
-    ScreenCoordsXY screenCoords(_uiContext->GetWidth() / 2, 2);
+    ScreenCoordsXY screenCoords(_uiContext.GetWidth() / 2, 2);
     screenCoords.x = screenCoords.x - (stringWidth / 2);
 
     // Move counter below toolbar if buttons are centred
-    const bool isTitle = gScreenFlags == SCREEN_FLAGS_TITLE_DEMO;
+    const bool isTitle = gLegacyScene == LegacyScene::titleSequence;
     if (!isTitle && Config::Get().interface.ToolbarButtonsCentred)
     {
         screenCoords.y = kTopToolbarHeight + 3;
     }
 
-    DrawText(dpi, screenCoords, { COLOUR_WHITE }, buffer);
+    DrawText(rt, screenCoords, { COLOUR_WHITE }, buffer);
 
     // Make area dirty so the text doesn't get drawn over the last
-    GfxSetDirtyBlocks({ { screenCoords - ScreenCoordsXY{ 16, 4 } }, { dpi.lastStringPos.x + 16, screenCoords.y + 16 } });
+    GfxSetDirtyBlocks({ { screenCoords - ScreenCoordsXY{ 16, 4 } }, { rt.lastStringPos.x + 16, screenCoords.y + 16 } });
 }
 
 void Painter::MeasureFPS()
@@ -144,7 +147,7 @@ void Painter::MeasureFPS()
     _lastSecond = currentTime;
 }
 
-PaintSession* Painter::CreateSession(DrawPixelInfo& dpi, uint32_t viewFlags, uint8_t rotation)
+PaintSession* Painter::CreateSession(RenderTarget& rt, uint32_t viewFlags, uint8_t rotation)
 {
     PROFILED_FUNCTION();
 
@@ -164,7 +167,7 @@ PaintSession* Painter::CreateSession(DrawPixelInfo& dpi, uint32_t viewFlags, uin
         session = &_paintSessionPool.emplace_back();
     }
 
-    session->DPI = dpi;
+    session->DPI = rt;
     session->ViewFlags = viewFlags;
     session->QuadrantBackIndex = std::numeric_limits<uint32_t>::max();
     session->QuadrantFrontIndex = 0;

@@ -13,9 +13,9 @@
 #include "../SpriteIds.h"
 #include "../audio/Audio.h"
 #include "../core/DataSerialiser.h"
+#include "../entity/EntityList.h"
 #include "../paint/Paint.h"
 #include "../profiling/Profiling.h"
-#include "../scenario/Scenario.h"
 #include "../world/tile_element/SurfaceElement.h"
 #include "EntityRegistry.h"
 
@@ -89,7 +89,7 @@ void Duck::Remove()
 
 void Duck::UpdateFlyToWater()
 {
-    const auto currentTicks = GetGameState().CurrentTicks;
+    const auto currentTicks = getGameState().currentTicks;
 
     if ((currentTicks & 3) != 0)
         return;
@@ -153,7 +153,7 @@ void Duck::UpdateFlyToWater()
 
 void Duck::UpdateSwim()
 {
-    const auto currentTicks = GetGameState().CurrentTicks;
+    const auto currentTicks = getGameState().currentTicks;
 
     if (((currentTicks + Id.ToUnderlying()) & 3) != 0)
         return;
@@ -251,7 +251,7 @@ void Duck::UpdateDoubleDrink()
 
 void Duck::UpdateFlyAway()
 {
-    if ((GetGameState().CurrentTicks & 3) == 0)
+    if ((getGameState().currentTicks & 3) == 0)
     {
         frame++;
         if (frame >= std::size(kDuckAnimationFlyAway))
@@ -374,8 +374,8 @@ void Duck::Paint(PaintSession& session, int32_t imageDirection) const
 {
     PROFILED_FUNCTION();
 
-    DrawPixelInfo& dpi = session.DPI;
-    if (dpi.zoom_level > ZoomLevel{ 1 })
+    RenderTarget& rt = session.DPI;
+    if (rt.zoom_level > ZoomLevel{ 1 })
         return;
 
     uint32_t imageId = GetFrameImage(imageDirection);

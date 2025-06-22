@@ -51,6 +51,27 @@ GameActions::Result SignSetNameAction::Query() const
         LOG_ERROR("Banner not found for bannerIndex %d", _bannerIndex);
         return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_RENAME_SIGN, kStringIdNone);
     }
+
+    TileElement* tileElement = BannerGetTileElement(_bannerIndex);
+
+    if (tileElement == nullptr)
+    {
+        LOG_ERROR("Banner tile element not found for bannerIndex %d", _bannerIndex);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_CANT_RENAME_BANNER, STR_ERR_BANNER_ELEMENT_NOT_FOUND);
+    }
+
+    CoordsXYZ loc = { banner->position.ToCoordsXY(), tileElement->GetBaseZ() };
+
+    if (!LocationValid(loc))
+    {
+        return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_RENAME_BANNER, STR_OFF_EDGE_OF_MAP);
+    }
+    if (!MapCanBuildAt({ loc.x, loc.y, loc.z - 16 }))
+    {
+        return GameActions::Result(GameActions::Status::NotOwned, STR_CANT_RENAME_BANNER, STR_LAND_NOT_OWNED_BY_PARK);
+    }
+
     return GameActions::Result();
 }
 
@@ -65,8 +86,8 @@ GameActions::Result SignSetNameAction::Execute() const
 
     if (!_name.empty())
     {
-        banner->flags &= ~BANNER_FLAG_LINKED_TO_RIDE;
-        banner->ride_index = RideId::GetNull();
+        banner->flags.unset(BannerFlag::linkedToRide);
+        banner->rideIndex = RideId::GetNull();
         banner->text = _name;
     }
     else
@@ -75,14 +96,14 @@ GameActions::Result SignSetNameAction::Execute() const
         RideId rideIndex = BannerGetClosestRideIndex({ banner->position.ToCoordsXY(), 16 });
         if (rideIndex.IsNull())
         {
-            banner->flags &= ~BANNER_FLAG_LINKED_TO_RIDE;
-            banner->ride_index = RideId::GetNull();
+            banner->flags.unset(BannerFlag::linkedToRide);
+            banner->rideIndex = RideId::GetNull();
             banner->text = {};
         }
         else
         {
-            banner->flags |= BANNER_FLAG_LINKED_TO_RIDE;
-            banner->ride_index = rideIndex;
+            banner->flags.set(BannerFlag::linkedToRide);
+            banner->rideIndex = rideIndex;
             banner->text = {};
         }
     }

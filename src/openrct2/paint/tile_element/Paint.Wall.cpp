@@ -139,7 +139,7 @@ static void PaintWallWall(
 {
     PROFILED_FUNCTION();
 
-    auto frameNum = (wallEntry.flags2 & WALL_SCENERY_2_ANIMATED) ? (GetGameState().CurrentTicks & 7) * 2 : 0;
+    auto frameNum = (wallEntry.flags2 & WALL_SCENERY_2_ANIMATED) ? (getGameState().currentTicks & 7) * 2 : 0;
     auto imageIndex = wallEntry.image + imageOffset + frameNum;
     PaintAddImageAsParent(session, imageTemplate.WithIndex(imageIndex), offset, boundBox);
     if ((wallEntry.flags & WALL_SCENERY_HAS_GLASS) && !isGhost)
@@ -159,7 +159,7 @@ static void PaintWallScrollingText(
         return;
 
     auto scrollingMode = wallEntry.scrolling_mode;
-    if (scrollingMode == SCROLLING_MODE_NONE)
+    if (scrollingMode == kScrollingModeNone)
         return;
 
     scrollingMode = wallEntry.scrolling_mode + ((direction + 1) & 3);
@@ -174,7 +174,7 @@ static void PaintWallScrollingText(
     auto textPaletteIndex = direction == 0 ? ColourMapA[textColour].mid_dark : ColourMapA[textColour].light;
 
     auto ft = Formatter();
-    banner->FormatTextTo(ft);
+    banner->formatTextTo(ft);
     char signString[256];
     if (Config::Get().general.UpperCaseBanners)
     {
@@ -186,7 +186,7 @@ static void PaintWallScrollingText(
     }
 
     auto stringWidth = GfxGetStringWidth(signString, FontStyle::Tiny);
-    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
+    auto scroll = stringWidth > 0 ? (getGameState().currentTicks / 2) % stringWidth : 0;
     auto imageId = ScrollingTextSetup(session, STR_SCROLLING_SIGN_TEXT, ft, scroll, scrollingMode, textPaletteIndex);
     PaintAddImageAsChild(session, imageId, { 0, 0, height + 8 }, { boundsOffset, { 1, 1, 13 } });
 }

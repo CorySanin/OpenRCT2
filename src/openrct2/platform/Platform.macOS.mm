@@ -30,19 +30,19 @@
 
 namespace OpenRCT2::Platform
 {
-    std::string GetFolderPath(SPECIAL_FOLDER folder)
+    std::string GetFolderPath(SpecialFolder folder)
     {
         // macOS stores everything in ~/Library/Application Support/OpenRCT2
         switch (folder)
         {
-            case SPECIAL_FOLDER::USER_CACHE:
-            case SPECIAL_FOLDER::USER_CONFIG:
-            case SPECIAL_FOLDER::USER_DATA:
+            case SpecialFolder::userCache:
+            case SpecialFolder::userConfig:
+            case SpecialFolder::userData:
             {
-                auto home = GetFolderPath(SPECIAL_FOLDER::USER_HOME);
+                auto home = GetFolderPath(SpecialFolder::userHome);
                 return Path::Combine(home, "Library/Application Support");
             }
-            case SPECIAL_FOLDER::USER_HOME:
+            case SpecialFolder::userHome:
                 return GetHomePath();
             default:
                 return std::string();
@@ -243,8 +243,7 @@ namespace OpenRCT2::Platform
             return {};
         }
 
-        auto steamPath = Path::Combine(
-            homeDir, "Library/Application Support/Steam/Steam.AppBundle/Steam/Contents/MacOS/steamapps");
+        auto steamPath = Path::Combine(homeDir, "Library/Application Support/Steam");
         if (Path::DirectoryExists(steamPath))
         {
             return steamPath;
@@ -255,12 +254,17 @@ namespace OpenRCT2::Platform
 
     u8string GetRCT1SteamDir()
     {
-        return u8"app_285310" PATH_SEPARATOR u8"depot_285311";
+        return u8"Steam.AppBundle/Steam/Contents/MacOS/steamapps/content/app_285310/depot_285311";
     }
 
     u8string GetRCT2SteamDir()
     {
-        return u8"app_285330" PATH_SEPARATOR u8"depot_285331";
+        return u8"Steam.AppBundle/Steam/Contents/MacOS/steamapps/content/app_285330/depot_285331";
+    }
+
+    u8string GetRCTClassicSteamDir()
+    {
+        return u8"steamapps/common/RollerCoaster Tycoon Classic";
     }
 
     std::string GetFontPath(const TTFFontDescriptor& font)
@@ -289,7 +293,7 @@ namespace OpenRCT2::Platform
 
     std::vector<std::string_view> GetSearchablePathsRCT2()
     {
-        return {};
+        return { "/Applications" };
     }
 } // namespace OpenRCT2::Platform
 

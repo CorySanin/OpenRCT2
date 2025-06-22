@@ -29,7 +29,7 @@
 
 namespace OpenRCT2::Ui::Windows
 {
-    enum WINDOW_TRANSPARENCY_WIDGET_IDX
+    enum WindowTransparencyWidgetIndex
     {
         WIDX_BACKGROUND,
         WIDX_TITLE,
@@ -143,14 +143,14 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
             // Locate mechanic button image
             const auto& widget = widgets[WIDX_HIDE_STAFF];
             auto screenCoords = windowPos + ScreenCoordsXY{ widget.left, widget.top };
-            auto image = ImageId(SPR_MECHANIC, COLOUR_BLACK, GetGameState().StaffMechanicColour);
-            GfxDrawSprite(dpi, image, screenCoords);
+            auto image = ImageId(SPR_MECHANIC, COLOUR_BLACK, getGameState().staffMechanicColour);
+            GfxDrawSprite(rt, image, screenCoords);
         }
 
     private:
@@ -239,11 +239,6 @@ namespace OpenRCT2::Ui::Windows
             Config::Get().general.InvisiblePaths = wflags & VIEWPORT_FLAG_INVISIBLE_PATHS;
             Config::Get().general.InvisibleSupports = wflags & VIEWPORT_FLAG_INVISIBLE_SUPPORTS;
             Config::Save();
-        }
-
-        void OnResize() override
-        {
-            ResizeFrame();
         }
     };
 

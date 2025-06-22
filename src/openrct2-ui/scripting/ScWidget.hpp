@@ -113,6 +113,8 @@ namespace OpenRCT2::Scripting
                         return "placeholder";
                     case WindowWidgetType::ProgressBar:
                         return "progress_bar";
+                    case WindowWidgetType::HorizontalSeparator:
+                        return "horizontal_separator";
                     case WindowWidgetType::Custom:
                         return "custom";
                 }
@@ -165,7 +167,8 @@ namespace OpenRCT2::Scripting
             auto widget = GetWidget();
             if (widget != nullptr)
             {
-                return widget->top;
+                auto w = GetWindow();
+                return widget->top - w->getTitleBarDiffNormal();
             }
             return 0;
         }
@@ -174,6 +177,8 @@ namespace OpenRCT2::Scripting
             auto widget = GetWidget();
             if (widget != nullptr)
             {
+                auto w = GetWindow();
+                value += w->getTitleBarDiffNormal();
                 auto delta = value - widget->top;
 
                 Invalidate();

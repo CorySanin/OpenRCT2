@@ -28,9 +28,9 @@
         // for PATH_MAX
         #include <linux/limits.h>
     #endif // __linux__
-    #ifndef NO_TTF
+    #ifndef DISABLE_TTF
         #include <fontconfig/fontconfig.h>
-    #endif // NO_TTF
+    #endif // DISABLE_TTF
 
     #include "../Date.h"
     #include "../OpenRCT2.h"
@@ -77,23 +77,23 @@ namespace OpenRCT2::Platform
         }
     }
 
-    std::string GetFolderPath(SPECIAL_FOLDER folder)
+    std::string GetFolderPath(SpecialFolder folder)
     {
         switch (folder)
         {
-            case SPECIAL_FOLDER::USER_CACHE:
-            case SPECIAL_FOLDER::USER_CONFIG:
-            case SPECIAL_FOLDER::USER_DATA:
+            case SpecialFolder::userCache:
+            case SpecialFolder::userConfig:
+            case SpecialFolder::userData:
             {
                 auto path = GetEnvironmentPath("XDG_CONFIG_HOME");
                 if (path.empty())
                 {
-                    auto home = GetFolderPath(SPECIAL_FOLDER::USER_HOME);
+                    auto home = GetFolderPath(SpecialFolder::userHome);
                     path = Path::Combine(home, u8".config");
                 }
                 return path;
             }
-            case SPECIAL_FOLDER::USER_HOME:
+            case SpecialFolder::userHome:
                 return GetHomePath();
             default:
                 return std::string();
@@ -371,6 +371,11 @@ namespace OpenRCT2::Platform
         return u8"Rollercoaster Tycoon 2";
     }
 
+    u8string GetRCTClassicSteamDir()
+    {
+        return u8"RollerCoaster Tycoon Classic";
+    }
+
     std::vector<std::string_view> GetSearchablePathsRCT1()
     {
         return {
@@ -387,7 +392,7 @@ namespace OpenRCT2::Platform
         };
     }
 
-    #ifndef NO_TTF
+    #ifndef DISABLE_TTF
     std::string GetFontPath(const TTFFontDescriptor& font)
     {
         // set LANG to portable C.UTF-8 so font face names from fontconfig
@@ -448,7 +453,7 @@ namespace OpenRCT2::Platform
         FcFini();
         return path;
     }
-    #endif // NO_TTF
+    #endif // DISABLE_TTF
 } // namespace OpenRCT2::Platform
 
 #endif

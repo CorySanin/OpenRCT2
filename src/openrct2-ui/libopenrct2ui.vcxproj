@@ -52,6 +52,7 @@
     <ClInclude Include="drawing\engines\DrawingEngineFactory.hpp" />
     <ClInclude Include="drawing\engines\opengl\ApplyPaletteShader.h" />
     <ClInclude Include="drawing\engines\opengl\ApplyTransparencyShader.h" />
+    <ClInclude Include="drawing\engines\opengl\CopyRectShader.h" />
     <ClInclude Include="drawing\engines\opengl\DrawCommands.h" />
     <ClInclude Include="drawing\engines\opengl\DrawLineShader.h" />
     <ClInclude Include="drawing\engines\opengl\DrawRectShader.h" />
@@ -119,6 +120,7 @@
     <ClCompile Include="drawing\engines\HardwareDisplayDrawingEngine.cpp" />
     <ClCompile Include="drawing\engines\opengl\ApplyPaletteShader.cpp" />
     <ClCompile Include="drawing\engines\opengl\ApplyTransparencyShader.cpp" />
+    <ClCompile Include="drawing\engines\opengl\CopyRectShader.cpp" />
     <ClCompile Include="drawing\engines\opengl\DrawLineShader.cpp" />
     <ClCompile Include="drawing\engines\opengl\DrawRectShader.cpp" />
     <ClCompile Include="drawing\engines\opengl\OpenGLAPI.cpp" />
@@ -128,7 +130,6 @@
     <ClCompile Include="drawing\engines\opengl\SwapFramebuffer.cpp" />
     <ClCompile Include="drawing\engines\opengl\TextureCache.cpp" />
     <ClCompile Include="drawing\engines\opengl\TransparencyDepth.cpp" />
-    <ClCompile Include="drawing\engines\SoftwareDrawingEngine.cpp" />
     <ClCompile Include="input\InputManager.cpp" />
     <ClCompile Include="input\Shortcuts.cpp" />
     <ClCompile Include="input\MouseInput.cpp" />
@@ -173,7 +174,6 @@
     <ClCompile Include="windows\Dropdown.cpp" />
     <ClCompile Include="windows\EditorBottomToolbar.cpp" />
     <ClCompile Include="windows\EditorInventionsList.cpp" />
-    <ClCompile Include="windows\EditorObjectiveOptions.cpp" />
     <ClCompile Include="windows\EditorObjectSelection.cpp" />
     <ClCompile Include="windows\EditorParkEntrance.cpp" />
     <ClCompile Include="windows\EditorScenarioOptions.cpp" />
@@ -238,6 +238,11 @@
     <ClCompile Include="windows\ViewClipping.cpp" />
     <ClCompile Include="windows\Viewport.cpp" />
     <ClCompile Include="windows\Water.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\openrct2-deps\openrct2-deps.vcxproj">
+      <Project>{c453da76-44b3-4ac8-aaa2-2b64a76993a5}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8DD8AB7D-2EA6-44E3-8265-BAF08E832951}</ProjectGuid>

@@ -26,7 +26,6 @@
 #include "../ride/Track.h"
 #include "Banner.h"
 #include "Footpath.h"
-#include "Map.h"
 #include "Scenery.h"
 #include "tile_element/EntranceElement.h"
 #include "tile_element/LargeSceneryElement.h"
@@ -120,7 +119,7 @@ static bool MapAnimationInvalidateRideEntrance(const CoordsXYZ& loc)
         auto ride = GetRide(tileElement->AsEntrance()->GetRideIndex());
         if (ride != nullptr)
         {
-            auto stationObj = ride->GetStationObject();
+            auto stationObj = ride->getStationObject();
             if (stationObj != nullptr)
             {
                 int32_t height = loc.z + stationObj->Height + 8;
@@ -202,7 +201,7 @@ static bool MapAnimationInvalidateSmallScenery(const CoordsXYZ& loc)
         if (sceneryEntry->HasFlag(SMALL_SCENERY_FLAG_IS_CLOCK))
         {
             // Peep, looking at scenery
-            if (!(GetGameState().CurrentTicks & 0x3FF) && GameIsNotPaused())
+            if (!(getGameState().currentTicks & 0x3FF) && GameIsNotPaused())
             {
                 int32_t direction = tileElement->GetDirection();
                 auto quad = EntityTileList<Peep>(CoordsXY{ loc } - CoordsDirectionDelta[direction]);
@@ -490,7 +489,7 @@ static bool MapAnimationInvalidateWallDoor(const CoordsXYZ& loc)
     TileCoordsXYZ tileLoc{ loc };
     TileElement* tileElement;
 
-    if (GetGameState().CurrentTicks & 1)
+    if (getGameState().currentTicks & 1)
         return false;
 
     bool removeAnimation = true;
@@ -568,7 +567,7 @@ static bool MapAnimationInvalidateWall(const CoordsXYZ& loc)
         auto* wallEntry = tileElement->AsWall()->GetEntry();
 
         if (wallEntry == nullptr
-            || (!(wallEntry->flags2 & WALL_SCENERY_2_ANIMATED) && wallEntry->scrolling_mode == SCROLLING_MODE_NONE))
+            || (!(wallEntry->flags2 & WALL_SCENERY_2_ANIMATED) && wallEntry->scrolling_mode == kScrollingModeNone))
             continue;
 
         MapInvalidateTileZoom1({ loc, loc.z, loc.z + 16 });
@@ -640,7 +639,7 @@ void MapAnimationAutoCreateAtTileElement(TileCoordsXY coords, TileElement* el)
         {
             auto wallEl = el->AsWall();
             auto* entry = wallEl->GetEntry();
-            if (entry != nullptr && ((entry->flags2 & WALL_SCENERY_2_ANIMATED) || entry->scrolling_mode != SCROLLING_MODE_NONE))
+            if (entry != nullptr && ((entry->flags2 & WALL_SCENERY_2_ANIMATED) || entry->scrolling_mode != kScrollingModeNone))
             {
                 MapAnimationCreate(MAP_ANIMATION_TYPE_WALL, loc);
             }

@@ -23,7 +23,6 @@
 #include "../../interface/Viewport.h"
 #include "../../network/Network.h"
 #include "../../network/NetworkBase.h"
-#include "../../scenario/Scenario.h"
 #include "../../scenario/ScenarioRepository.h"
 #include "../../ui/UiContext.h"
 #include "../../ui/WindowManager.h"
@@ -54,7 +53,7 @@ bool TitleScene::PreviewSequence(size_t value)
     _previewingSequence = TryLoadSequence(true);
     if (_previewingSequence)
     {
-        if (!(gScreenFlags & SCREEN_FLAGS_TITLE_DEMO))
+        if (gLegacyScene != LegacyScene::titleSequence)
         {
             gPreviewingTitleSequenceInGame = true;
         }
@@ -62,7 +61,7 @@ bool TitleScene::PreviewSequence(size_t value)
     else
     {
         _currentSequence = TitleGetConfigSequence();
-        if (gScreenFlags & SCREEN_FLAGS_TITLE_DEMO)
+        if (gLegacyScene == LegacyScene::titleSequence)
         {
             TryLoadSequence();
         }
@@ -99,14 +98,14 @@ void TitleScene::Load()
         PauseToggle();
     }
 
-    gScreenFlags = SCREEN_FLAGS_TITLE_DEMO;
+    gLegacyScene = LegacyScene::titleSequence;
     gScreenAge = 0;
     gCurrentLoadedPath.clear();
 
 #ifndef DISABLE_NETWORK
     GetContext().GetNetwork().Close();
 #endif
-    gameStateInitAll(GetGameState(), kDefaultMapSize);
+    gameStateInitAll(getGameState(), kDefaultMapSize);
     ViewportInitAll();
     ContextOpenWindow(WindowClass::MainWindow);
 
@@ -159,7 +158,7 @@ void TitleScene::Tick()
         // update_weather_animation();
     }
 
-    InputSetFlag(INPUT_FLAG_VIEWPORT_SCROLLING, false);
+    gInputFlags.unset(InputFlag::viewportScrolling);
 
     ContextHandleInput();
 
@@ -207,7 +206,7 @@ void TitleScene::TitleInitialise()
 {
     if (_sequencePlayer == nullptr)
     {
-        _sequencePlayer = GetContext().GetUiContext()->GetTitleSequencePlayer();
+        _sequencePlayer = GetContext().GetUiContext().GetTitleSequencePlayer();
     }
     if (Config::Get().interface.RandomTitleSequence)
     {
@@ -289,7 +288,7 @@ bool TitleScene::TryLoadSequence(bool loadPreview)
     {
         if (_sequencePlayer == nullptr)
         {
-            _sequencePlayer = GetContext().GetUiContext()->GetTitleSequencePlayer();
+            _sequencePlayer = GetContext().GetUiContext().GetTitleSequencePlayer();
         }
 
         size_t numSequences = TitleSequenceManager::GetCount();
@@ -320,7 +319,7 @@ bool TitleScene::TryLoadSequence(bool loadPreview)
         _loadedTitleSequenceId = SIZE_MAX;
         if (!loadPreview)
         {
-            gameStateInitAll(GetGameState(), kDefaultMapSize);
+            gameStateInitAll(getGameState(), kDefaultMapSize);
             GameNotifyMapChanged();
         }
         return false;

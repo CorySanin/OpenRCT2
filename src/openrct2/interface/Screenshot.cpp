@@ -52,20 +52,20 @@ extern uint8_t gClipHeight;
 
 uint8_t gScreenshotCountdown = 0;
 
-static bool WriteDpiToFile(std::string_view path, const DrawPixelInfo& dpi, const GamePalette& palette)
+static bool WriteDpiToFile(std::string_view path, const RenderTarget& rt, const GamePalette& palette)
 {
-    auto const pixels8 = dpi.bits;
-    auto const pixelsLen = dpi.LineStride() * dpi.height;
+    auto const pixels8 = rt.bits;
+    auto const pixelsLen = rt.LineStride() * rt.height;
     try
     {
         Image image;
-        image.Width = dpi.width;
-        image.Height = dpi.height;
+        image.Width = rt.width;
+        image.Height = rt.height;
         image.Depth = 8;
-        image.Stride = dpi.LineStride();
+        image.Stride = rt.LineStride();
         image.Palette = palette;
         image.Pixels = std::vector<uint8_t>(pixels8, pixels8 + pixelsLen);
-        Imaging::WriteToFile(path, image, IMAGE_FORMAT::PNG);
+        Imaging::WriteToFile(path, image, ImageFormat::png);
         return true;
     }
     catch (const std::exception& e)
@@ -112,13 +112,13 @@ void ScreenshotCheck()
 
 static std::string ScreenshotGetParkName()
 {
-    return GetGameState().Park.Name;
+    return getGameState().park.Name;
 }
 
 static std::string ScreenshotGetDirectory()
 {
-    auto env = GetContext()->GetPlatformEnvironment();
-    return env->GetDirectoryPath(DIRBASE::USER, DIRID::SCREENSHOT);
+    auto& env = GetContext()->GetPlatformEnvironment();
+    return env.GetDirectoryPath(DirBase::user, DirId::screenshots);
 }
 
 static std::pair<RealWorldDate, RealWorldTime> ScreenshotGetDateTime()
@@ -172,7 +172,7 @@ static std::optional<std::string> ScreenshotGetNextPath()
     return std::nullopt;
 };
 
-std::string ScreenshotDumpPNG(DrawPixelInfo& dpi)
+std::string ScreenshotDumpPNG(RenderTarget& rt)
 {
     // Get a free screenshot path
     auto path = ScreenshotGetNextPath();
@@ -182,7 +182,7 @@ std::string ScreenshotDumpPNG(DrawPixelInfo& dpi)
         return "";
     }
 
-    if (WriteDpiToFile(path.value(), dpi, gPalette))
+    if (WriteDpiToFile(path.value(), rt, gPalette))
     {
         return path.value();
     }
@@ -227,55 +227,55 @@ static int32_t GetTallestVisibleTileTop(
     return minViewY - 64;
 }
 
-static DrawPixelInfo CreateDPI(const Viewport& viewport)
+static RenderTarget CreateDPI(const Viewport& viewport)
 {
-    DrawPixelInfo dpi;
-    dpi.width = viewport.width;
-    dpi.height = viewport.height;
-    dpi.bits = new (std::nothrow) uint8_t[dpi.width * dpi.height];
-    if (dpi.bits == nullptr)
+    RenderTarget rt;
+    rt.width = viewport.width;
+    rt.height = viewport.height;
+    rt.bits = new (std::nothrow) uint8_t[rt.width * rt.height];
+    if (rt.bits == nullptr)
     {
         throw std::runtime_error("Giant screenshot failed, unable to allocate memory for image.");
     }
 
     if (viewport.flags & VIEWPORT_FLAG_TRANSPARENT_BACKGROUND)
     {
-        std::memset(dpi.bits, PALETTE_INDEX_0, static_cast<size_t>(dpi.width) * dpi.height);
+        std::memset(rt.bits, PaletteIndex::pi0, static_cast<size_t>(rt.width) * rt.height);
     }
 
-    return dpi;
+    return rt;
 }
 
-static void ReleaseDPI(DrawPixelInfo& dpi)
+static void ReleaseDPI(RenderTarget& rt)
 {
-    if (dpi.bits != nullptr)
-        delete[] dpi.bits;
-    dpi.bits = nullptr;
-    dpi.width = 0;
-    dpi.height = 0;
+    if (rt.bits != nullptr)
+        delete[] rt.bits;
+    rt.bits = nullptr;
+    rt.width = 0;
+    rt.height = 0;
 }
 
 static Viewport GetGiantViewport(int32_t rotation, ZoomLevel zoom)
 {
-    auto& gameState = GetGameState();
+    auto& gameState = getGameState();
     // Get the tile coordinates of each corner
     const TileCoordsXY cornerCoords[2][4] = {
         {
             // Map corners
             { 1, 1 },
-            { gameState.MapSize.x - 2, gameState.MapSize.y - 2 },
-            { 1, gameState.MapSize.y - 2 },
-            { gameState.MapSize.x - 2, 1 },
+            { gameState.mapSize.x - 2, gameState.mapSize.y - 2 },
+            { 1, gameState.mapSize.y - 2 },
+            { gameState.mapSize.x - 2, 1 },
         },
         {
             // Horizontal view clipping corners
             TileCoordsXY{ CoordsXY{ std::max(gClipSelectionA.x, 32), std::max(gClipSelectionA.y, 32) } },
-            TileCoordsXY{ CoordsXY{ std::min(gClipSelectionB.x, (gameState.MapSize.x - 2) * 32),
-                                    std::min(gClipSelectionB.y, (gameState.MapSize.y - 2) * 32) } },
+            TileCoordsXY{ CoordsXY{ std::min(gClipSelectionB.x, (gameState.mapSize.x - 2) * 32),
+                                    std::min(gClipSelectionB.y, (gameState.mapSize.y - 2) * 32) } },
             TileCoordsXY{
-                CoordsXY{ std::max(gClipSelectionA.x, 32), std::min(gClipSelectionB.y, (gameState.MapSize.y - 2) * 32) } },
+                CoordsXY{ std::max(gClipSelectionA.x, 32), std::min(gClipSelectionB.y, (gameState.mapSize.y - 2) * 32) } },
             TileCoordsXY{
-                CoordsXY{ std::min(gClipSelectionB.x, (gameState.MapSize.x - 2) * 32), std::max(gClipSelectionA.y, 32) } },
+                CoordsXY{ std::min(gClipSelectionB.x, (gameState.mapSize.x - 2) * 32), std::max(gClipSelectionA.y, 32) } },
         },
     };
 
@@ -305,7 +305,7 @@ static Viewport GetGiantViewport(int32_t rotation, ZoomLevel zoom)
     return viewport;
 }
 
-static void RenderViewport(IDrawingEngine* drawingEngine, const Viewport& viewport, DrawPixelInfo& dpi)
+static void RenderViewport(IDrawingEngine* drawingEngine, const Viewport& viewport, RenderTarget& rt)
 {
     // Ensure sprites appear regardless of rotation
     ResetAllSpriteQuadrantPlacements();
@@ -316,13 +316,18 @@ static void RenderViewport(IDrawingEngine* drawingEngine, const Viewport& viewpo
         tempDrawingEngine = std::make_unique<X8DrawingEngine>(GetContext()->GetUiContext());
         drawingEngine = tempDrawingEngine.get();
     }
-    dpi.DrawingEngine = drawingEngine;
-    ViewportRender(dpi, &viewport);
+
+    tempDrawingEngine->BeginDraw();
+
+    rt.DrawingEngine = drawingEngine;
+    ViewportRender(rt, &viewport);
+
+    tempDrawingEngine->EndDraw();
 }
 
 void ScreenshotGiant()
 {
-    DrawPixelInfo dpi{};
+    RenderTarget rt{};
     try
     {
         auto path = ScreenshotGetNextPath();
@@ -350,10 +355,10 @@ void ScreenshotGiant()
             viewport.flags |= VIEWPORT_FLAG_TRANSPARENT_BACKGROUND;
         }
 
-        dpi = CreateDPI(viewport);
+        rt = CreateDPI(viewport);
 
-        RenderViewport(nullptr, viewport, dpi);
-        WriteDpiToFile(path.value(), dpi, gPalette);
+        RenderViewport(nullptr, viewport, rt);
+        WriteDpiToFile(path.value(), rt, gPalette);
 
         // Show user that screenshot saved successfully
         const auto filename = Path::GetFileName(path.value());
@@ -368,7 +373,7 @@ void ScreenshotGiant()
         ContextShowError(STR_SCREENSHOT_FAILED, kStringIdNone, {}, true);
     }
 
-    ReleaseDPI(dpi);
+    ReleaseDPI(rt);
 }
 
 static void ApplyOptions(const ScreenshotOptions* options, Viewport& viewport)
@@ -441,7 +446,7 @@ int32_t CommandLineForScreenshot(const char** argv, int32_t argc, ScreenshotOpti
     }
 
     int32_t exitCode = 1;
-    DrawPixelInfo dpi;
+    RenderTarget rt;
     try
     {
         bool customLocation = false;
@@ -465,7 +470,7 @@ int32_t CommandLineForScreenshot(const char** argv, int32_t argc, ScreenshotOpti
             throw std::runtime_error("Failed to load park.");
         }
 
-        gScreenFlags = SCREEN_FLAGS_PLAYING;
+        gLegacyScene = LegacyScene::playing;
 
         Viewport viewport{};
         if (giantScreenshot)
@@ -500,7 +505,7 @@ int32_t CommandLineForScreenshot(const char** argv, int32_t argc, ScreenshotOpti
                 customRotation = std::atoi(argv[7]) & 3;
             }
 
-            const auto& mapSize = GetGameState().MapSize;
+            const auto& mapSize = getGameState().mapSize;
             if (resolutionWidth == 0 || resolutionHeight == 0)
             {
                 resolutionWidth = (mapSize.x * kCoordsXYStep * 2) >> customZoom;
@@ -531,27 +536,27 @@ int32_t CommandLineForScreenshot(const char** argv, int32_t argc, ScreenshotOpti
             }
             else
             {
-                auto& gameState = GetGameState();
-                viewport.viewPos = { gameState.SavedView
+                auto& gameState = getGameState();
+                viewport.viewPos = { gameState.savedView
                                      - ScreenCoordsXY{ (viewport.ViewWidth() / 2), (viewport.ViewHeight() / 2) } };
-                viewport.zoom = gameState.SavedViewZoom;
-                viewport.rotation = gameState.SavedViewRotation;
+                viewport.zoom = gameState.savedViewZoom;
+                viewport.rotation = gameState.savedViewRotation;
             }
         }
 
         ApplyOptions(options, viewport);
 
-        dpi = CreateDPI(viewport);
+        rt = CreateDPI(viewport);
 
-        RenderViewport(nullptr, viewport, dpi);
-        WriteDpiToFile(outputPath, dpi, gPalette);
+        RenderViewport(nullptr, viewport, rt);
+        WriteDpiToFile(outputPath, rt, gPalette);
     }
     catch (const std::exception& e)
     {
         std::printf("%s\n", e.what());
         exitCode = -1;
     }
-    ReleaseDPI(dpi);
+    ReleaseDPI(rt);
 
     DrawingEngineDispose();
 
@@ -634,8 +639,8 @@ void CaptureImage(const CaptureOptions& options)
     }
 
     auto outputPath = ResolveFilenameForCapture(options.Filename);
-    auto dpi = CreateDPI(viewport);
-    RenderViewport(nullptr, viewport, dpi);
-    WriteDpiToFile(outputPath, dpi, gPalette);
-    ReleaseDPI(dpi);
+    auto rt = CreateDPI(viewport);
+    RenderViewport(nullptr, viewport, rt);
+    WriteDpiToFile(outputPath, rt, gPalette);
+    ReleaseDPI(rt);
 }

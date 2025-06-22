@@ -29,13 +29,17 @@ namespace OpenRCT2::Ui
         OpenGLFramebuffer _opaqueFramebuffer;
         OpenGLFramebuffer _transparentFramebuffer;
         OpenGLFramebuffer _mixFramebuffer;
-        GLuint _backDepth;
+        GLuint _backDepth{};
 
     public:
         SwapFramebuffer(int32_t width, int32_t height);
         ~SwapFramebuffer();
 
         const OpenGLFramebuffer& GetFinalFramebuffer() const
+        {
+            return _opaqueFramebuffer;
+        }
+        OpenGLFramebuffer& GetFinalFramebuffer()
         {
             return _opaqueFramebuffer;
         }

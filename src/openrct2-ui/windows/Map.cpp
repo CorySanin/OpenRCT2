@@ -52,12 +52,12 @@ namespace OpenRCT2::Ui::Windows
     }
     static constexpr uint16_t MapColourUnowned(uint16_t colour)
     {
-        return MapColour2((colour & 0xFF00) >> 8, PALETTE_INDEX_10);
+        return MapColour2((colour & 0xFF00) >> 8, PaletteIndex::pi10);
     }
     static int32_t getPracticalMapSize()
     {
         // Take non-square maps into account
-        return std::max(GetGameState().MapSize.x, GetGameState().MapSize.y) - 2;
+        return std::max(getGameState().mapSize.x, getGameState().mapSize.y) - 2;
     }
     static int32_t getPracticalMapSizeBig()
     {
@@ -74,7 +74,7 @@ namespace OpenRCT2::Ui::Windows
 
     static bool isEditorOrSandbox()
     {
-        return (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || GetGameState().Cheats.sandboxMode;
+        return gLegacyScene == LegacyScene::scenarioEditor || getGameState().cheats.sandboxMode;
     }
 
     static constexpr StringId WINDOW_TITLE = STR_MAP_LABEL;
@@ -163,23 +163,23 @@ namespace OpenRCT2::Ui::Windows
     };
 
     static constexpr uint16_t RideKeyColours[] = {
-        MapColour(PALETTE_INDEX_61),  // COLOUR_KEY_RIDE
-        MapColour(PALETTE_INDEX_42),  // COLOUR_KEY_FOOD
-        MapColour(PALETTE_INDEX_20),  // COLOUR_KEY_DRINK
-        MapColour(PALETTE_INDEX_209), // COLOUR_KEY_SOUVENIR
-        MapColour(PALETTE_INDEX_136), // COLOUR_KEY_KIOSK
-        MapColour(PALETTE_INDEX_102), // COLOUR_KEY_FIRST_AID
-        MapColour(PALETTE_INDEX_55),  // COLOUR_KEY_CASH_MACHINE
-        MapColour(PALETTE_INDEX_161), // COLOUR_KEY_TOILETS
+        MapColour(PaletteIndex::pi61),  // COLOUR_KEY_RIDE
+        MapColour(PaletteIndex::pi42),  // COLOUR_KEY_FOOD
+        MapColour(PaletteIndex::pi20),  // COLOUR_KEY_DRINK
+        MapColour(PaletteIndex::pi209), // COLOUR_KEY_SOUVENIR
+        MapColour(PaletteIndex::pi136), // COLOUR_KEY_KIOSK
+        MapColour(PaletteIndex::pi102), // COLOUR_KEY_FIRST_AID
+        MapColour(PaletteIndex::pi55),  // COLOUR_KEY_CASH_MACHINE
+        MapColour(PaletteIndex::pi161), // COLOUR_KEY_TOILETS
     };
 
-    static constexpr uint8_t DefaultPeepMapColour = PALETTE_INDEX_20;
-    static constexpr uint8_t GuestMapColour = PALETTE_INDEX_172;
-    static constexpr uint8_t GuestMapColourAlternate = PALETTE_INDEX_21;
-    static constexpr uint8_t StaffMapColour = PALETTE_INDEX_138;
-    static constexpr uint8_t StaffMapColourAlternate = PALETTE_INDEX_10;
+    static constexpr uint8_t DefaultPeepMapColour = PaletteIndex::pi20;
+    static constexpr uint8_t GuestMapColour = PaletteIndex::pi172;
+    static constexpr uint8_t GuestMapColourAlternate = PaletteIndex::pi21;
+    static constexpr uint8_t StaffMapColour = PaletteIndex::pi138;
+    static constexpr uint8_t StaffMapColourAlternate = PaletteIndex::pi10;
 
-    static constexpr uint16_t WaterColour = MapColour(PALETTE_INDEX_195);
+    static constexpr uint16_t WaterColour = MapColour(PaletteIndex::pi195);
 
     static constexpr uint16_t ElementTypeMaskColour[] = {
         0xFFFF, // TILE_ELEMENT_TYPE_SURFACE
@@ -193,14 +193,14 @@ namespace OpenRCT2::Ui::Windows
     };
 
     static constexpr uint16_t ElementTypeAddColour[] = {
-        MapColour(PALETTE_INDEX_0),                     // TILE_ELEMENT_TYPE_SURFACE
-        MapColour(PALETTE_INDEX_17),                    // TILE_ELEMENT_TYPE_PATH
-        MapColour2(PALETTE_INDEX_183, PALETTE_INDEX_0), // TILE_ELEMENT_TYPE_TRACK
-        MapColour2(PALETTE_INDEX_0, PALETTE_INDEX_99),  // TILE_ELEMENT_TYPE_SMALL_SCENERY
-        MapColour(PALETTE_INDEX_186),                   // TILE_ELEMENT_TYPE_ENTRANCE
-        MapColour(PALETTE_INDEX_0),                     // TILE_ELEMENT_TYPE_WALL
-        MapColour(PALETTE_INDEX_99),                    // TILE_ELEMENT_TYPE_LARGE_SCENERY
-        MapColour(PALETTE_INDEX_0),                     // TILE_ELEMENT_TYPE_BANNER
+        MapColour(PaletteIndex::pi0),                       // TILE_ELEMENT_TYPE_SURFACE
+        MapColour(PaletteIndex::pi17),                      // TILE_ELEMENT_TYPE_PATH
+        MapColour2(PaletteIndex::pi183, PaletteIndex::pi0), // TILE_ELEMENT_TYPE_TRACK
+        MapColour2(PaletteIndex::pi0, PaletteIndex::pi99),  // TILE_ELEMENT_TYPE_SMALL_SCENERY
+        MapColour(PaletteIndex::pi186),                     // TILE_ELEMENT_TYPE_ENTRANCE
+        MapColour(PaletteIndex::pi0),                       // TILE_ELEMENT_TYPE_WALL
+        MapColour(PaletteIndex::pi99),                      // TILE_ELEMENT_TYPE_LARGE_SCENERY
+        MapColour(PaletteIndex::pi0),                       // TILE_ELEMENT_TYPE_BANNER
     };
 
     namespace MapFlashingFlags
@@ -239,8 +239,6 @@ namespace OpenRCT2::Ui::Windows
                 | (1uLL << WIDX_MAP_SIZE_SPINNER_X_UP) | (1uLL << WIDX_MAP_SIZE_SPINNER_X_DOWN);
 
             flags |= WF_RESIZABLE;
-            min_width = WW;
-            min_height = WH;
 
             SetInitialWindowDimensions();
             ResetMaxWindowDimensions();
@@ -255,8 +253,8 @@ namespace OpenRCT2::Ui::Windows
             CentreMapOnViewPoint();
             FootpathSelectDefault();
 
-            auto& gameState = GetGameState();
-            _mapWidthAndHeightLinked = gameState.MapSize.x == gameState.MapSize.y;
+            auto& gameState = getGameState();
+            _mapWidthAndHeightLinked = gameState.mapSize.x == gameState.mapSize.y;
 
             // Reset land rights tool size
             _landRightsToolSize = 1;
@@ -298,7 +296,7 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 }
                 case WIDX_PEOPLE_STARTING_POSITION:
-                    if (ToolSet(*this, widgetIndex, Tool::UpArrow))
+                    if (ToolSet(*this, widgetIndex, Tool::upArrow))
                         break;
 
                     ShowGridlines();
@@ -512,7 +510,7 @@ namespace OpenRCT2::Ui::Windows
                         size = std::clamp(
                             size, static_cast<int>(kMinimumMapSizeTechnical), static_cast<int>(kMaximumMapSizeTechnical));
 
-                        TileCoordsXY newMapSize = GetGameState().MapSize;
+                        TileCoordsXY newMapSize = getGameState().mapSize;
                         if (_resizeDirection != ResizeDirection::X)
                             newMapSize.y = size;
                         if (_resizeDirection != ResizeDirection::Y)
@@ -568,9 +566,9 @@ namespace OpenRCT2::Ui::Windows
             OnScrollMouseDown(scrollIndex, screenCoords);
         }
 
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
-            GfxClear(dpi, PALETTE_INDEX_10);
+            GfxClear(rt, PaletteIndex::pi10);
 
             // Ensure small maps are centred
             auto screenOffset = ScreenCoordsXY(0, 0);
@@ -584,17 +582,17 @@ namespace OpenRCT2::Ui::Windows
             g1temp.height = getMiniMapWidth();
             GfxSetG1Element(SPR_TEMP, &g1temp);
             DrawingEngineInvalidateImage(SPR_TEMP);
-            GfxDrawSprite(dpi, ImageId(SPR_TEMP), screenOffset);
+            GfxDrawSprite(rt, ImageId(SPR_TEMP), screenOffset);
 
             if (selected_tab == PAGE_PEEPS)
             {
-                PaintPeepOverlay(dpi, screenOffset);
+                PaintPeepOverlay(rt, screenOffset);
             }
             else
             {
-                PaintTrainOverlay(dpi, screenOffset);
+                PaintTrainOverlay(rt, screenOffset);
             }
-            PaintHudRectangle(dpi, screenOffset);
+            PaintHudRectangle(rt, screenOffset);
         }
 
         void OnPrepareDraw() override
@@ -616,11 +614,10 @@ namespace OpenRCT2::Ui::Windows
                 pressed_widgets |= (1uLL << WIDX_MAP_GENERATOR);
 
             // Set disabled widgets
-            auto& gameState = GetGameState();
-            SetWidgetDisabled(WIDX_MAP_SIZE_LINK, gameState.MapSize.x != gameState.MapSize.y);
+            auto& gameState = getGameState();
+            SetWidgetDisabled(WIDX_MAP_SIZE_LINK, gameState.mapSize.x != gameState.mapSize.y);
 
             // Resize widgets to window size
-            ResizeFrameWithPage();
             ResizeMiniMap();
 
             widgets[WIDX_MAP_SIZE_SPINNER_Y].top = height - 15;
@@ -664,10 +661,10 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
-            DrawTabImages(dpi);
+            DrawWidgets(rt);
+            DrawTabImages(rt);
 
             if (!isEditorOrSandbox())
             {
@@ -681,9 +678,9 @@ namespace OpenRCT2::Ui::Windows
                     for (uint32_t i = 0; i < std::size(RideKeyColours); i++)
                     {
                         GfxFillRect(
-                            dpi, { screenCoords + ScreenCoordsXY{ 0, 2 }, screenCoords + ScreenCoordsXY{ 6, 8 } },
+                            rt, { screenCoords + ScreenCoordsXY{ 0, 2 }, screenCoords + ScreenCoordsXY{ 6, 8 } },
                             RideKeyColours[i]);
-                        DrawTextBasic(dpi, screenCoords + ScreenCoordsXY{ kListRowHeight, 0 }, MapLabels[i], {});
+                        DrawTextBasic(rt, screenCoords + ScreenCoordsXY{ kListRowHeight, 0 }, MapLabels[i], {});
                         screenCoords.y += kListRowHeight;
                         if (i == 3)
                         {
@@ -695,7 +692,7 @@ namespace OpenRCT2::Ui::Windows
             else if (!isToolActive(*this, WIDX_SET_LAND_RIGHTS))
             {
                 DrawTextBasic(
-                    dpi, windowPos + ScreenCoordsXY{ 4, widgets[WIDX_MAP_SIZE_SPINNER_Y].top + 1 }, STR_MAP_SIZE, {},
+                    rt, windowPos + ScreenCoordsXY{ 4, widgets[WIDX_MAP_SIZE_SPINNER_Y].top + 1 }, STR_MAP_SIZE, {},
                     { colours[1] });
             }
         }
@@ -715,7 +712,7 @@ namespace OpenRCT2::Ui::Windows
         void InitMap()
         {
             _mapImageData.resize(getMiniMapWidth() * getMiniMapWidth());
-            std::fill(_mapImageData.begin(), _mapImageData.end(), PALETTE_INDEX_10);
+            std::fill(_mapImageData.begin(), _mapImageData.end(), PaletteIndex::pi10);
             _currentLine = 0;
         }
 
@@ -765,7 +762,7 @@ namespace OpenRCT2::Ui::Windows
 
         void IncreaseMapSize()
         {
-            auto newMapSize = GetGameState().MapSize;
+            auto newMapSize = getGameState().mapSize;
             if (IsWidgetPressed(WIDX_MAP_SIZE_LINK) || _resizeDirection == ResizeDirection::Y)
                 newMapSize.y++;
             if (IsWidgetPressed(WIDX_MAP_SIZE_LINK) || _resizeDirection == ResizeDirection::X)
@@ -777,7 +774,7 @@ namespace OpenRCT2::Ui::Windows
 
         void DecreaseMapSize()
         {
-            auto newMapSize = GetGameState().MapSize;
+            auto newMapSize = getGameState().mapSize;
             if (IsWidgetPressed(WIDX_MAP_SIZE_LINK) || _resizeDirection == ResizeDirection::Y)
                 newMapSize.y--;
             if (IsWidgetPressed(WIDX_MAP_SIZE_LINK) || _resizeDirection == ResizeDirection::X)
@@ -857,7 +854,7 @@ namespace OpenRCT2::Ui::Windows
             if (surfaceElement == nullptr)
                 return 0;
 
-            uint16_t colour = MapColour(PALETTE_INDEX_0);
+            uint16_t colour = MapColour(PaletteIndex::pi0);
             const auto* surfaceObject = surfaceElement->GetSurfaceObject();
             if (surfaceObject != nullptr)
                 colour = MapColour2(surfaceObject->MapColours[0], surfaceObject->MapColours[1]);
@@ -874,7 +871,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 if (tileElement->IsGhost())
                 {
-                    colour = MapColour(PALETTE_INDEX_21);
+                    colour = MapColour(PaletteIndex::pi21);
                     break;
                 }
 
@@ -892,8 +889,8 @@ namespace OpenRCT2::Ui::Windows
 
         uint16_t GetPixelColourRide(const CoordsXY& c)
         {
-            uint16_t colourA = 0;                           // highlight colour
-            uint16_t colourB = MapColour(PALETTE_INDEX_13); // surface colour (dark grey)
+            uint16_t colourA = 0;                             // highlight colour
+            uint16_t colourB = MapColour(PaletteIndex::pi13); // surface colour (dark grey)
 
             // as an improvement we could use first_element to show underground stuff?
             TileElement* tileElement = reinterpret_cast<TileElement*>(MapGetSurfaceElementAt(c));
@@ -904,7 +901,7 @@ namespace OpenRCT2::Ui::Windows
 
                 if (tileElement->IsGhost())
                 {
-                    colourA = MapColour(PALETTE_INDEX_21);
+                    colourA = MapColour(PaletteIndex::pi21);
                     break;
                 }
 
@@ -913,12 +910,12 @@ namespace OpenRCT2::Ui::Windows
                     case TileElementType::Surface:
                         if (tileElement->AsSurface()->GetWaterHeight() > 0)
                             // Why is this a different water colour as above (195)?
-                            colourB = MapColour(PALETTE_INDEX_194);
+                            colourB = MapColour(PaletteIndex::pi194);
                         if (!(tileElement->AsSurface()->GetOwnership() & OWNERSHIP_OWNED))
                             colourB = MapColourUnowned(colourB);
                         break;
                     case TileElementType::Path:
-                        colourA = MapColour(PALETTE_INDEX_14); // lighter grey
+                        colourA = MapColour(PaletteIndex::pi14); // lighter grey
                         break;
                     case TileElementType::Entrance:
                     {
@@ -927,7 +924,7 @@ namespace OpenRCT2::Ui::Windows
                         Ride* targetRide = GetRide(tileElement->AsEntrance()->GetRideIndex());
                         if (targetRide != nullptr)
                         {
-                            const auto& colourKey = targetRide->GetRideTypeDescriptor().ColourKey;
+                            const auto& colourKey = targetRide->getRideTypeDescriptor().ColourKey;
                             colourA = RideKeyColours[EnumValue(colourKey)];
                         }
                         break;
@@ -937,7 +934,7 @@ namespace OpenRCT2::Ui::Windows
                         Ride* targetRide = GetRide(tileElement->AsTrack()->GetRideIndex());
                         if (targetRide != nullptr)
                         {
-                            const auto& colourKey = targetRide->GetRideTypeDescriptor().ColourKey;
+                            const auto& colourKey = targetRide->getRideTypeDescriptor().ColourKey;
                             colourA = RideKeyColours[EnumValue(colourKey)];
                         }
 
@@ -954,21 +951,21 @@ namespace OpenRCT2::Ui::Windows
             return colourB;
         }
 
-        void PaintPeepOverlay(DrawPixelInfo& dpi, const ScreenCoordsXY& offset)
+        void PaintPeepOverlay(RenderTarget& rt, const ScreenCoordsXY& offset)
         {
             auto flashColour = GetGuestFlashColour();
             for (auto guest : EntityList<Guest>())
             {
-                DrawMapPeepPixel(guest, flashColour, dpi, offset);
+                DrawMapPeepPixel(guest, flashColour, rt, offset);
             }
             flashColour = GetStaffFlashColour();
             for (auto staff : EntityList<Staff>())
             {
-                DrawMapPeepPixel(staff, flashColour, dpi, offset);
+                DrawMapPeepPixel(staff, flashColour, rt, offset);
             }
         }
 
-        void DrawMapPeepPixel(Peep* peep, const uint8_t flashColour, DrawPixelInfo& dpi, const ScreenCoordsXY& offset)
+        void DrawMapPeepPixel(Peep* peep, const uint8_t flashColour, RenderTarget& rt, const ScreenCoordsXY& offset)
         {
             if (peep->x == kLocationNull)
                 return;
@@ -987,7 +984,7 @@ namespace OpenRCT2::Ui::Windows
                 }
             }
 
-            GfxFillRect(dpi, { leftTop, rightBottom }, colour);
+            GfxFillRect(rt, { leftTop, rightBottom }, colour);
         }
 
         uint8_t GetGuestFlashColour() const
@@ -1014,7 +1011,7 @@ namespace OpenRCT2::Ui::Windows
             return colour;
         }
 
-        void PaintTrainOverlay(DrawPixelInfo& dpi, const ScreenCoordsXY& offset)
+        void PaintTrainOverlay(RenderTarget& rt, const ScreenCoordsXY& offset)
         {
             for (auto train : TrainManager::View())
             {
@@ -1026,7 +1023,7 @@ namespace OpenRCT2::Ui::Windows
                     auto mapCoord = TransformToMapCoords({ vehicle->x, vehicle->y });
                     auto pixelCoord = ScreenCoordsXY{ mapCoord.x, mapCoord.y } + offset;
 
-                    GfxFillRect(dpi, { pixelCoord, pixelCoord }, PALETTE_INDEX_171);
+                    GfxFillRect(rt, { pixelCoord, pixelCoord }, PaletteIndex::pi171);
                 }
             }
         }
@@ -1035,7 +1032,7 @@ namespace OpenRCT2::Ui::Windows
          * The call to GfxFillRect was originally wrapped in Sub68DABD which made sure that arguments were ordered correctly,
          * but it doesn't look like it's ever necessary here so the call was removed.
          */
-        void PaintHudRectangle(DrawPixelInfo& dpi, const ScreenCoordsXY& widgetOffset)
+        void PaintHudRectangle(RenderTarget& rt, const ScreenCoordsXY& widgetOffset)
         {
             WindowBase* mainWindow = WindowGetMain();
             if (mainWindow == nullptr)
@@ -1057,23 +1054,23 @@ namespace OpenRCT2::Ui::Windows
             auto leftBottom = ScreenCoordsXY{ leftTop.x, rightBottom.y };
 
             // top horizontal lines
-            GfxFillRect(dpi, { leftTop, leftTop + ScreenCoordsXY{ 3, 0 } }, PALETTE_INDEX_56);
-            GfxFillRect(dpi, { rightTop - ScreenCoordsXY{ 3, 0 }, rightTop }, PALETTE_INDEX_56);
+            GfxFillRect(rt, { leftTop, leftTop + ScreenCoordsXY{ 3, 0 } }, PaletteIndex::pi56);
+            GfxFillRect(rt, { rightTop - ScreenCoordsXY{ 3, 0 }, rightTop }, PaletteIndex::pi56);
 
             // left vertical lines
-            GfxFillRect(dpi, { leftTop, leftTop + ScreenCoordsXY{ 0, 3 } }, PALETTE_INDEX_56);
-            GfxFillRect(dpi, { leftBottom - ScreenCoordsXY{ 0, 3 }, leftBottom }, PALETTE_INDEX_56);
+            GfxFillRect(rt, { leftTop, leftTop + ScreenCoordsXY{ 0, 3 } }, PaletteIndex::pi56);
+            GfxFillRect(rt, { leftBottom - ScreenCoordsXY{ 0, 3 }, leftBottom }, PaletteIndex::pi56);
 
             // bottom horizontal lines
-            GfxFillRect(dpi, { leftBottom, leftBottom + ScreenCoordsXY{ 3, 0 } }, PALETTE_INDEX_56);
-            GfxFillRect(dpi, { rightBottom - ScreenCoordsXY{ 3, 0 }, rightBottom }, PALETTE_INDEX_56);
+            GfxFillRect(rt, { leftBottom, leftBottom + ScreenCoordsXY{ 3, 0 } }, PaletteIndex::pi56);
+            GfxFillRect(rt, { rightBottom - ScreenCoordsXY{ 3, 0 }, rightBottom }, PaletteIndex::pi56);
 
             // right vertical lines
-            GfxFillRect(dpi, { rightTop, rightTop + ScreenCoordsXY{ 0, 3 } }, PALETTE_INDEX_56);
-            GfxFillRect(dpi, { rightBottom - ScreenCoordsXY{ 0, 3 }, rightBottom }, PALETTE_INDEX_56);
+            GfxFillRect(rt, { rightTop, rightTop + ScreenCoordsXY{ 0, 3 } }, PaletteIndex::pi56);
+            GfxFillRect(rt, { rightBottom - ScreenCoordsXY{ 0, 3 }, rightBottom }, PaletteIndex::pi56);
         }
 
-        void DrawTabImages(DrawPixelInfo& dpi)
+        void DrawTabImages(RenderTarget& rt)
         {
             // Guest tab image (animated)
             uint32_t guestTabImage = SPR_TAB_GUESTS_0;
@@ -1081,7 +1078,7 @@ namespace OpenRCT2::Ui::Windows
                 guestTabImage += list_information_type / 4;
 
             GfxDrawSprite(
-                dpi, ImageId(guestTabImage),
+                rt, ImageId(guestTabImage),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_PEOPLE_TAB].left, widgets[WIDX_PEOPLE_TAB].top });
 
             // Ride/stall tab image (animated)
@@ -1090,7 +1087,7 @@ namespace OpenRCT2::Ui::Windows
                 rideTabImage += list_information_type / 4;
 
             GfxDrawSprite(
-                dpi, ImageId(rideTabImage),
+                rt, ImageId(rideTabImage),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_RIDES_TAB].left, widgets[WIDX_RIDES_TAB].top });
         }
 
@@ -1101,7 +1098,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_PEOPLE_STARTING_POSITION].type = WindowWidgetType::FlatBtn;
 
             // Only show this in the scenario editor, even when in sandbox mode.
-            if (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR)
+            if (gLegacyScene == LegacyScene::scenarioEditor)
                 widgets[WIDX_MAP_GENERATOR].type = WindowWidgetType::FlatBtn;
 
             widgets[WIDX_MAP_SIZE_SPINNER_Y].type = WindowWidgetType::Spinner;
@@ -1113,10 +1110,10 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_MAP_SIZE_SPINNER_X_DOWN].type = WindowWidgetType::Button;
 
             // Push width (Y) and height (X) to the common formatter arguments for the map size spinners to use
-            auto& gameState = GetGameState();
+            auto& gameState = getGameState();
             auto ft = Formatter::Common();
-            ft.Add<uint16_t>(gameState.MapSize.y - 2);
-            ft.Add<uint16_t>(gameState.MapSize.x - 2);
+            ft.Add<uint16_t>(gameState.mapSize.y - 2);
+            ft.Add<uint16_t>(gameState.mapSize.x - 2);
         }
 
         void InputMapSize(WidgetIndex callingWidget)
@@ -1193,30 +1190,35 @@ namespace OpenRCT2::Ui::Windows
         void SetInitialWindowDimensions()
         {
             // The initial mini map size should be able to show a reasonably sized map
-            auto initSize = std::clamp(getPracticalMapSize(), 100, 254) * 2;
-            width = initSize + GetReservedRightSpace();
-            height = initSize + kReservedTopSpace + GetReservedBottomSpace();
+            auto initWidth = std::clamp(getPracticalMapSize(), 100, 254) * 2;
+            width = initWidth + GetReservedRightSpace();
 
-            auto scrollbarSize = getPracticalMapSize() > 254 ? kScrollBarWidth : 2;
-            width += scrollbarSize;
-            height += scrollbarSize;
+            auto initHeight = std::clamp(getMiniMapWidth(), 100, 254) * 2;
+            height = initHeight + kReservedTopSpace + GetReservedBottomSpace();
+
+            width += getPracticalMapSize() > initWidth ? kScrollBarWidth : 2;
+            height += getMiniMapWidth() > initHeight ? kScrollBarWidth : 2;
 
             auto maxWindowHeight = ContextGetHeight() - 68;
             width = std::min<int16_t>(width, ContextGetWidth());
             height = std::min<int16_t>(height, maxWindowHeight);
 
             _adjustedForSandboxMode = isEditorOrSandbox();
+
+            ResizeFrame();
         }
 
         void ResetMaxWindowDimensions()
         {
-            max_width = std::clamp(getMiniMapWidth() + GetReservedRightSpace(), WW, ContextGetWidth());
-            max_height = std::clamp(
+            auto newMaxWidth = std::clamp(getMiniMapWidth() + GetReservedRightSpace(), WW, ContextGetWidth());
+            auto newMaxHeight = std::clamp(
                 getMiniMapWidth() + kReservedTopSpace + GetReservedBottomSpace(), WH, ContextGetHeight() - 68);
 
             auto scrollbarSize = getMiniMapWidth() + GetReservedRightSpace() > ContextGetWidth() ? kScrollBarWidth : 2;
-            max_width += scrollbarSize;
-            max_height += scrollbarSize;
+            newMaxWidth += scrollbarSize;
+            newMaxHeight += scrollbarSize;
+
+            WindowSetResize(*this, { WW, WH }, { newMaxWidth, newMaxHeight });
         }
 
         void ResizeMiniMap()

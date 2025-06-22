@@ -18,6 +18,7 @@
 #include <openrct2/core/Numerics.hpp>
 #include <openrct2/core/String.hpp>
 #include <openrct2/drawing/Drawing.h>
+#include <openrct2/entity/EntityList.h>
 #include <openrct2/entity/EntityRegistry.h>
 #include <openrct2/entity/Guest.h>
 #include <openrct2/localisation/Formatter.h>
@@ -25,7 +26,6 @@
 #include <openrct2/object/PeepAnimationsObject.h>
 #include <openrct2/peep/PeepThoughts.h>
 #include <openrct2/ride/RideData.h>
-#include <openrct2/scenario/Scenario.h>
 #include <openrct2/ui/WindowManager.h>
 #include <openrct2/world/Park.h>
 #include <vector>
@@ -169,10 +169,9 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_FILTER_BY_NAME].type = WindowWidgetType::FlatBtn;
             widgets[WIDX_PAGE_DROPDOWN].type = WindowWidgetType::Empty;
             widgets[WIDX_PAGE_DROPDOWN_BUTTON].type = WindowWidgetType::Empty;
-            min_width = 350;
-            min_height = 330;
-            max_width = 500;
-            max_height = 450;
+
+            WindowSetResize(*this, { 350, 330 }, { 500, 450 });
+
             RefreshList();
         }
 
@@ -187,14 +186,14 @@ namespace OpenRCT2::Ui::Windows
 
             switch (type)
             {
-                case GuestListFilterType::GuestsOnRide:
+                case GuestListFilterType::guestsOnRide:
                 {
                     auto guestRide = GetRide(RideId::FromUnderlying(index));
                     if (guestRide != nullptr)
                     {
                         ft.Add<StringId>(
-                            guestRide->GetRideTypeDescriptor().HasFlag(RtdFlag::describeAsInside) ? STR_IN_RIDE : STR_ON_RIDE);
-                        guestRide->FormatNameTo(ft);
+                            guestRide->getRideTypeDescriptor().HasFlag(RtdFlag::describeAsInside) ? STR_IN_RIDE : STR_ON_RIDE);
+                        guestRide->formatNameTo(ft);
 
                         _selectedFilter = GuestFilterType::Guests;
                         _highlightedIndex = {};
@@ -203,13 +202,13 @@ namespace OpenRCT2::Ui::Windows
                     }
                     break;
                 }
-                case GuestListFilterType::GuestsInQueue:
+                case GuestListFilterType::guestsInQueue:
                 {
                     auto guestRide = GetRide(RideId::FromUnderlying(index));
                     if (guestRide != nullptr)
                     {
                         ft.Add<StringId>(STR_QUEUING_FOR);
-                        guestRide->FormatNameTo(ft);
+                        guestRide->formatNameTo(ft);
 
                         _selectedFilter = GuestFilterType::Guests;
                         _highlightedIndex = {};
@@ -218,13 +217,13 @@ namespace OpenRCT2::Ui::Windows
                     }
                     break;
                 }
-                case GuestListFilterType::GuestsThinkingAboutRide:
+                case GuestListFilterType::guestsThinkingAboutRide:
                 {
                     auto guestRide = GetRide(RideId::FromUnderlying(index));
                     if (guestRide != nullptr)
                     {
                         ft.Add<StringId>(kStringIdNone);
-                        guestRide->FormatNameTo(ft);
+                        guestRide->formatNameTo(ft);
 
                         _selectedFilter = GuestFilterType::GuestsThinking;
                         _highlightedIndex = {};
@@ -233,7 +232,7 @@ namespace OpenRCT2::Ui::Windows
                     }
                     break;
                 }
-                case GuestListFilterType::GuestsThinkingX:
+                case GuestListFilterType::guestsThinkingX:
                 {
                     ft.Add<StringId>(kPeepThoughtIds[index & 0xFF]);
 
@@ -246,22 +245,6 @@ namespace OpenRCT2::Ui::Windows
             }
 
             RefreshList();
-        }
-
-        void OnResize() override
-        {
-            min_width = 350;
-            min_height = 330;
-            if (width < min_width)
-            {
-                Invalidate();
-                width = min_width;
-            }
-            if (height < min_height)
-            {
-                Invalidate();
-                height = min_height;
-            }
         }
 
         void OnUpdate() override
@@ -422,7 +405,6 @@ namespace OpenRCT2::Ui::Windows
             if (_selectedTab == TabId::Individual && _selectedFilter)
                 widgets[WIDX_MAP].type = WindowWidgetType::FlatBtn;
 
-            ResizeFrameWithPage();
             widgets[WIDX_GUEST_LIST].right = width - 4;
             widgets[WIDX_GUEST_LIST].bottom = height - 15;
             widgets[WIDX_MAP].left = 273 - 350 + width;
@@ -447,10 +429,10 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
-            DrawTabImages(dpi);
+            DrawWidgets(rt);
+            DrawTabImages(rt);
 
             // Filter description
             StringId format;
@@ -480,7 +462,7 @@ namespace OpenRCT2::Ui::Windows
 
             {
                 Formatter ft(_filterArguments.args);
-                DrawTextEllipsised(dpi, screenCoords, 310, format, ft);
+                DrawTextEllipsised(rt, screenCoords, 310, format, ft);
             }
 
             // Number of guests (list items)
@@ -490,7 +472,7 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<int32_t>(static_cast<int32_t>(_guestList.size()));
                 DrawTextBasic(
-                    dpi, screenCoords, (_guestList.size() == 1 ? STR_FORMAT_NUM_GUESTS_SINGULAR : STR_FORMAT_NUM_GUESTS_PLURAL),
+                    rt, screenCoords, (_guestList.size() == 1 ? STR_FORMAT_NUM_GUESTS_SINGULAR : STR_FORMAT_NUM_GUESTS_PLURAL),
                     ft);
             }
         }
@@ -593,18 +575,17 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
             GfxFillRect(
-                dpi, { { dpi.x, dpi.y }, { dpi.x + dpi.width - 1, dpi.y + dpi.height - 1 } },
-                ColourMapA[colours[1].colour].mid_light);
+                rt, { { rt.x, rt.y }, { rt.x + rt.width - 1, rt.y + rt.height - 1 } }, ColourMapA[colours[1].colour].mid_light);
             switch (_selectedTab)
             {
                 case TabId::Individual:
-                    DrawScrollIndividual(dpi);
+                    DrawScrollIndividual(rt);
                     break;
                 case TabId::Summarised:
-                    DrawScrollSummarised(dpi);
+                    DrawScrollSummarised(rt);
                     break;
             }
         }
@@ -647,38 +628,38 @@ namespace OpenRCT2::Ui::Windows
         }
 
     private:
-        void DrawTabImages(DrawPixelInfo& dpi)
+        void DrawTabImages(RenderTarget& rt)
         {
             // Tab 1 image
             auto i = (_selectedTab == TabId::Individual ? _tabAnimationIndex & ~3 : 0);
             auto* animObj = findPeepAnimationsObjectForType(AnimationPeepType::Guest);
             i += animObj->GetPeepAnimation(PeepAnimationGroup::Normal).base_image + 1;
             GfxDrawSprite(
-                dpi, ImageId(i, COLOUR_GREY, COLOUR_DARK_OLIVE_GREEN),
+                rt, ImageId(i, COLOUR_GREY, COLOUR_DARK_OLIVE_GREEN),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_TAB_1].midX(), widgets[WIDX_TAB_1].bottom - 6 });
 
             // Tab 2 image
             i = (_selectedTab == TabId::Summarised ? _tabAnimationIndex / 4 : 0);
             GfxDrawSprite(
-                dpi, ImageId(SPR_TAB_GUESTS_0 + i),
+                rt, ImageId(SPR_TAB_GUESTS_0 + i),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_TAB_2].left, widgets[WIDX_TAB_2].top });
         }
 
-        void DrawScrollIndividual(DrawPixelInfo& dpi)
+        void DrawScrollIndividual(RenderTarget& rt)
         {
             size_t index = 0;
             auto y = static_cast<int32_t>(_selectedPage) * -GUEST_PAGE_HEIGHT;
             for (const auto& guestItem : _guestList)
             {
                 // Check if y is beyond the scroll control
-                if (y + kScrollableRowHeight + 1 >= -0x7FFF && y + kScrollableRowHeight + 1 > dpi.y && y < 0x7FFF
-                    && y < dpi.y + dpi.height)
+                if (y + kScrollableRowHeight + 1 >= -0x7FFF && y + kScrollableRowHeight + 1 > rt.y && y < 0x7FFF
+                    && y < rt.y + rt.height)
                 {
                     // Highlight backcolour and text colour (format)
                     StringId format = STR_BLACK_STRING;
                     if (index == _highlightedIndex)
                     {
-                        GfxFilterRect(dpi, { 0, y, 800, y + kScrollableRowHeight - 1 }, FilterPaletteID::PaletteDarken1);
+                        GfxFilterRect(rt, { 0, y, 800, y + kScrollableRowHeight - 1 }, FilterPaletteID::PaletteDarken1);
                         format = STR_WINDOW_COLOUR_2_STRINGID;
                     }
 
@@ -690,22 +671,22 @@ namespace OpenRCT2::Ui::Windows
                     }
                     auto ft = Formatter();
                     peep->FormatNameTo(ft);
-                    DrawTextEllipsised(dpi, { 0, y }, 113, format, ft);
+                    DrawTextEllipsised(rt, { 0, y }, 113, format, ft);
 
                     switch (_selectedView)
                     {
                         case GuestViewType::Actions:
                             // Guest face
-                            GfxDrawSprite(dpi, ImageId(GetPeepFaceSpriteSmall(peep)), { 118, y + 1 });
+                            GfxDrawSprite(rt, ImageId(GetPeepFaceSpriteSmall(peep)), { 118, y + 1 });
 
                             // Tracking icon
                             if (peep->PeepFlags & PEEP_FLAGS_TRACKING)
-                                GfxDrawSprite(dpi, ImageId(STR_ENTER_SELECTION_SIZE), { 112, y + 1 });
+                                GfxDrawSprite(rt, ImageId(STR_ENTER_SELECTION_SIZE), { 112, y + 1 });
 
                             // Action
                             ft = Formatter();
                             peep->FormatActionTo(ft);
-                            DrawTextEllipsised(dpi, { 133, y }, 314, format, ft);
+                            DrawTextEllipsised(rt, { 133, y }, 314, format, ft);
                             break;
                         case GuestViewType::Thoughts:
                             // For each thought
@@ -720,7 +701,7 @@ namespace OpenRCT2::Ui::Windows
 
                                 ft = Formatter();
                                 PeepThoughtSetFormatArgs(&thought, ft);
-                                DrawTextEllipsised(dpi, { 118, y }, 329, format, ft, { FontStyle::Small });
+                                DrawTextEllipsised(rt, { 118, y }, 329, format, ft, { FontStyle::Small });
                                 break;
                             }
                             break;
@@ -731,24 +712,24 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void DrawScrollSummarised(DrawPixelInfo& dpi)
+        void DrawScrollSummarised(RenderTarget& rt)
         {
             size_t index = 0;
             auto y = 0;
             for (auto& group : _groups)
             {
                 // Check if y is beyond the scroll control
-                if (y + SUMMARISED_GUEST_ROW_HEIGHT + 1 >= dpi.y)
+                if (y + SUMMARISED_GUEST_ROW_HEIGHT + 1 >= rt.y)
                 {
                     // Check if y is beyond the scroll control
-                    if (y >= dpi.y + dpi.height)
+                    if (y >= rt.y + rt.height)
                         break;
 
                     // Highlight backcolour and text colour (format)
                     StringId format = STR_BLACK_STRING;
                     if (index == _highlightedIndex)
                     {
-                        GfxFilterRect(dpi, { 0, y, 800, y + SUMMARISED_GUEST_ROW_HEIGHT }, FilterPaletteID::PaletteDarken1);
+                        GfxFilterRect(rt, { 0, y, 800, y + SUMMARISED_GUEST_ROW_HEIGHT }, FilterPaletteID::PaletteDarken1);
                         format = STR_WINDOW_COLOUR_2_STRINGID;
                     }
 
@@ -756,7 +737,7 @@ namespace OpenRCT2::Ui::Windows
                     for (uint32_t j = 0; j < std::size(group.Faces) && j < group.NumGuests; j++)
                     {
                         GfxDrawSprite(
-                            dpi, ImageId(group.Faces[j] + SPR_PEEP_SMALL_FACE_VERY_VERY_UNHAPPY),
+                            rt, ImageId(group.Faces[j] + SPR_PEEP_SMALL_FACE_VERY_VERY_UNHAPPY),
                             { static_cast<int32_t>(j) * 8, y + 12 });
                     }
 
@@ -765,18 +746,18 @@ namespace OpenRCT2::Ui::Windows
                     // Draw small font if displaying guests
                     if (_selectedView == GuestViewType::Thoughts)
                     {
-                        DrawTextEllipsised(dpi, { 0, y }, 414, format, ft, { FontStyle::Small });
+                        DrawTextEllipsised(rt, { 0, y }, 414, format, ft, { FontStyle::Small });
                     }
                     else
                     {
-                        DrawTextEllipsised(dpi, { 0, y }, 414, format, ft);
+                        DrawTextEllipsised(rt, { 0, y }, 414, format, ft);
                     }
 
                     // Draw guest count
                     ft = Formatter();
                     ft.Add<StringId>(STR_GUESTS_COUNT_COMMA_SEP);
                     ft.Add<uint32_t>(group.NumGuests);
-                    DrawTextBasic(dpi, { 326, y }, format, ft, { TextAlignment::RIGHT });
+                    DrawTextBasic(rt, { 326, y }, format, ft, { TextAlignment::RIGHT });
                 }
                 y += SUMMARISED_GUEST_ROW_HEIGHT;
                 index++;
@@ -817,7 +798,7 @@ namespace OpenRCT2::Ui::Windows
 
         bool IsRefreshOfGroupsRequired()
         {
-            uint32_t tick256 = floor2(GetGameState().CurrentTicks, 256);
+            uint32_t tick256 = floor2(getGameState().currentTicks, 256);
             if (_selectedView == _lastFindGroupsSelectedView)
             {
                 if (_lastFindGroupsWait != 0 || _lastFindGroupsTick == tick256)
@@ -845,7 +826,7 @@ namespace OpenRCT2::Ui::Windows
 
         void RefreshGroups()
         {
-            _lastFindGroupsTick = floor2(GetGameState().CurrentTicks, 256);
+            _lastFindGroupsTick = floor2(getGameState().currentTicks, 256);
             _lastFindGroupsSelectedView = _selectedView;
             _lastFindGroupsWait = 320;
             _groups.clear();
@@ -963,7 +944,7 @@ namespace OpenRCT2::Ui::Windows
 
         static GuestItem::CompareFunc GetGuestCompareFunc()
         {
-            return GetGameState().Park.Flags & PARK_FLAGS_SHOW_REAL_GUEST_NAMES ? CompareGuestItem<true>
+            return getGameState().park.Flags & PARK_FLAGS_SHOW_REAL_GUEST_NAMES ? CompareGuestItem<true>
                                                                                 : CompareGuestItem<false>;
         }
     };

@@ -14,12 +14,11 @@
 
 struct CoordsXY;
 
-enum TERRAIN_SURFACE_FLAGS
+enum TerrainSurfaceFlags
 {
-    NONE = 0,
-    SMOOTH_WITH_SELF = 1 << 0,
-    SMOOTH_WITH_OTHER = 1 << 1,
-    CAN_GROW = 1 << 2,
+    smoothWithSelf = 1 << 0,
+    smoothWithOther = 1 << 1,
+    canGrow = 1 << 2,
 };
 
 class TerrainSurfaceObject final : public Object
@@ -55,14 +54,14 @@ public:
     colour_t Colour{};
     uint8_t Rotations{};
     money64 Price{};
-    TERRAIN_SURFACE_FLAGS Flags{};
+    TerrainSurfaceFlags Flags{};
     PaletteIndex MapColours[2]{};
 
     void ReadJson(IReadObjectContext* context, json_t& root) override;
     void Load() override;
     void Unload() override;
 
-    void DrawPreview(DrawPixelInfo& dpi, int32_t width, int32_t height) const override;
+    void DrawPreview(RenderTarget& rt, int32_t width, int32_t height) const override;
 
     ImageId GetImageId(
         const CoordsXY& position, uint8_t length, uint8_t rotation, uint8_t offset, bool grid, bool underground) const;

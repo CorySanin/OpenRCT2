@@ -85,32 +85,32 @@ namespace OpenRCT2::Ui::Windows
                     : colours[0].colour);
         }
 
-        void DrawLeftPanel(DrawPixelInfo& dpi)
+        void DrawLeftPanel(RenderTarget& rt)
         {
             const auto& leftPanelWidget = widgets[WIDX_LEFT_OUTSET];
 
             const auto topLeft = windowPos + ScreenCoordsXY{ leftPanelWidget.left + 1, leftPanelWidget.top + 1 };
             const auto bottomRight = windowPos + ScreenCoordsXY{ leftPanelWidget.right - 1, leftPanelWidget.bottom - 1 };
             // Draw green inset rectangle on panel
-            GfxFillRectInset(dpi, { topLeft, bottomRight }, colours[1], INSET_RECT_F_30);
+            GfxFillRectInset(rt, { topLeft, bottomRight }, colours[1], INSET_RECT_F_30);
 
             // Figure out how much line height we have to work with.
             uint32_t line_height = FontGetLineHeight(FontStyle::Medium);
 
-            auto& gameState = GetGameState();
+            auto& gameState = getGameState();
 
             // Draw money
-            if (!(gameState.Park.Flags & PARK_FLAGS_NO_MONEY))
+            if (!(gameState.park.Flags & PARK_FLAGS_NO_MONEY))
             {
                 const auto& widget = widgets[WIDX_MONEY];
                 auto screenCoords = ScreenCoordsXY{ windowPos.x + widget.midX(),
                                                     windowPos.y + widget.midY() - (line_height == 10 ? 5 : 6) };
 
                 auto colour = GetHoverWidgetColour(WIDX_MONEY);
-                StringId stringId = gameState.Cash < 0 ? STR_BOTTOM_TOOLBAR_CASH_NEGATIVE : STR_BOTTOM_TOOLBAR_CASH;
+                StringId stringId = gameState.cash < 0 ? STR_BOTTOM_TOOLBAR_CASH_NEGATIVE : STR_BOTTOM_TOOLBAR_CASH;
                 auto ft = Formatter();
-                ft.Add<money64>(gameState.Cash);
-                DrawTextBasic(dpi, screenCoords, stringId, ft, { colour, TextAlignment::CENTRE });
+                ft.Add<money64>(gameState.cash);
+                DrawTextBasic(rt, screenCoords, stringId, ft, { colour, TextAlignment::CENTRE });
             }
 
             static constexpr StringId _guestCountFormats[] = {
@@ -130,12 +130,12 @@ namespace OpenRCT2::Ui::Windows
                 const auto& widget = widgets[WIDX_GUESTS];
                 auto screenCoords = ScreenCoordsXY{ windowPos.x + widget.midX(), windowPos.y + widget.midY() - 6 };
 
-                StringId stringId = gameState.NumGuestsInPark == 1 ? _guestCountFormatsSingular[gameState.GuestChangeModifier]
-                                                                   : _guestCountFormats[gameState.GuestChangeModifier];
+                StringId stringId = gameState.numGuestsInPark == 1 ? _guestCountFormatsSingular[gameState.guestChangeModifier]
+                                                                   : _guestCountFormats[gameState.guestChangeModifier];
                 auto colour = GetHoverWidgetColour(WIDX_GUESTS);
                 auto ft = Formatter();
-                ft.Add<uint32_t>(gameState.NumGuestsInPark);
-                DrawTextBasic(dpi, screenCoords, stringId, ft, { colour, TextAlignment::CENTRE });
+                ft.Add<uint32_t>(gameState.numGuestsInPark);
+                DrawTextBasic(rt, screenCoords, stringId, ft, { colour, TextAlignment::CENTRE });
             }
 
             // Draw park rating
@@ -143,38 +143,38 @@ namespace OpenRCT2::Ui::Windows
                 const auto& widget = widgets[WIDX_PARK_RATING];
                 auto screenCoords = windowPos + ScreenCoordsXY{ widget.left + 11, widget.midY() - 5 };
 
-                DrawParkRating(dpi, colours[3].colour, screenCoords, std::max(10, ((gameState.Park.Rating / 4) * 263) / 256));
+                DrawParkRating(rt, colours[3].colour, screenCoords, std::max(10, ((gameState.park.Rating / 4) * 263) / 256));
             }
         }
 
-        void DrawParkRating(DrawPixelInfo& dpi, int32_t colour, const ScreenCoordsXY& coords, uint8_t factor)
+        void DrawParkRating(RenderTarget& rt, int32_t colour, const ScreenCoordsXY& coords, uint8_t factor)
         {
             int16_t bar_width = (factor * 114) / 255;
             GfxFillRectInset(
-                dpi, { coords + ScreenCoordsXY{ 1, 1 }, coords + ScreenCoordsXY{ 114, 9 } }, colours[1], INSET_RECT_F_30);
+                rt, { coords + ScreenCoordsXY{ 1, 1 }, coords + ScreenCoordsXY{ 114, 9 } }, colours[1], INSET_RECT_F_30);
             if (!(colour & kBarBlink) || GameIsPaused() || (gCurrentRealTimeTicks & 8))
             {
                 if (bar_width > 2)
                 {
                     GfxFillRectInset(
-                        dpi, { coords + ScreenCoordsXY{ 2, 2 }, coords + ScreenCoordsXY{ bar_width - 1, 8 } },
+                        rt, { coords + ScreenCoordsXY{ 2, 2 }, coords + ScreenCoordsXY{ bar_width - 1, 8 } },
                         ColourWithFlags{ static_cast<uint8_t>(colour) }, 0);
                 }
             }
 
             // Draw thumbs on the sides
-            GfxDrawSprite(dpi, ImageId(SPR_RATING_LOW), coords - ScreenCoordsXY{ 14, 0 });
-            GfxDrawSprite(dpi, ImageId(SPR_RATING_HIGH), coords + ScreenCoordsXY{ 114, 0 });
+            GfxDrawSprite(rt, ImageId(SPR_RATING_LOW), coords - ScreenCoordsXY{ 14, 0 });
+            GfxDrawSprite(rt, ImageId(SPR_RATING_HIGH), coords + ScreenCoordsXY{ 114, 0 });
         }
 
-        void DrawRightPanel(DrawPixelInfo& dpi)
+        void DrawRightPanel(RenderTarget& rt)
         {
             const auto& rightPanelWidget = widgets[WIDX_RIGHT_OUTSET];
 
             const auto topLeft = windowPos + ScreenCoordsXY{ rightPanelWidget.left + 1, rightPanelWidget.top + 1 };
             const auto bottomRight = windowPos + ScreenCoordsXY{ rightPanelWidget.right - 1, rightPanelWidget.bottom - 1 };
             // Draw green inset rectangle on panel
-            GfxFillRectInset(dpi, { topLeft, bottomRight }, colours[1], INSET_RECT_F_30);
+            GfxFillRectInset(rt, { topLeft, bottomRight }, colours[1], INSET_RECT_F_30);
 
             auto screenCoords = ScreenCoordsXY{ (rightPanelWidget.left + rightPanelWidget.right) / 2 + windowPos.x,
                                                 rightPanelWidget.top + windowPos.y + 2 };
@@ -191,7 +191,7 @@ namespace OpenRCT2::Ui::Windows
             ft.Add<StringId>(DateDayNames[day]);
             ft.Add<int16_t>(month);
             ft.Add<int16_t>(year);
-            DrawTextBasic(dpi, screenCoords, stringId, ft, { colour, TextAlignment::CENTRE });
+            DrawTextBasic(rt, screenCoords, stringId, ft, { colour, TextAlignment::CENTRE });
 
             // Figure out how much line height we have to work with.
             uint32_t line_height = FontGetLineHeight(FontStyle::Medium);
@@ -199,7 +199,7 @@ namespace OpenRCT2::Ui::Windows
             // Temperature
             screenCoords = { windowPos.x + rightPanelWidget.left + 15, static_cast<int32_t>(screenCoords.y + line_height + 1) };
 
-            int32_t temperature = GetGameState().WeatherCurrent.temperature;
+            int32_t temperature = getGameState().weatherCurrent.temperature;
             StringId format = STR_CELSIUS_VALUE;
             if (Config::Get().general.TemperatureFormat == TemperatureUnit::Fahrenheit)
             {
@@ -208,33 +208,33 @@ namespace OpenRCT2::Ui::Windows
             }
             ft = Formatter();
             ft.Add<int16_t>(temperature);
-            DrawTextBasic(dpi, screenCoords + ScreenCoordsXY{ 0, 6 }, format, ft);
+            DrawTextBasic(rt, screenCoords + ScreenCoordsXY{ 0, 6 }, format, ft);
             screenCoords.x += 30;
 
             // Current weather
-            auto currentWeatherSpriteId = ClimateGetWeatherSpriteId(GetGameState().WeatherCurrent);
-            GfxDrawSprite(dpi, ImageId(currentWeatherSpriteId), screenCoords);
+            auto currentWeatherSpriteId = ClimateGetWeatherSpriteId(getGameState().weatherCurrent.weatherType);
+            GfxDrawSprite(rt, ImageId(currentWeatherSpriteId), screenCoords);
 
             // Next weather
-            auto nextWeatherSpriteId = ClimateGetWeatherSpriteId(GetGameState().WeatherNext);
+            auto nextWeatherSpriteId = ClimateGetWeatherSpriteId(getGameState().weatherNext.weatherType);
             if (currentWeatherSpriteId != nextWeatherSpriteId)
             {
-                if (GetGameState().WeatherUpdateTimer < 960)
+                if (getGameState().weatherUpdateTimer < 960)
                 {
-                    GfxDrawSprite(dpi, ImageId(SPR_NEXT_WEATHER), screenCoords + ScreenCoordsXY{ 27, 5 });
-                    GfxDrawSprite(dpi, ImageId(nextWeatherSpriteId), screenCoords + ScreenCoordsXY{ 40, 0 });
+                    GfxDrawSprite(rt, ImageId(SPR_NEXT_WEATHER), screenCoords + ScreenCoordsXY{ 27, 5 });
+                    GfxDrawSprite(rt, ImageId(nextWeatherSpriteId), screenCoords + ScreenCoordsXY{ 40, 0 });
                 }
             }
         }
 
-        void DrawNewsItem(DrawPixelInfo& dpi)
+        void DrawNewsItem(RenderTarget& rt)
         {
             const auto& middleOutsetWidget = widgets[WIDX_MIDDLE_OUTSET];
             auto* newsItem = News::GetItem(0);
 
             // Current news item
             GfxFillRectInset(
-                dpi,
+                rt,
 
                 { windowPos + ScreenCoordsXY{ middleOutsetWidget.left + 1, middleOutsetWidget.top + 1 },
                   windowPos + ScreenCoordsXY{ middleOutsetWidget.right - 1, middleOutsetWidget.bottom - 1 } },
@@ -244,29 +244,29 @@ namespace OpenRCT2::Ui::Windows
             auto screenCoords = windowPos + ScreenCoordsXY{ middleOutsetWidget.midX(), middleOutsetWidget.top + 11 };
             int32_t itemWidth = middleOutsetWidget.width() - 62;
             DrawNewsTicker(
-                dpi, screenCoords, itemWidth, COLOUR_BRIGHT_GREEN, STR_BOTTOM_TOOLBAR_NEWS_TEXT, newsItem->Text,
-                newsItem->Ticks);
+                rt, screenCoords, itemWidth, COLOUR_BRIGHT_GREEN, STR_BOTTOM_TOOLBAR_NEWS_TEXT, newsItem->text,
+                newsItem->ticks);
 
             const auto& newsSubjectWidget = widgets[WIDX_NEWS_SUBJECT];
             screenCoords = windowPos + ScreenCoordsXY{ newsSubjectWidget.left, newsSubjectWidget.top };
-            switch (newsItem->Type)
+            switch (newsItem->type)
             {
-                case News::ItemType::Ride:
-                    GfxDrawSprite(dpi, ImageId(SPR_RIDE), screenCoords);
+                case News::ItemType::ride:
+                    GfxDrawSprite(rt, ImageId(SPR_RIDE), screenCoords);
                     break;
-                case News::ItemType::PeepOnRide:
-                case News::ItemType::Peep:
+                case News::ItemType::peepOnRide:
+                case News::ItemType::peep:
                 {
-                    if (newsItem->HasButton())
+                    if (newsItem->hasButton())
                         break;
 
-                    DrawPixelInfo clipped_dpi;
-                    if (!ClipDrawPixelInfo(clipped_dpi, dpi, screenCoords + ScreenCoordsXY{ 1, 1 }, 22, 22))
+                    RenderTarget clippedRT;
+                    if (!ClipDrawPixelInfo(clippedRT, rt, screenCoords + ScreenCoordsXY{ 1, 1 }, 22, 22))
                     {
                         break;
                     }
 
-                    auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(newsItem->Assoc));
+                    auto peep = TryGetEntity<Peep>(EntityId::FromUnderlying(newsItem->assoc));
                     if (peep == nullptr)
                         return;
 
@@ -285,7 +285,7 @@ namespace OpenRCT2::Ui::Windows
                     image_id_base++;
 
                     auto image_id = ImageId(image_id_base, peep->TshirtColour, peep->TrousersColour);
-                    GfxDrawSprite(clipped_dpi, image_id, clipCoords);
+                    GfxDrawSprite(clippedRT, image_id, clipCoords);
 
                     auto* guest = peep->As<Guest>();
                     if (guest == nullptr)
@@ -299,7 +299,7 @@ namespace OpenRCT2::Ui::Windows
                     {
                         auto itemOffset = kPeepSpriteHatItemStart + 1;
                         auto imageId = ImageId(itemOffset + itemFrame * 4, guest->HatColour);
-                        GfxDrawSprite(clipped_dpi, imageId, clipCoords);
+                        GfxDrawSprite(clippedRT, imageId, clipCoords);
                         return;
                     }
 
@@ -307,7 +307,7 @@ namespace OpenRCT2::Ui::Windows
                     {
                         auto itemOffset = kPeepSpriteBalloonItemStart + 1;
                         auto imageId = ImageId(itemOffset + itemFrame * 4, guest->BalloonColour);
-                        GfxDrawSprite(clipped_dpi, imageId, clipCoords);
+                        GfxDrawSprite(clippedRT, imageId, clipCoords);
                         return;
                     }
 
@@ -315,40 +315,40 @@ namespace OpenRCT2::Ui::Windows
                     {
                         auto itemOffset = kPeepSpriteUmbrellaItemStart + 1;
                         auto imageId = ImageId(itemOffset + itemFrame * 4, guest->UmbrellaColour);
-                        GfxDrawSprite(clipped_dpi, imageId, clipCoords);
+                        GfxDrawSprite(clippedRT, imageId, clipCoords);
                         return;
                     }
                     break;
                 }
-                case News::ItemType::Money:
-                case News::ItemType::Campaign:
-                    GfxDrawSprite(dpi, ImageId(SPR_FINANCE), screenCoords);
+                case News::ItemType::money:
+                case News::ItemType::campaign:
+                    GfxDrawSprite(rt, ImageId(SPR_FINANCE), screenCoords);
                     break;
-                case News::ItemType::Research:
-                    GfxDrawSprite(dpi, ImageId(newsItem->Assoc < 0x10000 ? SPR_NEW_SCENERY : SPR_NEW_RIDE), screenCoords);
+                case News::ItemType::research:
+                    GfxDrawSprite(rt, ImageId(newsItem->assoc < 0x10000 ? SPR_NEW_SCENERY : SPR_NEW_RIDE), screenCoords);
                     break;
-                case News::ItemType::Peeps:
-                    GfxDrawSprite(dpi, ImageId(SPR_GUESTS), screenCoords);
+                case News::ItemType::peeps:
+                    GfxDrawSprite(rt, ImageId(SPR_GUESTS), screenCoords);
                     break;
-                case News::ItemType::Award:
-                    GfxDrawSprite(dpi, ImageId(SPR_AWARD), screenCoords);
+                case News::ItemType::award:
+                    GfxDrawSprite(rt, ImageId(SPR_AWARD), screenCoords);
                     break;
-                case News::ItemType::Graph:
-                    GfxDrawSprite(dpi, ImageId(SPR_GRAPH), screenCoords);
+                case News::ItemType::graph:
+                    GfxDrawSprite(rt, ImageId(SPR_GRAPH), screenCoords);
                     break;
-                case News::ItemType::Null:
-                case News::ItemType::Blank:
-                case News::ItemType::Count:
+                case News::ItemType::null:
+                case News::ItemType::blank:
+                case News::ItemType::count:
                     break;
             }
         }
 
-        void DrawMiddlePanel(DrawPixelInfo& dpi)
+        void DrawMiddlePanel(RenderTarget& rt)
         {
             Widget* middleOutsetWidget = &widgets[WIDX_MIDDLE_OUTSET];
 
             GfxFillRectInset(
-                dpi,
+                rt,
                 { windowPos + ScreenCoordsXY{ middleOutsetWidget->left + 1, middleOutsetWidget->top + 1 },
                   windowPos + ScreenCoordsXY{ middleOutsetWidget->right - 1, middleOutsetWidget->bottom - 1 } },
                 colours[1], INSET_RECT_F_30);
@@ -368,13 +368,12 @@ namespace OpenRCT2::Ui::Windows
             {
                 // TODO: this string probably shouldn't be reused for this
                 DrawTextWrapped(
-                    dpi, middleWidgetCoords, panelWidth, STR_TITLE_SEQUENCE_OPENRCT2, ft,
-                    { colours[0], TextAlignment::CENTRE });
+                    rt, middleWidgetCoords, panelWidth, STR_TITLE_SEQUENCE_OPENRCT2, ft, { colours[0], TextAlignment::CENTRE });
             }
             else
             {
                 // Show tooltip in bottom toolbar
-                DrawTextWrapped(dpi, middleWidgetCoords, panelWidth, STR_STRINGID, ft, { colours[0], TextAlignment::CENTRE });
+                DrawTextWrapped(rt, middleWidgetCoords, panelWidth, STR_STRINGID, ft, { colours[0], TextAlignment::CENTRE });
             }
         }
 
@@ -432,7 +431,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 case WIDX_LEFT_OUTSET:
                 case WIDX_MONEY:
-                    if (!(GetGameState().Park.Flags & PARK_FLAGS_NO_MONEY))
+                    if (!(getGameState().park.Flags & PARK_FLAGS_NO_MONEY))
                         ContextOpenWindow(WindowClass::Finances);
                     break;
                 case WIDX_GUESTS:
@@ -453,7 +452,7 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_NEWS_SUBJECT:
                     newsItem = News::GetItem(0);
-                    News::OpenSubject(newsItem->Type, newsItem->Assoc);
+                    News::OpenSubject(newsItem->type, newsItem->assoc);
                     break;
                 case WIDX_NEWS_LOCATE:
                     if (News::IsQueueEmpty())
@@ -462,7 +461,7 @@ namespace OpenRCT2::Ui::Windows
                     {
                         newsItem = News::GetItem(0);
 
-                        auto subjectLoc = News::GetSubjectLocation(newsItem->Type, newsItem->Assoc);
+                        auto subjectLoc = News::GetSubjectLocation(newsItem->type, newsItem->assoc);
 
                         if (!subjectLoc.has_value())
                             break;
@@ -481,17 +480,17 @@ namespace OpenRCT2::Ui::Windows
 
         OpenRCT2String OnTooltip(WidgetIndex widgetIndex, StringId fallback) override
         {
-            const auto& gameState = GetGameState();
+            const auto& gameState = getGameState();
             auto ft = Formatter();
 
             switch (widgetIndex)
             {
                 case WIDX_MONEY:
-                    ft.Add<money64>(gameState.CurrentProfit);
-                    ft.Add<money64>(gameState.Park.Value);
+                    ft.Add<money64>(gameState.currentProfit);
+                    ft.Add<money64>(gameState.park.Value);
                     break;
                 case WIDX_PARK_RATING:
-                    ft.Add<int16_t>(gameState.Park.Rating);
+                    ft.Add<int16_t>(gameState.park.Rating);
                     break;
             }
             return { fallback, ft };
@@ -514,7 +513,7 @@ namespace OpenRCT2::Ui::Windows
                 + 1;
 
             // Reposition left widgets in accordance with line height... depending on whether there is money in play.
-            if (GetGameState().Park.Flags & PARK_FLAGS_NO_MONEY)
+            if (getGameState().park.Flags & PARK_FLAGS_NO_MONEY)
             {
                 widgets[WIDX_MONEY].type = WindowWidgetType::Empty;
                 widgets[WIDX_GUESTS].top = 1;
@@ -592,18 +591,18 @@ namespace OpenRCT2::Ui::Windows
                 disabled_widgets &= ~(1uLL << WIDX_NEWS_LOCATE);
 
                 // Find out if the news item is no longer valid
-                auto subjectLoc = News::GetSubjectLocation(newsItem->Type, newsItem->Assoc);
+                auto subjectLoc = News::GetSubjectLocation(newsItem->type, newsItem->assoc);
 
                 if (!subjectLoc.has_value())
                     disabled_widgets |= (1uLL << WIDX_NEWS_LOCATE);
 
-                if (!(newsItem->TypeHasSubject()))
+                if (!(newsItem->typeHasSubject()))
                 {
                     disabled_widgets |= (1uLL << WIDX_NEWS_SUBJECT);
                     widgets[WIDX_NEWS_SUBJECT].type = WindowWidgetType::Empty;
                 }
 
-                if (newsItem->HasButton())
+                if (newsItem->hasButton())
                 {
                     disabled_widgets |= (1uLL << WIDX_NEWS_SUBJECT);
                     disabled_widgets |= (1uLL << WIDX_NEWS_LOCATE);
@@ -611,41 +610,41 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            auto leftWidget = widgets[WIDX_LEFT_OUTSET];
-            auto rightWidget = widgets[WIDX_RIGHT_OUTSET];
-            auto middleWidget = widgets[WIDX_MIDDLE_OUTSET];
+            const auto& leftWidget = widgets[WIDX_LEFT_OUTSET];
+            const auto& rightWidget = widgets[WIDX_RIGHT_OUTSET];
+            const auto& middleWidget = widgets[WIDX_MIDDLE_OUTSET];
 
             // Draw panel grey backgrounds
             auto leftTop = windowPos + ScreenCoordsXY{ leftWidget.left, leftWidget.top };
             auto rightBottom = windowPos + ScreenCoordsXY{ leftWidget.right, leftWidget.bottom };
-            GfxFilterRect(dpi, { leftTop, rightBottom }, FilterPaletteID::Palette51);
+            GfxFilterRect(rt, { leftTop, rightBottom }, FilterPaletteID::Palette51);
 
             leftTop = windowPos + ScreenCoordsXY{ rightWidget.left, rightWidget.top };
             rightBottom = windowPos + ScreenCoordsXY{ rightWidget.right, rightWidget.bottom };
-            GfxFilterRect(dpi, { leftTop, rightBottom }, FilterPaletteID::Palette51);
+            GfxFilterRect(rt, { leftTop, rightBottom }, FilterPaletteID::Palette51);
 
             if (ThemeGetFlags() & UITHEME_FLAG_USE_FULL_BOTTOM_TOOLBAR)
             {
                 // Draw grey background
                 leftTop = windowPos + ScreenCoordsXY{ middleWidget.left, middleWidget.top };
                 rightBottom = windowPos + ScreenCoordsXY{ middleWidget.right, middleWidget.bottom };
-                GfxFilterRect(dpi, { leftTop, rightBottom }, FilterPaletteID::Palette51);
+                GfxFilterRect(rt, { leftTop, rightBottom }, FilterPaletteID::Palette51);
             }
 
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
-            DrawLeftPanel(dpi);
-            DrawRightPanel(dpi);
+            DrawLeftPanel(rt);
+            DrawRightPanel(rt);
 
             if (!News::IsQueueEmpty())
             {
-                DrawNewsItem(dpi);
+                DrawNewsItem(rt);
             }
             else if (ThemeGetFlags() & UITHEME_FLAG_USE_FULL_BOTTOM_TOOLBAR)
             {
-                DrawMiddlePanel(dpi);
+                DrawMiddlePanel(rt);
             }
         }
 
@@ -693,14 +692,14 @@ namespace OpenRCT2::Ui::Windows
         auto* windowMgr = GetWindowManager();
         auto* window = windowMgr->Create<GameBottomToolbar>(
             WindowClass::BottomToolbar, ScreenCoordsXY(0, screenHeight - toolbar_height), screenWidth, toolbar_height,
-            WF_STICK_TO_FRONT | WF_TRANSPARENT | WF_NO_BACKGROUND);
+            WF_STICK_TO_FRONT | WF_TRANSPARENT | WF_NO_BACKGROUND | WF_NO_TITLE_BAR);
 
         return window;
     }
 
     void WindowGameBottomToolbarInvalidateNewsItem()
     {
-        if (gScreenFlags == SCREEN_FLAGS_PLAYING)
+        if (gLegacyScene == LegacyScene::playing)
         {
             auto* windowMgr = Ui::GetWindowManager();
             windowMgr->InvalidateWidgetByClass(WindowClass::BottomToolbar, WIDX_MIDDLE_OUTSET);

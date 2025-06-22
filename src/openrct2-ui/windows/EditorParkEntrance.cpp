@@ -35,7 +35,7 @@ namespace OpenRCT2::Ui::Windows
     static constexpr int32_t kScrollWidth = (kImageSize * kNumColumns) + kScrollBarWidth + 4;
     static constexpr int32_t kScrollHeight = (kImageSize * kNumRows);
     static constexpr int32_t kWindowWidth = kScrollWidth + 28;
-    static constexpr int32_t kWindowHeight = kScrollHeight + 50;
+    static constexpr int32_t kWindowHeight = kScrollHeight + 51;
 
     struct EntranceSelection
     {
@@ -98,40 +98,40 @@ namespace OpenRCT2::Ui::Windows
             return numRows;
         }
 
-        void PaintPreview(DrawPixelInfo& dpi, ImageIndex imageStart, ScreenCoordsXY screenCoords, Direction direction)
+        void PaintPreview(RenderTarget& rt, ImageIndex imageStart, ScreenCoordsXY screenCoords, Direction direction)
         {
             imageStart += (direction * 3);
 
             switch (direction)
             {
                 case 0:
-                    GfxDrawSprite(dpi, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ -32, 14 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ 32, 44 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ -32, 14 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ 32, 44 });
                     break;
                 case 1:
-                    GfxDrawSprite(dpi, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ 32, 14 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ -32, 44 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ 32, 14 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ -32, 44 });
                     break;
                 case 2:
-                    GfxDrawSprite(dpi, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ -32, 14 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ 32, 44 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ -32, 14 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ 32, 44 });
                     break;
                 case 3:
-                    GfxDrawSprite(dpi, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ 32, 14 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
-                    GfxDrawSprite(dpi, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ -32, 44 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 2), screenCoords + ScreenCoordsXY{ 32, 14 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 0), screenCoords + ScreenCoordsXY{ 0, 28 });
+                    GfxDrawSprite(rt, ImageId(imageStart + 1), screenCoords + ScreenCoordsXY{ -32, 44 });
                     break;
             }
         }
 
         CoordsXYZD PlaceParkEntranceGetMapPosition(const ScreenCoordsXY& screenCoords)
         {
-            CoordsXYZD parkEntranceMapPosition{ 0, 0, 0, INVALID_DIRECTION };
+            CoordsXYZD parkEntranceMapPosition{ 0, 0, 0, kInvalidDirection };
             const CoordsXY mapCoords = ViewportInteractionGetTileStartAtCursor(screenCoords);
-            parkEntranceMapPosition = { mapCoords.x, mapCoords.y, 0, INVALID_DIRECTION };
+            parkEntranceMapPosition = { mapCoords.x, mapCoords.y, 0, kInvalidDirection };
             if (parkEntranceMapPosition.IsNull())
                 return parkEntranceMapPosition;
 
@@ -246,15 +246,14 @@ namespace OpenRCT2::Ui::Windows
             InitParkEntranceItems();
 
             list_information_type = 0;
-            min_width = kWindowWidth;
-            min_height = kWindowHeight;
-            max_width = kWindowWidth;
-            max_height = static_cast<int16_t>(43 + kImageSize * GetNumRows());
+
+            auto maxHeight = static_cast<int16_t>(kWindowHeight + kImageSize * (GetNumRows() - 1));
+            WindowSetResize(*this, { kWindowWidth, kWindowHeight }, { kWindowWidth, maxHeight });
 
             pressed_widgets |= 1LL << WIDX_TAB;
 
-            ToolSet(*this, WIDX_LIST, Tool::EntranceDown);
-            InputSetFlag(INPUT_FLAG_6, true);
+            ToolSet(*this, WIDX_LIST, Tool::entranceDown);
+            gInputFlags.set(InputFlag::unk6);
         }
 
         void OnMouseUp(WidgetIndex widgetIndex) override
@@ -285,23 +284,21 @@ namespace OpenRCT2::Ui::Windows
 
         void OnPrepareDraw() override
         {
-            ResizeFrameWithPage();
-
             widgets[WIDX_LIST].right = width - 30;
             widgets[WIDX_LIST].bottom = height - 5;
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
             GfxDrawSprite(
-                dpi, ImageId(SPR_TAB_PARK_ENTRANCE),
+                rt, ImageId(SPR_TAB_PARK_ENTRANCE),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_TAB].left, widgets[WIDX_TAB].top });
         }
 
-        void OnScrollDraw(int32_t scrollIndex, DrawPixelInfo& dpi) override
+        void OnScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
-            GfxClear(dpi, ColourMapA[colours[1].colour].mid_light);
+            GfxClear(rt, ColourMapA[colours[1].colour].mid_light);
 
             ScreenCoordsXY coords{ 1, 1 };
 
@@ -316,13 +313,13 @@ namespace OpenRCT2::Ui::Windows
 
                 if (buttonFlags != 0)
                     GfxFillRectInset(
-                        dpi, { coords, coords + ScreenCoordsXY{ kImageSize - 1, kImageSize - 1 } }, colours[1],
+                        rt, { coords, coords + ScreenCoordsXY{ kImageSize - 1, kImageSize - 1 } }, colours[1],
                         INSET_RECT_FLAG_FILL_MID_LIGHT | buttonFlags);
 
-                DrawPixelInfo clipDPI;
+                RenderTarget clipDPI;
                 auto screenPos = coords + ScreenCoordsXY{ kScrollPadding, kScrollPadding };
                 if (ClipDrawPixelInfo(
-                        clipDPI, dpi, screenPos, kImageSize - (2 * kScrollPadding), kImageSize - (2 * kScrollPadding)))
+                        clipDPI, rt, screenPos, kImageSize - (2 * kScrollPadding), kImageSize - (2 * kScrollPadding)))
                 {
                     PaintPreview(
                         clipDPI, entranceType.imageId, ScreenCoordsXY{ kImageSize / 2, kImageSize / 2 },

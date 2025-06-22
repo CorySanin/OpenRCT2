@@ -146,9 +146,9 @@ namespace OpenRCT2::Ui::Windows
             WidgetSetCheckboxValue(*this, WIDX_TOGGLE_STABLE_PAINT_SORT, gPaintStableSort);
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
         }
     };
 
@@ -157,7 +157,7 @@ namespace OpenRCT2::Ui::Windows
         auto* windowMgr = GetWindowManager();
         auto* window = windowMgr->FocusOrCreate<DebugPaintWindow>(
             WindowClass::DebugPaint, { 16, ContextGetHeight() - 16 - 33 - WINDOW_HEIGHT }, WINDOW_WIDTH, WINDOW_HEIGHT,
-            WF_STICK_TO_FRONT | WF_TRANSPARENT);
+            WF_STICK_TO_FRONT | WF_TRANSPARENT | WF_NO_TITLE_BAR);
 
         return window;
     }

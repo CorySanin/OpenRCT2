@@ -9,8 +9,9 @@
 
 #pragma once
 
-#include "./Weather.h"
+#include "../core/FlagHolder.hpp"
 #include "ColourPalette.h"
+#include "Weather.h"
 
 #include <memory>
 #include <string>
@@ -18,28 +19,26 @@
 enum class DrawingEngine : int32_t
 {
     None = -1,
-    Software,
     SoftwareWithHardwareDisplay,
     OpenGL,
     Count,
 };
 
-enum DRAWING_ENGINE_FLAGS
+enum DrawingEngineFlag
 {
-    DEF_NONE = 0,
-
     /**
      * Whether or not the engine will only draw changed blocks of the screen each frame.
      */
-    DEF_DIRTY_OPTIMISATIONS = 1 << 0,
+    dirtyOptimisations,
 
     /**
      * The drawing engine is capable of processing the drawing in parallel.
      */
-    DEF_PARALLEL_DRAWING = 1 << 1,
+    parallelDrawing = 1 << 1,
 };
+using DrawingEngineFlags = FlagHolder<uint8_t, DrawingEngineFlag>;
 
-struct DrawPixelInfo;
+struct RenderTarget;
 
 namespace OpenRCT2::Ui
 {
@@ -71,9 +70,9 @@ namespace OpenRCT2::Drawing
         virtual std::string Screenshot() = 0;
 
         virtual IDrawingContext* GetDrawingContext() = 0;
-        virtual DrawPixelInfo* GetDrawingPixelInfo() = 0;
+        virtual RenderTarget* GetDrawingPixelInfo() = 0;
 
-        virtual DRAWING_ENGINE_FLAGS GetFlags() = 0;
+        virtual DrawingEngineFlags GetFlags() = 0;
 
         virtual void InvalidateImage(uint32_t image) = 0;
     };
@@ -83,15 +82,15 @@ namespace OpenRCT2::Drawing
         virtual ~IDrawingEngineFactory()
         {
         }
-        [[nodiscard]] virtual std::unique_ptr<IDrawingEngine>
-            Create(DrawingEngine type, const std::shared_ptr<OpenRCT2::Ui::IUiContext>& uiContext) = 0;
+        [[nodiscard]] virtual std::unique_ptr<IDrawingEngine> Create(DrawingEngine type, OpenRCT2::Ui::IUiContext& uiContext)
+            = 0;
     };
 
     struct IWeatherDrawer
     {
         virtual ~IWeatherDrawer() = default;
         virtual void Draw(
-            DrawPixelInfo& dpi, int32_t x, int32_t y, int32_t width, int32_t height, int32_t xStart, int32_t yStart,
+            RenderTarget& rt, int32_t x, int32_t y, int32_t width, int32_t height, int32_t xStart, int32_t yStart,
             const uint8_t* weatherpattern)
             = 0;
     };

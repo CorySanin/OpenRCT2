@@ -28,6 +28,8 @@ namespace OpenRCT2::Ui::Windows
     static constexpr StringId WINDOW_TITLE = STR_ABOUT;
     static constexpr int32_t TABHEIGHT = 50;
 
+    static constexpr auto kPadding = 10;
+
     enum
     {
         WINDOW_ABOUT_PAGE_OPENRCT2,
@@ -85,6 +87,31 @@ namespace OpenRCT2::Ui::Windows
         _windowAboutRCT2Widgets,
     };
 
+    // clang-format off
+    static const StringId _OpenRCT2InfoStrings[] = {
+        STR_ABOUT_OPENRCT2_DESCRIPTION_2,
+        STR_ABOUT_OPENRCT2_DESCRIPTION_3,
+        STR_ABOUT_OPENRCT2_TITLE,
+        STR_ABOUT_FAIRGROUND_ORGAN,
+        STR_ABOUT_SPECIAL_THANKS_1,
+        STR_ABOUT_SPECIAL_THANKS_2,
+    };
+    // clang-format on
+
+    static const StringId _RCT2InfoStrings[] = {
+        STR_COPYRIGHT_CS,
+        STR_DESIGNED_AND_PROGRAMMED_BY_CS,
+        STR_GRAPHICS_BY_SF,
+        STR_SOUND_AND_MUSIC_BY_AB,
+        STR_ADDITIONAL_SOUNDS_RECORDED_BY_DE,
+        STR_REPRESENTATION_BY_JL,
+        kStringIdEmpty,
+        STR_THANKS_TO,
+        STR_THANKS_TO_PEOPLE,
+        kStringIdEmpty,
+        STR_LICENSED_TO_INFOGRAMES_INTERACTIVE_INC,
+    };
+
     class AboutWindow final : public Window
     {
     public:
@@ -105,7 +132,7 @@ namespace OpenRCT2::Ui::Windows
                     SetPage(widgetIndex - WIDX_TAB_ABOUT_OPENRCT2);
                     break;
                 case WIDX_JOIN_DISCORD:
-                    OpenRCT2::GetContext()->GetUiContext()->OpenURL("https://discord.gg/ZXZd8D8");
+                    OpenRCT2::GetContext()->GetUiContext().OpenURL("https://discord.gg/ZXZd8D8");
                     break;
                 case WIDX_CHANGELOG:
                     ContextOpenWindow(WindowClass::Changelog);
@@ -114,7 +141,7 @@ namespace OpenRCT2::Ui::Windows
                     ContextOpenWindowView(WV_NEW_VERSION_INFO);
                     break;
                 case WIDX_COPY_BUILD_INFO:
-                    OpenRCT2::GetContext()->GetUiContext()->SetClipboardText(gVersionInfoFull);
+                    OpenRCT2::GetContext()->GetUiContext().SetClipboardText(gVersionInfoFull);
                     break;
                 case WIDX_CONTRIBUTORS_BUTTON:
                     ContextOpenWindowView(WV_CONTRIBUTORS);
@@ -122,9 +149,9 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnDraw(DrawPixelInfo& dpi) override
+        void OnDraw(RenderTarget& rt) override
         {
-            DrawWidgets(dpi);
+            DrawWidgets(rt);
 
             const auto& aboutOpenRCT2 = widgets[WIDX_TAB_ABOUT_OPENRCT2];
             const auto& aboutRCT2 = widgets[WIDX_TAB_ABOUT_RCT2];
@@ -139,7 +166,7 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<StringId>(STR_TITLE_SEQUENCE_OPENRCT2);
                 DrawTextWrapped(
-                    dpi, aboutOpenRCT2Coords, 87, STR_WINDOW_COLOUR_2_STRINGID, ft,
+                    rt, aboutOpenRCT2Coords, 87, STR_WINDOW_COLOUR_2_STRINGID, ft,
                     { COLOUR_AQUAMARINE, TextAlignment::CENTRE });
             }
             {
@@ -147,28 +174,40 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<StringId>(STR_TITLE_SEQUENCE_RCT2);
                 DrawTextWrapped(
-                    dpi, aboutRCT2Coords, 87, STR_WINDOW_COLOUR_2_STRINGID, ft, { COLOUR_AQUAMARINE, TextAlignment::CENTRE });
+                    rt, aboutRCT2Coords, 87, STR_WINDOW_COLOUR_2_STRINGID, ft, { COLOUR_AQUAMARINE, TextAlignment::CENTRE });
             }
 
+            int32_t newHeight = 0;
             if (page == WINDOW_ABOUT_PAGE_OPENRCT2)
             {
-                DrawOpenRCT2Info(dpi);
+                newHeight = DrawOpenRCT2Info(rt) + kPadding;
             }
             else if (page == WINDOW_ABOUT_PAGE_RCT2)
             {
-                DrawRCT2Info(dpi);
+                newHeight = DrawRCT2Info(rt) + kPadding;
+            }
+
+            if (newHeight != height)
+            {
+                Invalidate();
+                widgets[WIDX_PAGE_BACKGROUND].bottom = newHeight;
+                widgets[WIDX_BACKGROUND].bottom = newHeight;
+                height = newHeight;
             }
         }
 
     private:
-        /**
-         * @brief Set which tab to show
-         */
         void SetPage(int32_t p)
         {
+            // Skip setting page if we're already on this page, unless we're initialising the window
+            if (page == p && !widgets.empty())
+                return;
+
             page = p;
             frame_no = 0;
             pressed_widgets = 0;
+
+            WindowSetResize(*this, { WW, WH }, { WW, WH });
             SetWidgets(_windowAboutPageWidgets[p]);
 
             switch (p)
@@ -180,31 +219,24 @@ namespace OpenRCT2::Ui::Windows
                     pressed_widgets |= (1uLL << WIDX_TAB_ABOUT_RCT2);
                     break;
             }
-
-            InitScrollWidgets();
-            Invalidate();
         }
 
-        /**
-         * @brief Draw OpenRCT2 info on open tab
-         */
-        void DrawOpenRCT2Info(DrawPixelInfo& dpi)
+        int32_t DrawOpenRCT2Info(RenderTarget& rt)
         {
             // Draw logo on placeholder widget
-            ScreenCoordsXY logoCoords = windowPos
-                + ScreenCoordsXY(widgets[WIDX_OPENRCT2_LOGO].left, widgets[WIDX_OPENRCT2_LOGO].top);
-            GfxDrawSprite(dpi, ImageId(SPR_G2_LOGO), logoCoords);
+            const auto& logoWidget = widgets[WIDX_OPENRCT2_LOGO];
+            auto logoCoords = windowPos + ScreenCoordsXY(logoWidget.left, logoWidget.top);
+            GfxDrawSprite(rt, ImageId(SPR_G2_LOGO), logoCoords);
 
             u8string versionInfo = gVersionInfoFull;
             auto ft = Formatter();
             ft.Add<const char*>(versionInfo.c_str());
 
-            auto const& versionPlaceholder = widgets[WIDX_VERSION];
-            auto versionPlaceHolderWidth = versionPlaceholder.right - versionPlaceholder.left;
-            auto centreX = versionPlaceholder.left + versionPlaceHolderWidth / 2;
-            auto centreY = (versionPlaceholder.top + versionPlaceholder.bottom - FontGetLineHeight(FontStyle::Medium)) / 2;
+            const auto& versionWidget = widgets[WIDX_VERSION];
+            auto centreX = versionWidget.midX();
+            auto centreY = versionWidget.midY() - FontGetLineHeight(FontStyle::Medium) / 2;
             auto centrePos = windowPos + ScreenCoordsXY(centreX, centreY);
-            DrawTextWrapped(dpi, centrePos, versionPlaceHolderWidth, STR_STRING, ft, { colours[1], TextAlignment::CENTRE });
+            DrawTextWrapped(rt, centrePos, versionWidget.width(), STR_STRING, ft, { colours[1], TextAlignment::CENTRE });
 
             // Shows the update available button
             if (OpenRCT2::GetContext()->HasNewVersionInfo())
@@ -213,64 +245,41 @@ namespace OpenRCT2::Ui::Windows
             }
 
             // Draw the rest of the text
-            Formatter ft2{};
             TextPaint tp{ colours[1], TextAlignment::CENTRE };
             auto textCoords = windowPos + ScreenCoordsXY((width / 2) - 1, 240);
+            auto textWidth = WW - (kPadding * 2);
+            for (auto stringId : _OpenRCT2InfoStrings)
+                textCoords.y += DrawTextWrapped(rt, textCoords, textWidth, stringId, {}, tp) + 5;
+
+            return textCoords.y - windowPos.y;
+        }
+
+        int32_t DrawRCT2Info(RenderTarget& rt)
+        {
+            auto& backgroundWidget = widgets[WIDX_PAGE_BACKGROUND];
+            auto textCoords = windowPos + ScreenCoordsXY{ backgroundWidget.midX(), backgroundWidget.top + kPadding };
             auto textWidth = WW - 20;
+            TextPaint tp{ colours[1], TextAlignment::CENTRE };
 
-            textCoords += ScreenCoordsXY(
-                0, DrawTextWrapped(dpi, textCoords, textWidth, STR_ABOUT_OPENRCT2_DESCRIPTION_2, ft2, tp) + 5); // More info
-            textCoords += ScreenCoordsXY(
-                0, DrawTextWrapped(dpi, textCoords, textWidth, STR_ABOUT_OPENRCT2_DESCRIPTION_3, ft2, tp) + 5); // Copyright
-            textCoords += ScreenCoordsXY(
-                0, DrawTextWrapped(dpi, textCoords, textWidth, STR_ABOUT_OPENRCT2_TITLE, ft2, tp) + 5); // Title Theme
-            textCoords += ScreenCoordsXY(
-                0, DrawTextWrapped(dpi, textCoords, textWidth, STR_ABOUT_FAIRGROUND_ORGAN, ft2, tp) + 5); // Fairground organ
-            textCoords += ScreenCoordsXY(
-                0, DrawTextWrapped(dpi, textCoords, textWidth, STR_ABOUT_SPECIAL_THANKS_1, ft2, tp) + 7); // Special Thanks
-            textCoords += ScreenCoordsXY(
-                0, DrawTextWrapped(dpi, textCoords, textWidth, STR_ABOUT_SPECIAL_THANKS_2, ft2, tp)); // Company names
-        }
+            // Draw credits
+            for (auto stringId : _RCT2InfoStrings)
+            {
+                if (stringId == kStringIdEmpty)
+                {
+                    textCoords.y += 16;
+                    continue;
+                }
 
-        /**
-         * @brief Draw RCT2 info on open tab
-         */
-        void DrawRCT2Info(DrawPixelInfo& dpi)
-        {
-            int32_t yPage = windowPos.y + widgets[WIDX_PAGE_BACKGROUND].top + 5;
+                textCoords.y += DrawTextWrapped(rt, textCoords, textWidth, stringId, {}, tp);
+                if (stringId == STR_COPYRIGHT_CS)
+                    textCoords.y += 74;
+            }
 
-            auto screenCoords = ScreenCoordsXY{ windowPos.x + 200, yPage + 5 };
+            // Draw images
+            auto imageCoords = windowPos + ScreenCoordsXY{ 92, backgroundWidget.top + 5 + 24 };
+            GfxDrawSprite(rt, ImageId(SPR_CREDITS_CHRIS_SAWYER_SMALL), imageCoords);
 
-            int32_t lineHeight = FontGetLineHeight(FontStyle::Medium);
-
-            // Credits
-            DrawTextBasic(dpi, screenCoords, STR_COPYRIGHT_CS, {}, { TextAlignment::CENTRE });
-            screenCoords.y += lineHeight + 74;
-            DrawTextBasic(dpi, screenCoords, STR_DESIGNED_AND_PROGRAMMED_BY_CS, {}, { TextAlignment::CENTRE });
-            screenCoords.y += lineHeight;
-            DrawTextBasic(dpi, screenCoords, STR_GRAPHICS_BY_SF, {}, { TextAlignment::CENTRE });
-            screenCoords.y += lineHeight;
-            DrawTextBasic(dpi, screenCoords, STR_SOUND_AND_MUSIC_BY_AB, {}, { TextAlignment::CENTRE });
-            screenCoords.y += lineHeight;
-            DrawTextBasic(dpi, screenCoords, STR_ADDITIONAL_SOUNDS_RECORDED_BY_DE, {}, { TextAlignment::CENTRE });
-            screenCoords.y += lineHeight + 3;
-            DrawTextBasic(dpi, screenCoords, STR_REPRESENTATION_BY_JL, {}, { TextAlignment::CENTRE });
-            screenCoords.y += 2 * lineHeight + 5;
-            DrawTextBasic(dpi, screenCoords, STR_THANKS_TO, {}, { TextAlignment::CENTRE });
-            screenCoords.y += lineHeight;
-            DrawTextBasic(dpi, screenCoords, STR_THANKS_TO_PEOPLE, {}, { TextAlignment::CENTRE });
-            screenCoords.y += 2 * lineHeight + 5;
-            DrawTextBasic(dpi, screenCoords, STR_LICENSED_TO_INFOGRAMES_INTERACTIVE_INC, {}, { TextAlignment::CENTRE });
-
-            // Images
-            GfxDrawSprite(dpi, ImageId(SPR_CREDITS_CHRIS_SAWYER_SMALL), { windowPos.x + 92, yPage + 24 });
-
-            // Licence
-        }
-
-        void OnResize() override
-        {
-            ResizeFrameWithPage();
+            return textCoords.y - windowPos.y;
         }
     };
 

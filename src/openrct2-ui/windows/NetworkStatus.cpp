@@ -26,9 +26,7 @@ namespace OpenRCT2::Ui::Windows
 
     // clang-format off
     static constexpr Widget window_network_status_widgets[] = {
-        MakeWidget({  0, 0}, {400, 91}, WindowWidgetType::Frame,    WindowColour::Primary                                   ), // panel / background
-        MakeWidget({  1, 1}, {397, 14}, WindowWidgetType::Caption,  WindowColour::Primary, kStringIdNone,    STR_WINDOW_TITLE_TIP), // title bar
-        MakeWidget({388, 2}, { 11, 12}, WindowWidgetType::CloseBox, WindowColour::Primary, STR_CLOSE_X, STR_CLOSE_WINDOW_TIP), // close x button
+        WINDOW_SHIM(kStringIdEmpty, 320, 90)
     };
     // clang-format on
 
@@ -37,15 +35,10 @@ namespace OpenRCT2::Ui::Windows
     public:
         void OnOpen() override
         {
+            WindowSetResize(*this, { 320, 90 }, { 320, 90 });
             SetWidgets(window_network_status_widgets);
-            WindowInitScrollWidgets(*this);
 
             frame_no = 0;
-            min_width = 320;
-            min_height = 90;
-            max_width = min_width;
-            max_height = min_height;
-
             page = 0;
             list_information_type = 0;
         }
@@ -92,21 +85,18 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void OnPrepareDraw() override
+        void OnDraw(RenderTarget& rt) override
         {
-            ResizeFrame();
-        }
-
-        void OnDraw(DrawPixelInfo& dpi) override
-        {
-            WindowDrawWidgets(*this, dpi);
+            WindowDrawWidgets(*this, rt);
             thread_local std::string _buffer;
+
             _buffer.assign("{WHITE}");
             _buffer += _windowNetworkStatusText;
             GfxClipString(_buffer.data(), widgets[WIDX_BACKGROUND].right - 50, FontStyle::Medium);
+
             ScreenCoordsXY screenCoords(windowPos.x + (width / 2), windowPos.y + (height / 2));
             screenCoords.x -= GfxGetStringWidth(_buffer, FontStyle::Medium) / 2;
-            DrawText(dpi, screenCoords, { COLOUR_BLACK }, _buffer.c_str());
+            DrawText(rt, screenCoords, { COLOUR_BLACK }, _buffer.c_str());
         }
 
         void SetCloseCallBack(CloseCallback onClose)

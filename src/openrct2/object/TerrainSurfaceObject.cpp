@@ -25,7 +25,7 @@ void TerrainSurfaceObject::Load()
     GetStringTable().Sort();
     NameStringId = LanguageAllocateObjectString(GetName());
     IconImageId = LoadImages();
-    if ((Flags & SMOOTH_WITH_SELF) || (Flags & SMOOTH_WITH_OTHER))
+    if ((Flags & TerrainSurfaceFlags::smoothWithSelf) || (Flags & TerrainSurfaceFlags::smoothWithOther))
     {
         PatternBaseImageId = IconImageId + 1;
         EntryBaseImageId = PatternBaseImageId + 6;
@@ -49,7 +49,7 @@ void TerrainSurfaceObject::Unload()
     NumEntries = 0;
 }
 
-void TerrainSurfaceObject::DrawPreview(DrawPixelInfo& dpi, int32_t width, int32_t height) const
+void TerrainSurfaceObject::DrawPreview(RenderTarget& rt, int32_t width, int32_t height) const
 {
     auto imageId = ImageId(GetImageId({}, 1, 0, 0, false, false));
     if (Colour != kNoValue)
@@ -69,7 +69,7 @@ void TerrainSurfaceObject::DrawPreview(DrawPixelInfo& dpi, int32_t width, int32_
         }
         for (int32_t j = 0; j < 4; j++)
         {
-            GfxDrawSprite(dpi, imageId, screenCoords);
+            GfxDrawSprite(rt, imageId, screenCoords);
             screenCoords.x += 64;
         }
         screenCoords.y += 16;
@@ -87,11 +87,11 @@ void TerrainSurfaceObject::ReadJson(IReadObjectContext* context, json_t& root)
         Colour = Colour::FromString(Json::GetString(properties["colour"]), kNoValue);
         Rotations = Json::GetNumber<int8_t>(properties["rotations"], 1);
         Price = Json::GetNumber<money64>(properties["price"]);
-        Flags = Json::GetFlags<TERRAIN_SURFACE_FLAGS>(
+        Flags = Json::GetFlags<TerrainSurfaceFlags>(
             properties,
-            { { "smoothWithSelf", TERRAIN_SURFACE_FLAGS::SMOOTH_WITH_SELF },
-              { "smoothWithOther", TERRAIN_SURFACE_FLAGS::SMOOTH_WITH_OTHER },
-              { "canGrow", TERRAIN_SURFACE_FLAGS::CAN_GROW } });
+            { { "smoothWithSelf", TerrainSurfaceFlags::smoothWithSelf },
+              { "smoothWithOther", TerrainSurfaceFlags::smoothWithOther },
+              { "canGrow", TerrainSurfaceFlags::canGrow } });
 
         const auto mapColours = properties["mapColours"];
         const bool mapColoursAreValid = mapColours.is_array() && mapColours.size() == std::size(MapColours);
@@ -100,7 +100,7 @@ void TerrainSurfaceObject::ReadJson(IReadObjectContext* context, json_t& root)
             if (mapColoursAreValid)
                 MapColours[i] = mapColours[i];
             else
-                MapColours[i] = PALETTE_INDEX_0;
+                MapColours[i] = PaletteIndex::pi0;
         }
 
         for (auto& el : properties["special"])
@@ -182,6 +182,5 @@ ImageId TerrainSurfaceObject::GetImageId(
 TerrainSurfaceObject* TerrainSurfaceObject::GetById(ObjectEntryIndex entryIndex)
 {
     auto& objMgr = OpenRCT2::GetContext()->GetObjectManager();
-    auto* obj = objMgr.GetLoadedObject(ObjectType::terrainSurface, entryIndex);
-    return static_cast<TerrainSurfaceObject*>(obj);
+    return objMgr.GetLoadedObject<TerrainSurfaceObject>(entryIndex);
 }

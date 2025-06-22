@@ -1,4 +1,3 @@
-
 /*****************************************************************************
  * Copyright (c) 2014-2025 OpenRCT2 developers
  *
@@ -11,12 +10,13 @@
 #pragma once
 
 #include "../core/DateTime.h"
+#include "../core/Money.hpp"
 #include "../core/StringTypes.h"
-#include "../scenario/Scenario.h"
 
 #include <memory>
 
 struct RCTObjectEntry;
+enum class ScenarioCategory : uint8_t;
 
 struct ScenarioHighscoreEntry
 {
@@ -46,16 +46,16 @@ struct ScenarioIndexEntry
     uint64_t Timestamp;
 
     // Category / sequence
-    uint8_t Category;
+    ScenarioCategory Category;
     ScenarioSource SourceGame;
     int16_t SourceIndex = -1;
     uint16_t ScenarioId;
 
     // Objective
     uint8_t ObjectiveType;
-    uint8_t ObjectiveArg1;
-    int64_t ObjectiveArg2;
-    int16_t ObjectiveArg3;
+    uint8_t ObjectiveArg1;  // years
+    int64_t ObjectiveArg2;  // money or excitement
+    uint16_t ObjectiveArg3; // guests or rideID or coasterLength
     ScenarioHighscoreEntry* Highscore = nullptr;
 
     u8string InternalName; // Untranslated name
@@ -89,8 +89,7 @@ struct IScenarioRepository
     virtual bool TryRecordHighscore(int32_t language, const utf8* scenarioFileName, money64 companyValue, const utf8* name) = 0;
 };
 
-[[nodiscard]] std::unique_ptr<IScenarioRepository> CreateScenarioRepository(
-    const std::shared_ptr<OpenRCT2::IPlatformEnvironment>& env);
+[[nodiscard]] std::unique_ptr<IScenarioRepository> CreateScenarioRepository(OpenRCT2::IPlatformEnvironment& env);
 [[nodiscard]] IScenarioRepository* GetScenarioRepository();
 
 void ScenarioRepositoryScan();

@@ -2242,10 +2242,8 @@ STR_3230    :Lohkojarruja ei voi käyttää toistensa jälkeen
 STR_3231    :Lohkojarruja ei voi käyttää heti nostomäen jälkeen
 STR_3232    :Asetukset - Talous
 STR_3233    :Asetukset - Kävijät
-STR_3234    :Asetukset - Puisto
 STR_3235    :Näytä taloustiedot
 STR_3236    :Näytä kävijätiedot
-STR_3237    :Näytä puistotiedot
 STR_3238    :Ei rahaa
 STR_3239    :Tee tästä puistosta ”ei rahaa” -puisto, jolla ei ole mitään taloudellisia rajoitteita
 STR_3240    :{WINDOW_COLOUR_2}Varat pelin alussa:
@@ -2264,10 +2262,6 @@ STR_3252    :Enimmäislainamäärää ei voi korottaa enempää!
 STR_3253    :Enimmäislainamäärää ei voi laskea enempää!
 STR_3254    :Vuosittaiskorkoa ei voi korottaa enempää!
 STR_3255    :Vuosittaiskorkoa ei voi laskea enempää!
-STR_3256    :Kävijät tykkäävät lempeämmistä laitteista
-STR_3257    :Valitse haluavatko kävijät mieluummin mennä vain vähemmän jännittäviin laitteisiin
-STR_3258    :Kävijät tykkäävät jännittävimmistä laitteista
-STR_3259    :Valitse haluavatko kävijät mieluummin mennä vain kaikista jännittävimpiin laitteisiin
 STR_3260    :{WINDOW_COLOUR_2}Kävijöiden varat (keskiarvo):
 STR_3261    :{WINDOW_COLOUR_2}Kävijöiden alustava iloisuus:
 STR_3262    :{WINDOW_COLOUR_2}Kävijöiden alustava nälkä:
@@ -2290,18 +2284,10 @@ STR_3278    :{WINDOW_COLOUR_2}Rakennusluvan hinta:
 STR_3279    :Ilm. sisäänpääsy / maks. laitteet
 STR_3280    :Maks. sisäänpääsy / ilm. laitteet
 STR_3281    :{WINDOW_COLOUR_2}Sisäänpääsymaksu:
-STR_3282    :Valitse tavoite ja puiston nimi
 STR_3283    :Valitse suojeltavat laitteet
-STR_3284    :Tavoitteen valinta
 STR_3285    :Suojellut laitteet
 STR_3286    :Valitse tavoite tälle skenaariolle
 STR_3287    :{WINDOW_COLOUR_2}Tavoite:
-STR_3288    :Valitse ilmasto
-STR_3289    :{WINDOW_COLOUR_2}Ilmasto:
-STR_3290    :Kylmä ja sateinen
-STR_3291    :Lämmin
-STR_3292    :Kuuma ja kuiva
-STR_3293    :Kylmä
 STR_3294    :Vaihda…
 STR_3295    :Vaihda puiston nimi
 STR_3296    :Vaihda skenaarion nimi

@@ -19,7 +19,6 @@
     #include <openrct2/scripting/Duktape.hpp>
     #include <openrct2/scripting/ScriptEngine.h>
     #include <openrct2/ui/WindowManager.h>
-    #include <openrct2/world/Map.h>
 
 namespace OpenRCT2::Scripting
 {
@@ -272,11 +271,11 @@ namespace OpenRCT2::Scripting
             if (w != nullptr)
             {
                 auto viewport = w->viewport;
-                if (viewport != nullptr)
+                if (viewport != nullptr && viewport->viewPos != ScreenCoordsXY(left, top))
                 {
                     viewport->viewPos.x = left;
                     viewport->viewPos.y = top;
-                    viewport->flags &= ~WF_SCROLLING_TO_LOCATION;
+                    w->flags &= ~WF_SCROLLING_TO_LOCATION;
                     w->savedViewPos.x = viewport->viewPos.x;
                     w->savedViewPos.y = viewport->viewPos.y;
                     viewport->Invalidate();

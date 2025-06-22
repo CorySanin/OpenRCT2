@@ -16,6 +16,7 @@
 #include "../localisation/StringIds.h"
 #include "../object/ObjectList.h"
 #include "../rct12/SawyerChunkWriter.h"
+#include "../rct12/TD46.h"
 #include "../rct2/RCT2.h"
 #include "../ride/Ride.h"
 #include "../ride/RideData.h"
@@ -28,6 +29,8 @@
 
 #include <functional>
 
+using OpenRCT2::RCT12::TD46MazeElementType;
+
 namespace OpenRCT2::RCT2
 {
     T6Exporter::T6Exporter(const TrackDesign& trackDesign)
@@ -39,7 +42,7 @@ namespace OpenRCT2::RCT2
     {
         try
         {
-            auto fs = OpenRCT2::FileStream(path, OpenRCT2::FILE_MODE_WRITE);
+            auto fs = OpenRCT2::FileStream(path, OpenRCT2::FileMode::write);
             return SaveTrack(&fs);
         }
         catch (const std::exception& e)
@@ -84,11 +87,17 @@ namespace OpenRCT2::RCT2
         tempStream.WriteValue<uint8_t>(_trackDesign.statistics.maxLateralG / kTD46GForcesMultiplier);
 
         if (rtd.specialType == RtdSpecialType::miniGolf)
-            tempStream.WriteValue<uint8_t>(_trackDesign.statistics.holes & kRCT12InversionAndHoleMask);
+        {
+            auto numHoles = std::min<uint8_t>(31, _trackDesign.statistics.holes);
+            tempStream.WriteValue<uint8_t>(numHoles & kRCT12InversionAndHoleMask);
+        }
         else
-            tempStream.WriteValue<uint8_t>(_trackDesign.statistics.inversions & kRCT12InversionAndHoleMask);
+        {
+            auto numInversions = std::min<uint8_t>(31, _trackDesign.statistics.inversions);
+            tempStream.WriteValue<uint8_t>(numInversions & kRCT12InversionAndHoleMask);
+        }
 
-        tempStream.WriteValue<uint8_t>(_trackDesign.statistics.drops & kRCT12RideNumDropsMask);
+        tempStream.WriteValue<uint8_t>(std::min<uint8_t>(63, _trackDesign.statistics.drops) & kRCT12RideNumDropsMask);
         tempStream.WriteValue<uint8_t>(_trackDesign.statistics.highestDropHeight);
         tempStream.WriteValue<uint8_t>(_trackDesign.statistics.ratings.excitement / kTD46RatingsMultiplier);
         tempStream.WriteValue<uint8_t>(_trackDesign.statistics.ratings.intensity / kTD46RatingsMultiplier);
@@ -114,7 +123,9 @@ namespace OpenRCT2::RCT2
         {
             tempStream.WriteValue<uint8_t>(_trackDesign.appearance.vehicleColours[i].Tertiary);
         }
-        tempStream.WriteValue<uint8_t>(_trackDesign.operation.liftHillSpeed | (_trackDesign.operation.numCircuits << 5));
+        auto liftSpeed = std::min<uint8_t>(31, _trackDesign.operation.liftHillSpeed);
+        auto numCircuits = std::min<uint8_t>(7, _trackDesign.operation.numCircuits);
+        tempStream.WriteValue<uint8_t>(liftSpeed | (numCircuits << 5));
 
         if (rtd.specialType == RtdSpecialType::maze)
         {
@@ -131,7 +142,7 @@ namespace OpenRCT2::RCT2
                 tempStream.WriteValue<int8_t>(entranceElement.location.y);
                 tempStream.WriteValue<int8_t>(entranceElement.location.direction);
                 tempStream.WriteValue<int8_t>(
-                    EnumValue(entranceElement.isExit ? TD46MazeElementType::Exit : TD46MazeElementType::Entrance));
+                    EnumValue(entranceElement.isExit ? TD46MazeElementType::exit : TD46MazeElementType::entrance));
             }
 
             tempStream.WriteValue<uint32_t>(0);
@@ -146,7 +157,7 @@ namespace OpenRCT2::RCT2
                     trackType = OpenRCT2::RCT12::TrackElemType::InvertedUp90ToFlatQuarterLoopAlias;
                 }
                 tempStream.WriteValue<uint8_t>(static_cast<uint8_t>(trackType));
-                auto flags = ConvertToTD46Flags(trackElement);
+                auto flags = RCT12::convertToTD46Flags(trackElement);
                 tempStream.WriteValue<uint8_t>(flags);
             }
 
