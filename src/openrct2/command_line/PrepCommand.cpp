@@ -210,7 +210,6 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     CheatSetAction(CheatType::FastLiftHill, 0).Execute();
     CheatSetAction(CheatType::DisableBrakesFailure, 0).Execute();
     CheatSetAction(CheatType::DisableAllBreakdowns, 0).Execute();
-    CheatSetAction(CheatType::UnlockAllPrices, 0).Execute();
     CheatSetAction(CheatType::BuildInPauseMode, 0).Execute();
     CheatSetAction(CheatType::IgnoreRideIntensity, 0).Execute();
     CheatSetAction(CheatType::DisableVandalism, 0).Execute();
@@ -269,6 +268,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         ScenarioSetSettingAction(ScenarioSetSetting::MaximumLoanSize, 0).Execute();
         ScenarioSetSettingAction(ScenarioSetSetting::AnnualInterestRate, 0).Execute();
         gameState.cash = econBudget;
+        gameState.park.Flags |= PARK_FLAGS_PARK_FREE_ENTRY;
     }
 
     DetectProblems(gameState);
