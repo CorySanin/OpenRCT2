@@ -216,7 +216,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     GameActions::CheatSetAction(CheatType::IgnoreResearchStatus, 0).Execute();
     GameActions::CheatSetAction(CheatType::AllowTrackPlaceInvalidHeights, 0).Execute();
 
-    GameActions::ParkSetDateAction(1, 1, 1).Execute();
+    GameActions::ParkSetDateAction(0, 0, 0).Execute();
 
     GameActions::ParkSetParameterAction(GameActions::ParkParameter::Open).Execute();
 
