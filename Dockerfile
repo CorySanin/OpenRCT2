@@ -16,7 +16,7 @@ RUN mkdir build \
 
 
 # Build runtime image
-FROM base as deploy
+FROM base AS deploy
 HEALTHCHECK  --timeout=3s \
   CMD curl --fail http://localhost:8080/healthcheck || exit 1
 COPY --from=build-env /openrct2-install /openrct2-install
