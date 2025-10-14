@@ -133,6 +133,7 @@ namespace OpenRCT2
         DefineCommand("join",     "<hostname>",             kStandardOptions, HandleCommandJoin   ),
     #endif
         DefineCommand("set-rct2", "<path>",                 kStandardOptions, HandleCommandSetRCT2),
+        DefineCommand("prep", "<type> <starting funds (if econ)> <source> <destination>", kStandardOptions, CommandLine::HandleCommandPrep),
         DefineCommand("scan-objects", "<path>",             kStandardOptions, HandleCommandScanObjects),
         DefineCommand("handle-uri", "openrct2://.../",      kStandardOptions, CommandLine::HandleCommandUri),
 
