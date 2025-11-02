@@ -338,7 +338,7 @@ static void DetectProblems(GameState_t& gameState)
     uint32_t hmen = 0;
     for (auto peep : EntityList<Staff>())
     {
-        if (peep->AssignedStaffType == StaffType::Handyman)
+        if (peep->AssignedStaffType == StaffType::handyman)
         {
             hmen++;
         }
