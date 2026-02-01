@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -25,8 +25,8 @@
 namespace OpenRCT2::GameActions
 {
     SmallScenerySetColourAction::SmallScenerySetColourAction(
-        const CoordsXYZ& loc, uint8_t quadrant, ObjectEntryIndex sceneryType, uint8_t primaryColour, uint8_t secondaryColour,
-        uint8_t tertiaryColour)
+        const CoordsXYZ& loc, uint8_t quadrant, ObjectEntryIndex sceneryType, Drawing::Colour primaryColour,
+        Drawing::Colour secondaryColour, Drawing::Colour tertiaryColour)
         : _loc(loc)
         , _quadrant(quadrant)
         , _sceneryType(sceneryType)
@@ -61,33 +61,33 @@ namespace OpenRCT2::GameActions
 
     Result SmallScenerySetColourAction::Query(GameState_t& gameState) const
     {
-        return QueryExecute(false);
+        return QueryExecute(gameState, false);
     }
 
     Result SmallScenerySetColourAction::Execute(GameState_t& gameState) const
     {
-        return QueryExecute(true);
+        return QueryExecute(gameState, true);
     }
 
-    Result SmallScenerySetColourAction::QueryExecute(bool isExecuting) const
+    Result SmallScenerySetColourAction::QueryExecute(GameState_t& gameState, bool isExecuting) const
     {
         auto res = Result();
-        res.Expenditure = ExpenditureType::landscaping;
-        res.Position.x = _loc.x + 16;
-        res.Position.y = _loc.y + 16;
-        res.Position.z = _loc.z;
-        res.ErrorTitle = STR_CANT_REPAINT_THIS;
+        res.expenditure = ExpenditureType::landscaping;
+        res.position.x = _loc.x + 16;
+        res.position.y = _loc.y + 16;
+        res.position.z = _loc.z;
+        res.errorTitle = STR_CANT_REPAINT_THIS;
 
         if (!LocationValid(_loc))
         {
-            return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, STR_OFF_EDGE_OF_MAP);
+            return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, STR_OFF_EDGE_OF_MAP);
         }
 
-        if (gLegacyScene != LegacyScene::scenarioEditor && !getGameState().cheats.sandboxMode)
+        if (gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode)
         {
             if (!MapIsLocationOwned(_loc))
             {
-                return Result(Status::NotOwned, STR_CANT_REPAINT_THIS, STR_LAND_NOT_OWNED_BY_PARK);
+                return Result(Status::notOwned, STR_CANT_REPAINT_THIS, STR_LAND_NOT_OWNED_BY_PARK);
             }
         }
 
@@ -96,10 +96,10 @@ namespace OpenRCT2::GameActions
         if (sceneryElement == nullptr)
         {
             LOG_ERROR("Small scenery not found at: x = %d, y = %d, z = %d", _loc.x, _loc.y, _loc.z);
-            return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
         }
 
-        if ((GetFlags() & GAME_COMMAND_FLAG_GHOST) && !(sceneryElement->IsGhost()))
+        if ((GetFlags().has(CommandFlag::ghost)) && !(sceneryElement->IsGhost()))
         {
             return res;
         }

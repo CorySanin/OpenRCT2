@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -64,7 +64,7 @@ void LandTool::ShowSurfaceStyleDropdown(WindowBase* w, Widget* widget, ObjectEnt
         if (surfaceObj != nullptr && !surfaceObj->UsesFallbackImages())
         {
             auto imageId = ImageId(surfaceObj->IconImageId);
-            if (surfaceObj->Colour != TerrainSurfaceObject::kNoValue)
+            if (surfaceObj->Colour != Drawing::kColourNull)
                 imageId = imageId.WithPrimary(surfaceObj->Colour);
 
             gDropdown.items[itemIndex] = Dropdown::ImageItem(imageId, surfaceObj->NameStringId);
@@ -78,8 +78,8 @@ void LandTool::ShowSurfaceStyleDropdown(WindowBase* w, Widget* widget, ObjectEnt
     uint32_t surfaceCount = itemIndex;
 
     WindowDropdownShowImage(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->height(), w->colours[2], 0, surfaceCount, 47, 36,
-        DropdownGetAppropriateImageDropdownItemsPerRow(surfaceCount));
+        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->height() - 1, w->colours[2], 0, surfaceCount, 47,
+        36, DropdownGetAppropriateImageDropdownItemsPerRow(surfaceCount));
 
     gDropdown.hasTooltips = true;
     gDropdown.defaultIndex = defaultIndex;
@@ -129,7 +129,7 @@ void LandTool::ShowEdgeStyleDropdown(WindowBase* w, Widget* widget, ObjectEntryI
     auto itemsPerRow = DropdownGetAppropriateImageDropdownItemsPerRow(edgeCount);
 
     WindowDropdownShowImage(
-        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->height(), w->colours[2], 0, edgeCount, 47, 36,
+        w->windowPos.x + widget->left, w->windowPos.y + widget->top, widget->height() - 1, w->colours[2], 0, edgeCount, 47, 36,
         itemsPerRow);
 
     gDropdown.hasTooltips = true;

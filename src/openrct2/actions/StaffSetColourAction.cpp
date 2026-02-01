@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -21,7 +21,7 @@
 
 namespace OpenRCT2::GameActions
 {
-    StaffSetColourAction::StaffSetColourAction(StaffType staffType, uint8_t colour)
+    StaffSetColourAction::StaffSetColourAction(StaffType staffType, Drawing::Colour colour)
         : _staffType(static_cast<uint8_t>(staffType))
         , _colour(colour)
     {
@@ -50,7 +50,7 @@ namespace OpenRCT2::GameActions
         if (staffType != StaffType::handyman && staffType != StaffType::mechanic && staffType != StaffType::security)
         {
             LOG_ERROR("Staff color can't be changed for staff type %d", _staffType);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_ACTION_INVALID_FOR_THAT_STAFF_TYPE);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_ACTION_INVALID_FOR_THAT_STAFF_TYPE);
         }
         return Result();
     }
@@ -59,7 +59,7 @@ namespace OpenRCT2::GameActions
     {
         // Update global uniform colour property
         auto res = StaffSetColour(static_cast<StaffType>(_staffType), _colour);
-        if (res.Error != Status::Ok)
+        if (res.error != Status::ok)
         {
             return res;
         }

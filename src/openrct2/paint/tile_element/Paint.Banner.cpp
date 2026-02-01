@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -12,6 +12,7 @@
 #include "../../Game.h"
 #include "../../GameState.h"
 #include "../../config/Config.h"
+#include "../../drawing/Drawing.h"
 #include "../../interface/Viewport.h"
 #include "../../localisation/Formatter.h"
 #include "../../localisation/Formatting.h"
@@ -27,6 +28,7 @@
 #include "Paint.TileElement.h"
 
 using namespace OpenRCT2;
+using namespace OpenRCT2::Drawing;
 
 // kBannerBoundBoxes[rotation][0] is for the pole in the back
 // kBannerBoundBoxes[rotation][1] is for the pole and the banner in the front
@@ -49,7 +51,7 @@ static void PaintBannerScrollingText(
         return;
 
     auto scrollingMode = bannerEntry.scrolling_mode + (direction & 3);
-    if (scrollingMode >= kMaxScrollingTextModes)
+    if (scrollingMode >= ScrollingText::kMaxModes)
     {
         return;
     }
@@ -64,12 +66,12 @@ static void PaintBannerScrollingText(
     }
     else
     {
-        OpenRCT2::FormatStringLegacy(text, sizeof(text), STR_BANNER_TEXT_FORMAT, ft.Data());
+        FormatStringLegacy(text, sizeof(text), STR_BANNER_TEXT_FORMAT, ft.Data());
     }
 
     auto stringWidth = GfxGetStringWidth(text, FontStyle::tiny);
     auto scroll = stringWidth > 0 ? (getGameState().currentTicks / 2) % stringWidth : 0;
-    auto imageId = ScrollingTextSetup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode, COLOUR_BLACK);
+    auto imageId = ScrollingText::setup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode, PaletteIndex::transparent);
     PaintAddImageAsChild(session, imageId, { 0, 0, height + 22 }, { bbOffset, { 1, 1, 21 } });
 }
 
@@ -77,7 +79,7 @@ void PaintBanner(PaintSession& session, uint8_t direction, int32_t height, const
 {
     PROFILED_FUNCTION();
 
-    if (session.DPI.zoom_level > ZoomLevel{ 1 } || gTrackDesignSaveMode
+    if (session.rt.zoom_level > ZoomLevel{ 1 } || gTrackDesignSaveMode
         || (session.ViewFlags & VIEWPORT_FLAG_HIGHLIGHT_PATH_ISSUES))
         return;
 

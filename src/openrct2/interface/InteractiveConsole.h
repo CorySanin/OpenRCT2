@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -12,8 +12,6 @@
 #include <atomic>
 #include <cstdint>
 #include <string>
-
-struct RenderTarget;
 
 enum class ConsoleInput : uint8_t
 {
@@ -31,6 +29,11 @@ namespace OpenRCT2
     enum class FormatToken : uint8_t;
     struct TextInputSession;
 } // namespace OpenRCT2
+
+namespace OpenRCT2::Drawing
+{
+    struct RenderTarget;
+}
 
 class InteractiveConsole
 {

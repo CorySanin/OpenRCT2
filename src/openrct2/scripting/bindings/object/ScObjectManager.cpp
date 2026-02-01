@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -11,8 +11,10 @@
 
     #include "ScObjectManager.h"
 
+    #include "../../../Context.h"
     #include "../../../object/ObjectList.h"
     #include "../../../ride/RideData.h"
+    #include "../../../windows/Intent.h"
     #include "../../Duktape.hpp"
     #include "../../ScriptEngine.h"
 
@@ -191,6 +193,8 @@ void ScObjectManager::unload(const DukValue& p1, const DukValue& p2)
         }
         objectManager.UnloadObjects(descriptors);
     }
+    auto intent = Intent(INTENT_ACTION_REFRESH_SCENERY);
+    ContextBroadcastIntent(&intent);
 }
 
 DukValue ScObjectManager::getObject(const std::string& typez, int32_t index) const

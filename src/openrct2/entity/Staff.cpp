@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -11,38 +11,26 @@
 
 #include "../Context.h"
 #include "../Diagnostic.h"
-#include "../Game.h"
 #include "../GameState.h"
-#include "../Input.h"
 #include "../actions/StaffSetOrdersAction.h"
 #include "../audio/Audio.h"
 #include "../core/DataSerialiser.h"
-#include "../core/EnumUtils.hpp"
 #include "../entity/EntityList.h"
 #include "../entity/EntityRegistry.h"
 #include "../interface/Viewport.h"
 #include "../localisation/StringIds.h"
-#include "../management/Finance.h"
-#include "../network/Network.h"
-#include "../object/ObjectEntryManager.h"
-#include "../object/ObjectLimits.h"
-#include "../object/ObjectList.h"
 #include "../object/ObjectManager.h"
 #include "../object/PathAdditionEntry.h"
 #include "../object/PeepAnimationsObject.h"
-#include "../object/SceneryGroupEntry.h"
 #include "../object/SmallSceneryEntry.h"
-#include "../object/TerrainSurfaceObject.h"
 #include "../paint/tile_element/Paint.TileElement.h"
 #include "../peep/GuestPathfinding.h"
 #include "../ride/RideData.h"
-#include "../ride/Station.h"
 #include "../ride/Track.h"
 #include "../ride/Vehicle.h"
 #include "../scenario/Scenario.h"
 #include "../util/Util.h"
 #include "../windows/Intent.h"
-#include "../world/Entrance.h"
 #include "../world/Footpath.h"
 #include "../world/Map.h"
 #include "../world/Scenery.h"
@@ -956,7 +944,7 @@ bool Staff::DoPathFinding()
 
         default:
             assert(false);
-            return 0;
+            return false;
     }
 }
 
@@ -970,7 +958,7 @@ int32_t Staff::GetHireDate() const
     return HireDate;
 }
 
-colour_t StaffGetColour(StaffType staffType)
+Drawing::Colour StaffGetColour(StaffType staffType)
 {
     const auto& park = getGameState().park;
     switch (staffType)
@@ -982,14 +970,14 @@ colour_t StaffGetColour(StaffType staffType)
         case StaffType::security:
             return park.staffSecurityColour;
         case StaffType::entertainer:
-            return 0;
+            return Drawing::Colour::black;
         default:
             assert(false);
-            return 0;
+            return Drawing::Colour::black;
     }
 }
 
-GameActions::Result StaffSetColour(StaffType staffType, colour_t value)
+GameActions::Result StaffSetColour(StaffType staffType, OpenRCT2::Drawing::Colour value)
 {
     auto& park = getGameState().park;
     switch (staffType)
@@ -1005,7 +993,7 @@ GameActions::Result StaffSetColour(StaffType staffType, colour_t value)
             break;
         default:
             return GameActions::Result(
-                GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_ACTION_INVALID_FOR_THAT_STAFF_TYPE);
+                GameActions::Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_ACTION_INVALID_FOR_THAT_STAFF_TYPE);
     }
     return GameActions::Result();
 }
@@ -1261,7 +1249,7 @@ void Staff::UpdateHeadingToInspect()
         return;
     }
 
-    if (ride->mechanicStatus != RIDE_MECHANIC_STATUS_HEADING || !(ride->lifecycleFlags & RIDE_LIFECYCLE_DUE_INSPECTION))
+    if (ride->mechanicStatus != MechanicStatus::heading || !(ride->lifecycleFlags & RIDE_LIFECYCLE_DUE_INSPECTION))
     {
         SetState(PeepState::falling);
         return;
@@ -1279,9 +1267,9 @@ void Staff::UpdateHeadingToInspect()
         MechanicTimeSinceCall++;
         if (MechanicTimeSinceCall > 2500)
         {
-            if (ride->lifecycleFlags & RIDE_LIFECYCLE_DUE_INSPECTION && ride->mechanicStatus == RIDE_MECHANIC_STATUS_HEADING)
+            if (ride->lifecycleFlags & RIDE_LIFECYCLE_DUE_INSPECTION && ride->mechanicStatus == MechanicStatus::heading)
             {
-                ride->mechanicStatus = RIDE_MECHANIC_STATUS_CALLING;
+                ride->mechanicStatus = MechanicStatus::calling;
             }
             SetState(PeepState::falling);
             return;
@@ -1349,7 +1337,7 @@ void Staff::UpdateHeadingToInspect()
 void Staff::UpdateAnswering()
 {
     auto ride = GetRide(CurrentRide);
-    if (ride == nullptr || ride->mechanicStatus != RIDE_MECHANIC_STATUS_HEADING)
+    if (ride == nullptr || ride->mechanicStatus != MechanicStatus::heading)
     {
         SetState(PeepState::falling);
         return;
@@ -1386,8 +1374,8 @@ void Staff::UpdateAnswering()
         MechanicTimeSinceCall++;
         if (MechanicTimeSinceCall > 2500)
         {
-            ride->mechanicStatus = RIDE_MECHANIC_STATUS_CALLING;
-            ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAINTENANCE;
+            ride->mechanicStatus = MechanicStatus::calling;
+            ride->windowInvalidateFlags.set(RideInvalidateFlag::maintenance);
             SetState(PeepState::falling);
             return;
         }
@@ -1830,7 +1818,10 @@ void Staff::UpdatePatrolling()
         return;
 
     if (ShouldWaitForLevelCrossing() && !IsMechanicHeadingToFixRideBlockingPath())
+    {
+        UpdateWaitingAtCrossing();
         return;
+    }
 
     const auto [pathingResult, _] = PerformNextAction();
     if (!(pathingResult & PATHING_DESTINATION_REACHED))
@@ -2083,8 +2074,8 @@ void Staff::UpdateFixing(int32_t steps)
  */
 bool Staff::UpdateFixingEnterStation(Ride& ride) const
 {
-    ride.mechanicStatus = RIDE_MECHANIC_STATUS_FIXING;
-    ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAINTENANCE;
+    ride.mechanicStatus = MechanicStatus::fixing;
+    ride.windowInvalidateFlags.set(RideInvalidateFlag::maintenance);
 
     return true;
 }
@@ -2460,14 +2451,14 @@ bool Staff::UpdateFixingFixStationBrakes(bool firstRun, Ride& ride)
 
     if (AnimationFrameNum == 0x28)
     {
-        ride.mechanicStatus = RIDE_MECHANIC_STATUS_HAS_FIXED_STATION_BRAKES;
-        ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAINTENANCE;
+        ride.mechanicStatus = MechanicStatus::hasFixedStationBrakes;
+        ride.windowInvalidateFlags.set(RideInvalidateFlag::maintenance);
     }
 
     if (AnimationFrameNum == 0x13 || AnimationFrameNum == 0x19 || AnimationFrameNum == 0x1F || AnimationFrameNum == 0x25
         || AnimationFrameNum == 0x2B)
     {
-        OpenRCT2::Audio::Play3D(OpenRCT2::Audio::SoundId::mechanicFix, GetLocation());
+        Audio::Play3D(Audio::SoundId::mechanicFix, GetLocation());
     }
 
     return false;
@@ -2525,13 +2516,13 @@ bool Staff::UpdateFixingFinishFixOrInspect(bool firstRun, int32_t steps, Ride& r
             UpdateRideInspected(CurrentRide);
 
             StaffRidesInspected = AddClamp(StaffRidesInspected, 1u);
-            WindowInvalidateFlags |= RIDE_INVALIDATE_RIDE_INCOME | RIDE_INVALIDATE_RIDE_LIST;
-            ride.mechanicStatus = RIDE_MECHANIC_STATUS_UNDEFINED;
+            WindowInvalidateFlags |= PEEP_INVALIDATE_STAFF_STATS;
+            ride.mechanicStatus = MechanicStatus::undefined;
             return true;
         }
 
         StaffRidesFixed = AddClamp(StaffRidesFixed, 1u);
-        WindowInvalidateFlags |= RIDE_INVALIDATE_RIDE_INCOME | RIDE_INVALIDATE_RIDE_LIST;
+        WindowInvalidateFlags |= PEEP_INVALIDATE_STAFF_STATS;
 
         Orientation = PeepDirection << 3;
         Action = PeepActionType::staffAnswerCall2;
@@ -2549,7 +2540,7 @@ bool Staff::UpdateFixingFinishFixOrInspect(bool firstRun, int32_t steps, Ride& r
     }
 
     RideFixBreakdown(ride, steps);
-    ride.mechanicStatus = RIDE_MECHANIC_STATUS_UNDEFINED;
+    ride.mechanicStatus = MechanicStatus::undefined;
     return true;
 }
 
@@ -2610,7 +2601,7 @@ void Staff::UpdateRideInspected(RideId rideIndex)
         ride->lifecycleFlags &= ~RIDE_LIFECYCLE_DUE_INSPECTION;
         ride->reliability += ((100 - ride->reliabilityPercentage) / 4) * (ScenarioRand() & 0xFF);
         ride->lastInspection = 0;
-        ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAINTENANCE | RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+        ride->windowInvalidateFlags.set(RideInvalidateFlag::maintenance, RideInvalidateFlag::main, RideInvalidateFlag::list);
     }
 }
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -365,43 +365,43 @@ static void PaintMiniHelicoptersTrackSpinningTunnel(
 /**
  * rct2: 0x0081F268
  */
-TrackPaintFunction GetTrackPaintFunctionMiniHelicopters(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionMiniHelicopters(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::Flat:
+        case TrackElemType::flat:
             return PaintMiniHelicoptersTrackFlat;
 
-        case TrackElemType::EndStation:
-        case TrackElemType::BeginStation:
-        case TrackElemType::MiddleStation:
+        case TrackElemType::endStation:
+        case TrackElemType::beginStation:
+        case TrackElemType::middleStation:
             return PaintMiniHelicoptersTrackStation;
 
-        case TrackElemType::Up25:
+        case TrackElemType::up25:
             return PaintMiniHelicoptersTrack25DegUp;
-        case TrackElemType::FlatToUp25:
+        case TrackElemType::flatToUp25:
             return PaintMiniHelicoptersTrackFlatTo25DegUp;
-        case TrackElemType::Up25ToFlat:
+        case TrackElemType::up25ToFlat:
             return PaintMiniHelicoptersTrack25DegUpToFlat;
 
-        case TrackElemType::Down25:
+        case TrackElemType::down25:
             return PaintMiniHelicoptersTrack25DegDown;
-        case TrackElemType::FlatToDown25:
+        case TrackElemType::flatToDown25:
             return PaintMiniHelicoptersTrackFlatTo25DegDown;
-        case TrackElemType::Down25ToFlat:
+        case TrackElemType::down25ToFlat:
             return PaintMiniHelicoptersTrack25DegDownToFlat;
 
-        case TrackElemType::LeftQuarterTurn3Tiles:
+        case TrackElemType::leftQuarterTurn3Tiles:
             return PaintMiniHelicoptersTrackLeftQuarterTurn3Tiles;
-        case TrackElemType::RightQuarterTurn3Tiles:
+        case TrackElemType::rightQuarterTurn3Tiles:
             return PaintMiniHelicoptersTrackRightQuarterTurn3Tiles;
 
-        case TrackElemType::LeftQuarterTurn1Tile:
+        case TrackElemType::leftQuarterTurn1Tile:
             return PaintMiniHelicoptersTrackLeftQuarterTurn1Tile;
-        case TrackElemType::RightQuarterTurn1Tile:
+        case TrackElemType::rightQuarterTurn1Tile:
             return PaintMiniHelicoptersTrackRightQuarterTurn1Tile;
 
-        case TrackElemType::SpinningTunnel:
+        case TrackElemType::spinningTunnel:
             return PaintMiniHelicoptersTrackSpinningTunnel;
         default:
             return TrackPaintFunctionDummy;

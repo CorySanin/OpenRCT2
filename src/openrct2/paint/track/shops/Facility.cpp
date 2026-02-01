@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -30,7 +30,7 @@ static void PaintFacility(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
 {
-    bool hasSupports = DrawSupportForSequenceA<TrackElemType::FlatTrack1x1A>(
+    bool hasSupports = DrawSupportForSequenceA<TrackElemType::flatTrack1x1A>(
         session, supportType.wooden, trackSequence, direction, height, GetShopSupportColourScheme(session, trackElement));
 
     auto rideEntry = ride.getRideEntry();
@@ -80,11 +80,11 @@ static void PaintFacility(
 }
 
 /* 0x00762D44 */
-TrackPaintFunction GetTrackPaintFunctionFacility(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionFacility(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::FlatTrack1x1A:
+        case TrackElemType::flatTrack1x1A:
             return PaintFacility;
         default:
             return TrackPaintFunctionDummy;

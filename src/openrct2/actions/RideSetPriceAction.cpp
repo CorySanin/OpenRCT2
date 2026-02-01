@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -56,20 +56,20 @@ namespace OpenRCT2::GameActions
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_NOT_FOUND);
         }
 
         const auto* rideEntry = GetRideEntryByIndex(ride->subtype);
         if (rideEntry == nullptr)
         {
             LOG_ERROR("Ride entry not found for ride subtype %u", ride->subtype);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_OBJECT_ENTRY_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_OBJECT_ENTRY_NOT_FOUND);
         }
 
         if (_price < kRideMinPrice || _price > kRideMaxPrice)
         {
             LOG_ERROR("Attempting to set an invalid price for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, kStringIdEmpty);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, kStringIdEmpty);
         }
 
         return Result();
@@ -78,32 +78,32 @@ namespace OpenRCT2::GameActions
     Result RideSetPriceAction::Execute(GameState_t& gameState) const
     {
         Result res = Result();
-        res.Expenditure = ExpenditureType::parkRideTickets;
+        res.expenditure = ExpenditureType::parkRideTickets;
 
         auto ride = GetRide(_rideIndex);
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_NOT_FOUND);
         }
 
         const auto* rideEntry = GetRideEntryByIndex(ride->subtype);
         if (rideEntry == nullptr)
         {
             LOG_ERROR("Ride entry not found for ride subtype %u", ride->subtype);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_OBJECT_ENTRY_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_RIDE_OBJECT_ENTRY_NOT_FOUND);
         }
 
         if (_price < kRideMinPrice || _price > kRideMaxPrice)
         {
             LOG_ERROR("Attempting to set an invalid price for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, kStringIdEmpty);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, kStringIdEmpty);
         }
 
         if (!ride->overallView.IsNull())
         {
             auto location = ride->overallView.ToTileCentre();
-            res.Position = { location, TileElementHeight(location) };
+            res.position = { location, TileElementHeight(location) };
         }
 
         auto* windowMgr = Ui::GetWindowManager();

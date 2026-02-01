@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -25,7 +25,7 @@ namespace OpenRCT2::RCT12
         else
         {
             auto speedOrSeatRotation = flags & EnumValue(TD46Flags::speedOrSeatRotation);
-            if (::TrackTypeHasSpeedSetting(target.type) && target.type != OpenRCT2::TrackElemType::BlockBrakes)
+            if (::TrackTypeHasSpeedSetting(target.type) && target.type != OpenRCT2::TrackElemType::blockBrakes)
             {
                 target.brakeBoosterSpeed = speedOrSeatRotation << 1;
             }
@@ -49,7 +49,7 @@ namespace OpenRCT2::RCT12
         {
             trackFlags = (source.stationIndex.ToUnderlying() & EnumValue(TD46Flags::stationId));
         }
-        else if (::TrackTypeHasSpeedSetting(source.type) && source.type != OpenRCT2::TrackElemType::BlockBrakes)
+        else if (::TrackTypeHasSpeedSetting(source.type) && source.type != OpenRCT2::TrackElemType::blockBrakes)
         {
             trackFlags = (source.brakeBoosterSpeed >> 1);
         }

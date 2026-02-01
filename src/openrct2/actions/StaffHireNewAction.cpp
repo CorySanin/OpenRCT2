@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -64,28 +64,28 @@ namespace OpenRCT2::GameActions
 
     Result StaffHireNewAction::Query(GameState_t& gameState) const
     {
-        return QueryExecute(false);
+        return QueryExecute(gameState, false);
     }
 
     Result StaffHireNewAction::Execute(GameState_t& gameState) const
     {
-        return QueryExecute(true);
+        return QueryExecute(gameState, true);
     }
 
-    Result StaffHireNewAction::QueryExecute(bool execute) const
+    Result StaffHireNewAction::QueryExecute(GameState_t& gameState, bool execute) const
     {
         auto res = Result();
-        res.Expenditure = ExpenditureType::wages;
+        res.expenditure = ExpenditureType::wages;
 
         if (_staffType >= static_cast<uint8_t>(StaffType::count))
         {
             LOG_ERROR("Invalid staff type %u", static_cast<uint32_t>(_staffType));
-            return Result(Status::InvalidParameters, STR_CANT_HIRE_NEW_STAFF, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_CANT_HIRE_NEW_STAFF, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
-        if (getGameState().entities.GetNumFreeEntities() < 400)
+        if (gameState.entities.GetNumFreeEntities() < 400)
         {
-            return Result(Status::NoFreeElements, STR_CANT_HIRE_NEW_STAFF, STR_TOO_MANY_PEOPLE_IN_GAME);
+            return Result(Status::noFreeElements, STR_CANT_HIRE_NEW_STAFF, STR_TOO_MANY_PEOPLE_IN_GAME);
         }
 
         if (_staffType == static_cast<uint8_t>(StaffType::entertainer))
@@ -94,23 +94,23 @@ namespace OpenRCT2::GameActions
             if (std::find(costumes.begin(), costumes.end(), _costumeIndex) == costumes.end())
             {
                 LOG_ERROR("Unavailable entertainer costume %u", static_cast<uint32_t>(_costumeIndex));
-                return Result(Status::InvalidParameters, STR_CANT_HIRE_NEW_STAFF, STR_ERR_VALUE_OUT_OF_RANGE);
+                return Result(Status::invalidParameters, STR_CANT_HIRE_NEW_STAFF, STR_ERR_VALUE_OUT_OF_RANGE);
             }
         }
 
-        Staff* newPeep = getGameState().entities.CreateEntity<Staff>();
+        Staff* newPeep = gameState.entities.CreateEntity<Staff>();
         if (newPeep == nullptr)
         {
             // Too many peeps exist already.
-            return Result(Status::NoFreeElements, STR_CANT_HIRE_NEW_STAFF, STR_TOO_MANY_PEOPLE_IN_GAME);
+            return Result(Status::noFreeElements, STR_CANT_HIRE_NEW_STAFF, STR_TOO_MANY_PEOPLE_IN_GAME);
         }
 
         if (execute == false)
         {
             // In query we just want to see if we can obtain a sprite slot.
-            getGameState().entities.EntityRemove(newPeep);
+            gameState.entities.EntityRemove(newPeep);
 
-            res.SetData(StaffHireNewActionResult{ EntityId::GetNull() });
+            res.setData(StaffHireNewActionResult{ EntityId::GetNull() });
         }
         else
         {
@@ -171,7 +171,7 @@ namespace OpenRCT2::GameActions
 
             if (_autoPosition)
             {
-                AutoPositionNewStaff(newPeep);
+                AutoPositionNewStaff(gameState, newPeep);
             }
             else
             {
@@ -189,12 +189,12 @@ namespace OpenRCT2::GameActions
             newPeep->PathfindGoal.z = 0xFF;
             newPeep->PathfindGoal.direction = kInvalidDirection;
 
-            uint8_t colour = StaffGetColour(static_cast<StaffType>(_staffType));
+            auto colour = StaffGetColour(static_cast<StaffType>(_staffType));
             newPeep->TshirtColour = colour;
             newPeep->TrousersColour = colour;
 
             // Staff energy determines their walking speed
-            switch (getGameState().cheats.selectedStaffSpeed)
+            switch (gameState.cheats.selectedStaffSpeed)
             {
                 case StaffSpeedCheat::None:
                     newPeep->Energy = kCheatsStaffNormalSpeed;
@@ -215,13 +215,13 @@ namespace OpenRCT2::GameActions
             newPeep->StaffMowingTimeout = 0;
             newPeep->PatrolInfo = nullptr;
 
-            res.SetData(StaffHireNewActionResult{ newPeep->Id });
+            res.setData(StaffHireNewActionResult{ newPeep->Id });
         }
 
         return res;
     }
 
-    void StaffHireNewAction::AutoPositionNewStaff(Peep* newPeep) const
+    void StaffHireNewAction::AutoPositionNewStaff(GameState_t& gameState, Peep* newPeep) const
     {
         // Find a location to place new staff member
         newPeep->State = PeepState::falling;
@@ -281,7 +281,7 @@ namespace OpenRCT2::GameActions
         else
         {
             // No walking guests; pick random park entrance
-            const auto& park = getGameState().park;
+            const auto& park = gameState.park;
             if (!park.entrances.empty())
             {
                 auto rand = ScenarioRandMax(static_cast<uint32_t>(park.entrances.size()));

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -45,8 +45,13 @@ namespace OpenRCT2::Network
 
         Connection() noexcept;
 
+        void update();
         ReadPacket readPacket();
         void QueuePacket(const Packet& packet, bool front = false);
+
+        Command getPendingPacketCommand() const noexcept;
+        size_t getPendingPacketSize() const noexcept;
+        size_t getPendingPacketAvailable() const noexcept;
 
         // This will not immediately disconnect the client. The disconnect
         // will happen post-tick.
@@ -54,19 +59,21 @@ namespace OpenRCT2::Network
 
         bool IsValid() const;
         void SendQueuedData();
-        void ResetLastPacketTime() noexcept;
-        bool ReceivedPacketRecently() const noexcept;
+        bool ReceivedDataRecently() const noexcept;
 
         const utf8* GetLastDisconnectReason() const noexcept;
         void SetLastDisconnectReason(std::string_view src);
-        void SetLastDisconnectReason(const StringId string_id, void* args = nullptr);
+        void SetLastDisconnectReason(StringId string_id, void* args = nullptr);
 
     private:
+        std::vector<uint8_t> _inboundBuffer;
         std::vector<uint8_t> _outboundBuffer;
-        uint32_t _lastPacketTime = 0;
+        uint32_t _lastReceiveTime = 0;
         std::string _lastDisconnectReason;
+        bool _isLegacyProtocol = false;
 
         void RecordPacketStats(const Packet& packet, bool sending);
+        void receiveData();
     };
 } // namespace OpenRCT2::Network
 

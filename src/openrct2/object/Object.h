@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -14,6 +14,7 @@
 #include "../drawing/ImageIndexType.h"
 #include "ImageTable.h"
 #include "ObjectAsset.h"
+#include "ObjectSourceGame.h"
 #include "ObjectTypes.h"
 #include "StringTable.h"
 
@@ -22,8 +23,10 @@
 #include <string_view>
 #include <vector>
 
-struct RenderTarget;
-using ride_type_t = uint16_t;
+namespace OpenRCT2::Drawing
+{
+    struct RenderTarget;
+}
 
 namespace OpenRCT2
 {
@@ -41,19 +44,7 @@ namespace OpenRCT2
         constexpr uint8_t AlwaysRequired = (1 << 4);
         constexpr uint8_t Flag6 = (1 << 5);
         constexpr uint8_t AllFlags = 0xFF;
-    }; // namespace ObjectSelectionFlags
-
-    enum class ObjectSourceGame : uint8_t
-    {
-        custom,
-        wackyWorlds,
-        timeTwister,
-        openRCT2Official,
-        rct1,
-        addedAttractions,
-        loopyLandscapes,
-        rct2 = 8,
-    };
+    } // namespace ObjectSelectionFlags
 
 #pragma pack(push, 1)
     /**
@@ -107,12 +98,6 @@ namespace OpenRCT2
     static_assert(sizeof(RCTObjectEntry) == 0x10);
 
 #pragma pack(pop)
-
-    struct RideFilters
-    {
-        uint8_t category[2];
-        ride_type_t ride_type;
-    };
 
     enum class ObjectGeneration : uint8_t
     {
@@ -239,7 +224,7 @@ namespace OpenRCT2
         ObjectGeneration GetGeneration() const
         {
             return _generation;
-        };
+        }
 
         ObjectType GetObjectType() const
         {
@@ -292,7 +277,7 @@ namespace OpenRCT2
         virtual void Load() = 0;
         virtual void Unload() = 0;
 
-        virtual void DrawPreview(RenderTarget& /*rt*/, int32_t /*width*/, int32_t /*height*/) const
+        virtual void DrawPreview(Drawing::RenderTarget& /*rt*/, int32_t /*width*/, int32_t /*height*/) const
         {
         }
 
@@ -318,7 +303,7 @@ namespace OpenRCT2
         }
 
         bool IsCompatibilityObject() const;
-        void SetIsCompatibilityObject(const bool on);
+        void SetIsCompatibilityObject(bool on);
 
         const ImageTable& GetImageTable() const
         {

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -62,8 +62,8 @@ namespace OpenRCT2
         auto imageId1 = ImageId(baseImageId + 1, vehicle->colours.Body, vehicle->colours.Trim, vehicle->colours.Tertiary);
         if (vehicle->IsGhost())
         {
-            imageId0 = ImageId(baseImageId + 0).WithRemap(FilterPaletteID::paletteGhost);
-            imageId1 = ImageId(baseImageId + 1).WithRemap(FilterPaletteID::paletteGhost);
+            imageId0 = ImageId(baseImageId + 0).WithRemap(Drawing::FilterPaletteID::paletteGhost);
+            imageId1 = ImageId(baseImageId + 1).WithRemap(Drawing::FilterPaletteID::paletteGhost);
         }
 
         PaintAddImageAsParent(session, imageId0, { 0, 0, z }, { { -11, -11, z + 1 }, { 2, 2, 41 } });

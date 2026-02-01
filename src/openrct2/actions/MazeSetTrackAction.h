@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -13,17 +13,24 @@
 
 namespace OpenRCT2::GameActions
 {
+    enum class MazeBuildMode : uint8_t
+    {
+        build,
+        move,
+        fill,
+    };
+
     class MazeSetTrackAction final : public GameActionBase<GameCommand::SetMazeTrack>
     {
     private:
         CoordsXYZD _loc;
         bool _initialPlacement{};
         RideId _rideIndex{ RideId::GetNull() };
-        uint8_t _mode{};
+        MazeBuildMode _mode{};
 
     public:
         MazeSetTrackAction() = default;
-        MazeSetTrackAction(const CoordsXYZD& location, bool initialPlacement, RideId rideIndex, uint8_t mode);
+        MazeSetTrackAction(const CoordsXYZD& location, bool initialPlacement, RideId rideIndex, MazeBuildMode mode);
 
         void AcceptParameters(GameActionParameterVisitor&) final;
         void Serialise(DataSerialiser& stream) override;

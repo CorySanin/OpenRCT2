@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -951,47 +951,47 @@ static void DinghySlideTrackCovered60DegDownTo25DegDown(
         session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
 }
 
-TrackPaintFunction GetTrackPaintFunctionDinghySlideCovered(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionDinghySlideCovered(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::Flat:
+        case TrackElemType::flat:
             return DinghySlideTrackCoveredFlat;
-        case TrackElemType::Up25:
+        case TrackElemType::up25:
             return DinghySlideTrackCovered25DegUp;
-        case TrackElemType::Up60:
+        case TrackElemType::up60:
             return DinghySlideTrackCovered60DegUp;
-        case TrackElemType::FlatToUp25:
+        case TrackElemType::flatToUp25:
             return DinghySlideTrackCoveredFlatTo25DegUp;
-        case TrackElemType::Up25ToUp60:
+        case TrackElemType::up25ToUp60:
             return DinghySlideTrackCovered25DegUpTo60DegUp;
-        case TrackElemType::Up60ToUp25:
+        case TrackElemType::up60ToUp25:
             return DinghySlideTrackCovered60DegUpTo25DegUp;
-        case TrackElemType::Up25ToFlat:
+        case TrackElemType::up25ToFlat:
             return DinghySlideTrackCovered25DegUpToFlat;
-        case TrackElemType::Down25:
+        case TrackElemType::down25:
             return DinghySlideTrackCovered25DegDown;
-        case TrackElemType::Down60:
+        case TrackElemType::down60:
             return DinghySlideTrackCovered60DegDown;
-        case TrackElemType::FlatToDown25:
+        case TrackElemType::flatToDown25:
             return DinghySlideTrackCoveredFlatTo25DegDown;
-        case TrackElemType::Down25ToDown60:
+        case TrackElemType::down25ToDown60:
             return DinghySlideTrackCovered25DegDownTo60DegDown;
-        case TrackElemType::Down60ToDown25:
+        case TrackElemType::down60ToDown25:
             return DinghySlideTrackCovered60DegDownTo25DegDown;
-        case TrackElemType::Down25ToFlat:
+        case TrackElemType::down25ToFlat:
             return DinghySlideTrackCovered25DegDownToFlat;
-        case TrackElemType::LeftQuarterTurn5Tiles:
+        case TrackElemType::leftQuarterTurn5Tiles:
             return DinghySlideTrackCoveredLeftQuarterTurn5;
-        case TrackElemType::RightQuarterTurn5Tiles:
+        case TrackElemType::rightQuarterTurn5Tiles:
             return DinghySlideTrackCoveredRightQuarterTurn5;
-        case TrackElemType::SBendLeft:
+        case TrackElemType::sBendLeft:
             return DinghySlideTrackCoveredSBendLeft;
-        case TrackElemType::SBendRight:
+        case TrackElemType::sBendRight:
             return DinghySlideTrackCoveredSBendRight;
-        case TrackElemType::LeftQuarterTurn3Tiles:
+        case TrackElemType::leftQuarterTurn3Tiles:
             return DinghySlideTrackCoveredLeftQuarterTurn3;
-        case TrackElemType::RightQuarterTurn3Tiles:
+        case TrackElemType::rightQuarterTurn3Tiles:
             return DinghySlideTrackCoveredRightQuarterTurn3;
         default:
             return TrackPaintFunctionDummy;

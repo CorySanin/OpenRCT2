@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,8 +17,9 @@
 #include <openrct2/actions/NetworkModifyGroupAction.h>
 #include <openrct2/config/Config.h>
 #include <openrct2/core/String.hpp>
+#include <openrct2/drawing/ColourMap.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
-#include <openrct2/drawing/Text.h>
 #include <openrct2/interface/ColourWithFlags.h>
 #include <openrct2/network/Network.h>
 #include <openrct2/ui/WindowManager.h>
@@ -166,8 +167,8 @@ namespace OpenRCT2::Ui::Windows
             auto numItems = Network::GetNumGroups();
 
             WindowDropdownShowTextCustomWidth(
-                windowPos + ScreenCoordsXY{ dropdownWidget->left, dropdownWidget->top }, dropdownWidget->height() + 1,
-                colours[1], 0, 0, numItems, widget->right - dropdownWidget->left);
+                windowPos + ScreenCoordsXY{ dropdownWidget->left, dropdownWidget->top }, dropdownWidget->height(), colours[1],
+                0, 0, numItems, widget->right - dropdownWidget->left);
 
             for (auto i = 0; i < Network::GetNumGroups(); i++)
             {
@@ -185,8 +186,8 @@ namespace OpenRCT2::Ui::Windows
 
         void informationPaint(RenderTarget& rt)
         {
-            RenderTarget clippedDPI;
-            if (ClipDrawPixelInfo(clippedDPI, rt, windowPos, width, height))
+            RenderTarget clippedRT;
+            if (ClipRenderTarget(clippedRT, rt, windowPos, width, height))
             {
                 auto screenCoords = ScreenCoordsXY{ 3, widgets[WIDX_CONTENT_PANEL].top + 7 };
                 int32_t newWidth = width - 6;
@@ -195,7 +196,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<const char*>(name.c_str());
-                    screenCoords.y += DrawTextWrapped(clippedDPI, screenCoords, newWidth, STR_STRING, ft, { colours[1] });
+                    screenCoords.y += DrawTextWrapped(clippedRT, screenCoords, newWidth, STR_STRING, ft, { colours[1] });
                     screenCoords.y += kListRowHeight / 2;
                 }
 
@@ -204,7 +205,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<const char*>(description.c_str());
-                    screenCoords.y += DrawTextWrapped(clippedDPI, screenCoords, newWidth, STR_STRING, ft, { colours[1] });
+                    screenCoords.y += DrawTextWrapped(clippedRT, screenCoords, newWidth, STR_STRING, ft, { colours[1] });
                     screenCoords.y += kListRowHeight / 2;
                 }
 
@@ -213,7 +214,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<const char*>(providerName.c_str());
-                    DrawTextBasic(clippedDPI, screenCoords, STR_PROVIDER_NAME, ft);
+                    DrawTextBasic(clippedRT, screenCoords, STR_PROVIDER_NAME, ft);
                     screenCoords.y += kListRowHeight;
                 }
 
@@ -222,7 +223,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<const char*>(providerEmail.c_str());
-                    DrawTextBasic(clippedDPI, screenCoords, STR_PROVIDER_EMAIL, ft);
+                    DrawTextBasic(clippedRT, screenCoords, STR_PROVIDER_EMAIL, ft);
                     screenCoords.y += kListRowHeight;
                 }
 
@@ -231,7 +232,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto ft = Formatter();
                     ft.Add<const char*>(providerWebsite.c_str());
-                    DrawTextBasic(clippedDPI, screenCoords, STR_PROVIDER_WEBSITE, ft);
+                    DrawTextBasic(clippedRT, screenCoords, STR_PROVIDER_WEBSITE, ft);
                 }
             }
         }
@@ -268,7 +269,7 @@ namespace OpenRCT2::Ui::Windows
                     _buffer.clear();
 
                     // Draw player name
-                    auto colour = ColourWithFlags{ COLOUR_BLACK };
+                    auto colour = ColourWithFlags{ Drawing::Colour::black };
                     if (listPosition == selectedListItem)
                     {
                         Rectangle::filter(
@@ -396,7 +397,7 @@ namespace OpenRCT2::Ui::Windows
             auto rtCoords = ScreenCoordsXY{ rt.x, rt.y };
             Rectangle::fill(
                 rt, { rtCoords, rtCoords + ScreenCoordsXY{ rt.width - 1, rt.height - 1 } },
-                ColourMapA[colours[1].colour].mid_light);
+                getColourMap(colours[1].colour).midLight);
 
             for (int32_t i = 0; i < Network::GetNumActions(); i++)
             {

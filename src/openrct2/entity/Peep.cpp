@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -25,6 +25,7 @@
 #include "../core/EnumUtils.hpp"
 #include "../core/Guard.hpp"
 #include "../core/String.hpp"
+#include "../drawing/Drawing.h"
 #include "../drawing/LightFX.h"
 #include "../entity/Balloon.h"
 #include "../entity/EntityList.h"
@@ -211,7 +212,7 @@ void PeepUpdateAll()
     const auto currentTicksMasked = currentTicks & kTicks128Mask;
 
     uint32_t index = 0;
-    // Warning this loop can delete peeps
+
     for (auto peep : EntityList<Guest>())
     {
         if ((index & kTicks128Mask) == currentTicksMasked)
@@ -219,11 +220,7 @@ void PeepUpdateAll()
             peep->Tick128UpdateGuest(index);
         }
 
-        // 128 tick can delete so double check its not deleted
-        if (peep->Type == EntityType::guest)
-        {
-            peep->Update();
-        }
+        peep->Update();
 
         index++;
     }
@@ -235,11 +232,7 @@ void PeepUpdateAll()
             staff->Tick128UpdateStaff();
         }
 
-        // 128 tick can delete so double check its not deleted
-        if (staff->Type == EntityType::staff)
-        {
-            staff->Update();
-        }
+        staff->Update();
 
         index++;
     }
@@ -256,6 +249,46 @@ void PeepUpdateAllBoundingBoxes()
     {
         peep->UpdateSpriteBoundingBox();
     }
+}
+
+void Peep::UpdateWaitingAtCrossing()
+{
+    if (!IsActionInterruptable())
+    {
+        UpdateAction();
+        Invalidate();
+        if (!IsActionWalking())
+            return;
+    }
+
+    Action = PeepActionType::idle;
+    NextAnimationType = PeepAnimationType::watchRide;
+    SwitchNextAnimationType();
+
+    auto* guest = As<Guest>();
+    if (guest != nullptr)
+    {
+        if (guest->IsActionInterruptable())
+        {
+            if (guest->HasFoodOrDrink())
+            {
+                if ((ScenarioRand() & 0xFFFF) <= 1310)
+                {
+                    Action = PeepActionType::eatFood;
+                    AnimationFrameNum = 0;
+                    AnimationImageIdOffset = 0;
+                }
+            }
+            else if ((ScenarioRand() & 0xFFFF) <= 64)
+            {
+                Action = PeepActionType::wave2;
+                AnimationFrameNum = 0;
+                AnimationImageIdOffset = 0;
+            }
+        }
+    }
+
+    UpdateCurrentAnimationType();
 }
 
 /*
@@ -558,7 +591,7 @@ void PeepDecrementNumRiders(Peep* peep)
         if (ride != nullptr)
         {
             ride->numRiders = std::max(0, ride->numRiders - 1);
-            ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+            ride->windowInvalidateFlags.set(RideInvalidateFlag::main, RideInvalidateFlag::list);
         }
     }
 }
@@ -583,7 +616,7 @@ void PeepWindowStateUpdate(Peep* peep)
             if (ride != nullptr)
             {
                 ride->numRiders++;
-                ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+                ride->windowInvalidateFlags.set(RideInvalidateFlag::main, RideInvalidateFlag::list);
             }
         }
 
@@ -628,7 +661,7 @@ void Peep::PickupAbort(int32_t old_x)
     gPickupPeepImage = ImageId();
 }
 
-// Returns GameActions::Status::OK when a peep can be dropped at the given location. When apply is set to true the peep gets
+// Returns GameActions::Status::ok when a peep can be dropped at the given location. When apply is set to true the peep gets
 // dropped.
 GameActions::Result Peep::Place(const TileCoordsXYZ& location, bool apply)
 {
@@ -640,7 +673,7 @@ GameActions::Result Peep::Place(const TileCoordsXYZ& location, bool apply)
     }
     if (tileElement == nullptr)
     {
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_ERR_CANT_PLACE_PERSON_HERE, kStringIdNone);
+        return GameActions::Result(GameActions::Status::invalidParameters, STR_ERR_CANT_PLACE_PERSON_HERE, kStringIdNone);
     }
 
     // Set the coordinate of destination to be exactly
@@ -649,17 +682,17 @@ GameActions::Result Peep::Place(const TileCoordsXYZ& location, bool apply)
 
     if (!MapIsLocationOwned(destination))
     {
-        return GameActions::Result(GameActions::Status::NotOwned, STR_ERR_CANT_PLACE_PERSON_HERE, STR_LAND_NOT_OWNED_BY_PARK);
+        return GameActions::Result(GameActions::Status::notOwned, STR_ERR_CANT_PLACE_PERSON_HERE, STR_LAND_NOT_OWNED_BY_PARK);
     }
 
     if (auto res = MapCanConstructAt({ destination, destination.z, destination.z + (1 * 8) }, { 0b1111, 0 });
-        res.Error != GameActions::Status::Ok)
+        res.error != GameActions::Status::ok)
     {
-        const auto stringId = std::get<StringId>(res.ErrorMessage);
+        const auto stringId = std::get<StringId>(res.errorMessage);
         if (stringId != STR_RAISE_OR_LOWER_LAND_FIRST && stringId != STR_FOOTPATH_IN_THE_WAY)
         {
             return GameActions::Result(
-                GameActions::Status::NoClearance, STR_ERR_CANT_PLACE_PERSON_HERE, stringId, res.ErrorMessageArgs.data());
+                GameActions::Status::noClearance, STR_ERR_CANT_PLACE_PERSON_HERE, stringId, res.errorMessageArgs.data());
         }
     }
 
@@ -827,8 +860,6 @@ void Peep::UpdateFalling()
                 saved_height = map_height;
                 saved_map = tile_element;
             } // If not a path or surface go see next element
-            else
-                continue;
         } while (!(tile_element++)->IsLastForTile());
     }
 
@@ -1142,7 +1173,7 @@ void PeepUpdateCrowdNoise()
 {
     PROFILED_FUNCTION();
 
-    if (OpenRCT2::Audio::gGameSoundsOff)
+    if (gGameSoundsOff)
         return;
 
     if (!Config::Get().sound.soundEnabled)
@@ -1190,11 +1221,9 @@ void PeepUpdateCrowdNoise()
     }
     else
     {
-        int32_t volume;
-
         // Formula to scale peeps to dB where peeps [0, 120] scales approximately logarithmically to [-3314, -150] dB/100
         // 207360000 maybe related to DSBVOLUME_MIN which is -10,000 (dB/100)
-        volume = 120 - std::min(visiblePeeps, 120);
+        int32_t volume = 120 - std::min(visiblePeeps, 120);
         volume = volume * volume * volume * volume;
         volume = (viewport->zoom.ApplyInversedTo(207360000 - volume) - 207360000) / 65536 - 150;
 
@@ -1204,7 +1233,7 @@ void PeepUpdateCrowdNoise()
             _crowdSoundChannel = CreateAudioChannel(SoundId::crowdAmbience, true, 0);
             if (_crowdSoundChannel != nullptr)
             {
-                _crowdSoundChannel->SetGroup(OpenRCT2::Audio::MixerGroup::Sound);
+                _crowdSoundChannel->SetGroup(MixerGroup::Sound);
             }
         }
         if (_crowdSoundChannel != nullptr)
@@ -1239,7 +1268,7 @@ void PeepApplause()
     }
 
     // Play applause noise
-    OpenRCT2::Audio::Play(OpenRCT2::Audio::SoundId::applause, 0, ContextGetWidth() / 2);
+    Play(SoundId::applause, 0, ContextGetWidth() / 2);
 }
 
 /**
@@ -1250,12 +1279,9 @@ void PeepUpdateDaysInQueue()
 {
     for (auto peep : EntityList<Guest>())
     {
-        if (!peep->OutsideOfPark && peep->State == PeepState::queuing)
+        if (!peep->OutsideOfPark && (peep->State == PeepState::queuing))
         {
-            if (peep->DaysInQueue < 255)
-            {
-                peep->DaysInQueue += 1;
-            }
+            peep->DaysInQueue = AddClamp<uint8_t>(peep->DaysInQueue, 1);
         }
     }
 }
@@ -1887,12 +1913,13 @@ static bool PeepInteractWithEntrance(Peep* peep, const CoordsXYE& coords, uint8_
                 return true;
             }
 
-            gameState.park.totalIncomeFromAdmissions += entranceFee;
+            gameState.park.totalIncomeFromAdmissions = AddClamp(gameState.park.totalIncomeFromAdmissions, entranceFee);
             guest->SpendMoney(guest->PaidToEnter, entranceFee, ExpenditureType::parkEntranceTickets);
             guest->PeepFlags |= PEEP_FLAGS_HAS_PAID_FOR_PARK_ENTRY;
         }
 
-        getGameState().park.totalAdmissions++;
+        auto& park = getGameState().park;
+        park.totalAdmissions = AddClamp<uint64_t>(park.totalAdmissions, 1);
 
         auto* windowMgr = Ui::GetWindowManager();
         windowMgr->InvalidateByNumber(WindowClass::parkInformation, 0);
@@ -2259,8 +2286,8 @@ static bool PeepInteractWithShop(Peep* peep, const CoordsXYE& coords)
         if (cost != 0 && !(getGameState().park.flags & PARK_FLAGS_NO_MONEY))
         {
             ride->totalProfit = AddClamp(ride->totalProfit, cost);
-            ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_INCOME;
-            guest->SpendMoney(cost, ExpenditureType::parkRideTickets);
+            ride->windowInvalidateFlags.set(RideInvalidateFlag::income);
+            guest->SpendMoney(cost, ExpenditureType::shopSales);
         }
 
         auto coordsCentre = coords.ToTileCentre();
@@ -2538,12 +2565,12 @@ int32_t PeepCompare(const EntityId sprite_index_a, const EntityId sprite_index_b
     char nameA[256]{};
     Formatter ft;
     peep_a->FormatNameTo(ft);
-    OpenRCT2::FormatStringLegacy(nameA, sizeof(nameA), STR_STRINGID, ft.Data());
+    FormatStringLegacy(nameA, sizeof(nameA), STR_STRINGID, ft.Data());
 
     char nameB[256]{};
     ft.Rewind();
     peep_b->FormatNameTo(ft);
-    OpenRCT2::FormatStringLegacy(nameB, sizeof(nameB), STR_STRINGID, ft.Data());
+    FormatStringLegacy(nameB, sizeof(nameB), STR_STRINGID, ft.Data());
     return String::logicalCmp(nameA, nameB);
 }
 
@@ -2745,7 +2772,7 @@ void Peep::Paint(PaintSession& session, int32_t imageDirection) const
         }
     }
 
-    if (session.DPI.zoom_level > ZoomLevel{ 2 })
+    if (session.rt.zoom_level > ZoomLevel{ 2 })
     {
         return;
     }

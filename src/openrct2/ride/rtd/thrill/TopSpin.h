@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,7 +20,7 @@ namespace OpenRCT2
 constexpr RideTypeDescriptor TopSpinRTD =
 {
     .Category = RideCategory::thrill,
-    .StartTrackPiece = TrackElemType::FlatTrack3x3,
+    .StartTrackPiece = TrackElemType::flatTrack3x3,
     .TrackPaintFunctions = TrackDrawerDescriptor({
         .trackStyle = TrackStyle::topSpin,
         .enabledTrackGroups = {},
@@ -48,9 +48,9 @@ constexpr RideTypeDescriptor TopSpinRTD =
     .PhotoItem = ShopItem::photo,
     .BonusValue = 55,
     .ColourPresets = TRACK_COLOUR_PRESETS(
-        { COLOUR_BRIGHT_RED, COLOUR_YELLOW, COLOUR_YELLOW },
-        { COLOUR_TEAL, COLOUR_WHITE, COLOUR_WHITE },
-        { COLOUR_DARK_GREEN, COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED },
+        { Drawing::Colour::brightRed, Drawing::Colour::yellow, Drawing::Colour::yellow },
+        { Drawing::Colour::darkWater, Drawing::Colour::white, Drawing::Colour::white },
+        { Drawing::Colour::darkGreen, Drawing::Colour::brightRed, Drawing::Colour::brightRed },
     ),
     .ColourPreview = { SPR_RIDE_DESIGN_PREVIEW_TOP_SPIN_TRACK, 0 },
     .ColourKey = RideColourKey::Ride,

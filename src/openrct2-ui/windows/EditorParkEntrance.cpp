@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,6 +17,8 @@
 #include <openrct2/SpriteIds.h>
 #include <openrct2/actions/ParkEntrancePlaceAction.h>
 #include <openrct2/audio/Audio.h>
+#include <openrct2/drawing/ColourMap.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/object/EntranceObject.h>
 #include <openrct2/object/ObjectLimits.h>
@@ -30,6 +32,7 @@
 #include <openrct2/world/tile_element/SurfaceElement.h>
 
 using namespace OpenRCT2::Drawing;
+using OpenRCT2::GameActions::CommandFlag;
 
 namespace OpenRCT2::Ui::Windows
 {
@@ -41,12 +44,13 @@ namespace OpenRCT2::Ui::Windows
     static constexpr int32_t kScrollWidth = (kImageSize * kNumColumns) + kScrollBarWidth + 4;
     static constexpr int32_t kScrollHeight = (kImageSize * kNumRows);
     static constexpr ScreenSize kWindowSize = { kScrollWidth + 28, kScrollHeight + 51 };
+    static bool _placingEntrance = false;
 
     struct EntranceSelection
     {
         ObjectEntryIndex entryIndex = kObjectEntryIndexNull;
         StringId stringId = kStringIdNone;
-        ImageIndex imageId = kSpriteIdNull;
+        ImageIndex imageId = kImageIndexUndefined;
     };
 
     enum WindowEditorParkEntranceListWidgetIdx
@@ -166,8 +170,11 @@ namespace OpenRCT2::Ui::Windows
 
         void PlaceParkEntranceToolUpdate(const ScreenCoordsXY& screenCoords)
         {
-            MapInvalidateSelectionRect();
-            MapInvalidateMapSelectionTiles();
+            if (_placingEntrance)
+            {
+                return;
+            }
+
             gMapSelectFlags.unset(MapSelectFlag::enable, MapSelectFlag::enableArrow, MapSelectFlag::enableConstruct);
             CoordsXYZD parkEntrancePosition = PlaceParkEntranceGetMapPosition(screenCoords);
             if (parkEntrancePosition.IsNull())
@@ -177,12 +184,12 @@ namespace OpenRCT2::Ui::Windows
             }
 
             int32_t sideDirection = (parkEntrancePosition.direction + 1) & 3;
-            gMapSelectionTiles.clear();
-            gMapSelectionTiles.push_back({ parkEntrancePosition.x, parkEntrancePosition.y });
-            gMapSelectionTiles.push_back(
+            MapSelection::clearSelectedTiles();
+            MapSelection::addSelectedTile({ parkEntrancePosition.x, parkEntrancePosition.y });
+            MapSelection::addSelectedTile(
                 { parkEntrancePosition.x + CoordsDirectionDelta[sideDirection].x,
                   parkEntrancePosition.y + CoordsDirectionDelta[sideDirection].y });
-            gMapSelectionTiles.push_back(
+            MapSelection::addSelectedTile(
                 { parkEntrancePosition.x - CoordsDirectionDelta[sideDirection].x,
                   parkEntrancePosition.y - CoordsDirectionDelta[sideDirection].y });
 
@@ -190,7 +197,6 @@ namespace OpenRCT2::Ui::Windows
             gMapSelectArrowDirection = parkEntrancePosition.direction;
 
             gMapSelectFlags.set(MapSelectFlag::enableConstruct, MapSelectFlag::enableArrow);
-            MapInvalidateMapSelectionTiles();
             if (gParkEntranceGhostExists && parkEntrancePosition == gParkEntranceGhostPosition)
             {
                 return;
@@ -198,14 +204,14 @@ namespace OpenRCT2::Ui::Windows
 
             ParkEntranceRemoveGhost();
 
-            bool isLegacyPath = (gFootpathSelection.LegacyPath != kObjectEntryIndexNull);
-            auto pathIndex = isLegacyPath ? gFootpathSelection.LegacyPath : gFootpathSelection.NormalSurface;
+            bool isLegacyPath = (gFootpathSelection.legacyPath != kObjectEntryIndexNull);
+            auto pathIndex = isLegacyPath ? gFootpathSelection.legacyPath : gFootpathSelection.normalSurface;
             auto gameAction = GameActions::ParkEntrancePlaceAction(
                 parkEntrancePosition, pathIndex, _selectedEntranceType, isLegacyPath);
-            gameAction.SetFlags(GAME_COMMAND_FLAG_GHOST);
+            gameAction.SetFlags({ CommandFlag::ghost });
 
             auto result = GameActions::Execute(&gameAction, getGameState());
-            if (result.Error == GameActions::Status::Ok)
+            if (result.error == GameActions::Status::ok)
             {
                 gParkEntranceGhostPosition = parkEntrancePosition;
                 gParkEntranceGhostExists = true;
@@ -214,19 +220,23 @@ namespace OpenRCT2::Ui::Windows
 
         void PlaceParkEntranceToolDown(const ScreenCoordsXY& screenCoords)
         {
+            _placingEntrance = true;
+            gMapSelectFlags.unset(MapSelectFlag::enable, MapSelectFlag::enableArrow, MapSelectFlag::enableConstruct);
             ParkEntranceRemoveGhost();
 
             CoordsXYZD parkEntrancePosition = PlaceParkEntranceGetMapPosition(screenCoords);
             if (!parkEntrancePosition.IsNull())
             {
-                bool isLegacyPath = (gFootpathSelection.LegacyPath != kObjectEntryIndexNull);
-                auto pathIndex = isLegacyPath ? gFootpathSelection.LegacyPath : gFootpathSelection.NormalSurface;
+                bool isLegacyPath = (gFootpathSelection.legacyPath != kObjectEntryIndexNull);
+                auto pathIndex = isLegacyPath ? gFootpathSelection.legacyPath : gFootpathSelection.normalSurface;
                 auto gameAction = GameActions::ParkEntrancePlaceAction(
                     parkEntrancePosition, pathIndex, _selectedEntranceType, isLegacyPath);
+                gameAction.SetCallback(
+                    [&](const GameActions::GameAction*, const GameActions::Result* result) { _placingEntrance = false; });
                 auto result = GameActions::Execute(&gameAction, getGameState());
-                if (result.Error == GameActions::Status::Ok)
+                if (result.error == GameActions::Status::ok)
                 {
-                    Audio::Play3D(Audio::SoundId::placeItem, result.Position);
+                    Audio::Play3D(Audio::SoundId::placeItem, result.position);
                 }
             }
         }
@@ -264,7 +274,7 @@ namespace OpenRCT2::Ui::Windows
             pressedWidgets |= 1LL << WIDX_TAB;
 
             ToolSet(*this, WIDX_LIST, Tool::entranceDown);
-            gInputFlags.set(InputFlag::unk6);
+            gInputFlags.set(InputFlag::allowRightMouseRemoval);
         }
 
         void onMouseUp(WidgetIndex widgetIndex) override
@@ -309,7 +319,7 @@ namespace OpenRCT2::Ui::Windows
 
         void onScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
-            GfxClear(rt, ColourMapA[colours[1].colour].mid_light);
+            GfxClear(rt, getColourMap(colours[1].colour).midLight);
 
             ScreenCoordsXY coords{ 1, 1 };
 
@@ -333,14 +343,13 @@ namespace OpenRCT2::Ui::Windows
                         rt, { coords, coords + ScreenCoordsXY{ kImageSize - 1, kImageSize - 1 } }, colours[1], borderStyle,
                         fillBrightness);
 
-                RenderTarget clipDPI;
+                RenderTarget clipRT;
                 auto screenPos = coords + ScreenCoordsXY{ kScrollPadding, kScrollPadding };
-                if (ClipDrawPixelInfo(
-                        clipDPI, rt, screenPos, kImageSize - (2 * kScrollPadding), kImageSize - (2 * kScrollPadding)))
+                if (ClipRenderTarget(
+                        clipRT, rt, screenPos, kImageSize - (2 * kScrollPadding), kImageSize - (2 * kScrollPadding)))
                 {
                     PaintPreview(
-                        clipDPI, entranceType.imageId, ScreenCoordsXY{ kImageSize / 2, kImageSize / 2 },
-                        gWindowSceneryRotation);
+                        clipRT, entranceType.imageId, ScreenCoordsXY{ kImageSize / 2, kImageSize / 2 }, gWindowSceneryRotation);
                 }
 
                 // Next position
@@ -415,6 +424,7 @@ namespace OpenRCT2::Ui::Windows
         window = windowMgr->Create<EditorParkEntrance>(
             WindowClass::editorParkEntrance, kWindowSize, { WindowFlag::higherContrastOnPress, WindowFlag::resizable });
 
+        _placingEntrance = false;
         return window;
     }
 } // namespace OpenRCT2::Ui::Windows

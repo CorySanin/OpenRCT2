@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,6 +17,7 @@
 #include "../localisation/LocalisationService.h"
 #include "../rct12/CSChar.h"
 #include "Drawing.h"
+#include "ScrollingText.h"
 #include "TTF.h"
 
 #include <iterator>
@@ -273,13 +274,13 @@ void FontSpriteInitialiseCharacters()
             int32_t width = 0;
             if (g1 != nullptr)
             {
-                width = g1->width + (2 * g1->x_offset) - 1;
+                width = g1->width + (2 * g1->xOffset) - 1;
             }
             _spriteFontCharacterWidths[EnumValue(fontStyle)][glyphIndex] = static_cast<uint8_t>(width);
         }
     }
 
-    ScrollingTextInitialiseBitmaps();
+    Drawing::ScrollingText::initialiseBitmaps();
 }
 
 int32_t FontSpriteGetCodepointOffset(int32_t codepoint)
@@ -317,7 +318,7 @@ ImageId FontSpriteGetCodepointSprite(FontStyle fontStyle, int32_t codepoint)
     auto codePointOffset = FontSpriteGetCodepointOffset(codepoint);
     int32_t offset = EnumValue(fontStyle) * SPR_FONTS_GLYPH_COUNT;
 
-    return ImageId(SPR_FONTS_BEGIN + offset + codePointOffset, COLOUR_BLACK);
+    return ImageId(SPR_FONTS_BEGIN + offset + codePointOffset, OpenRCT2::Drawing::Colour::black);
 }
 
 int32_t FontGetLineHeight(FontStyle fontStyle)

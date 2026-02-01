@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -14,7 +14,9 @@
 #include "../../GameState.h"
 #include "../../SpriteIds.h"
 #include "../../config/Config.h"
+#include "../../drawing/Drawing.h"
 #include "../../drawing/LightFX.h"
+#include "../../drawing/ScrollingText.h"
 #include "../../interface/Viewport.h"
 #include "../../localisation/Formatter.h"
 #include "../../localisation/Formatting.h"
@@ -24,7 +26,6 @@
 #include "../../profiling/Profiling.h"
 #include "../../ride/RideData.h"
 #include "../../ride/TrackDesign.h"
-#include "../../world/Banner.h"
 #include "../../world/Entrance.h"
 #include "../../world/Footpath.h"
 #include "../../world/Park.h"
@@ -79,7 +80,8 @@ static void PaintRideEntranceExitScrollingText(
     auto scroll = stringWidth > 0 ? (getGameState().currentTicks / 2) % stringWidth : 0;
 
     PaintAddImageAsChild(
-        session, ScrollingTextSetup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, stationObj.ScrollingMode, COLOUR_BLACK),
+        session,
+        ScrollingText::setup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, stationObj.ScrollingMode, PaletteIndex::transparent),
         { 0, 0, height + stationObj.Height }, { { 2, 2, height + stationObj.Height }, { 28, 28, 51 } });
 }
 
@@ -117,8 +119,8 @@ static void PaintRideEntranceExit(PaintSession& session, uint8_t direction, int3
     PROFILED_FUNCTION();
 
     auto rideIndex = entranceEl.GetRideIndex();
-    if ((gTrackDesignSaveMode || (session.ViewFlags & VIEWPORT_FLAG_HIGHLIGHT_PATH_ISSUES))
-        && (rideIndex != gTrackDesignSaveRideIndex))
+    if ((session.ViewFlags & VIEWPORT_FLAG_HIGHLIGHT_PATH_ISSUES)
+        || (gTrackDesignSaveMode && rideIndex != gTrackDesignSaveRideIndex))
     {
         return;
     }
@@ -210,7 +212,7 @@ static void PaintRideEntranceExit(PaintSession& session, uint8_t direction, int3
     auto supportsImageTemplate = imageTemplate;
     if (!entranceEl.IsGhost())
     {
-        supportsImageTemplate = ImageId().WithPrimary(COLOUR_SATURATED_BROWN);
+        supportsImageTemplate = ImageId().WithPrimary(OpenRCT2::Drawing::Colour::saturatedBrown);
     }
     WoodenASupportsPaintSetupRotated(
         session, WoodenSupportType::truss, WoodenSupportSubType::neSw, direction, height, supportsImageTemplate);
@@ -259,8 +261,8 @@ static void PaintParkEntranceScrollingText(
 
     auto stringWidth = GfxGetStringWidth(text, FontStyle::tiny);
     auto scroll = stringWidth > 0 ? (gameState.currentTicks / 2) % stringWidth : 0;
-    auto imageIndex = ScrollingTextSetup(
-        session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode + direction / 2, COLOUR_BLACK);
+    auto imageIndex = ScrollingText::setup(
+        session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode + direction / 2, PaletteIndex::transparent);
     auto textHeight = height + entrance.GetTextHeight();
     PaintAddImageAsChild(session, imageIndex, { 0, 0, textHeight }, { { 2, 2, textHeight }, { 28, 28, 47 } });
 }
@@ -308,7 +310,7 @@ static void PaintParkEntrance(PaintSession& session, uint8_t direction, int32_t 
             auto surfaceDescriptor = entranceEl.GetPathSurfaceDescriptor();
             if (surfaceDescriptor != nullptr)
             {
-                auto imageIndex = (surfaceDescriptor->Image + 5 * (1 + (direction & 1)));
+                auto imageIndex = (surfaceDescriptor->image + 5 * (1 + (direction & 1)));
                 PaintAddImageAsParent(
                     session, imageTemplate.WithIndex(imageIndex), { 0, 0, height }, { { 0, 2, height }, { 32, 28, 0 } });
             }
@@ -339,7 +341,7 @@ static void PaintParkEntrance(PaintSession& session, uint8_t direction, int32_t 
     auto supportsImageTemplate = imageTemplate;
     if (!entranceEl.IsGhost())
     {
-        supportsImageTemplate = ImageId().WithPrimary(COLOUR_SATURATED_BROWN);
+        supportsImageTemplate = ImageId().WithPrimary(OpenRCT2::Drawing::Colour::saturatedBrown);
     }
     WoodenASupportsPaintSetupRotated(
         session, WoodenSupportType::truss, WoodenSupportSubType::neSw, direction, height, supportsImageTemplate);
@@ -361,7 +363,7 @@ static void PaintHeightMarkers(PaintSession& session, const EntranceElement& ent
             baseImageIndex += heightMarkerBaseZ / 16;
             baseImageIndex += GetHeightMarkerOffset();
             baseImageIndex -= kMapBaseZ;
-            auto imageId = ImageId(baseImageIndex, COLOUR_GREY);
+            auto imageId = ImageId(baseImageIndex, OpenRCT2::Drawing::Colour::grey);
             PaintAddImageAsParent(session, imageId, { 16, 16, height }, { { 31, 31, heightMarkerBaseZ + 64 }, { 1, 1, 0 } });
         }
     }

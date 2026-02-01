@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -199,7 +199,7 @@ static void WildMouseTrackStation(
     const TrackElement& trackElement, SupportType supportType)
 {
     auto trackType = trackElement.GetTrackType();
-    if (trackType == TrackElemType::EndStation)
+    if (trackType == TrackElemType::endStation)
     {
         bool isClosed = trackElement.IsBrakeClosed();
         PaintAddImageAsParentRotated(
@@ -941,69 +941,69 @@ static void WildMouseTrackBlockBrakes(
     PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
-TrackPaintFunction GetTrackPaintFunctionWildMouse(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionWildMouse(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::Flat:
+        case TrackElemType::flat:
             return WildMouseTrackFlat;
-        case TrackElemType::EndStation:
-        case TrackElemType::BeginStation:
-        case TrackElemType::MiddleStation:
+        case TrackElemType::endStation:
+        case TrackElemType::beginStation:
+        case TrackElemType::middleStation:
             return WildMouseTrackStation;
-        case TrackElemType::Up25:
+        case TrackElemType::up25:
             return WildMouseTrack25DegUp;
-        case TrackElemType::Up60:
+        case TrackElemType::up60:
             return WildMouseTrack60DegUp;
-        case TrackElemType::FlatToUp25:
+        case TrackElemType::flatToUp25:
             return WildMouseTrackFlatTo25DegUp;
-        case TrackElemType::Up25ToUp60:
+        case TrackElemType::up25ToUp60:
             return WildMouseTrack25DegUpTo60DegUp;
-        case TrackElemType::Up60ToUp25:
+        case TrackElemType::up60ToUp25:
             return WildMouseTrack60DegUpTo25DegUp;
-        case TrackElemType::Up25ToFlat:
+        case TrackElemType::up25ToFlat:
             return WildMouseTrack25DegUpToFlat;
-        case TrackElemType::Down25:
+        case TrackElemType::down25:
             return WildMouseTrack25DegDown;
-        case TrackElemType::Down60:
+        case TrackElemType::down60:
             return WildMouseTrack60DegDown;
-        case TrackElemType::FlatToDown25:
+        case TrackElemType::flatToDown25:
             return WildMouseTrackFlatTo25DegDown;
-        case TrackElemType::Down25ToDown60:
+        case TrackElemType::down25ToDown60:
             return WildMouseTrack25DegDownTo60DegDown;
-        case TrackElemType::Down60ToDown25:
+        case TrackElemType::down60ToDown25:
             return WildMouseTrack60DegDownTo25DegDown;
-        case TrackElemType::Down25ToFlat:
+        case TrackElemType::down25ToFlat:
             return WildMouseTrack25DegDownToFlat;
-        case TrackElemType::LeftQuarterTurn3Tiles:
+        case TrackElemType::leftQuarterTurn3Tiles:
             return WildMouseTrackLeftQuarterTurn3;
-        case TrackElemType::RightQuarterTurn3Tiles:
+        case TrackElemType::rightQuarterTurn3Tiles:
             return WildMouseTrackRightQuarterTurn3;
-        case TrackElemType::LeftQuarterTurn3TilesUp25:
+        case TrackElemType::leftQuarterTurn3TilesUp25:
             return WildMouseTrackLeftQuarterTurn325DegUp;
-        case TrackElemType::RightQuarterTurn3TilesUp25:
+        case TrackElemType::rightQuarterTurn3TilesUp25:
             return WildMouseTrackRightQuarterTurn325DegUp;
-        case TrackElemType::LeftQuarterTurn3TilesDown25:
+        case TrackElemType::leftQuarterTurn3TilesDown25:
             return WildMouseTrackLeftQuarterTurn325DegDown;
-        case TrackElemType::RightQuarterTurn3TilesDown25:
+        case TrackElemType::rightQuarterTurn3TilesDown25:
             return WildMouseTrackRightQuarterTurn325DegDown;
-        case TrackElemType::LeftQuarterTurn1Tile:
+        case TrackElemType::leftQuarterTurn1Tile:
             return WildMouseTrackLeftQuarterTurn1;
-        case TrackElemType::RightQuarterTurn1Tile:
+        case TrackElemType::rightQuarterTurn1Tile:
             return WildMouseTrackRightQuarterTurn1;
-        case TrackElemType::FlatToUp60:
+        case TrackElemType::flatToUp60:
             return WildMouseTrackFlatTo60DegUp;
-        case TrackElemType::Up60ToFlat:
+        case TrackElemType::up60ToFlat:
             return WildMouseTrack60DegUpToFlat;
-        case TrackElemType::FlatToDown60:
+        case TrackElemType::flatToDown60:
             return WildMouseTrackFlatTo60DegDown;
-        case TrackElemType::Down60ToFlat:
+        case TrackElemType::down60ToFlat:
             return WildMouseTrack60DegDownToFlat;
-        case TrackElemType::Brakes:
+        case TrackElemType::brakes:
             return WildMouseTrackBrakes;
-        case TrackElemType::RotationControlToggle:
+        case TrackElemType::rotationControlToggle:
             return WildMouseTrackRotationControlToggle;
-        case TrackElemType::BlockBrakes:
+        case TrackElemType::blockBrakes:
             return WildMouseTrackBlockBrakes;
         default:
             return TrackPaintFunctionDummy;

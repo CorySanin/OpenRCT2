@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -21,6 +21,7 @@
 #include "../core/Json.hpp"
 #include "../core/Path.hpp"
 #include "../core/String.hpp"
+#include "../drawing/Drawing.h"
 #include "../drawing/ImageImporter.h"
 #include "Object.h"
 #include "ObjectFactory.h"
@@ -51,7 +52,7 @@ namespace OpenRCT2
             g1 = orig;
             g1.offset = new uint8_t[length];
             std::memcpy(g1.offset, orig.offset, length);
-            g1.flags &= ~G1_FLAG_HAS_ZOOM_SPRITE;
+            g1.flags.unset(G1Flag::hasZoomSprite);
         }
 
         RequiredImage(uint32_t idx, std::function<const G1Element*(uint32_t)> getter)
@@ -63,14 +64,14 @@ namespace OpenRCT2
                 g1 = *orig;
                 g1.offset = new uint8_t[length];
                 std::memcpy(g1.offset, orig->offset, length);
-                if ((g1.flags & G1_FLAG_HAS_ZOOM_SPRITE) && g1.zoomed_offset != 0)
+                if (g1.flags.has(G1Flag::hasZoomSprite) && g1.zoomedOffset != 0)
                 {
                     // Fetch image for next zoom level
-                    next_zoom = std::make_unique<RequiredImage>(static_cast<uint32_t>(idx - g1.zoomed_offset), getter);
+                    next_zoom = std::make_unique<RequiredImage>(static_cast<uint32_t>(idx - g1.zoomedOffset), getter);
                     if (!next_zoom->HasData())
                     {
                         next_zoom = nullptr;
-                        g1.flags &= ~G1_FLAG_HAS_ZOOM_SPRITE;
+                        g1.flags.unset(G1Flag::hasZoomSprite);
                     }
                 }
             }
@@ -231,7 +232,7 @@ namespace OpenRCT2
         if (gxData.has_value())
         {
             // Fix entry data offsets
-            for (uint32_t i = 0; i < gxData->header.num_entries; i++)
+            for (uint32_t i = 0; i < gxData->header.numEntries; i++)
             {
                 if (gxData->elements[i].offset == nullptr)
                 {
@@ -248,7 +249,7 @@ namespace OpenRCT2
                 size_t placeHoldersAdded = 0;
                 for (auto i : range)
                 {
-                    if (i >= 0 && (i < static_cast<int32_t>(gxData->header.num_entries)))
+                    if (i >= 0 && (i < static_cast<int32_t>(gxData->header.numEntries)))
                     {
                         result.push_back(std::make_unique<RequiredImage>(gxData->elements[i]));
                     }
@@ -268,7 +269,7 @@ namespace OpenRCT2
             }
             else
             {
-                for (int i = 0; i < static_cast<int32_t>(gxData->header.num_entries); i++)
+                for (int i = 0; i < static_cast<int32_t>(gxData->header.numEntries); i++)
                     result.push_back(std::make_unique<RequiredImage>(gxData->elements[i]));
             }
         }
@@ -429,7 +430,7 @@ namespace OpenRCT2
         }
     }
 
-    void ImageTable::Read(IReadObjectContext* context, OpenRCT2::IStream* stream)
+    void ImageTable::Read(IReadObjectContext* context, IStream* stream)
     {
         if (gOpenRCT2NoGraphics)
         {
@@ -469,10 +470,10 @@ namespace OpenRCT2
 
                 g1Element.width = stream->ReadValue<int16_t>();
                 g1Element.height = stream->ReadValue<int16_t>();
-                g1Element.x_offset = stream->ReadValue<int16_t>();
-                g1Element.y_offset = stream->ReadValue<int16_t>();
-                g1Element.flags = stream->ReadValue<uint16_t>();
-                g1Element.zoomed_offset = stream->ReadValue<uint16_t>();
+                g1Element.xOffset = stream->ReadValue<int16_t>();
+                g1Element.yOffset = stream->ReadValue<int16_t>();
+                g1Element.flags = stream->ReadValue<G1Flags>();
+                g1Element.zoomedOffset = stream->ReadValue<uint16_t>();
 
                 newEntries.push_back(std::move(g1Element));
             }
@@ -568,9 +569,9 @@ namespace OpenRCT2
                             for (auto& image : images)
                             {
                                 if (hasXOverride)
-                                    image->g1.x_offset = xOverride;
+                                    image->g1.xOffset = xOverride;
                                 if (hasYOverride)
-                                    image->g1.y_offset = yOverride;
+                                    image->g1.yOffset = yOverride;
                             }
                         }
 
@@ -606,14 +607,14 @@ namespace OpenRCT2
 
                     // Set old image zoom offset to zoom image which we are about to add
                     auto g1a = const_cast<G1Element*>(&GetImages()[tableIndex]);
-                    g1a->zoomed_offset = static_cast<int32_t>(tableIndex) - static_cast<int32_t>(GetCount());
+                    g1a->zoomedOffset = static_cast<int32_t>(tableIndex) - static_cast<int32_t>(GetCount());
 
                     while (img != nullptr)
                     {
                         auto g1b = img->g1;
                         if (img->next_zoom != nullptr)
                         {
-                            g1b.zoomed_offset = -1;
+                            g1b.zoomedOffset = -1;
                         }
                         AddImage(&g1b);
                         img = img->next_zoom.get();
@@ -641,5 +642,12 @@ namespace OpenRCT2
             std::copy_n(g1->offset, length, newg1.offset);
         }
         _entries.push_back(std::move(newg1));
+    }
+
+    void ImageTable::addPalette(const G1Palette& g1)
+    {
+        Guard::Assert(g1.flags.has(G1Flag::isPalette));
+        const auto base = reinterpret_cast<const G1Element*>(&g1);
+        AddImage(base);
     }
 } // namespace OpenRCT2

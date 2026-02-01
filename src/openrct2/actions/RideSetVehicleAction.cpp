@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -73,17 +73,17 @@ namespace OpenRCT2::GameActions
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, errTitle, STR_ERR_RIDE_NOT_FOUND);
+            return Result(Status::invalidParameters, errTitle, STR_ERR_RIDE_NOT_FOUND);
         }
 
         if (ride->lifecycleFlags & RIDE_LIFECYCLE_BROKEN_DOWN)
         {
-            return Result(Status::Broken, errTitle, STR_HAS_BROKEN_DOWN_AND_REQUIRES_FIXING);
+            return Result(Status::broken, errTitle, STR_HAS_BROKEN_DOWN_AND_REQUIRES_FIXING);
         }
 
         if (ride->status != RideStatus::closed && ride->status != RideStatus::simulating)
         {
-            return Result(Status::NotClosed, errTitle, STR_MUST_BE_CLOSED_FIRST);
+            return Result(Status::notClosed, errTitle, STR_MUST_BE_CLOSED_FIRST);
         }
 
         switch (_type)
@@ -94,16 +94,16 @@ namespace OpenRCT2::GameActions
                 break;
             case RideSetVehicleType::RideEntry:
             {
-                if (!RideIsVehicleTypeValid(*ride))
+                if (!RideIsVehicleTypeValid(gameState, *ride))
                 {
                     LOG_ERROR("Invalid vehicle type %d", _value);
-                    return Result(Status::InvalidParameters, errTitle, STR_ERR_VALUE_OUT_OF_RANGE);
+                    return Result(Status::invalidParameters, errTitle, STR_ERR_VALUE_OUT_OF_RANGE);
                 }
                 auto rideEntry = GetRideEntryByIndex(_value);
                 if (rideEntry == nullptr)
                 {
                     LOG_ERROR("Ride entry not found for _value %d", _value);
-                    return Result(Status::InvalidParameters, errTitle, kStringIdNone);
+                    return Result(Status::invalidParameters, errTitle, kStringIdNone);
                 }
 
                 // Validate preset
@@ -111,14 +111,14 @@ namespace OpenRCT2::GameActions
                 if (_colour >= presetList->count && _colour != 255 && _colour != 0)
                 {
                     LOG_ERROR("Unknown vehicle colour preset. colour = %d", _colour);
-                    return Result(Status::InvalidParameters, errTitle, STR_ERR_INVALID_COLOUR);
+                    return Result(Status::invalidParameters, errTitle, STR_ERR_INVALID_COLOUR);
                 }
                 break;
             }
 
             default:
                 LOG_ERROR("Invalid ride vehicle setting %d", _type);
-                return Result(Status::InvalidParameters, errTitle, STR_ERR_VALUE_OUT_OF_RANGE);
+                return Result(Status::invalidParameters, errTitle, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
         return Result();
@@ -131,7 +131,7 @@ namespace OpenRCT2::GameActions
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, errTitle, STR_ERR_RIDE_NOT_FOUND);
+            return Result(Status::invalidParameters, errTitle, STR_ERR_RIDE_NOT_FOUND);
         }
 
         switch (_type)
@@ -154,11 +154,11 @@ namespace OpenRCT2::GameActions
                 if (rideEntry == nullptr)
                 {
                     LOG_ERROR("Ride entry not found for index %d", ride->subtype);
-                    return Result(Status::InvalidParameters, errTitle, kStringIdNone);
+                    return Result(Status::invalidParameters, errTitle, kStringIdNone);
                 }
                 uint8_t clampValue = _value;
                 static_assert(sizeof(clampValue) == sizeof(ride->proposedNumCarsPerTrain));
-                if (!getGameState().cheats.disableTrainLengthLimit)
+                if (!gameState.cheats.disableTrainLengthLimit)
                 {
                     clampValue = std::clamp(clampValue, rideEntry->min_cars_in_train, rideEntry->max_cars_in_train);
                 }
@@ -177,11 +177,11 @@ namespace OpenRCT2::GameActions
                 if (rideEntry == nullptr)
                 {
                     LOG_ERROR("Ride entry not found for index %d", ride->subtype);
-                    return Result(Status::InvalidParameters, errTitle, kStringIdNone);
+                    return Result(Status::invalidParameters, errTitle, kStringIdNone);
                 }
 
                 RideSetVehicleColoursToRandomPreset(*ride, _colour);
-                if (!getGameState().cheats.disableTrainLengthLimit)
+                if (!gameState.cheats.disableTrainLengthLimit)
                 {
                     ride->proposedNumCarsPerTrain = std::clamp(
                         ride->proposedNumCarsPerTrain, rideEntry->min_cars_in_train, rideEntry->max_cars_in_train);
@@ -200,7 +200,7 @@ namespace OpenRCT2::GameActions
 
             default:
                 LOG_ERROR("Invalid ride vehicle setting %d", _type);
-                return Result(Status::InvalidParameters, errTitle, kStringIdNone);
+                return Result(Status::invalidParameters, errTitle, kStringIdNone);
         }
 
         ride->numCircuits = 1;
@@ -210,7 +210,7 @@ namespace OpenRCT2::GameActions
         if (!ride->overallView.IsNull())
         {
             auto location = ride->overallView.ToTileCentre();
-            res.Position = { location, TileElementHeight(res.Position) };
+            res.position = { location, TileElementHeight(res.position) };
         }
 
         auto intent = Intent(INTENT_ACTION_RIDE_PAINT_RESET_VEHICLE);
@@ -221,11 +221,10 @@ namespace OpenRCT2::GameActions
         return res;
     }
 
-    bool RideSetVehicleAction::RideIsVehicleTypeValid(const Ride& ride) const
+    bool RideSetVehicleAction::RideIsVehicleTypeValid(GameState_t& gameState, const Ride& ride) const
     {
         bool selectionShouldBeExpanded;
         ride_type_t rideTypeIterator, rideTypeIteratorMax;
-        auto& gameState = getGameState();
 
         {
             const auto& rtd = ride.getRideTypeDescriptor();

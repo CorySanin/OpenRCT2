@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -141,14 +141,14 @@ static void PaintLiftTowerSection(
 /**
  * rct2: 0x0076C5BC
  */
-TrackPaintFunction GetTrackPaintFunctionLift(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionLift(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::TowerBase:
+        case TrackElemType::towerBase:
             return PaintLiftBase;
 
-        case TrackElemType::TowerSection:
+        case TrackElemType::towerSection:
             return PaintLiftTowerSection;
         default:
             return TrackPaintFunctionDummy;

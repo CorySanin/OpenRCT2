@@ -25,7 +25,7 @@ namespace OpenRCT2::Scripting
         dukSubposition.Set("x", value.x);
         dukSubposition.Set("y", value.y);
         dukSubposition.Set("z", value.z);
-        dukSubposition.Set("yaw", value.direction);
+        dukSubposition.Set("yaw", value.yaw);
         dukSubposition.Set("pitch", EnumValue(value.pitch));
         dukSubposition.Set("roll", EnumValue(value.roll));
         return dukSubposition.Take();
@@ -34,10 +34,10 @@ namespace OpenRCT2::Scripting
     class ScTrackSegment
     {
     private:
-        OpenRCT2::TrackElemType _type;
+        TrackElemType _type;
 
     public:
-        ScTrackSegment(OpenRCT2::TrackElemType type);
+        ScTrackSegment(TrackElemType type);
 
         static void Register(duk_context* ctx);
 
@@ -65,7 +65,7 @@ namespace OpenRCT2::Scripting
         int32_t getPriceModifier() const;
         int32_t getPreviewZOffset() const;
         int32_t getTrackGroup() const;
-        template<uint16_t flag>
+        template<TrackElementFlag flag>
         bool getTrackFlag() const;
         std::string getTrackCurvature() const;
         std::string getTrackPitchDirection() const;

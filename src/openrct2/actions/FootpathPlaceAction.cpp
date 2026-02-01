@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -14,6 +14,7 @@
 #include "../Diagnostic.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
+#include "../core/Guard.hpp"
 #include "../core/MemoryStream.h"
 #include "../localisation/StringIds.h"
 #include "../management/Finance.h"
@@ -77,41 +78,41 @@ namespace OpenRCT2::GameActions
     Result FootpathPlaceAction::Query(GameState_t& gameState) const
     {
         auto res = Result();
-        res.Cost = 0;
-        res.Expenditure = ExpenditureType::landscaping;
-        res.Position = _loc.ToTileCentre();
+        res.cost = 0;
+        res.expenditure = ExpenditureType::landscaping;
+        res.position = _loc.ToTileCentre();
 
         gFootpathGroundFlags = 0;
 
         if (!LocationValid(_loc) || MapIsEdge(_loc))
         {
-            return Result(Status::InvalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_OFF_EDGE_OF_MAP);
+            return Result(Status::invalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_OFF_EDGE_OF_MAP);
         }
 
-        if (!(gLegacyScene == LegacyScene::scenarioEditor || getGameState().cheats.sandboxMode) && !MapIsLocationOwned(_loc))
+        if (!(gLegacyScene == LegacyScene::scenarioEditor || gameState.cheats.sandboxMode) && !MapIsLocationOwned(_loc))
         {
-            return Result(Status::Disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_LAND_NOT_OWNED_BY_PARK);
+            return Result(Status::disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_LAND_NOT_OWNED_BY_PARK);
         }
 
         if (_slope.type == FootpathSlopeType::irregular || _slope.type == FootpathSlopeType::raise)
         {
-            return Result(Status::Disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_LAND_SLOPE_UNSUITABLE);
+            return Result(Status::disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_LAND_SLOPE_UNSUITABLE);
         }
 
         if (_loc.z < kFootpathMinHeight)
         {
-            return Result(Status::Disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_TOO_LOW);
+            return Result(Status::disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_TOO_LOW);
         }
 
         if (_loc.z > kFootpathMaxHeight)
         {
-            return Result(Status::Disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_TOO_HIGH);
+            return Result(Status::disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_TOO_HIGH);
         }
 
         if (_direction != kInvalidDirection && !DirectionValid(_direction))
         {
             LOG_ERROR("Direction invalid. direction = %u", _direction);
-            return Result(Status::InvalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
         auto intent = Intent(INTENT_ACTION_REMOVE_PROVISIONAL_FOOTPATH);
@@ -120,7 +121,7 @@ namespace OpenRCT2::GameActions
         auto tileElement = MapGetFootpathElementWithSlope(_loc, _slope);
         if (tileElement == nullptr)
         {
-            return ElementInsertQuery(std::move(res));
+            return ElementInsertQuery(gameState, std::move(res));
         }
         return ElementUpdateQuery(tileElement, std::move(res));
     }
@@ -128,11 +129,11 @@ namespace OpenRCT2::GameActions
     Result FootpathPlaceAction::Execute(GameState_t& gameState) const
     {
         auto res = Result();
-        res.Cost = 0;
-        res.Expenditure = ExpenditureType::landscaping;
-        res.Position = _loc.ToTileCentre();
+        res.cost = 0;
+        res.expenditure = ExpenditureType::landscaping;
+        res.position = _loc.ToTileCentre();
 
-        if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST))
+        if (!GetFlags().has(CommandFlag::ghost))
         {
             FootpathInterruptPeeps(_loc);
         }
@@ -142,9 +143,9 @@ namespace OpenRCT2::GameActions
         // Force ride construction to recheck area
         _currentTrackSelectionFlags.set(TrackSelectionFlag::recheck);
 
-        if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST))
+        if (!GetFlags().has(CommandFlag::ghost))
         {
-            if (_direction != kInvalidDirection && !getGameState().cheats.disableClearanceChecks)
+            if (_direction != kInvalidDirection && !gameState.cheats.disableClearanceChecks)
             {
                 // It is possible, let's remove walls between the old and new piece of path
                 auto zLow = _loc.z;
@@ -161,7 +162,7 @@ namespace OpenRCT2::GameActions
         auto tileElement = MapGetFootpathElementWithSlope(_loc, _slope);
         if (tileElement == nullptr)
         {
-            return ElementInsertExecute(std::move(res));
+            return ElementInsertExecute(gameState, std::move(res));
         }
         return ElementUpdateExecute(tileElement, std::move(res));
     }
@@ -215,17 +216,17 @@ namespace OpenRCT2::GameActions
     {
         if (_constructFlags & PathConstructFlag::IsQueue && pathElement->IsLevelCrossing(_loc))
         {
-            return Result(Status::Disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_QUEUE_PATHS_CANNOT_BE_USED_FOR_LEVEL_CROSSINGS);
+            return Result(Status::disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_QUEUE_PATHS_CANNOT_BE_USED_FOR_LEVEL_CROSSINGS);
         }
 
         if (!IsSameAsPathElement(pathElement))
         {
-            res.Cost += 6.00_GBP;
+            res.cost += 6.00_GBP;
         }
 
-        if (GetFlags() & GAME_COMMAND_FLAG_GHOST && !pathElement->IsGhost())
+        if (GetFlags().has(CommandFlag::ghost) && !pathElement->IsGhost())
         {
-            return Result(Status::ItemAlreadyPlaced, STR_CANT_BUILD_FOOTPATH_HERE, kStringIdNone);
+            return Result(Status::itemAlreadyPlaced, STR_CANT_BUILD_FOOTPATH_HERE, kStringIdNone);
         }
         return res;
     }
@@ -234,12 +235,12 @@ namespace OpenRCT2::GameActions
     {
         if (!IsSameAsPathElement(pathElement))
         {
-            res.Cost += 6.00_GBP;
+            res.cost += 6.00_GBP;
         }
 
         FootpathQueueChainReset();
 
-        if (!(GetFlags() & GAME_COMMAND_FLAG_TRACK_DESIGN))
+        if (!GetFlags().has(CommandFlag::trackDesign))
         {
             FootpathRemoveEdgesAt(_loc, reinterpret_cast<TileElement*>(pathElement));
         }
@@ -283,16 +284,16 @@ namespace OpenRCT2::GameActions
         return res;
     }
 
-    Result FootpathPlaceAction::ElementInsertQuery(Result res) const
+    Result FootpathPlaceAction::ElementInsertQuery(GameState_t& gameState, Result res) const
     {
         bool entrancePath = false, entranceIsSamePath = false;
 
         if (!MapCheckCapacityAndReorganise(_loc))
         {
-            return Result(Status::NoFreeElements, STR_CANT_BUILD_FOOTPATH_HERE, kStringIdNone);
+            return Result(Status::noFreeElements, STR_CANT_BUILD_FOOTPATH_HERE, kStringIdNone);
         }
 
-        res.Cost = 12.00_GBP;
+        res.cost = 12.00_GBP;
 
         QuarterTile quarterTile{ 0b1111, 0 };
         auto zLow = _loc.z;
@@ -312,7 +313,7 @@ namespace OpenRCT2::GameActions
             if (IsSameAsEntranceElement(*entranceElement))
                 entranceIsSamePath = true;
             else
-                res.Cost -= 6.00_GBP;
+                res.cost -= 6.00_GBP;
         }
 
         // Do not attempt to build a crossing with a queue or a sloped path.
@@ -320,47 +321,47 @@ namespace OpenRCT2::GameActions
         auto crossingMode = isQueue || (_slope.type != FootpathSlopeType::flat) ? CreateCrossingMode::none
                                                                                 : CreateCrossingMode::pathOverTrack;
         auto canBuild = MapCanConstructWithClearAt(
-            { _loc, zLow, zHigh }, &MapPlaceNonSceneryClearFunc, quarterTile, GetFlags(), kTileSlopeFlat, crossingMode);
-        if (!entrancePath && canBuild.Error != Status::Ok)
+            { _loc, zLow, zHigh }, MapPlaceNonSceneryClearFunc, quarterTile, GetFlags(), kTileSlopeFlat, crossingMode);
+        if (!entrancePath && canBuild.error != Status::ok)
         {
-            canBuild.ErrorTitle = STR_CANT_BUILD_FOOTPATH_HERE;
+            canBuild.errorTitle = STR_CANT_BUILD_FOOTPATH_HERE;
             return canBuild;
         }
-        res.Cost += canBuild.Cost;
+        res.cost += canBuild.cost;
 
-        const auto clearanceData = canBuild.GetData<ConstructClearResult>();
+        const auto clearanceData = canBuild.getData<ConstructClearResult>();
 
         gFootpathGroundFlags = clearanceData.GroundFlags;
-        if (!getGameState().cheats.disableClearanceChecks && (clearanceData.GroundFlags & ELEMENT_IS_UNDERWATER))
+        if (!gameState.cheats.disableClearanceChecks && (clearanceData.GroundFlags & ELEMENT_IS_UNDERWATER))
         {
-            return Result(Status::Disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_CANT_BUILD_THIS_UNDERWATER);
+            return Result(Status::disallowed, STR_CANT_BUILD_FOOTPATH_HERE, STR_CANT_BUILD_THIS_UNDERWATER);
         }
 
         auto surfaceElement = MapGetSurfaceElementAt(_loc);
         if (surfaceElement == nullptr)
         {
-            return Result(Status::InvalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
         }
         int32_t supportHeight = zLow - surfaceElement->GetBaseZ();
-        res.Cost += supportHeight < 0 ? 20.00_GBP : (supportHeight / kPathHeightStep) * 5.00_GBP;
+        res.cost += supportHeight < 0 ? 20.00_GBP : (supportHeight / kPathHeightStep) * 5.00_GBP;
 
         // Prevent the place sound from being spammed
         if (entranceIsSamePath)
-            res.Cost = 0;
+            res.cost = 0;
 
         return res;
     }
 
-    Result FootpathPlaceAction::ElementInsertExecute(Result res) const
+    Result FootpathPlaceAction::ElementInsertExecute(GameState_t& gameState, Result res) const
     {
         bool entrancePath = false, entranceIsSamePath = false;
 
-        if (!(GetFlags() & (GAME_COMMAND_FLAG_ALLOW_DURING_PAUSED | GAME_COMMAND_FLAG_GHOST)))
+        if (!GetFlags().hasAny(CommandFlag::allowDuringPaused, CommandFlag::ghost))
         {
             FootpathRemoveLitter(_loc);
         }
 
-        res.Cost = 12.00_GBP;
+        res.cost = 12.00_GBP;
 
         QuarterTile quarterTile{ 0b1111, 0 };
         auto zLow = _loc.z;
@@ -380,7 +381,7 @@ namespace OpenRCT2::GameActions
             if (IsSameAsEntranceElement(*entranceElement))
                 entranceIsSamePath = true;
             else
-                res.Cost -= 6.00_GBP;
+                res.cost -= 6.00_GBP;
         }
 
         // Do not attempt to build a crossing with a queue or a sloped.
@@ -388,29 +389,29 @@ namespace OpenRCT2::GameActions
         auto crossingMode = isQueue || (_slope.type != FootpathSlopeType::flat) ? CreateCrossingMode::none
                                                                                 : CreateCrossingMode::pathOverTrack;
         auto canBuild = MapCanConstructWithClearAt(
-            { _loc, zLow, zHigh }, &MapPlaceNonSceneryClearFunc, quarterTile, GAME_COMMAND_FLAG_APPLY | GetFlags(),
+            { _loc, zLow, zHigh }, MapPlaceNonSceneryClearFunc, quarterTile, GetFlags().with(CommandFlag::apply),
             kTileSlopeFlat, crossingMode);
-        if (!entrancePath && canBuild.Error != Status::Ok)
+        if (!entrancePath && canBuild.error != Status::ok)
         {
-            canBuild.ErrorTitle = STR_CANT_BUILD_FOOTPATH_HERE;
+            canBuild.errorTitle = STR_CANT_BUILD_FOOTPATH_HERE;
             return canBuild;
         }
-        res.Cost += canBuild.Cost;
+        res.cost += canBuild.cost;
 
-        const auto clearanceData = canBuild.GetData<ConstructClearResult>();
+        const auto clearanceData = canBuild.getData<ConstructClearResult>();
         gFootpathGroundFlags = clearanceData.GroundFlags;
 
         auto surfaceElement = MapGetSurfaceElementAt(_loc);
         if (surfaceElement == nullptr)
         {
-            return Result(Status::InvalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_BUILD_FOOTPATH_HERE, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
         }
         int32_t supportHeight = zLow - surfaceElement->GetBaseZ();
-        res.Cost += supportHeight < 0 ? 20.00_GBP : (supportHeight / kPathHeightStep) * 5.00_GBP;
+        res.cost += supportHeight < 0 ? 20.00_GBP : (supportHeight / kPathHeightStep) * 5.00_GBP;
 
         if (entrancePath)
         {
-            if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && !entranceIsSamePath)
+            if (!GetFlags().has(CommandFlag::ghost) && !entranceIsSamePath)
             {
                 if (_constructFlags & PathConstructFlag::IsLegacyPathObject)
                 {
@@ -445,17 +446,17 @@ namespace OpenRCT2::GameActions
             pathElement->SetRideIndex(RideId::GetNull());
             pathElement->SetAdditionStatus(255);
             pathElement->SetIsBroken(false);
-            pathElement->SetGhost(GetFlags() & GAME_COMMAND_FLAG_GHOST);
+            pathElement->SetGhost(GetFlags().has(CommandFlag::ghost));
 
             FootpathQueueChainReset();
 
-            if (!(GetFlags() & GAME_COMMAND_FLAG_TRACK_DESIGN))
+            if (!GetFlags().has(CommandFlag::trackDesign))
             {
                 FootpathRemoveEdgesAt(_loc, pathElement->as<TileElement>());
             }
-            if (gLegacyScene == LegacyScene::scenarioEditor && !(GetFlags() & GAME_COMMAND_FLAG_GHOST))
+            if (gLegacyScene == LegacyScene::scenarioEditor && !GetFlags().has(CommandFlag::ghost))
             {
-                AutomaticallySetPeepSpawn();
+                AutomaticallySetPeepSpawn(gameState);
             }
 
             RemoveIntersectingWalls(pathElement);
@@ -463,7 +464,7 @@ namespace OpenRCT2::GameActions
 
         // Prevent the place sound from being spammed
         if (entranceIsSamePath)
-            res.Cost = 0;
+            res.cost = 0;
 
         return res;
     }
@@ -472,7 +473,7 @@ namespace OpenRCT2::GameActions
      *
      *  rct2: 0x006A65AD
      */
-    void FootpathPlaceAction::AutomaticallySetPeepSpawn() const
+    void FootpathPlaceAction::AutomaticallySetPeepSpawn(GameState_t& gameState) const
     {
         auto mapSizeUnits = GetMapSizeUnits();
         uint8_t direction = 0;
@@ -491,7 +492,6 @@ namespace OpenRCT2::GameActions
             }
         }
 
-        auto& gameState = getGameState();
         if (gameState.peepSpawns.empty())
         {
             gameState.peepSpawns.emplace_back();
@@ -505,7 +505,7 @@ namespace OpenRCT2::GameActions
 
     void FootpathPlaceAction::RemoveIntersectingWalls(PathElement* pathElement) const
     {
-        if (pathElement->IsSloped() && !(GetFlags() & GAME_COMMAND_FLAG_GHOST))
+        if (pathElement->IsSloped() && !GetFlags().has(CommandFlag::ghost))
         {
             auto direction = pathElement->GetSlopeDirection();
             int32_t z = pathElement->GetBaseZ();
@@ -520,7 +520,7 @@ namespace OpenRCT2::GameActions
             }
         }
 
-        if (!(GetFlags() & GAME_COMMAND_FLAG_TRACK_DESIGN))
+        if (!GetFlags().has(CommandFlag::trackDesign))
             FootpathConnectEdges(_loc, reinterpret_cast<TileElement*>(pathElement), GetFlags());
 
         FootpathUpdateQueueChains();
@@ -537,7 +537,7 @@ namespace OpenRCT2::GameActions
                 continue;
             if (pathElement->IsSloped() != isSloped)
                 continue;
-            if (pathElement->GetSlopeDirection() != slope.direction)
+            if (isSloped && pathElement->GetSlopeDirection() != slope.direction)
                 continue;
             return pathElement;
         }

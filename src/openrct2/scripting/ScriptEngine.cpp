@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -358,7 +358,7 @@ private:
 
     // Taken from http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
     template<class T>
-    static typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type AlmostEqual(T x, T y, int32_t ulp = 20)
+    static std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type AlmostEqual(T x, T y, int32_t ulp = 20)
     {
         // the machine epsilon has to be scaled to the magnitude of the values used
         // and multiplied by the desired precision in ULPs (units in the last place)
@@ -537,18 +537,18 @@ void ScriptEngine::RegisterConstants()
 {
     ConstantBuilder builder(_context);
     builder.Namespace("TrackSlope")
-        .Constant("None", EnumValue(TrackPitch::None))
-        .Constant("Up25", EnumValue(TrackPitch::Up25))
-        .Constant("Up60", EnumValue(TrackPitch::Up60))
-        .Constant("Down25", EnumValue(TrackPitch::Down25))
-        .Constant("Down60", EnumValue(TrackPitch::Down60))
-        .Constant("Up90", EnumValue(TrackPitch::Up90))
-        .Constant("Down90", EnumValue(TrackPitch::Down90));
+        .Constant("None", EnumValue(TrackPitch::none))
+        .Constant("Up25", EnumValue(TrackPitch::up25))
+        .Constant("Up60", EnumValue(TrackPitch::up60))
+        .Constant("Down25", EnumValue(TrackPitch::down25))
+        .Constant("Down60", EnumValue(TrackPitch::down60))
+        .Constant("Up90", EnumValue(TrackPitch::up90))
+        .Constant("Down90", EnumValue(TrackPitch::down90));
     builder.Namespace("TrackBanking")
-        .Constant("None", EnumValue(TrackRoll::None))
-        .Constant("BankLeft", EnumValue(TrackRoll::Left))
-        .Constant("BankRight", EnumValue(TrackRoll::Right))
-        .Constant("UpsideDown", EnumValue(TrackRoll::UpsideDown));
+        .Constant("None", EnumValue(TrackRoll::none))
+        .Constant("BankLeft", EnumValue(TrackRoll::left))
+        .Constant("BankRight", EnumValue(TrackRoll::right))
+        .Constant("UpsideDown", EnumValue(TrackRoll::upsideDown));
 }
 
 void ScriptEngine::RefreshPlugins()
@@ -1086,10 +1086,10 @@ GameActions::Result ScriptEngine::QueryOrExecuteCustomGameAction(const GameActio
         auto dukArgs = DuktapeTryParseJson(_context, argsz);
         if (!dukArgs)
         {
-            auto action = GameActions::Result();
-            action.Error = GameActions::Status::InvalidParameters;
-            action.ErrorTitle = "Invalid JSON";
-            return action;
+            auto res = GameActions::Result();
+            res.error = GameActions::Status::invalidParameters;
+            res.errorTitle = "Invalid JSON";
+            return res;
         }
 
         std::vector<DukValue> pluginCallArgs;
@@ -1123,11 +1123,11 @@ GameActions::Result ScriptEngine::QueryOrExecuteCustomGameAction(const GameActio
         return DukToGameActionResult(dukResult);
     }
 
-    auto action = GameActions::Result();
-    action.Error = GameActions::Status::Unknown;
-    action.ErrorTitle = "Unknown custom action";
-    action.ErrorMessage = customAction.GetPluginName() + ": " + actionz;
-    return action;
+    auto res = GameActions::Result();
+    res.error = GameActions::Status::unknown;
+    res.errorTitle = "Unknown custom action";
+    res.errorMessage = customAction.GetPluginName() + ": " + actionz;
+    return res;
 }
 
 GameActions::Result ScriptEngine::DukToGameActionResult(const DukValue& d)
@@ -1135,25 +1135,25 @@ GameActions::Result ScriptEngine::DukToGameActionResult(const DukValue& d)
     auto result = GameActions::Result();
     if (d.type() == DUK_TYPE_OBJECT)
     {
-        result.Error = static_cast<GameActions::Status>(AsOrDefault<int32_t>(d["error"]));
-        result.ErrorTitle = AsOrDefault<std::string>(d["errorTitle"]);
-        result.ErrorMessage = AsOrDefault<std::string>(d["errorMessage"]);
-        result.Cost = AsOrDefault<int32_t>(d["cost"]);
+        result.error = static_cast<GameActions::Status>(AsOrDefault<int32_t>(d["error"]));
+        result.errorTitle = AsOrDefault<std::string>(d["errorTitle"]);
+        result.errorMessage = AsOrDefault<std::string>(d["errorMessage"]);
+        result.cost = AsOrDefault<int32_t>(d["cost"]);
         auto expenditureType = AsOrDefault<std::string>(d["expenditureType"]);
         if (!expenditureType.empty())
         {
             auto expenditure = StringToExpenditureType(expenditureType);
             if (expenditure != ExpenditureType::count)
             {
-                result.Expenditure = expenditure;
+                result.expenditure = expenditure;
             }
         }
     }
     else
     {
-        result.Error = GameActions::Status::Unknown;
-        result.ErrorTitle = "Unknown";
-        result.ErrorMessage = "Unknown";
+        result.error = GameActions::Status::unknown;
+        result.errorTitle = "Unknown";
+        result.errorMessage = "Unknown";
     }
     return result;
 }
@@ -1200,41 +1200,41 @@ DukValue ScriptEngine::GameActionResultToDuk(const GameActions::GameAction& acti
     DukStackFrame frame(_context);
     DukObject obj(_context);
 
-    obj.Set("error", static_cast<duk_int_t>(result.Error));
-    if (result.Error != GameActions::Status::Ok)
+    obj.Set("error", static_cast<duk_int_t>(result.error));
+    if (result.error != GameActions::Status::ok)
     {
-        obj.Set("errorTitle", result.GetErrorTitle());
-        obj.Set("errorMessage", result.GetErrorMessage());
+        obj.Set("errorTitle", result.getErrorTitle());
+        obj.Set("errorMessage", result.getErrorMessage());
     }
 
-    if (result.Cost != kMoney64Undefined)
+    if (result.cost != kMoney64Undefined)
     {
-        obj.Set("cost", result.Cost);
+        obj.Set("cost", result.cost);
     }
-    if (!result.Position.IsNull())
+    if (!result.position.IsNull())
     {
-        obj.Set("position", ToDuk(_context, result.Position));
+        obj.Set("position", ToDuk(_context, result.position));
     }
-    if (result.Expenditure != ExpenditureType::count)
+    if (result.expenditure != ExpenditureType::count)
     {
-        obj.Set("expenditureType", ExpenditureTypeToString(result.Expenditure));
+        obj.Set("expenditureType", ExpenditureTypeToString(result.expenditure));
     }
 
     // RideCreateAction only
     if (action.GetType() == GameCommand::CreateRide)
     {
-        if (result.Error == GameActions::Status::Ok)
+        if (result.error == GameActions::Status::ok)
         {
-            const auto rideIndex = result.GetData<RideId>();
+            const auto rideIndex = result.getData<RideId>();
             obj.Set("ride", rideIndex.ToUnderlying());
         }
     }
     // StaffHireNewAction only
     else if (action.GetType() == GameCommand::HireNewStaffMember)
     {
-        if (result.Error == GameActions::Status::Ok)
+        if (result.error == GameActions::Status::ok)
         {
-            const auto actionResult = result.GetData<GameActions::StaffHireNewActionResult>();
+            const auto actionResult = result.getData<GameActions::StaffHireNewActionResult>();
             if (!actionResult.StaffEntityId.IsNull())
             {
                 obj.Set("peep", actionResult.StaffEntityId.ToUnderlying());
@@ -1246,13 +1246,13 @@ DukValue ScriptEngine::GameActionResultToDuk(const GameActions::GameAction& acti
     switch (action.GetType())
     {
         case GameCommand::PlaceBanner:
-            bannerId = result.GetData<GameActions::BannerPlaceActionResult>().bannerId;
+            bannerId = result.getData<GameActions::BannerPlaceActionResult>().bannerId;
             break;
         case GameCommand::PlaceLargeScenery:
-            bannerId = result.GetData<GameActions::LargeSceneryPlaceActionResult>().bannerId;
+            bannerId = result.getData<GameActions::LargeSceneryPlaceActionResult>().bannerId;
             break;
         case GameCommand::PlaceWall:
-            bannerId = result.GetData<GameActions::WallPlaceActionResult>().BannerId;
+            bannerId = result.getData<GameActions::WallPlaceActionResult>().BannerId;
             break;
         default:
             break;
@@ -1521,9 +1521,9 @@ void ScriptEngine::RunGameActionHooks(const GameActions::GameAction& action, Gam
                 auto error = AsOrDefault<int32_t>(dukResult["error"]);
                 if (error != 0)
                 {
-                    result.Error = static_cast<GameActions::Status>(error);
-                    result.ErrorTitle = AsOrDefault<std::string>(dukResult["errorTitle"]);
-                    result.ErrorMessage = AsOrDefault<std::string>(dukResult["errorMessage"]);
+                    result.error = static_cast<GameActions::Status>(error);
+                    result.errorTitle = AsOrDefault<std::string>(dukResult["errorTitle"]);
+                    result.errorMessage = AsOrDefault<std::string>(dukResult["errorMessage"]);
                 }
             }
         }
@@ -1802,19 +1802,19 @@ void ScriptEngine::RemoveSockets(const std::shared_ptr<Plugin>& plugin)
     #endif
 }
 
-std::string OpenRCT2::Scripting::Stringify(const DukValue& val)
+std::string Scripting::Stringify(const DukValue& val)
 {
     return ExpressionStringifier::StringifyExpression(val);
 }
 
-std::string OpenRCT2::Scripting::ProcessString(const DukValue& value)
+std::string Scripting::ProcessString(const DukValue& value)
 {
     if (value.type() == DukValue::Type::STRING)
         return value.as_string();
     return {};
 }
 
-bool OpenRCT2::Scripting::IsGameStateMutable()
+bool Scripting::IsGameStateMutable()
 {
     // Allow single player to alter game state anywhere
     if (Network::GetMode() == Network::Mode::none)
@@ -1827,7 +1827,7 @@ bool OpenRCT2::Scripting::IsGameStateMutable()
     return execInfo.IsGameStateMutable();
 }
 
-void OpenRCT2::Scripting::ThrowIfGameStateNotMutable()
+void Scripting::ThrowIfGameStateNotMutable()
 {
     // Allow single player to alter game state anywhere
     if (Network::GetMode() != Network::Mode::none)
@@ -1842,7 +1842,7 @@ void OpenRCT2::Scripting::ThrowIfGameStateNotMutable()
     }
 }
 
-int32_t OpenRCT2::Scripting::GetTargetAPIVersion()
+int32_t Scripting::GetTargetAPIVersion()
 {
     auto& scriptEngine = GetContext()->GetScriptEngine();
     auto& execInfo = scriptEngine.GetExecInfo();

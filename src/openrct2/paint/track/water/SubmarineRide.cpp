@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -172,26 +172,26 @@ static void SubmarineRidePaintTrackRightQuarterTurn1Tile(
 /**
  * rct2: 0x008995D4
  */
-TrackPaintFunction GetTrackPaintFunctionSubmarineRide(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionSubmarineRide(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::BeginStation:
-        case TrackElemType::MiddleStation:
-        case TrackElemType::EndStation:
+        case TrackElemType::beginStation:
+        case TrackElemType::middleStation:
+        case TrackElemType::endStation:
             return SubmarineRidePaintTrackStation;
 
-        case TrackElemType::Flat:
+        case TrackElemType::flat:
             return SubmarineRidePaintTrackFlat;
 
-        case TrackElemType::LeftQuarterTurn3Tiles:
+        case TrackElemType::leftQuarterTurn3Tiles:
             return SubmarineRidePaintTrackLeftQuarterTurn3Tiles;
-        case TrackElemType::RightQuarterTurn3Tiles:
+        case TrackElemType::rightQuarterTurn3Tiles:
             return SubmarineRidePaintTrackRightQuarterTurn3Tiles;
 
-        case TrackElemType::LeftQuarterTurn1Tile:
+        case TrackElemType::leftQuarterTurn1Tile:
             return SubmarineRidePaintTrackLeftQuarterTurn1Tile;
-        case TrackElemType::RightQuarterTurn1Tile:
+        case TrackElemType::rightQuarterTurn1Tile:
             return SubmarineRidePaintTrackRightQuarterTurn1Tile;
         default:
             return TrackPaintFunctionDummy;

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -24,6 +24,7 @@
 #include "Segment.h"
 
 using namespace OpenRCT2;
+using namespace OpenRCT2::Drawing;
 using namespace OpenRCT2::Numerics;
 
 static constexpr CoordsXY kLengths[] = {
@@ -219,7 +220,7 @@ static void PaintSmallSceneryBody(
     {
         const auto currentTicks = getGameState().currentTicks;
 
-        if (sceneryEntry->HasFlag(SMALL_SCENERY_FLAG_VISIBLE_WHEN_ZOOMED) || (session.DPI.zoom_level <= ZoomLevel{ 1 }))
+        if (sceneryEntry->HasFlag(SMALL_SCENERY_FLAG_VISIBLE_WHEN_ZOOMED) || (session.rt.zoom_level <= ZoomLevel{ 1 }))
         {
             if (sceneryEntry->HasFlag(SMALL_SCENERY_FLAG_FOUNTAIN_SPRAY_1))
             {

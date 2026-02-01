@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -11,6 +11,7 @@
 
 #include "../Diagnostic.h"
 #include "../GameState.h"
+#include "../drawing/Drawing.h"
 #include "../entity/EntityRegistry.h"
 #include "../entity/Staff.h"
 #include "../ui/WindowManager.h"
@@ -43,23 +44,23 @@ namespace OpenRCT2::GameActions
         if (_spriteId.ToUnderlying() >= kMaxEntities || _spriteId.IsNull())
         {
             LOG_ERROR("Invalid spriteId %u", _spriteId);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
-        auto staff = getGameState().entities.TryGetEntity<Staff>(_spriteId);
+        auto staff = gameState.entities.TryGetEntity<Staff>(_spriteId);
         if (staff == nullptr)
         {
             LOG_ERROR("Staff entity not found for spriteId %u", _spriteId);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
         }
 
         if (staff->State == PeepState::fixing)
         {
-            return Result(Status::Disallowed, STR_CANT_FIRE_STAFF_FIXING, kStringIdNone);
+            return Result(Status::disallowed, STR_CANT_FIRE_STAFF_FIXING, kStringIdNone);
         }
         else if (staff->State == PeepState::inspecting)
         {
-            return Result(Status::Disallowed, STR_CANT_FIRE_STAFF_INSPECTING, kStringIdNone);
+            return Result(Status::disallowed, STR_CANT_FIRE_STAFF_INSPECTING, kStringIdNone);
         }
 
         return Result();
@@ -67,11 +68,11 @@ namespace OpenRCT2::GameActions
 
     Result StaffFireAction::Execute(GameState_t& gameState) const
     {
-        auto staff = getGameState().entities.TryGetEntity<Staff>(_spriteId);
+        auto staff = gameState.entities.TryGetEntity<Staff>(_spriteId);
         if (staff == nullptr)
         {
             LOG_ERROR("Staff entity not found for spriteId %u", _spriteId);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
         }
 
         auto* windowMgr = Ui::GetWindowManager();

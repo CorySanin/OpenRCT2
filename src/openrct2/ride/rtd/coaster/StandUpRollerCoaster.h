@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,7 +20,7 @@ namespace OpenRCT2
 constexpr RideTypeDescriptor StandUpRollerCoasterRTD =
 {
     .Category = RideCategory::rollerCoaster,
-    .StartTrackPiece = TrackElemType::EndStation,
+    .StartTrackPiece = TrackElemType::endStation,
     .TrackPaintFunctions = TrackDrawerDescriptor({
         .trackStyle = TrackStyle::standUpRollerCoaster,
         .supportType = MetalSupportType::tubes,
@@ -48,12 +48,12 @@ constexpr RideTypeDescriptor StandUpRollerCoasterRTD =
     .PhotoItem = ShopItem::photo,
     .BonusValue = 90,
     .ColourPresets = TRACK_COLOUR_PRESETS(
-        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_BLACK },
-        { COLOUR_BLACK, COLOUR_LIGHT_BLUE, COLOUR_BLACK },
-        { COLOUR_LIGHT_ORANGE, COLOUR_WHITE, COLOUR_LIGHT_ORANGE },
-        { COLOUR_BORDEAUX_RED, COLOUR_YELLOW, COLOUR_BORDEAUX_RED },
-        { COLOUR_MOSS_GREEN, COLOUR_MOSS_GREEN, COLOUR_WHITE },
-        { COLOUR_SATURATED_BROWN, COLOUR_LIGHT_ORANGE, COLOUR_SATURATED_BROWN },
+        { Drawing::Colour::brightRed, Drawing::Colour::brightRed, Drawing::Colour::black },
+        { Drawing::Colour::black, Drawing::Colour::lightBlue, Drawing::Colour::black },
+        { Drawing::Colour::lightOrange, Drawing::Colour::white, Drawing::Colour::lightOrange },
+        { Drawing::Colour::bordeauxRed, Drawing::Colour::yellow, Drawing::Colour::bordeauxRed },
+        { Drawing::Colour::mossGreen, Drawing::Colour::mossGreen, Drawing::Colour::white },
+        { Drawing::Colour::saturatedBrown, Drawing::Colour::lightOrange, Drawing::Colour::saturatedBrown },
     ),
     .ColourPreview = { SPR_RIDE_DESIGN_PREVIEW_STAND_UP_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_STAND_UP_ROLLER_COASTER_SUPPORTS },
     .ColourKey = RideColourKey::Ride,
@@ -63,11 +63,11 @@ constexpr RideTypeDescriptor StandUpRollerCoasterRTD =
         RatingsCalculationType::Normal,
         { RideRating::make(2, 50), RideRating::make(3, 00), RideRating::make(3, 00) },
         17,
-        -1,
+        kDynamicRideShelterRating,
         false,
         {
             { RatingsModifierType::BonusLength,           6000,             764, 0, 0 },
-            { RatingsModifierType::BonusSynchronisation,  0,                RideRating::make(0, 40), RideRating::make(0, 10), 0 },
+            { RatingsModifierType::BonusSynchronisation,  0,                RideRating::make(0, 40), RideRating::make(0, 5), 0 },
             { RatingsModifierType::BonusTrainLength,      0,                187245, 0, 0 },
             { RatingsModifierType::BonusMaxSpeed,         0,                44281, 123987, 35424 },
             { RatingsModifierType::BonusAverageSpeed,     0,                291271, 436906, 0 },

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -12,6 +12,7 @@
 #include "../Cheats.h"
 #include "../Diagnostic.h"
 #include "../GameState.h"
+#include "../core/Guard.hpp"
 #include "../core/MemoryStream.h"
 #include "../localisation/StringIds.h"
 #include "../management/Finance.h"
@@ -24,6 +25,7 @@
 #include "../world/Map.h"
 #include "../world/Park.h"
 #include "../world/Wall.h"
+#include "../world/tile_element/Slope.h"
 #include "../world/tile_element/SurfaceElement.h"
 #include "../world/tile_element/TrackElement.h"
 
@@ -58,7 +60,8 @@ namespace OpenRCT2::GameActions
     };
     // clang-format on
 
-    MazeSetTrackAction::MazeSetTrackAction(const CoordsXYZD& location, bool initialPlacement, RideId rideIndex, uint8_t mode)
+    MazeSetTrackAction::MazeSetTrackAction(
+        const CoordsXYZD& location, bool initialPlacement, RideId rideIndex, MazeBuildMode mode)
         : _loc(location)
         , _initialPlacement(initialPlacement)
         , _rideIndex(rideIndex)
@@ -84,41 +87,41 @@ namespace OpenRCT2::GameActions
     {
         auto res = Result();
 
-        res.Position = _loc + CoordsXYZ{ 8, 8, 0 };
-        res.Expenditure = ExpenditureType::rideConstruction;
-        res.ErrorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
-        if ((_loc.z & 0xF) != 0 && _mode == GC_SET_MAZE_TRACK_BUILD)
+        res.position = _loc + CoordsXYZ{ 8, 8, 0 };
+        res.expenditure = ExpenditureType::rideConstruction;
+        res.errorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
+        if ((_loc.z & 0xF) != 0 && _mode == MazeBuildMode::build)
         {
-            res.Error = Status::Unknown;
-            res.ErrorMessage = STR_INVALID_HEIGHT;
+            res.error = Status::unknown;
+            res.errorMessage = STR_INVALID_HEIGHT;
             return res;
         }
 
         if (!LocationValid(_loc))
         {
-            res.Error = Status::InvalidParameters;
-            res.ErrorMessage = STR_OFF_EDGE_OF_MAP;
+            res.error = Status::invalidParameters;
+            res.errorMessage = STR_OFF_EDGE_OF_MAP;
             return res;
         }
 
         if (!MapIsLocationOwned(_loc) && !gameState.cheats.sandboxMode)
         {
-            res.Error = Status::NotOwned;
-            res.ErrorMessage = STR_LAND_NOT_OWNED_BY_PARK;
+            res.error = Status::notOwned;
+            res.errorMessage = STR_LAND_NOT_OWNED_BY_PARK;
             return res;
         }
 
         if (!MapCheckCapacityAndReorganise(_loc))
         {
-            res.Error = Status::NoFreeElements;
-            res.ErrorMessage = STR_TILE_ELEMENT_LIMIT_REACHED;
+            res.error = Status::noFreeElements;
+            res.errorMessage = STR_TILE_ELEMENT_LIMIT_REACHED;
             return res;
         }
         auto surfaceElement = MapGetSurfaceElementAt(_loc);
         if (surfaceElement == nullptr)
         {
-            res.Error = Status::Unknown;
-            res.ErrorMessage = STR_INVALID_SELECTION_OF_OBJECTS;
+            res.error = Status::unknown;
+            res.errorMessage = STR_INVALID_SELECTION_OF_OBJECTS;
             return res;
         }
 
@@ -134,40 +137,42 @@ namespace OpenRCT2::GameActions
             const auto& rtd = ride->getRideTypeDescriptor();
             if (heightDifference > rtd.Heights.MaxHeight)
             {
-                res.Error = Status::TooHigh;
-                res.ErrorMessage = STR_TOO_HIGH_FOR_SUPPORTS;
+                res.error = Status::tooHigh;
+                res.errorMessage = STR_TOO_HIGH_FOR_SUPPORTS;
                 return res;
             }
         }
 
-        TileElement* tileElement = MapGetTrackElementAtOfTypeFromRide(_loc, TrackElemType::Maze, _rideIndex);
+        TileElement* tileElement = MapGetTrackElementAtOfTypeFromRide(_loc, TrackElemType::maze, _rideIndex);
         if (tileElement == nullptr)
         {
-            if (_mode != GC_SET_MAZE_TRACK_BUILD)
+            if (_mode != MazeBuildMode::build)
             {
-                res.Error = Status::Unknown;
-                res.ErrorMessage = STR_INVALID_SELECTION_OF_OBJECTS;
+                res.error = Status::unknown;
+                res.errorMessage = STR_INVALID_SELECTION_OF_OBJECTS;
                 return res;
             }
-            auto constructResult = MapCanConstructAt({ _loc.ToTileStart(), baseHeight, clearanceHeight }, { 0b1111, 0 });
-            if (constructResult.Error != Status::Ok)
+            auto constructResult = MapCanConstructWithClearAt(
+                { _loc.ToTileStart(), baseHeight, clearanceHeight }, MapPlaceNonSceneryClearFunc, { 0b1111, 0 }, GetFlags(),
+                kTileSlopeFlat);
+            if (constructResult.error != Status::ok)
             {
-                constructResult.ErrorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
+                constructResult.errorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
                 return constructResult;
             }
 
-            const auto clearanceData = constructResult.GetData<ConstructClearResult>();
+            const auto clearanceData = constructResult.getData<ConstructClearResult>();
             if (clearanceData.GroundFlags & ELEMENT_IS_UNDERWATER)
             {
-                res.Error = Status::NoClearance;
-                res.ErrorMessage = STR_RIDE_CANT_BUILD_THIS_UNDERWATER;
+                res.error = Status::noClearance;
+                res.errorMessage = STR_RIDE_CANT_BUILD_THIS_UNDERWATER;
                 return res;
             }
 
             if (clearanceData.GroundFlags & ELEMENT_IS_UNDERGROUND)
             {
-                res.Error = Status::NoClearance;
-                res.ErrorMessage = STR_CAN_ONLY_BUILD_THIS_ABOVE_GROUND;
+                res.error = Status::noClearance;
+                res.errorMessage = STR_CAN_ONLY_BUILD_THIS_ABOVE_GROUND;
                 return res;
             }
 
@@ -175,12 +180,12 @@ namespace OpenRCT2::GameActions
             if (ride == nullptr || !RideTypeIsValid(ride->type))
             {
                 LOG_ERROR("Ride not found for rideIndex %u", _rideIndex);
-                res.Error = Status::NoClearance;
-                res.ErrorMessage = STR_ERR_RIDE_NOT_FOUND;
+                res.error = Status::noClearance;
+                res.errorMessage = STR_ERR_RIDE_NOT_FOUND;
                 return res;
             }
 
-            res.Cost = MazeCalculateCost(constructResult.Cost, *ride, _loc);
+            res.cost = MazeCalculateCost(constructResult.cost, *ride, _loc);
 
             return res;
         }
@@ -192,30 +197,42 @@ namespace OpenRCT2::GameActions
     {
         auto res = Result();
 
-        res.Position = _loc + CoordsXYZ{ 8, 8, 0 };
-        res.Expenditure = ExpenditureType::rideConstruction;
-        res.ErrorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
+        res.position = _loc + CoordsXYZ{ 8, 8, 0 };
+        res.expenditure = ExpenditureType::rideConstruction;
+        res.errorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
 
         auto ride = GetRide(_rideIndex);
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex);
-            res.Error = Status::InvalidParameters;
-            res.ErrorMessage = STR_ERR_RIDE_NOT_FOUND;
+            res.error = Status::invalidParameters;
+            res.errorMessage = STR_ERR_RIDE_NOT_FOUND;
             return res;
         }
 
-        uint32_t flags = GetFlags();
-        if (!(flags & GAME_COMMAND_FLAG_GHOST))
+        auto flags = GetFlags();
+        if (!flags.has(CommandFlag::ghost))
         {
             FootpathRemoveLitter(_loc);
             WallRemoveAt({ _loc.ToTileStart(), _loc.z, _loc.z + 32 });
         }
 
-        auto tileElement = MapGetTrackElementAtOfTypeFromRide(_loc, TrackElemType::Maze, _rideIndex);
+        auto tileElement = MapGetTrackElementAtOfTypeFromRide(_loc, TrackElemType::maze, _rideIndex);
         if (tileElement == nullptr)
         {
-            res.Cost = MazeCalculateCost(0, *ride, _loc);
+            auto baseHeight = _loc.z;
+            auto clearanceHeight = _loc.z + kMazeClearanceHeight;
+
+            auto canBuild = MapCanConstructWithClearAt(
+                { _loc.ToTileStart(), baseHeight, clearanceHeight }, MapPlaceNonSceneryClearFunc, { 0b1111, 0 },
+                GetFlags().with(CommandFlag::apply), kTileSlopeFlat);
+            if (canBuild.error != Status::ok)
+            {
+                canBuild.errorTitle = STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE;
+                return canBuild;
+            }
+
+            res.cost = MazeCalculateCost(canBuild.cost, *ride, _loc);
 
             auto startLoc = _loc.ToTileStart();
 
@@ -223,11 +240,11 @@ namespace OpenRCT2::GameActions
             Guard::Assert(trackElement != nullptr);
 
             trackElement->SetClearanceZ(_loc.z + kMazeClearanceHeight);
-            trackElement->SetTrackType(TrackElemType::Maze);
+            trackElement->SetTrackType(TrackElemType::maze);
             trackElement->SetRideType(ride->type);
             trackElement->SetRideIndex(_rideIndex);
             trackElement->SetMazeEntry(0xFFFF);
-            trackElement->SetGhost(flags & GAME_COMMAND_FLAG_GHOST);
+            trackElement->SetGhost(flags.has(CommandFlag::ghost));
 
             tileElement = trackElement->as<TileElement>();
 
@@ -237,7 +254,7 @@ namespace OpenRCT2::GameActions
             ride->getStation().SetBaseZ(tileElement->GetBaseZ());
             ride->getStation().Start = { 0, 0 };
 
-            if (_initialPlacement && !(flags & GAME_COMMAND_FLAG_GHOST))
+            if (_initialPlacement && !flags.has(CommandFlag::ghost))
             {
                 ride->overallView = startLoc;
             }
@@ -245,7 +262,7 @@ namespace OpenRCT2::GameActions
 
         switch (_mode)
         {
-            case GC_SET_MAZE_TRACK_BUILD:
+            case MazeBuildMode::build:
             {
                 uint8_t segmentOffset = MazeGetSegmentBit(_loc);
 
@@ -262,7 +279,7 @@ namespace OpenRCT2::GameActions
                         auto previousElementLoc = CoordsXY{ _loc }.ToTileStart() - CoordsDirectionDelta[_loc.direction];
 
                         TileElement* previousTileElement = MapGetTrackElementAtOfTypeFromRide(
-                            { previousElementLoc, _loc.z }, TrackElemType::Maze, _rideIndex);
+                            { previousElementLoc, _loc.z }, TrackElemType::maze, _rideIndex);
 
                         if (previousTileElement != nullptr)
                         {
@@ -278,24 +295,24 @@ namespace OpenRCT2::GameActions
                 break;
             }
 
-            case GC_SET_MAZE_TRACK_MOVE:
+            case MazeBuildMode::move:
                 break;
 
-            case GC_SET_MAZE_TRACK_FILL:
+            case MazeBuildMode::fill:
                 if (!_initialPlacement)
                 {
                     auto previousSegment = CoordsXY{ _loc.x - CoordsDirectionDelta[_loc.direction].x / 2,
                                                      _loc.y - CoordsDirectionDelta[_loc.direction].y / 2 };
 
                     tileElement = MapGetTrackElementAtOfTypeFromRide(
-                        { previousSegment, _loc.z }, TrackElemType::Maze, _rideIndex);
+                        { previousSegment, _loc.z }, TrackElemType::maze, _rideIndex);
 
                     MapInvalidateTileFull(previousSegment.ToTileStart());
                     if (tileElement == nullptr)
                     {
                         LOG_ERROR("No surface found");
-                        res.Error = Status::Unknown;
-                        res.ErrorMessage = STR_ERR_SURFACE_ELEMENT_NOT_FOUND;
+                        res.error = Status::unknown;
+                        res.errorMessage = STR_ERR_SURFACE_ELEMENT_NOT_FOUND;
                         return res;
                     }
 
@@ -316,7 +333,7 @@ namespace OpenRCT2::GameActions
                         auto nextElementLoc = previousSegment.ToTileStart() + CoordsDirectionDelta[direction1];
 
                         TileElement* tmp_tileElement = MapGetTrackElementAtOfTypeFromRide(
-                            { nextElementLoc, _loc.z }, TrackElemType::Maze, _rideIndex);
+                            { nextElementLoc, _loc.z }, TrackElemType::maze, _rideIndex);
 
                         if (tmp_tileElement != nullptr)
                         {

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -14,13 +14,11 @@
 #include "../../SpriteIds.h"
 #include "../../config/Config.h"
 #include "../../core/Numerics.hpp"
-#include "../../drawing/Drawing.h"
 #include "../../interface/Viewport.h"
 #include "../../profiling/Profiling.h"
 #include "../../ride/RideData.h"
 #include "../../ride/TrackData.h"
 #include "../../ride/TrackPaint.h"
-#include "../../world/Banner.h"
 #include "../../world/Entrance.h"
 #include "../../world/Footpath.h"
 #include "../../world/Map.h"
@@ -32,10 +30,12 @@
 #include "../Paint.SessionFlags.h"
 #include "../Paint.h"
 #include "../VirtualFloor.h"
+#include "Paint.Path.h"
 #include "Paint.Surface.h"
 #include "Segment.h"
 
 using namespace OpenRCT2;
+using namespace OpenRCT2::Drawing;
 
 static void BlankTilesPaint(PaintSession& session, int32_t x, int32_t y);
 static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoords);
@@ -93,11 +93,11 @@ static void BlankTilesPaint(PaintSession& session, int32_t x, int32_t y)
     dx -= 16;
     int32_t bx = dx + 32;
 
-    if (bx <= session.DPI.WorldY())
+    if (bx <= session.rt.WorldY())
         return;
     dx -= 20;
-    dx -= session.DPI.WorldHeight();
-    if (dx >= session.DPI.WorldY())
+    dx -= session.rt.WorldHeight();
+    if (dx >= session.rt.WorldY())
         return;
 
     session.SpritePosition.x = x;
@@ -163,13 +163,13 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
     int32_t screenMinY = Translate3DTo2DWithZ(rotation, { coords, 0 }).y;
 
     // Display little yellow arrow when building footpaths?
-    if ((gMapSelectFlags.has(MapSelectFlag::enableArrow)) && session.MapPosition.x == gMapSelectArrowPosition.x
+    if (gMapSelectFlags.has(MapSelectFlag::enableArrow) && session.MapPosition.x == gMapSelectArrowPosition.x
         && session.MapPosition.y == gMapSelectArrowPosition.y)
     {
         uint8_t arrowRotation = (rotation + (gMapSelectArrowDirection & 3)) & 3;
 
         uint32_t imageIndex = arrowRotation + (gMapSelectArrowDirection & 0xFC) + PEEP_SPAWN_ARROW_0;
-        ImageId imageId = ImageId(imageIndex, COLOUR_YELLOW);
+        ImageId imageId = ImageId(imageIndex, OpenRCT2::Drawing::Colour::yellow);
         int32_t arrowZ = gMapSelectArrowPosition.z;
 
         session.SpritePosition.x = coords.x;
@@ -179,7 +179,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         PaintAddImageAsParent(session, imageId, { 0, 0, arrowZ }, { { 0, 0, arrowZ + 18 }, { 32, 32, -1 } });
     }
 
-    if (screenMinY + 52 <= session.DPI.WorldY())
+    if (screenMinY + 52 <= session.rt.WorldY())
         return;
 
     const TileElement* element = tile_element; // push tile_element
@@ -203,7 +203,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         maxHeight = std::max(maxHeight, VirtualFloorGetHeight());
     }
 
-    if (screenMinY - (maxHeight + 32) >= session.DPI.WorldY() + session.DPI.WorldHeight())
+    if (screenMinY - (maxHeight + 32) >= session.rt.WorldY() + session.rt.WorldHeight())
         return;
 
     session.SpritePosition.x = coords.x;
@@ -391,6 +391,6 @@ uint16_t PaintUtilRotateSegments(uint16_t segments, uint8_t rotation)
 
 bool PaintShouldShowHeightMarkers(const PaintSession& session, const uint32_t viewportFlag)
 {
-    auto rt = &session.DPI;
+    auto rt = &session.rt;
     return (session.ViewFlags & viewportFlag) && (rt->zoom_level <= ZoomLevel{ 0 });
 }

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -85,7 +85,10 @@ void ClimateUpdateSound();
 void ClimateStopWeatherSound();
 void ClimateForceWeather(WeatherType weather);
 
-enum class FilterPaletteID : int32_t;
+namespace OpenRCT2::Drawing
+{
+    enum class FilterPaletteID : int32_t;
+}
 
 bool ClimateIsRaining();
 bool ClimateTransitioningToSnow();
@@ -94,5 +97,5 @@ bool ClimateIsSnowingHeavily();
 bool ClimateIsPrecipitating();
 bool WeatherIsDry(WeatherType);
 bool ClimateHasWeatherEffect();
-FilterPaletteID ClimateGetWeatherGloomPaletteId(const WeatherState& state);
-uint32_t ClimateGetWeatherSpriteId(const WeatherType weatherType);
+OpenRCT2::Drawing::FilterPaletteID ClimateGetWeatherGloomPaletteId(const WeatherState& state);
+uint32_t ClimateGetWeatherSpriteId(WeatherType weatherType);

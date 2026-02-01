@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -13,7 +13,6 @@
 #include "../core/EnumUtils.hpp"
 #include "../windows/TileInspectorGlobals.h"
 #include "../world/Location.hpp"
-#include "Colour.h"
 #include "Widget.h"
 #include "WindowClasses.h"
 #include "ZoomLevel.h"
@@ -22,12 +21,16 @@
 #include <list>
 #include <memory>
 
-struct RenderTarget;
 struct TrackDesignFileRef;
 struct ScenarioIndexEntry;
 
 enum class CursorID : uint8_t;
 enum class CloseWindowModifier : uint8_t;
+
+namespace OpenRCT2::Drawing
+{
+    struct RenderTarget;
+}
 
 namespace OpenRCT2
 {
@@ -283,7 +286,7 @@ namespace OpenRCT2
 
     extern uint32_t gWindowUpdateTicks;
 
-    extern colour_t gCurrentWindowColours[3];
+    extern Drawing::Colour gCurrentWindowColours[3];
 
     std::vector<std::unique_ptr<WindowBase>>::iterator WindowGetIterator(const WindowBase* w);
     void WindowVisitEach(std::function<void(WindowBase*)> func);
@@ -308,8 +311,8 @@ namespace OpenRCT2
     void WindowCheckAllValidZoom();
     void WindowZoomSet(WindowBase& w, ZoomLevel zoomLevel, bool atCursor);
 
-    void WindowDrawAll(RenderTarget& rt, int32_t left, int32_t top, int32_t right, int32_t bottom);
-    void WindowDraw(RenderTarget& rt, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
+    void WindowDrawAll(Drawing::RenderTarget& rt, int32_t left, int32_t top, int32_t right, int32_t bottom);
+    void WindowDraw(Drawing::RenderTarget& rt, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
 
     bool isToolActive(WindowClass cls);
     bool isToolActive(WindowClass cls, WindowNumber number);

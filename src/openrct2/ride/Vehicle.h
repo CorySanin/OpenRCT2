@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -16,13 +16,10 @@
 #include "../world/Location.hpp"
 #include "Angles.h"
 #include "CarEntry.h"
-#include "Station.h"
 #include "VehicleColour.h"
 #include "VehicleSubpositionData.h"
 
-#include <array>
 #include <cstddef>
-#include <vector>
 
 struct Ride;
 struct RideObjectEntry;
@@ -32,8 +29,8 @@ struct PaintSession;
 
 struct GForces
 {
-    int32_t VerticalG{};
-    int32_t LateralG{};
+    int32_t verticalG{};
+    int32_t lateralG{};
 };
 
 // Size: 0x09
@@ -42,20 +39,20 @@ struct VehicleInfo
     int16_t x;          // 0x00
     int16_t y;          // 0x02
     int16_t z;          // 0x04
-    uint8_t direction;  // 0x06
+    uint8_t yaw;        // 0x06
     VehiclePitch pitch; // 0x07
     VehicleRoll roll;   // 0x08
 
-    bool IsInvalid() const
+    bool isInvalid() const
     {
-        return x == 0 && y == 0 && z == 0 && direction == 0 && pitch == VehiclePitch::flat && roll == VehicleRoll::unbanked;
+        return x == 0 && y == 0 && z == 0 && yaw == 0 && pitch == VehiclePitch::flat && roll == VehicleRoll::unbanked;
     }
 };
 
 struct SoundIdVolume;
 
-constexpr uint16_t VehicleTrackDirectionMask = 0b0000000000000011;
-constexpr uint16_t VehicleTrackTypeMask = 0b1111111111111100;
+static constexpr uint16_t kVehicleTrackDirectionMask = 0b0000000000000011;
+static constexpr uint16_t kVehicleTrackTypeMask = 0b1111111111111100;
 
 enum class MiniGolfAnimation : uint8_t;
 
@@ -65,43 +62,43 @@ struct Vehicle : EntityBase
 
     enum class Type : uint8_t
     {
-        Head,
-        Tail,
+        head,
+        tail,
     };
 
     enum class Status : uint8_t
     {
-        MovingToEndOfStation,
-        WaitingForPassengers,
-        WaitingToDepart,
-        Departing,
-        Travelling,
-        Arriving,
-        UnloadingPassengers,
-        TravellingBoat,
-        Crashing,
-        Crashed,
-        TravellingDodgems,
-        Swinging,
-        Rotating,
-        FerrisWheelRotating,
-        SimulatorOperating,
-        ShowingFilm,
-        SpaceRingsOperating,
-        TopSpinOperating,
-        HauntedHouseOperating,
-        DoingCircusShow,
-        CrookedHouseOperating,
-        WaitingForCableLift,
-        TravellingCableLift,
-        Stopping,
-        WaitingForPassengers17,
-        WaitingToStart,
-        Starting,
-        Operating1A,
-        Stopping1B,
-        UnloadingPassengers1C,
-        StoppedByBlockBrakes
+        movingToEndOfStation,
+        waitingForPassengers,
+        waitingToDepart,
+        departing,
+        travelling,
+        arriving,
+        unloadingPassengers,
+        travellingBoat,
+        crashing,
+        crashed,
+        travellingDodgems,
+        swinging,
+        rotating,
+        ferrisWheelRotating,
+        simulatorOperating,
+        showingFilm,
+        spaceRingsOperating,
+        topSpinOperating,
+        hauntedHouseOperating,
+        doingCircusShow,
+        crookedHouseOperating,
+        waitingForCableLift,
+        travellingCableLift,
+        stopping,
+        waitingForPassengers17,
+        waitingToStart,
+        starting,
+        operating1A,
+        stopping1B,
+        unloadingPassengers1C,
+        stoppedByBlockBrakes,
     };
 
     Type SubType;
@@ -164,7 +161,7 @@ struct Vehicle : EntityBase
     Status status;
     uint8_t sub_state;
     EntityId peep[32];
-    uint8_t peep_tshirt_colours[32];
+    OpenRCT2::Drawing::Colour peep_tshirt_colours[32];
     uint8_t num_seats;
     uint8_t num_peeps;
     uint8_t next_free_seat;
@@ -222,13 +219,13 @@ struct Vehicle : EntityBase
 
     constexpr bool IsHead() const
     {
-        return SubType == Vehicle::Type::Head;
+        return SubType == Type::head;
     }
     void Update();
     Vehicle* GetHead();
     const Vehicle* GetHead() const;
     Vehicle* GetCar(size_t carIndex) const;
-    void SetState(Vehicle::Status vehicleStatus, uint8_t subState = 0);
+    void SetState(Status vehicleStatus, uint8_t subState = 0);
     bool IsGhost() const;
     std::optional<EntityId> DodgemsCarWouldCollideAt(const CoordsXY& coords) const;
     int32_t UpdateTrackMotion(int32_t* outStation);
@@ -256,19 +253,19 @@ struct Vehicle : EntityBase
     bool IsOnCoveredTrack() const;
     uint8_t GetTrackDirection() const
     {
-        return TrackTypeAndDirection & VehicleTrackDirectionMask;
+        return TrackTypeAndDirection & kVehicleTrackDirectionMask;
     }
     void SetTrackType(OpenRCT2::TrackElemType trackType)
     {
         // set the upper 14 bits to 0, then set track type
-        TrackTypeAndDirection &= ~VehicleTrackTypeMask;
+        TrackTypeAndDirection &= ~kVehicleTrackTypeMask;
         TrackTypeAndDirection |= EnumValue(trackType) << 2;
     }
     void SetTrackDirection(uint8_t trackDirection)
     {
         // set the lower 2 bits only
-        TrackTypeAndDirection &= ~VehicleTrackDirectionMask;
-        TrackTypeAndDirection |= trackDirection & VehicleTrackDirectionMask;
+        TrackTypeAndDirection &= ~kVehicleTrackDirectionMask;
+        TrackTypeAndDirection |= trackDirection & kVehicleTrackDirectionMask;
     }
     bool HasFlag(uint32_t flag) const
     {
@@ -335,7 +332,7 @@ private:
     void UpdateSound();
     void GetLiftHillSound(const Ride& curRide, SoundIdVolume& curSound);
     OpenRCT2::Audio::SoundId UpdateScreamSound();
-    OpenRCT2::Audio::SoundId ProduceScreamSound(const int32_t totalNumPeeps);
+    OpenRCT2::Audio::SoundId ProduceScreamSound(int32_t totalNumPeeps);
     void UpdateCrashSetup();
     void UpdateCollisionSetup();
     int32_t UpdateMotionDodgems();
@@ -344,8 +341,7 @@ private:
     bool CurrentTowerElementIsTop();
     bool UpdateTrackMotionForwards(const CarEntry* carEntry, const Ride& curRide, const RideObjectEntry& rideEntry);
     bool UpdateTrackMotionBackwards(const CarEntry* carEntry, const Ride& curRide, const RideObjectEntry& rideEntry);
-    int32_t UpdateTrackMotionPoweredRideAcceleration(
-        const CarEntry* carEntry, uint32_t totalMass, const int32_t curAcceleration);
+    int32_t UpdateTrackMotionPoweredRideAcceleration(const CarEntry* carEntry, uint32_t totalMass, int32_t curAcceleration);
     int32_t NumPeepsUntilTrainTail() const;
     void InvalidateWindow();
     void TestReset();
@@ -383,7 +379,7 @@ private:
     void UpdateGoKartAttemptSwitchLanes();
     void UpdateSceneryDoor() const;
     void UpdateSceneryDoorBackwards() const;
-    void UpdateLandscapeDoors(const int32_t previousTrackHeight) const;
+    void UpdateLandscapeDoors(int32_t previousTrackHeight) const;
     int32_t CalculateRiderBraking() const;
     uint8_t ChooseBrakeSpeed() const;
     void PopulateBrakeSpeed(const CoordsXYZ& vehicleTrackLocation, OpenRCT2::TrackElement& brake);
@@ -468,19 +464,20 @@ namespace OpenRCT2::VehicleFlags
     constexpr uint32_t PoweredCarInReverse = (1 << 3);
     constexpr uint32_t ReadyToDepart = (1 << 4);
     constexpr uint32_t Testing = (1 << 5);
-    constexpr uint32_t CurrentlyColliding = (1 << 6); // When go-karts are colliding, they have a higher chance of changing
-                                                      // lanes
-    constexpr uint32_t StoppedOnLift = (1 << 7);      // Used on rides when safety cutout stops them on a lift
+    // When go-karts are colliding, they have a higher chance of changing lanes
+    constexpr uint32_t CurrentlyColliding = (1 << 6);
+    // Used on vehicles when a safety cut-out stops them, such as RCs on a lift hill and powered rides
+    constexpr uint32_t StoppedBySafetyCutOut = (1 << 7);
     constexpr uint32_t CarIsBroken = (1 << 8);
     constexpr uint32_t TrainIsBroken = (1 << 9);
     constexpr uint32_t StoppedOnHoldingBrake = (1 << 10);
-    constexpr uint32_t CarIsInverted = (1 << 11); // Used on rides where trains can run for extended periods of time,
-                                                  // i.e. the Flying, Lay-down and Multi-dimension RCs.
-    constexpr uint32_t ReverseInclineCompletedLap = (1 << 12); // Set when the vehicle travels backwards through the station for
-                                                               // the first time
-    constexpr uint32_t SpinningIsLocked = (1 << 13);           // After passing a rotation toggle track piece this will enable
-    constexpr uint32_t MoveSingleCar = (1 << 14); // OpenRCT2 Flag: Used to override UpdateMotion to move the position of
-                                                  // an individual car on a train
+    // Used on vehicles that can run inverted for extended periods of time, i.e. the Flying, Lay-down and Multi-Dimension trains
+    constexpr uint32_t CarIsInverted = (1 << 11);
+    // Set when the vehicle travels backwards through the station for the first time
+    constexpr uint32_t ReverseInclineCompletedLap = (1 << 12);
+    constexpr uint32_t SpinningIsLocked = (1 << 13); // After passing a rotation toggle track piece this will enable
+    // OpenRCT2 Flag: Used to override UpdateMotion to move the position of an individual car on a train
+    constexpr uint32_t MoveSingleCar = (1 << 14);
     constexpr uint32_t Crashed = (1 << 15);       // Car displays as smoke plume
     constexpr uint32_t CarIsReversed = (1 << 16); // Car is displayed running backwards
 } // namespace OpenRCT2::VehicleFlags
@@ -559,9 +556,9 @@ void VehicleUpdateAll();
 void VehicleSoundsUpdate();
 uint16_t VehicleGetMoveInfoSize(VehicleTrackSubposition trackSubposition, OpenRCT2::TrackElemType type, uint8_t direction);
 
-void RideUpdateMeasurementsSpecialElements_Default(Ride& ride, const OpenRCT2::TrackElemType trackType);
-void RideUpdateMeasurementsSpecialElements_MiniGolf(Ride& ride, const OpenRCT2::TrackElemType trackType);
-void RideUpdateMeasurementsSpecialElements_WaterCoaster(Ride& ride, const OpenRCT2::TrackElemType trackType);
+void RideUpdateMeasurementsSpecialElements_Default(Ride& ride, OpenRCT2::TrackElemType trackType);
+void RideUpdateMeasurementsSpecialElements_MiniGolf(Ride& ride, OpenRCT2::TrackElemType trackType);
+void RideUpdateMeasurementsSpecialElements_WaterCoaster(Ride& ride, OpenRCT2::TrackElemType trackType);
 
 extern Vehicle* gCurrentVehicle;
 extern StationIndex _vehicleStationIndex;

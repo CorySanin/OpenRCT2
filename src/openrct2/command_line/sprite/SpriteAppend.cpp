@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -52,9 +52,11 @@ namespace OpenRCT2::CommandLine::Sprite
 
         constexpr uint8_t importFlags = EnumToFlag(ImportFlags::RLE);
         ImageImportMeta meta = { { xOffset, yOffset }, Palette::OpenRCT2, importFlags, spriteMode };
-        auto importResult = SpriteImageImport(imagePath, meta);
-        if (!importResult.has_value())
+        const auto image = SpriteImageLoad(imagePath, meta);
+        if (!image.has_value())
             return -1;
+        ImageImporter importer;
+        auto importResult = importer.Import(image.value(), meta);
 
         auto spriteFile = SpriteFile::Open(spriteFilePath);
         if (!spriteFile.has_value())
@@ -63,7 +65,7 @@ namespace OpenRCT2::CommandLine::Sprite
             return -1;
         }
 
-        spriteFile->AddImage(importResult.value());
+        spriteFile->AddImage(importResult);
 
         if (!spriteFile->Save(spriteFilePath))
             return -1;

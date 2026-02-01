@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -10,8 +10,10 @@
 #pragma once
 
 #include "../Limits.h"
+#include "../actions/CommandFlag.h"
 #include "../actions/GameActionResult.h"
 #include "../core/EnumUtils.hpp"
+#include "../drawing/Colour.h"
 #include "../object/Object.h"
 #include "../ride/RideColour.h"
 #include "../ride/Track.h"
@@ -63,9 +65,9 @@ struct TrackDesignSceneryElement
     OpenRCT2::ObjectEntryDescriptor sceneryObject{};
     CoordsXYZ loc{};
     uint8_t flags{};
-    colour_t primaryColour{};
-    colour_t secondaryColour{};
-    colour_t tertiaryColour = COLOUR_DARK_BROWN;
+    OpenRCT2::Drawing::Colour primaryColour{};
+    OpenRCT2::Drawing::Colour secondaryColour{};
+    OpenRCT2::Drawing::Colour tertiaryColour = OpenRCT2::Drawing::Colour::darkBrown;
 
     Direction getRotation() const;
     void setRotation(Direction rotation);
@@ -100,7 +102,7 @@ enum class TrackDesignTrackElementFlag : uint8_t
 
 struct TrackDesignTrackElement
 {
-    OpenRCT2::TrackElemType type = OpenRCT2::TrackElemType::Flat;
+    OpenRCT2::TrackElemType type = OpenRCT2::TrackElemType::flat;
     uint8_t flags = 0;
     uint8_t colourScheme = 0;
     ::StationIndex stationIndex = StationIndex::FromUnderlying(0);
@@ -238,7 +240,7 @@ extern RideId gTrackDesignSaveRideIndex;
 void TrackDesignMirror(TrackDesign& td);
 
 OpenRCT2::GameActions::Result TrackDesignPlace(
-    const TrackDesign& td, uint32_t flags, bool placeScenery, Ride& ride, const CoordsXYZD& coords);
+    const TrackDesign& td, OpenRCT2::GameActions::CommandFlags flags, bool placeScenery, Ride& ride, const CoordsXYZD& coords);
 void TrackDesignPreviewRemoveGhosts(const TrackDesign& td, Ride& ride, const CoordsXYZD& coords);
 void TrackDesignPreviewDrawOutlines(
     TrackDesignState& tds, const TrackDesign& td, Ride& ride, const CoordsXYZD& coords, bool placeScenery);

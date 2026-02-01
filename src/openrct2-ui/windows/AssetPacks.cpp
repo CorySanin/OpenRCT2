@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -15,6 +15,7 @@
 #include <openrct2/AssetPackManager.h>
 #include <openrct2/Context.h>
 #include <openrct2/SpriteIds.h>
+#include <openrct2/drawing/ColourMap.h>
 #include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
@@ -155,7 +156,7 @@ namespace OpenRCT2::Ui::Windows
         {
             auto& list = widgets[WIDX_LIST];
             list.left = 6;
-            list.top = widgets[WIDX_TITLE].height() + 8 + 11 + 3;
+            list.top = widgets[WIDX_TITLE].height() - 1 + 8 + 11 + 3;
             list.right = width - 2 - 24 - 1;
             list.bottom = height - 6 - 11 - 3;
 
@@ -168,7 +169,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_LOW_LABEL].left = list.left;
             widgets[WIDX_LOW_LABEL].right = list.right;
 
-            auto toolstripY = widgets[WIDX_TITLE].height() + 8;
+            auto toolstripY = widgets[WIDX_TITLE].height() - 1 + 8;
             auto toolstripRight = width - 2;
             auto toolstripLeft = toolstripRight - 24;
             for (WidgetIndex i = WIDX_MOVE_UP; i <= WIDX_APPLY; i++)
@@ -197,7 +198,7 @@ namespace OpenRCT2::Ui::Windows
             auto rtCoords = ScreenCoordsXY{ rt.x, rt.y };
             Rectangle::fill(
                 rt, { rtCoords, rtCoords + ScreenCoordsXY{ rt.width - 1, rt.height - 1 } },
-                ColourMapA[colours[1].colour].mid_light);
+                getColourMap(colours[1].colour).midLight);
 
             auto assetPackManager = GetContext()->GetAssetPackManager();
             if (assetPackManager == nullptr)
@@ -244,12 +245,12 @@ namespace OpenRCT2::Ui::Windows
             auto fillRectangle = ScreenRect{ { 0, y }, { listWidth, y + ItemHeight - 1 } };
             if (isSelected)
             {
-                Rectangle::fill(rt, fillRectangle, ColourMapA[colours[1].colour].mid_dark);
+                Rectangle::fill(rt, fillRectangle, getColourMap(colours[1].colour).midDark);
                 stringId = STR_WINDOW_COLOUR_2_STRINGID;
             }
             else if (isHighlighted)
             {
-                Rectangle::fill(rt, fillRectangle, ColourMapA[colours[1].colour].mid_dark);
+                Rectangle::fill(rt, fillRectangle, getColourMap(colours[1].colour).midDark);
             }
 
             DrawTextEllipsised(rt, { 16, y + 1 }, listWidth, stringId, ft);

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../ride/RideTypes.h"
 #include "AudioSampleTable.h"
 #include "Object.h"
 
@@ -63,7 +64,7 @@ namespace OpenRCT2
         void Load() override;
         void Unload() override;
 
-        void DrawPreview(RenderTarget& rt, int32_t width, int32_t height) const override;
+        void DrawPreview(Drawing::RenderTarget& rt, int32_t width, int32_t height) const override;
         bool HasPreview() const;
 
         std::optional<uint8_t> GetOriginalStyleId() const;

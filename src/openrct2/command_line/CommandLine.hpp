@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -126,5 +126,6 @@ namespace OpenRCT2
 
         exitcode_t HandleCommandPrep(CommandLineArgEnumerator* enumerator);
         exitcode_t HandleCommandUri(CommandLineArgEnumerator* enumerator);
+        exitcode_t HandleCommandTriggerSteamDownload(CommandLineArgEnumerator* enumerator);
     } // namespace CommandLine
 } // namespace OpenRCT2

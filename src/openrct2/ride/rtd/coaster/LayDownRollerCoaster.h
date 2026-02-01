@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,7 +20,7 @@ namespace OpenRCT2
 constexpr RideTypeDescriptor LayDownRollerCoasterRTD =
 {
     .Category = RideCategory::rollerCoaster,
-    .StartTrackPiece = TrackElemType::EndStation,
+    .StartTrackPiece = TrackElemType::endStation,
     .TrackPaintFunctions = TrackDrawerDescriptor(
         {
             .trackStyle = TrackStyle::corkscrewRollerCoaster,
@@ -59,9 +59,9 @@ constexpr RideTypeDescriptor LayDownRollerCoasterRTD =
     .PhotoItem = ShopItem::photo2,
     .BonusValue = 100,
     .ColourPresets = TRACK_COLOUR_PRESETS(
-        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_YELLOW },
-        { COLOUR_DARK_PURPLE, COLOUR_DARK_PURPLE, COLOUR_YELLOW },
-        { COLOUR_YELLOW, COLOUR_YELLOW, COLOUR_DARK_GREEN },
+        { Drawing::Colour::brightRed, Drawing::Colour::brightRed, Drawing::Colour::yellow },
+        { Drawing::Colour::darkPurple, Drawing::Colour::darkPurple, Drawing::Colour::yellow },
+        { Drawing::Colour::yellow, Drawing::Colour::yellow, Drawing::Colour::darkGreen },
     ),
     .ColourPreview = { SPR_RIDE_DESIGN_PREVIEW_LAY_DOWN_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_LAY_DOWN_ROLLER_COASTER_SUPPORTS },
     .ColourKey = RideColourKey::Ride,
@@ -71,7 +71,7 @@ constexpr RideTypeDescriptor LayDownRollerCoasterRTD =
         RatingsCalculationType::Normal,
         { RideRating::make(3, 85), RideRating::make(1, 15), RideRating::make(2, 75) },
         18,
-        -1,
+        kDynamicRideShelterRating,
         true,
         {
             { RatingsModifierType::BonusLength,           6000,             764, 0, 0 },
@@ -98,7 +98,7 @@ constexpr RideTypeDescriptor LayDownRollerCoasterRTD =
 constexpr RideTypeDescriptor LayDownRollerCoasterAltRTD =
 {
     .Category = RideCategory::none,
-    .StartTrackPiece = TrackElemType::EndStation,
+    .StartTrackPiece = TrackElemType::endStation,
     .TrackPaintFunctions = TrackDrawerDescriptor({ 
         .trackStyle = TrackStyle::null,
         .enabledTrackGroups = {  },
@@ -130,9 +130,9 @@ constexpr RideTypeDescriptor LayDownRollerCoasterAltRTD =
     .PhotoItem = ShopItem::photo2,
     .BonusValue = 100,
     .ColourPresets = TRACK_COLOUR_PRESETS(
-        { COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_YELLOW },
-        { COLOUR_DARK_PURPLE, COLOUR_DARK_PURPLE, COLOUR_YELLOW },
-        { COLOUR_YELLOW, COLOUR_YELLOW, COLOUR_DARK_GREEN },
+        { Drawing::Colour::brightRed, Drawing::Colour::brightRed, Drawing::Colour::yellow },
+        { Drawing::Colour::darkPurple, Drawing::Colour::darkPurple, Drawing::Colour::yellow },
+        { Drawing::Colour::yellow, Drawing::Colour::yellow, Drawing::Colour::darkGreen },
     ),
     .ColourPreview = { SPR_RIDE_DESIGN_PREVIEW_LAY_DOWN_ROLLER_COASTER_TRACK, SPR_RIDE_DESIGN_PREVIEW_LAY_DOWN_ROLLER_COASTER_SUPPORTS },
     .ColourKey = RideColourKey::Ride,
@@ -142,7 +142,7 @@ constexpr RideTypeDescriptor LayDownRollerCoasterAltRTD =
         RatingsCalculationType::Normal,
         { RideRating::make(3, 85), RideRating::make(1, 15), RideRating::make(2, 75) },
         18,
-        -1,
+        kDynamicRideShelterRating,
         true,
         {
             { RatingsModifierType::BonusLength,           6000,             764, 0, 0 },

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -8,6 +8,8 @@
  *****************************************************************************/
 
 #pragma once
+
+#include "../core/Endianness.h"
 
 #include <memory>
 #include <string>
@@ -106,6 +108,24 @@ namespace OpenRCT2::Network
 
 namespace OpenRCT2::Convert
 {
-    uint16_t HostToNetwork(uint16_t value);
-    uint16_t NetworkToHost(uint16_t value);
+    template<typename T>
+    constexpr T HostToNetwork(T value)
+    {
+        if constexpr (std::endian::native == std::endian::big)
+        {
+            return value; // already network order
+        }
+        else
+        {
+            return ByteSwapBE(value);
+        }
+    }
+
+    template<typename T>
+    constexpr T NetworkToHost(T value)
+    {
+        // Conversion is symmetric
+        return HostToNetwork(value);
+    }
+
 } // namespace OpenRCT2::Convert

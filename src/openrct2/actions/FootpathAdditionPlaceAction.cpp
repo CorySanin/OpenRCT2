@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -54,44 +54,44 @@ namespace OpenRCT2::GameActions
     Result FootpathAdditionPlaceAction::Query(GameState_t& gameState) const
     {
         auto res = Result();
-        res.Expenditure = ExpenditureType::landscaping;
-        res.Position = _loc;
+        res.expenditure = ExpenditureType::landscaping;
+        res.position = _loc;
         if (!LocationValid(_loc))
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_OFF_EDGE_OF_MAP);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_OFF_EDGE_OF_MAP);
         }
 
-        if (!(gLegacyScene == LegacyScene::scenarioEditor || getGameState().cheats.sandboxMode) && !MapIsLocationOwned(_loc))
+        if (!(gLegacyScene == LegacyScene::scenarioEditor || gameState.cheats.sandboxMode) && !MapIsLocationOwned(_loc))
         {
-            return Result(Status::Disallowed, STR_CANT_POSITION_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);
+            return Result(Status::disallowed, STR_CANT_POSITION_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);
         }
 
         if (_loc.z < kFootpathMinHeight)
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_TOO_LOW);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_TOO_LOW);
         }
 
         if (_loc.z > kFootpathMaxHeight)
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_TOO_HIGH);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_TOO_HIGH);
         }
 
         auto tileElement = MapGetFootpathElement(_loc);
         if (tileElement == nullptr)
         {
             LOG_ERROR("No path element at x = %d, y = %d, z = %d", _loc.x, _loc.y, _loc.z);
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_ERR_PATH_ELEMENT_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_ERR_PATH_ELEMENT_NOT_FOUND);
         }
 
         auto pathElement = tileElement->AsPath();
         if (pathElement->IsLevelCrossing(_loc))
         {
             return Result(
-                Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CANNOT_BUILD_PATH_ADDITIONS_ON_LEVEL_CROSSINGS);
+                Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CANNOT_BUILD_PATH_ADDITIONS_ON_LEVEL_CROSSINGS);
         }
 
         // No change
-        if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && pathElement->GetAdditionEntryIndex() == _entryIndex
+        if (!GetFlags().has(CommandFlag::ghost) && pathElement->GetAdditionEntryIndex() == _entryIndex
             && !(pathElement->IsBroken()))
         {
             return res;
@@ -101,40 +101,40 @@ namespace OpenRCT2::GameActions
         if (pathAdditionEntry == nullptr)
         {
             LOG_ERROR("Unknown footpath addition entry for entryIndex %d", _entryIndex);
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_UNKNOWN_OBJECT_TYPE);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_UNKNOWN_OBJECT_TYPE);
         }
         uint16_t sceneryFlags = pathAdditionEntry->flags;
 
         if ((sceneryFlags & PATH_ADDITION_FLAG_DONT_ALLOW_ON_SLOPE) && pathElement->IsSloped())
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CANT_BUILD_THIS_ON_SLOPED_FOOTPATH);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CANT_BUILD_THIS_ON_SLOPED_FOOTPATH);
         }
 
         if ((sceneryFlags & PATH_ADDITION_FLAG_DONT_ALLOW_ON_QUEUE) && pathElement->IsQueue())
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CANNOT_PLACE_THESE_ON_QUEUE_LINE_AREA);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CANNOT_PLACE_THESE_ON_QUEUE_LINE_AREA);
         }
 
         if (!(sceneryFlags & (PATH_ADDITION_FLAG_JUMPING_FOUNTAIN_WATER | PATH_ADDITION_FLAG_JUMPING_FOUNTAIN_SNOW))
             && (pathElement->GetEdges()) == 0x0F)
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CAN_ONLY_BE_PLACED_ON_PATH_EDGES);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CAN_ONLY_BE_PLACED_ON_PATH_EDGES);
         }
 
         if ((sceneryFlags & PATH_ADDITION_FLAG_IS_QUEUE_SCREEN) && !pathElement->IsQueue())
         {
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CAN_ONLY_PLACE_THESE_ON_QUEUE_AREA);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_CAN_ONLY_PLACE_THESE_ON_QUEUE_AREA);
         }
 
-        res.Cost = pathAdditionEntry->price;
+        res.cost = pathAdditionEntry->price;
 
         // Should place a ghost?
-        if (GetFlags() & GAME_COMMAND_FLAG_GHOST)
+        if (GetFlags().has(CommandFlag::ghost))
         {
             // Check if there is something on the path already
             if (pathElement->HasAddition())
             {
-                return Result(Status::ItemAlreadyPlaced, STR_CANT_POSITION_THIS_HERE, kStringIdNone);
+                return Result(Status::itemAlreadyPlaced, STR_CANT_POSITION_THIS_HERE, kStringIdNone);
             }
         }
         return res;
@@ -143,8 +143,8 @@ namespace OpenRCT2::GameActions
     Result FootpathAdditionPlaceAction::Execute(GameState_t& gameState) const
     {
         auto res = Result();
-        res.Position = _loc;
-        res.Expenditure = ExpenditureType::landscaping;
+        res.position = _loc;
+        res.expenditure = ExpenditureType::landscaping;
 
         auto tileElement = MapGetFootpathElement(_loc);
         auto pathElement = tileElement->AsPath();
@@ -152,26 +152,26 @@ namespace OpenRCT2::GameActions
         if (pathElement == nullptr)
         {
             LOG_ERROR("No path element at x = %d, y = %d, z = %d", _loc.x, _loc.y, _loc.z);
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_ERR_PATH_ELEMENT_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_ERR_PATH_ELEMENT_NOT_FOUND);
         }
 
         // No change
-        if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && pathElement->GetAdditionEntryIndex() == _entryIndex
+        if (!GetFlags().has(CommandFlag::ghost) && pathElement->GetAdditionEntryIndex() == _entryIndex
             && !(pathElement->IsBroken()) && !pathElement->AdditionIsGhost())
         {
             return res;
         }
 
-        auto* pathAdditionEntry = OpenRCT2::ObjectManager::GetObjectEntry<PathAdditionEntry>(_entryIndex);
+        auto* pathAdditionEntry = ObjectManager::GetObjectEntry<PathAdditionEntry>(_entryIndex);
         if (pathAdditionEntry == nullptr)
         {
             LOG_ERROR("Unknown footpath addition entry for entryIndex %d", _entryIndex);
-            return Result(Status::InvalidParameters, STR_CANT_POSITION_THIS_HERE, STR_UNKNOWN_OBJECT_TYPE);
+            return Result(Status::invalidParameters, STR_CANT_POSITION_THIS_HERE, STR_UNKNOWN_OBJECT_TYPE);
         }
 
-        res.Cost = pathAdditionEntry->price;
+        res.cost = pathAdditionEntry->price;
 
-        if (GetFlags() & GAME_COMMAND_FLAG_GHOST)
+        if (GetFlags().has(CommandFlag::ghost))
         {
             pathElement->SetAdditionIsGhost(true);
         }

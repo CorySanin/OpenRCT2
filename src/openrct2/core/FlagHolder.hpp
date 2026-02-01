@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -68,7 +68,7 @@ struct FlagHolder
     }
 
     template<typename... TTypes>
-    constexpr FlagHolder with(TTypes... types)
+    [[nodiscard]] constexpr FlagHolder with(TTypes... types)
     {
         FlagHolder res = *this;
         res.set(types...);
@@ -76,7 +76,7 @@ struct FlagHolder
     }
 
     template<typename... TTypes>
-    constexpr FlagHolder without(TTypes... types)
+    [[nodiscard]] constexpr FlagHolder without(TTypes... types)
     {
         FlagHolder res = *this;
         res.unset(types...);

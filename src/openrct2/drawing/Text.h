@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -9,19 +9,23 @@
 
 #pragma once
 
-#include "../interface/Colour.h"
+#include "../drawing/Colour.h"
 #include "../interface/ColourWithFlags.h"
 #include "../localisation/StringIdType.h"
 #include "Font.h"
 
 struct ScreenCoordsXY;
-struct RenderTarget;
 
 using OpenRCT2::ColourWithFlags;
 
 namespace OpenRCT2
 {
     class Formatter;
+}
+
+namespace OpenRCT2::Drawing
+{
+    struct RenderTarget;
 }
 
 enum class TextAlignment
@@ -46,7 +50,7 @@ enum class TextDarkness : uint8_t
 
 struct TextPaint
 {
-    ColourWithFlags Colour = { COLOUR_BLACK };
+    ColourWithFlags Colour = { OpenRCT2::Drawing::Colour::black };
     ::FontStyle FontStyle = FontStyle::medium;
     TextUnderline UnderlineText = TextUnderline::off;
     TextAlignment Alignment = TextAlignment::left;
@@ -57,7 +61,7 @@ struct TextPaint
         : Colour(colour)
     {
     }
-    TextPaint(colour_t colour)
+    TextPaint(OpenRCT2::Drawing::Colour colour)
         : Colour(ColourWithFlags{ colour })
     {
     }
@@ -79,7 +83,7 @@ struct TextPaint
         , FontStyle(fontStyle)
     {
     }
-    TextPaint(colour_t colour, ::FontStyle fontStyle)
+    TextPaint(OpenRCT2::Drawing::Colour colour, ::FontStyle fontStyle)
         : Colour(ColourWithFlags{ colour })
         , FontStyle(fontStyle)
     {
@@ -89,7 +93,7 @@ struct TextPaint
         , UnderlineText(underlineText)
     {
     }
-    TextPaint(colour_t colour, TextUnderline underlineText)
+    TextPaint(OpenRCT2::Drawing::Colour colour, TextUnderline underlineText)
         : Colour(ColourWithFlags{ colour })
         , UnderlineText(underlineText)
     {
@@ -99,7 +103,7 @@ struct TextPaint
         , Alignment(alignment)
     {
     }
-    TextPaint(colour_t colour, TextAlignment alignment)
+    TextPaint(OpenRCT2::Drawing::Colour colour, TextAlignment alignment)
         : Colour(ColourWithFlags{ colour })
         , Alignment(alignment)
     {
@@ -127,7 +131,7 @@ struct TextPaint
         , UnderlineText(underlineText)
     {
     }
-    TextPaint(colour_t colour, ::FontStyle fontStyle, TextUnderline underlineText)
+    TextPaint(OpenRCT2::Drawing::Colour colour, ::FontStyle fontStyle, TextUnderline underlineText)
         : Colour(ColourWithFlags{ colour })
         , FontStyle(fontStyle)
         , UnderlineText(underlineText)
@@ -139,7 +143,7 @@ struct TextPaint
         , Alignment(alignment)
     {
     }
-    TextPaint(colour_t colour, ::FontStyle fontStyle, TextAlignment alignment)
+    TextPaint(OpenRCT2::Drawing::Colour colour, ::FontStyle fontStyle, TextAlignment alignment)
         : Colour(ColourWithFlags{ colour })
         , FontStyle(fontStyle)
         , Alignment(alignment)
@@ -151,7 +155,7 @@ struct TextPaint
         , Darkness(darkness)
     {
     }
-    TextPaint(colour_t colour, ::FontStyle fontStyle, TextDarkness darkness)
+    TextPaint(OpenRCT2::Drawing::Colour colour, ::FontStyle fontStyle, TextDarkness darkness)
         : Colour(ColourWithFlags{ colour })
         , FontStyle(fontStyle)
         , Darkness(darkness)
@@ -163,7 +167,7 @@ struct TextPaint
         , Alignment(alignment)
     {
     }
-    TextPaint(colour_t colour, TextUnderline underlineText, TextAlignment alignment)
+    TextPaint(OpenRCT2::Drawing::Colour colour, TextUnderline underlineText, TextAlignment alignment)
         : Colour(ColourWithFlags{ colour })
         , UnderlineText(underlineText)
         , Alignment(alignment)
@@ -183,7 +187,7 @@ struct TextPaint
         , Alignment(alignment)
     {
     }
-    TextPaint(colour_t colour, ::FontStyle fontStyle, TextUnderline underlineText, TextAlignment alignment)
+    TextPaint(OpenRCT2::Drawing::Colour colour, ::FontStyle fontStyle, TextUnderline underlineText, TextAlignment alignment)
         : Colour(ColourWithFlags{ colour })
         , FontStyle(fontStyle)
         , UnderlineText(underlineText)
@@ -197,7 +201,7 @@ struct TextPaint
         , Darkness(darkness)
     {
     }
-    TextPaint(colour_t colour, ::FontStyle fontStyle, TextAlignment alignment, TextDarkness darkness)
+    TextPaint(OpenRCT2::Drawing::Colour colour, ::FontStyle fontStyle, TextAlignment alignment, TextDarkness darkness)
         : Colour(ColourWithFlags{ colour })
         , FontStyle(fontStyle)
         , Alignment(alignment)
@@ -206,17 +210,19 @@ struct TextPaint
     }
 };
 
-void DrawTextBasic(RenderTarget& rt, const ScreenCoordsXY& coords, StringId format);
-void DrawTextEllipsised(RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format);
-int32_t DrawTextWrapped(RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format);
+void DrawTextBasic(OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, StringId format);
+void DrawTextEllipsised(OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format);
+int32_t DrawTextWrapped(OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format);
 
 void DrawText(
-    RenderTarget& rt, const ScreenCoordsXY& coords, const TextPaint& paint, const_utf8string text, bool noFormatting = false);
+    OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, const TextPaint& paint, const_utf8string text,
+    bool noFormatting = false);
 void DrawTextBasic(
-    RenderTarget& rt, const ScreenCoordsXY& coords, StringId format, const OpenRCT2::Formatter& ft, TextPaint textPaint = {});
+    OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, StringId format, const OpenRCT2::Formatter& ft,
+    TextPaint textPaint = {});
 void DrawTextEllipsised(
-    RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format, const OpenRCT2::Formatter& ft,
-    TextPaint textPaint = {});
+    OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format,
+    const OpenRCT2::Formatter& ft, TextPaint textPaint = {});
 int32_t DrawTextWrapped(
-    RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format, const OpenRCT2::Formatter& ft,
-    TextPaint textPaint = {});
+    OpenRCT2::Drawing::RenderTarget& rt, const ScreenCoordsXY& coords, int32_t width, StringId format,
+    const OpenRCT2::Formatter& ft, TextPaint textPaint = {});

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,6 +17,7 @@
 #include <openrct2/SpriteIds.h>
 #include <openrct2/core/Numerics.hpp>
 #include <openrct2/core/String.hpp>
+#include <openrct2/drawing/ColourMap.h>
 #include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/entity/EntityList.h>
@@ -335,7 +336,7 @@ namespace OpenRCT2::Ui::Windows
                     auto* widget = &widgets[widgetIndex - 1];
 
                     WindowDropdownShowTextCustomWidth(
-                        { windowPos.x + widget->left, windowPos.y + widget->top }, widget->height() + 1, colours[1], 0,
+                        { windowPos.x + widget->left, windowPos.y + widget->top }, widget->height(), colours[1], 0,
                         Dropdown::Flag::StayOpen, _numPages, widget->width() - 4);
 
                     for (size_t i = 0; i < _numPages; i++)
@@ -354,7 +355,7 @@ namespace OpenRCT2::Ui::Windows
 
                     auto* widget = &widgets[widgetIndex - 1];
                     WindowDropdownShowTextCustomWidth(
-                        { windowPos.x + widget->left, windowPos.y + widget->top }, widget->height() + 1, colours[1], 0,
+                        { windowPos.x + widget->left, windowPos.y + widget->top }, widget->height(), colours[1], 0,
                         Dropdown::Flag::StayOpen, 2, widget->width() - 4);
 
                     gDropdown.items[static_cast<int32_t>(_selectedView)].setChecked(true);
@@ -576,7 +577,8 @@ namespace OpenRCT2::Ui::Windows
         void onScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
         {
             Rectangle::fill(
-                rt, { { rt.x, rt.y }, { rt.x + rt.width - 1, rt.y + rt.height - 1 } }, ColourMapA[colours[1].colour].mid_light);
+                rt, { { rt.x, rt.y }, { rt.x + rt.width - 1, rt.y + rt.height - 1 } },
+                getColourMap(colours[1].colour).midLight);
             switch (_selectedTab)
             {
                 case TabId::Individual:
@@ -618,7 +620,7 @@ namespace OpenRCT2::Ui::Windows
 
                     Formatter ft;
                     peep->FormatNameTo(ft);
-                    OpenRCT2::FormatStringLegacy(item.Name, sizeof(item.Name), STR_STRINGID, ft.Data());
+                    FormatStringLegacy(item.Name, sizeof(item.Name), STR_STRINGID, ft.Data());
                 }
 
                 std::sort(_guestList.begin(), _guestList.end(), GetGuestCompareFunc());
@@ -633,7 +635,7 @@ namespace OpenRCT2::Ui::Windows
             auto* animObj = findPeepAnimationsObjectForType(AnimationPeepType::guest);
             i += animObj->GetPeepAnimation(PeepAnimationGroup::normal).baseImage + 1;
             GfxDrawSprite(
-                rt, ImageId(i, COLOUR_GREY, COLOUR_DARK_OLIVE_GREEN),
+                rt, ImageId(i, Drawing::Colour::grey, Drawing::Colour::darkOliveGreen),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_TAB_1].midX(), widgets[WIDX_TAB_1].bottom - 6 });
 
             // Tab 2 image
@@ -773,7 +775,7 @@ namespace OpenRCT2::Ui::Windows
 
                 Formatter ft;
                 peep.FormatNameTo(ft);
-                OpenRCT2::FormatStringLegacy(name, sizeof(name), STR_STRINGID, ft.Data());
+                FormatStringLegacy(name, sizeof(name), STR_STRINGID, ft.Data());
                 if (!String::contains(name, _filterName.c_str(), true))
                 {
                     return false;

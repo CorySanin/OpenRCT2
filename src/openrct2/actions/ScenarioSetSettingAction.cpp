@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -38,7 +38,7 @@ namespace OpenRCT2::GameActions
         if (_setting >= ScenarioSetSetting::Count)
         {
             LOG_ERROR("Invalid scenario setting: %u", _setting);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
         return Result();
@@ -263,7 +263,7 @@ namespace OpenRCT2::GameActions
             }
             default:
                 LOG_ERROR("Invalid scenario setting %u", _setting);
-                return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+                return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
         windowMgr->InvalidateByClass(WindowClass::editorScenarioOptions);
         return Result();

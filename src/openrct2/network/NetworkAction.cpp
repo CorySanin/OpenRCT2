@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -265,6 +265,11 @@ namespace OpenRCT2::Network
             {
                 GameCommand::EditScenarioOptions,
             },
+        },
+        NetworkAction{
+            STR_ACTION_PATH_DRAG_AREA,
+            "PERMISSION_DRAG_PATH_AREA",
+            {},
         },
     };
 } // namespace OpenRCT2::Network

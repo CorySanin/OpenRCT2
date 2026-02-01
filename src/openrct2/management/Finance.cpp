@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -28,6 +28,8 @@
 #include <numeric>
 
 using namespace OpenRCT2;
+using OpenRCT2::GameActions::CommandFlag;
+using OpenRCT2::GameActions::CommandFlags;
 
 // Monthly research funding costs
 const money64 kResearchCosts[RESEARCH_FUNDING_COUNT] = {
@@ -58,15 +60,15 @@ static constexpr bool kCountTowardsCurrentExpenditure[EnumValue(ExpenditureType:
  * Checks the condition if the game is required to use money.
  * @param flags game command flags.
  */
-bool FinanceCheckMoneyRequired(uint32_t flags)
+bool FinanceCheckMoneyRequired(CommandFlags flags)
 {
     if (getGameState().park.flags & PARK_FLAGS_NO_MONEY)
         return false;
     if (isInEditorMode())
         return false;
-    if (flags & GAME_COMMAND_FLAG_NO_SPEND)
+    if (flags.has(CommandFlag::noSpend))
         return false;
-    if (flags & GAME_COMMAND_FLAG_GHOST)
+    if (flags.has(CommandFlag::ghost))
         return false;
     return true;
 }
@@ -76,7 +78,7 @@ bool FinanceCheckMoneyRequired(uint32_t flags)
  * @param cost.
  * @param flags game command flags.
  */
-bool FinanceCheckAffordability(money64 cost, uint32_t flags)
+bool FinanceCheckAffordability(money64 cost, CommandFlags flags)
 {
     return !FinanceCheckMoneyRequired(flags) || cost <= 0 || cost <= getGameState().park.cash;
 }
@@ -89,9 +91,8 @@ bool FinanceCheckAffordability(money64 cost, uint32_t flags)
  */
 void FinancePayment(money64 amount, ExpenditureType type)
 {
-    // overflow check
     auto& park = getGameState().park;
-    park.cash = AddClamp<money64>(park.cash, -amount);
+    park.cash = AddClamp(park.cash, -amount);
 
     park.expenditureTable[0][EnumValue(type)] -= amount;
     if (kCountTowardsCurrentExpenditure[EnumValue(type)])
@@ -184,7 +185,7 @@ void FinancePayRideUpkeep()
             if (upkeep != kMoney64Undefined)
             {
                 ride.totalProfit = AddClamp(ride.totalProfit, -upkeep);
-                ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_INCOME;
+                ride.windowInvalidateFlags.set(RideInvalidateFlag::income);
                 FinancePayment(upkeep, ExpenditureType::rideRunningCosts);
             }
         }

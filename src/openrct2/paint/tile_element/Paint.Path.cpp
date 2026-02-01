@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -7,14 +7,12 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-#include "../Paint.h"
+#include "Paint.Path.h"
 
 #include "../../Context.h"
-#include "../../Game.h"
 #include "../../GameState.h"
 #include "../../config/Config.h"
-#include "../../core/Numerics.hpp"
-#include "../../entity/PatrolArea.h"
+#include "../../drawing/Drawing.h"
 #include "../../interface/Viewport.h"
 #include "../../localisation/Formatter.h"
 #include "../../localisation/Formatting.h"
@@ -27,11 +25,8 @@
 #include "../../ride/Ride.h"
 #include "../../ride/Track.h"
 #include "../../ride/TrackDesign.h"
-#include "../../ride/TrackPaint.h"
 #include "../../world/Footpath.h"
 #include "../../world/Map.h"
-#include "../../world/Scenery.h"
-#include "../../world/TileInspector.h"
 #include "../../world/tile_element/PathElement.h"
 #include "../../world/tile_element/Slope.h"
 #include "../../world/tile_element/SurfaceElement.h"
@@ -47,6 +42,13 @@
 #include "Segment.h"
 
 using namespace OpenRCT2;
+using namespace OpenRCT2::Drawing;
+
+struct FootpathPaintInfo
+{
+    PathSurfaceDescriptor surface{};
+    PathRailingsDescriptor railings{};
+};
 
 bool gPaintWidePathsAsGhost = false;
 
@@ -108,18 +110,18 @@ static constexpr WoodenSupportSubType PathSupportOrientation[] = {
 };
 // clang-format on
 
-void PathPaintBoxSupport(
+static void PathPaintBoxSupport(
     PaintSession& session, const PathElement& pathElement, int32_t height, const FootpathPaintInfo& pathPaintInfo,
     bool hasSupports, ImageId imageTemplate, ImageId sceneryImageTemplate);
-void PathPaintPoleSupport(
+static void PathPaintPoleSupport(
     PaintSession& session, const PathElement& pathElement, int16_t height, const FootpathPaintInfo& pathPaintInfo,
     bool hasSupports, ImageId imageTemplate, ImageId sceneryImageTemplate);
 
 static void PathPaintQueueBanner(
-    PaintSession& session, const PathElement& pathElement, uint16_t height, const FootpathPaintInfo& pathPaintInfo,
+    PaintSession& session, const PathElement& pathElement, uint16_t height, const PathRailingsDescriptor& railings,
     ImageId imageTemplate)
 {
-    auto imageId = imageTemplate.WithIndex(pathPaintInfo.RailingsImageId);
+    auto imageId = imageTemplate.WithIndex(railings.railingsImage);
 
     uint8_t direction = pathElement.GetQueueBannerDirection();
     // Draw ride sign
@@ -150,7 +152,7 @@ static void PathPaintQueueBanner(
     auto ride = GetRide(pathElement.GetRideIndex());
     if (direction < 2 && ride != nullptr && !imageTemplate.IsRemap())
     {
-        uint16_t scrollingMode = pathPaintInfo.ScrollingMode;
+        uint16_t scrollingMode = railings.scrollingMode;
         scrollingMode += direction;
 
         auto ft = Formatter();
@@ -179,7 +181,8 @@ static void PathPaintQueueBanner(
         uint16_t scroll = stringWidth > 0 ? (getGameState().currentTicks / 2) % stringWidth : 0;
 
         PaintAddImageAsChild(
-            session, ScrollingTextSetup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode, COLOUR_BLACK),
+            session,
+            ScrollingText::setup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode, PaletteIndex::transparent),
             { 0, 0, height + 7 }, { boundBoxOffsets, { 1, 1, 21 } });
     }
 
@@ -225,9 +228,9 @@ static void PathPaintSlopedFences(
 
 static void PathPaintFencesAndQueueBannersQueue(
     PaintSession& session, const PathElement& pathElement, uint16_t height, uint32_t connectedEdges, bool hasSupports,
-    const FootpathPaintInfo& pathPaintInfo, ImageId imageTemplate)
+    const PathRailingsDescriptor& railings, ImageId imageTemplate)
 {
-    auto imageId = imageTemplate.WithIndex(pathPaintInfo.RailingsImageId);
+    auto imageId = imageTemplate.WithIndex(railings.railingsImage);
 
     if (pathElement.IsSloped())
     {
@@ -365,9 +368,9 @@ static void PathPaintFencesAndQueueBannersQueue(
         }
     }
 
-    if (pathElement.HasQueueBanner() && !(pathPaintInfo.RailingFlags & RAILING_ENTRY_FLAG_NO_QUEUE_BANNER))
+    if (pathElement.HasQueueBanner() && !(railings.flags & RAILING_ENTRY_FLAG_NO_QUEUE_BANNER))
     {
-        PathPaintQueueBanner(session, pathElement, height, pathPaintInfo, imageTemplate);
+        PathPaintQueueBanner(session, pathElement, height, railings, imageTemplate);
     }
 }
 
@@ -375,17 +378,17 @@ static void PathPaintFencesAndQueueBannersNonQueue(
     PaintSession& session, const PathElement& pathElement, uint16_t height, uint32_t connectedEdges, bool hasSupports,
     const FootpathPaintInfo& pathPaintInfo, ImageId imageTemplate)
 {
-    auto imageId = imageTemplate.WithIndex(pathPaintInfo.RailingsImageId);
+    auto imageId = imageTemplate.WithIndex(pathPaintInfo.railings.railingsImage);
 
     uint32_t drawnCorners = 0;
     // If the path is not drawn over the supports, then no corner sprites will be drawn (making double-width paths
     // look like connected series of intersections).
-    if (pathPaintInfo.RailingFlags & RAILING_ENTRY_FLAG_DRAW_PATH_OVER_SUPPORTS)
+    if (pathPaintInfo.railings.flags & RAILING_ENTRY_FLAG_DRAW_PATH_OVER_SUPPORTS)
     {
         drawnCorners = (connectedEdges & FOOTPATH_PROPERTIES_EDGES_CORNERS_MASK) >> 4;
     }
 
-    auto slopeRailingsSupported = !(pathPaintInfo.SurfaceFlags & FOOTPATH_ENTRY_FLAG_NO_SLOPE_RAILINGS);
+    auto slopeRailingsSupported = !(pathPaintInfo.surface.flags & FOOTPATH_ENTRY_FLAG_NO_SLOPE_RAILINGS);
     if ((hasSupports || slopeRailingsSupported) && pathElement.IsSloped())
     {
         PathPaintSlopedFences(session, pathElement, height, imageId, false);
@@ -580,7 +583,7 @@ static void PathPaintFencesAndQueueBanners(
     if (pathElement.IsQueue())
     {
         PathPaintFencesAndQueueBannersQueue(
-            session, pathElement, height, connectedEdges, hasSupports, pathPaintInfo, imageTemplate);
+            session, pathElement, height, connectedEdges, hasSupports, pathPaintInfo.railings, imageTemplate);
     }
     else
     {
@@ -614,13 +617,13 @@ static void PathPaintFencesAdditionsTunnels(
     // Probably drawing benches etc.
     PROFILED_FUNCTION();
 
-    if (session.DPI.zoom_level <= ZoomLevel{ 1 })
+    if (session.rt.zoom_level <= ZoomLevel{ 1 })
     {
         if (!gTrackDesignSaveMode)
         {
             if (pathElement.HasAddition())
             {
-                Sub6A3F61PathAddition(session, pathElement, height, sceneryImageTemplate);
+                paintPathAddition(session, pathElement, height, sceneryImageTemplate);
             }
         }
 
@@ -679,24 +682,8 @@ static void PathPaintFencesAdditionsTunnels(
 static FootpathPaintInfo GetFootpathPaintInfo(const PathElement& pathEl)
 {
     FootpathPaintInfo pathPaintInfo;
-
-    const auto* surfaceDescriptor = pathEl.GetSurfaceDescriptor();
-    if (surfaceDescriptor != nullptr)
-    {
-        pathPaintInfo.SurfaceImageId = surfaceDescriptor->Image;
-        pathPaintInfo.SurfaceFlags = surfaceDescriptor->Flags;
-    }
-
-    const auto* railingsDescriptor = pathEl.GetRailingsDescriptor();
-    if (railingsDescriptor != nullptr)
-    {
-        pathPaintInfo.BridgeImageId = railingsDescriptor->BridgeImage;
-        pathPaintInfo.RailingsImageId = railingsDescriptor->RailingsImage;
-        pathPaintInfo.RailingFlags = railingsDescriptor->Flags;
-        pathPaintInfo.ScrollingMode = railingsDescriptor->ScrollingMode;
-        pathPaintInfo.SupportType = railingsDescriptor->SupportType;
-        pathPaintInfo.SupportColour = railingsDescriptor->SupportColour;
-    }
+    pathPaintInfo.surface = pathEl.GetSurfaceDescriptor();
+    pathPaintInfo.railings = pathEl.GetRailingsDescriptor();
 
     return pathPaintInfo;
 }
@@ -765,7 +752,7 @@ static void PaintHeightMarkers(PaintSession& session, const PathElement& pathEl)
         baseImageIndex += heightMarkerBaseZ / 16;
         baseImageIndex += GetHeightMarkerOffset();
         baseImageIndex -= kMapBaseZ;
-        auto imageId = ImageId(baseImageIndex, COLOUR_GREY);
+        auto imageId = ImageId(baseImageIndex, OpenRCT2::Drawing::Colour::grey);
         PaintAddImageAsParent(session, imageId, { 16, 16, heightMarkerBaseZ }, { 1, 1, 0 });
     }
 }
@@ -832,7 +819,7 @@ void PaintPath(PaintSession& session, uint16_t height, const PathElement& tileEl
 
     auto hasSupports = ShouldDrawSupports(session, tileElement, height);
     auto pathPaintInfo = GetFootpathPaintInfo(tileElement);
-    if (pathPaintInfo.SupportType == RailingEntrySupportType::Pole)
+    if (pathPaintInfo.railings.supportType == RailingEntrySupportType::pole)
     {
         PathPaintPoleSupport(session, tileElement, height, pathPaintInfo, hasSupports, imageTemplate, sceneryImageTemplate);
     }
@@ -861,7 +848,7 @@ static ImageIndex PathPaintGetBaseImage(
     const PaintSession& session, const PathElement& pathElement, const FootpathPaintInfo& pathPaintInfo,
     const uint8_t rotatedEdgesAndCorners)
 {
-    ImageIndex surfaceBaseImageIndex = pathPaintInfo.SurfaceImageId;
+    ImageIndex surfaceBaseImageIndex = pathPaintInfo.surface.image;
     if (pathElement.IsSloped())
     {
         auto directionOffset = (pathElement.GetSlopeDirection() + session.CurrentRotation) % kNumOrthogonalDirections;
@@ -893,7 +880,7 @@ static BoundBoxXYZ PathPaintGetBoundbox(const PaintSession& session, int32_t hei
     // If we are on the same tile as a straight track, add the offset 2 so we
     //  can clip above gravel part of the track sprite
     if (session.TrackElementOnSameHeight != nullptr
-        && session.TrackElementOnSameHeight->AsTrack()->GetTrackType() == TrackElemType::Flat)
+        && session.TrackElementOnSameHeight->AsTrack()->GetTrackType() == TrackElemType::flat)
     {
         boundingBoxZOffset = 2;
     }
@@ -950,7 +937,7 @@ static void PathPaintSegmentSupportHeight(
     }
 }
 
-void PathPaintBoxSupport(
+static void PathPaintBoxSupport(
     PaintSession& session, const PathElement& pathElement, int32_t height, const FootpathPaintInfo& pathPaintInfo,
     bool hasSupports, ImageId imageTemplate, ImageId sceneryImageTemplate)
 {
@@ -973,16 +960,16 @@ void PathPaintBoxSupport(
         if (pathElement.IsSloped())
         {
             auto directionOffset = (pathElement.GetSlopeDirection() + session.CurrentRotation) % kNumOrthogonalDirections;
-            bridgeBaseImageIndex = pathPaintInfo.BridgeImageId + 51 + directionOffset;
+            bridgeBaseImageIndex = pathPaintInfo.railings.bridgeImage + 51 + directionOffset;
         }
         else
         {
-            bridgeBaseImageIndex = EnumValue(PathSupportOrientation[edges]) + pathPaintInfo.BridgeImageId + 49;
+            bridgeBaseImageIndex = EnumValue(PathSupportOrientation[edges]) + pathPaintInfo.railings.bridgeImage + 49;
         }
 
         PaintAddImageAsParent(session, imageTemplate.WithIndex(bridgeBaseImageIndex), { 0, 0, height }, boundbox);
 
-        if (pathElement.IsQueue() || (pathPaintInfo.RailingFlags & RAILING_ENTRY_FLAG_DRAW_PATH_OVER_SUPPORTS))
+        if (pathElement.IsQueue() || (pathPaintInfo.railings.flags & RAILING_ENTRY_FLAG_DRAW_PATH_OVER_SUPPORTS))
         {
             PaintAddImageAsChild(session, imageTemplate.WithIndex(surfaceBaseImageIndex), { 0, 0, height }, boundbox);
         }
@@ -998,12 +985,13 @@ void PathPaintBoxSupport(
     }
 
     PathBoxSupportsPaintSetup(
-        session, PathSupportOrientation[edges], pathElement.IsSloped(), slopeDirection, height, imageTemplate, pathPaintInfo);
+        session, PathSupportOrientation[edges], pathElement.IsSloped(), slopeDirection, height, imageTemplate,
+        pathPaintInfo.railings);
 
     PathPaintSegmentSupportHeight(session, pathElement, height, edges, hasSupports);
 }
 
-void PathPaintPoleSupport(
+static void PathPaintPoleSupport(
     PaintSession& session, const PathElement& pathElement, int16_t height, const FootpathPaintInfo& pathPaintInfo,
     bool hasSupports, ImageId imageTemplate, ImageId sceneryImageTemplate)
 {
@@ -1027,16 +1015,16 @@ void PathPaintPoleSupport(
         if (pathElement.IsSloped())
         {
             bridgeBaseImageIndex = ((pathElement.GetSlopeDirection() + session.CurrentRotation) % kNumOrthogonalDirections)
-                + pathPaintInfo.BridgeImageId + 16;
+                + pathPaintInfo.railings.bridgeImage + 16;
         }
         else
         {
-            bridgeBaseImageIndex = edges + pathPaintInfo.BridgeImageId;
+            bridgeBaseImageIndex = edges + pathPaintInfo.railings.bridgeImage;
         }
 
         PaintAddImageAsParent(session, imageTemplate.WithIndex(bridgeBaseImageIndex), { 0, 0, height }, boundbox);
 
-        if (pathElement.IsQueue() || (pathPaintInfo.RailingFlags & RAILING_ENTRY_FLAG_DRAW_PATH_OVER_SUPPORTS))
+        if (pathElement.IsQueue() || (pathPaintInfo.railings.flags & RAILING_ENTRY_FLAG_DRAW_PATH_OVER_SUPPORTS))
         {
             PaintAddImageAsChild(session, imageTemplate.WithIndex(surfaceBaseImageIndex), { 0, 0, height }, boundbox);
         }
@@ -1058,12 +1046,13 @@ void PathPaintPoleSupport(
         if (!(edges & (1 << i)))
         {
             // Only colour the supports if not already remapped (e.g. ghost remap)
-            auto supportColour = pathPaintInfo.SupportColour;
-            if (supportColour != COLOUR_NULL && !imageTemplate.IsRemap())
+            auto supportColour = pathPaintInfo.railings.supportColour;
+            if (supportColour != OpenRCT2::Drawing::kColourNull && !imageTemplate.IsRemap())
             {
                 imageTemplate = ImageId().WithPrimary(supportColour);
             }
-            PathPoleSupportsPaintSetup(session, supports[i], pathElement.IsSloped(), height, imageTemplate, pathPaintInfo);
+            PathPoleSupportsPaintSetup(
+                session, supports[i], pathElement.IsSloped(), height, imageTemplate, pathPaintInfo.railings);
         }
     }
 

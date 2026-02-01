@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -180,7 +180,7 @@ GLuint OpenGLFramebuffer::CreateDepthTexture(int32_t width, int32_t height)
     return depth;
 }
 
-void OpenGLFramebuffer::GetPixels(RenderTarget& rt) const
+void OpenGLFramebuffer::GetPixels(Drawing::RenderTarget& rt) const
 {
     assert(rt.width == _width && rt.height == _height);
 
@@ -200,7 +200,7 @@ void OpenGLFramebuffer::GetPixels(RenderTarget& rt) const
     }
 }
 
-void OpenGLFramebuffer::SetPixels(const RenderTarget& rt)
+void OpenGLFramebuffer::SetPixels(const Drawing::RenderTarget& rt)
 {
     assert(rt.width == _width && rt.height == _height);
 

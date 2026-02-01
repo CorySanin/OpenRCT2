@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -47,7 +47,7 @@ namespace OpenRCT2::GameActions
         if (peep == nullptr)
         {
             LOG_ERROR("Guest entity not found for peepID %u", _peepId.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_CANT_CHANGE_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_CHANGE_THIS, kStringIdNone);
         }
         return Result();
     }
@@ -58,7 +58,7 @@ namespace OpenRCT2::GameActions
         if (peep == nullptr)
         {
             LOG_ERROR("Guest entity not found for peepID %u", _peepId.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_CANT_CHANGE_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_CHANGE_THIS, kStringIdNone);
         }
 
         peep->PeepFlags = _newFlags;

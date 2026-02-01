@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -31,8 +31,12 @@ namespace OpenRCT2
 {
     class ObjectList;
     enum class TrackElemType : uint16_t;
-    enum class TextColour : uint8_t;
 } // namespace OpenRCT2
+
+namespace OpenRCT2::Drawing
+{
+    enum class TextColour : uint8_t;
+}
 
 namespace OpenRCT2::RCT12
 {
@@ -348,7 +352,7 @@ constexpr uint16_t kRCT12TileElementLargeTypeMask = 0x3FF;
 constexpr uint8_t kRCT12TrackElementTypeFlagChainLift = 1 << 7;
 constexpr uint8_t kRCT12TrackElementSequenceGreenLight = 1 << 7;
 
-constexpr uint16_t const kRCT12xy8Undefined = 0xFFFF;
+constexpr uint16_t kRCT12xy8Undefined = 0xFFFF;
 
 using RCT12ObjectEntryIndex = uint8_t;
 constexpr RCT12ObjectEntryIndex kRCT12ObjectEntryIndexNull = 255;
@@ -472,6 +476,23 @@ enum : uint32_t
 {
     TRACK_FLAGS2_CONTAINS_LOG_FLUME_REVERSER = (1 << 1),
     TRACK_FLAGS2_SIX_FLAGS_RIDE_DEPRECATED = (1u << 31) // Not used anymore.
+};
+
+static constexpr std::string_view kNoEntranceNoPlatformIdentifier = "openrct2.station.noplatformnoentrance";
+
+constexpr std::string_view kDefaultStationStyles[] = {
+    "rct2.station.plain",        // RCT12_STATION_STYLE_PLAIN
+    "rct2.station.wooden",       // RCT12_STATION_STYLE_WOODEN
+    "rct2.station.canvas_tent",  // RCT12_STATION_STYLE_CANVAS_TENT
+    "rct2.station.castle_grey",  // RCT12_STATION_STYLE_CASTLE_GREY
+    "rct2.station.castle_brown", // RCT12_STATION_STYLE_CASTLE_BROWN
+    "rct2.station.jungle",       // RCT12_STATION_STYLE_JUNGLE
+    "rct2.station.log",          // RCT12_STATION_STYLE_LOG_CABIN
+    "rct2.station.classical",    // RCT12_STATION_STYLE_CLASSICAL
+    "rct2.station.abstract",     // RCT12_STATION_STYLE_ABSTRACT
+    "rct2.station.snow",         // RCT12_STATION_STYLE_SNOW
+    "rct2.station.pagoda",       // RCT12_STATION_STYLE_PAGODA
+    "rct2.station.space",        // RCT12_STATION_STYLE_SPACE
 };
 
 #pragma pack(push, 1)
@@ -618,12 +639,12 @@ struct RCT12TileElement : public RCT12TileElementBase
     template<typename TType, RCT12TileElementType TClass>
     const TType* as() const
     {
-        return static_cast<RCT12TileElementType>(GetType()) == TClass ? reinterpret_cast<const TType*>(this) : nullptr;
+        return GetType() == TClass ? reinterpret_cast<const TType*>(this) : nullptr;
     }
     template<typename TType, RCT12TileElementType TClass>
     TType* as()
     {
-        return static_cast<RCT12TileElementType>(GetType()) == TClass ? reinterpret_cast<TType*>(this) : nullptr;
+        return GetType() == TClass ? reinterpret_cast<TType*>(this) : nullptr;
     }
 
     const RCT12SurfaceElement* AsSurface() const
@@ -803,8 +824,8 @@ public:
     RCT12ObjectEntryIndex GetEntryIndex() const;
     uint8_t GetAge() const;
     uint8_t GetSceneryQuadrant() const;
-    colour_t GetPrimaryColour() const;
-    colour_t GetSecondaryColour() const;
+    OpenRCT2::Drawing::Colour GetPrimaryColour() const;
+    OpenRCT2::Drawing::Colour GetSecondaryColour() const;
     bool NeedsSupports() const;
 };
 static_assert(sizeof(RCT12SmallSceneryElement) == 8);
@@ -816,8 +837,8 @@ private:
 public:
     uint32_t GetEntryIndex() const;
     uint16_t GetSequenceIndex() const;
-    colour_t GetPrimaryColour() const;
-    colour_t GetSecondaryColour() const;
+    OpenRCT2::Drawing::Colour GetPrimaryColour() const;
+    OpenRCT2::Drawing::Colour GetSecondaryColour() const;
     uint8_t GetBannerIndex() const;
 };
 static_assert(sizeof(RCT12LargeSceneryElement) == 8);
@@ -835,15 +856,15 @@ private:
 public:
     RCT12ObjectEntryIndex GetEntryIndex() const;
     uint8_t GetSlope() const;
-    colour_t GetPrimaryColour() const;
-    colour_t GetSecondaryColour() const;
-    colour_t GetTertiaryColour() const;
+    OpenRCT2::Drawing::Colour GetPrimaryColour() const;
+    OpenRCT2::Drawing::Colour GetSecondaryColour() const;
+    OpenRCT2::Drawing::Colour GetTertiaryColour() const;
     uint8_t GetAnimationFrame() const;
     uint8_t GetBannerIndex() const;
     bool IsAcrossTrack() const;
     bool AnimationIsBackwards() const;
     int32_t GetRCT1WallType(int32_t edge) const;
-    colour_t GetRCT1WallColour() const;
+    OpenRCT2::Drawing::Colour GetRCT1WallColour() const;
     uint8_t GetRCT1Slope() const;
 };
 static_assert(sizeof(RCT12WallElement) == 8);
@@ -1150,9 +1171,9 @@ struct RCT12Banner
         uint8_t Colour;    // 0x04
         uint8_t RideIndex; // 0x04
     };
-    OpenRCT2::TextColour textColour; // 0x05
-    uint8_t x;                       // 0x06
-    uint8_t y;                       // 0x07
+    OpenRCT2::Drawing::TextColour textColour; // 0x05
+    uint8_t x;                                // 0x06
+    uint8_t y;                                // 0x07
 };
 static_assert(sizeof(RCT12Banner) == 8);
 
@@ -1202,8 +1223,8 @@ static_assert(sizeof(RCT12VehicleColour) == 2);
 
 #pragma pack(pop)
 
-OpenRCT2::ObjectEntryIndex RCTEntryIndexToOpenRCT2EntryIndex(const RCT12ObjectEntryIndex index);
-RideId RCT12RideIdToOpenRCT2RideId(const RCT12RideId rideId);
+OpenRCT2::ObjectEntryIndex RCTEntryIndexToOpenRCT2EntryIndex(RCT12ObjectEntryIndex index);
+RideId RCT12RideIdToOpenRCT2RideId(RCT12RideId rideId);
 bool IsLikelyUTF8(std::string_view s);
 std::string RCT12RemoveFormattingUTF8(std::string_view s);
 std::string ConvertFormattedStringToOpenRCT2(std::string_view buffer);
@@ -1212,7 +1233,7 @@ OpenRCT2::RCT12::TrackElemType OpenRCT2FlatTrackTypeToRCT12(OpenRCT2::TrackElemT
 std::string_view GetStationIdentifierFromStyle(uint8_t style);
 uint8_t GetStationStyleFromIdentifier(u8string_view identifier);
 std::optional<uint8_t> GetStyleFromMusicIdentifier(std::string_view identifier);
-void RCT12AddDefaultObjects(OpenRCT2::ObjectList& objectList);
+void RCT12AddDefaultMusic(OpenRCT2::ObjectList& objectList);
 void AppendRequiredObjects(
     OpenRCT2::ObjectList& objectList, OpenRCT2::ObjectType objectType, std::span<const std::string_view> objectNames);
 void AppendRequiredObjects(
@@ -1257,6 +1278,6 @@ namespace OpenRCT2::RCT12
      * Handles single and multi-byte strings.
      */
     size_t GetRCTStringBufferLen(const char* buffer, size_t maxBufferLen);
-    bool TrackTypeHasSpeedSetting(OpenRCT2::RCT12::TrackElemType trackType);
-    bool TrackTypeIsStation(OpenRCT2::RCT12::TrackElemType trackType);
+    bool TrackTypeHasSpeedSetting(TrackElemType trackType);
+    bool TrackTypeIsStation(TrackElemType trackType);
 } // namespace OpenRCT2::RCT12

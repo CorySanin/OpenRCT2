@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -591,31 +591,31 @@ static void PaintMonorailCyclesTrackSBendRight(
 /**
  * rct2: 0x0088ac88
  */
-TrackPaintFunction GetTrackPaintFunctionMonorailCycles(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionMonorailCycles(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::Flat:
+        case TrackElemType::flat:
             return PaintMonorailCyclesTrackFlat;
 
-        case TrackElemType::EndStation:
-        case TrackElemType::BeginStation:
-        case TrackElemType::MiddleStation:
+        case TrackElemType::endStation:
+        case TrackElemType::beginStation:
+        case TrackElemType::middleStation:
             return PaintMonorailCyclesStation;
 
-        case TrackElemType::LeftQuarterTurn5Tiles:
+        case TrackElemType::leftQuarterTurn5Tiles:
             return PaintMonorailCyclesTrackLeftQuarterTurn5Tiles;
-        case TrackElemType::RightQuarterTurn5Tiles:
+        case TrackElemType::rightQuarterTurn5Tiles:
             return PaintMonorailCyclesTrackRightQuarterTurn5Tiles;
 
-        case TrackElemType::SBendLeft:
+        case TrackElemType::sBendLeft:
             return PaintMonorailCyclesTrackSBendLeft;
-        case TrackElemType::SBendRight:
+        case TrackElemType::sBendRight:
             return PaintMonorailCyclesTrackSBendRight;
 
-        case TrackElemType::LeftQuarterTurn3Tiles:
+        case TrackElemType::leftQuarterTurn3Tiles:
             return PaintMonorailCyclesTrackLeftQuarterTurn3Tiles;
-        case TrackElemType::RightQuarterTurn3Tiles:
+        case TrackElemType::rightQuarterTurn3Tiles:
             return PaintMonorailCyclesTrackRightQuarterTurn3Tiles;
         default:
             return TrackPaintFunctionDummy;

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -13,6 +13,7 @@
 #include "../Diagnostic.h"
 #include "../Game.h"
 #include "../GameState.h"
+#include "../actions/ResultWithMessage.h"
 #include "../audio/Audio.h"
 #include "../config/Config.h"
 #include "../interface/Viewport.h"
@@ -27,6 +28,7 @@
 #include "../world/MapAnimation.h"
 #include "../world/Park.h"
 #include "../world/Scenery.h"
+#include "../world/tile_element/SmallSceneryElement.h"
 #include "../world/tile_element/TileElement.h"
 #include "../world/tile_element/TrackElement.h"
 #include "Ride.h"
@@ -40,14 +42,16 @@
 
 using namespace OpenRCT2;
 using namespace OpenRCT2::TrackMetaData;
+using OpenRCT2::GameActions::CommandFlag;
+using OpenRCT2::GameActions::CommandFlags;
 
-PitchAndRoll TrackPitchAndRollStart(OpenRCT2::TrackElemType trackType)
+PitchAndRoll TrackPitchAndRollStart(TrackElemType trackType)
 {
     const auto& ted = GetTrackElementDescriptor(trackType);
     return { ted.definition.pitchStart, ted.definition.rollStart };
 }
 
-PitchAndRoll TrackPitchAndRollEnd(OpenRCT2::TrackElemType trackType)
+PitchAndRoll TrackPitchAndRollEnd(TrackElemType trackType)
 {
     const auto& ted = GetTrackElementDescriptor(trackType);
     return { ted.definition.pitchEnd, ted.definition.rollEnd };
@@ -114,7 +118,7 @@ static void ride_remove_station(Ride& ride, const CoordsXYZ& location)
  *
  *  rct2: 0x006C4D89
  */
-ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32_t flags, bool fromTrackDesign)
+ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, CommandFlags flags, bool fromTrackDesign)
 {
     auto ride = GetRide(rideIndex);
     if (ride == nullptr)
@@ -130,7 +134,7 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
         {
             return { false, STR_NO_MORE_STATIONS_ALLOWED_ON_THIS_RIDE };
         }
-        if (flags & GAME_COMMAND_FLAG_APPLY)
+        if (flags.has(CommandFlag::apply))
         {
             auto stationIndex = RideGetFirstEmptyStationStart(*ride);
             assert(!stationIndex.IsNull());
@@ -157,9 +161,9 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
         stationElement = find_station_element(loc, rideIndex);
         if (stationElement != nullptr)
         {
-            if (stationElement->AsTrack()->GetTrackType() == TrackElemType::EndStation)
+            if (stationElement->AsTrack()->GetTrackType() == TrackElemType::endStation)
             {
-                if (flags & GAME_COMMAND_FLAG_APPLY)
+                if (flags.has(CommandFlag::apply))
                 {
                     ride_remove_station(*ride, loc);
                 }
@@ -179,9 +183,9 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
         stationElement = find_station_element(loc, rideIndex);
         if (stationElement != nullptr)
         {
-            if (stationElement->AsTrack()->GetTrackType() == TrackElemType::EndStation)
+            if (stationElement->AsTrack()->GetTrackType() == TrackElemType::endStation)
             {
-                if (flags & GAME_COMMAND_FLAG_APPLY)
+                if (flags.has(CommandFlag::apply))
                 {
                     ride_remove_station(*ride, loc);
                 }
@@ -205,7 +209,7 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
         return { false, STR_STATION_PLATFORM_TOO_LONG };
     }
 
-    if (flags & GAME_COMMAND_FLAG_APPLY)
+    if (flags.has(CommandFlag::apply))
     {
         loc = { stationFrontLoc, loc.z, loc.direction };
 
@@ -217,7 +221,7 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
             stationElement = find_station_element(loc, rideIndex);
             if (stationElement != nullptr)
             {
-                OpenRCT2::TrackElemType targetTrackType;
+                TrackElemType targetTrackType;
                 if (stationFrontLoc == loc)
                 {
                     auto stationIndex = RideGetFirstEmptyStationStart(*ride);
@@ -235,15 +239,15 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
                         ride->numStations++;
                     }
 
-                    targetTrackType = TrackElemType::EndStation;
+                    targetTrackType = TrackElemType::endStation;
                 }
                 else if (stationBackLoc == loc)
                 {
-                    targetTrackType = TrackElemType::BeginStation;
+                    targetTrackType = TrackElemType::beginStation;
                 }
                 else
                 {
-                    targetTrackType = TrackElemType::MiddleStation;
+                    targetTrackType = TrackElemType::middleStation;
                 }
                 stationElement->AsTrack()->SetTrackType(targetTrackType);
 
@@ -264,7 +268,7 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
  *
  *  rct2: 0x006C494B
  */
-ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIndex, int32_t flags)
+ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIndex, CommandFlags flags)
 {
     auto ride = GetRide(rideIndex);
     if (ride == nullptr)
@@ -281,7 +285,7 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
         TileElement* tileElement = MapGetTrackElementAtWithDirectionFromRide(loc, rideIndex);
         if (tileElement != nullptr)
         {
-            if (flags & GAME_COMMAND_FLAG_APPLY)
+            if (flags.has(CommandFlag::apply))
             {
                 ride_remove_station(*ride, loc);
             }
@@ -295,9 +299,9 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
     CoordsXYZD currentLoc = stationBackLoc;
     while ((stationElement = find_station_element(currentLoc, rideIndex)) != nullptr)
     {
-        if (stationElement->AsTrack()->GetTrackType() == TrackElemType::EndStation)
+        if (stationElement->AsTrack()->GetTrackType() == TrackElemType::endStation)
         {
-            if (flags & GAME_COMMAND_FLAG_APPLY)
+            if (flags.has(CommandFlag::apply))
             {
                 ride_remove_station(*ride, currentLoc);
             }
@@ -318,9 +322,9 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
         stationElement = find_station_element(currentLoc, rideIndex);
         if (stationElement != nullptr)
         {
-            if (stationElement->AsTrack()->GetTrackType() == TrackElemType::EndStation)
+            if (stationElement->AsTrack()->GetTrackType() == TrackElemType::endStation)
             {
-                if (flags & GAME_COMMAND_FLAG_APPLY)
+                if (flags.has(CommandFlag::apply))
                 {
                     ride_remove_station(*ride, currentLoc);
                 }
@@ -330,7 +334,7 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
         }
     } while (stationElement != nullptr);
 
-    if (!(flags & GAME_COMMAND_FLAG_APPLY))
+    if (!flags.has(CommandFlag::apply))
     {
         if ((removeLoc != stationBackLoc) && (removeLoc != stationFrontLoc) && ride->numStations >= Limits::kMaxStationsPerRide)
         {
@@ -351,7 +355,7 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
             stationElement = find_station_element(currentLoc, rideIndex);
             if (stationElement != nullptr)
             {
-                OpenRCT2::TrackElemType targetTrackType;
+                TrackElemType targetTrackType;
                 if ((currentLoc == stationFrontLoc) || (currentLoc + CoordsDirectionDelta[currentLoc.direction] == removeLoc))
                 {
                     auto stationIndex = RideGetFirstEmptyStationStart(*ride);
@@ -370,23 +374,23 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
                     }
 
                     stationLength = 0;
-                    targetTrackType = TrackElemType::EndStation;
+                    targetTrackType = TrackElemType::endStation;
                 }
                 else
                 {
                     if (currentLoc - CoordsDirectionDelta[currentLoc.direction] == removeLoc)
                     {
-                        targetTrackType = TrackElemType::BeginStation;
+                        targetTrackType = TrackElemType::beginStation;
                     }
                     else
                     {
                         if (currentLoc == stationBackLoc)
                         {
-                            targetTrackType = TrackElemType::BeginStation;
+                            targetTrackType = TrackElemType::beginStation;
                         }
                         else
                         {
-                            targetTrackType = TrackElemType::MiddleStation;
+                            targetTrackType = TrackElemType::middleStation;
                         }
                     }
                 }
@@ -486,11 +490,10 @@ bool TrackCircuitIteratorsMatch(const TrackCircuitIterator* firstIt, const Track
 
 void TrackGetBack(const CoordsXYE& input, CoordsXYE* output)
 {
-    CoordsXYE lastTrack;
+    CoordsXYE lastTrack = input;
     TrackBeginEnd currentTrack;
     bool result;
 
-    lastTrack = input;
     do
     {
         result = TrackBlockGetPrevious(lastTrack, &currentTrack);
@@ -591,13 +594,13 @@ TrackRoll TrackGetActualBank2(ride_type_t rideType, bool isInverted, TrackRoll b
     {
         if (isInverted)
         {
-            if (bank == TrackRoll::None)
+            if (bank == TrackRoll::none)
             {
-                bank = TrackRoll::UpsideDown;
+                bank = TrackRoll::upsideDown;
             }
-            else if (bank == TrackRoll::UpsideDown)
+            else if (bank == TrackRoll::upsideDown)
             {
-                bank = TrackRoll::None;
+                bank = TrackRoll::none;
             }
         }
     }
@@ -617,137 +620,142 @@ TrackRoll TrackGetActualBank3(bool useInvertedSprites, TileElement* tileElement)
     return TrackGetActualBank2(ride->type, isInverted, bankStart);
 }
 
-bool TrackTypeIsStation(OpenRCT2::TrackElemType trackType)
+bool TrackTypeIsStation(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::EndStation:
-        case TrackElemType::BeginStation:
-        case TrackElemType::MiddleStation:
+        case TrackElemType::endStation:
+        case TrackElemType::beginStation:
+        case TrackElemType::middleStation:
             return true;
         default:
             return false;
     }
 }
 
-bool TrackTypeIsBrakes(OpenRCT2::TrackElemType trackType)
+bool TrackTypeIsBrakes(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::Brakes:
-        case TrackElemType::DiagBrakes:
-        case TrackElemType::Down25Brakes:
-        case TrackElemType::DiagDown25Brakes:
+        case TrackElemType::brakes:
+        case TrackElemType::diagBrakes:
+        case TrackElemType::down25Brakes:
+        case TrackElemType::diagDown25Brakes:
             return true;
         default:
             return false;
     }
 }
 
-bool TrackTypeIsBlockBrakes(OpenRCT2::TrackElemType trackType)
+bool TrackTypeIsBlockBrakes(TrackElemType trackType)
 {
-    return (trackType == TrackElemType::BlockBrakes) || (trackType == TrackElemType::DiagBlockBrakes);
+    return (trackType == TrackElemType::blockBrakes) || (trackType == TrackElemType::diagBlockBrakes);
 }
 
-bool TrackTypeIsBooster(OpenRCT2::TrackElemType trackType)
+bool TrackTypeIsBooster(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::Booster:
-        case TrackElemType::DiagBooster:
+        case TrackElemType::booster:
+        case TrackElemType::diagBooster:
             return true;
         default:
             return false;
     }
 }
 
-bool TrackElementIsCovered(OpenRCT2::TrackElemType trackElementType)
+bool TrackTypeIsReverser(TrackElemType trackType)
+{
+    return (trackType == TrackElemType::leftReverser) || (trackType == TrackElemType::rightReverser);
+}
+
+bool TrackElementIsCovered(TrackElemType trackElementType)
 {
     switch (trackElementType)
     {
-        case TrackElemType::FlatCovered:
-        case TrackElemType::Up25Covered:
-        case TrackElemType::Up60Covered:
-        case TrackElemType::FlatToUp25Covered:
-        case TrackElemType::Up25ToUp60Covered:
-        case TrackElemType::Up60ToUp25Covered:
-        case TrackElemType::Up25ToFlatCovered:
-        case TrackElemType::Down25Covered:
-        case TrackElemType::Down60Covered:
-        case TrackElemType::FlatToDown25Covered:
-        case TrackElemType::Down25ToDown60Covered:
-        case TrackElemType::Down60ToDown25Covered:
-        case TrackElemType::Down25ToFlatCovered:
-        case TrackElemType::LeftQuarterTurn5TilesCovered:
-        case TrackElemType::RightQuarterTurn5TilesCovered:
-        case TrackElemType::SBendLeftCovered:
-        case TrackElemType::SBendRightCovered:
-        case TrackElemType::LeftQuarterTurn3TilesCovered:
-        case TrackElemType::RightQuarterTurn3TilesCovered:
+        case TrackElemType::flatCovered:
+        case TrackElemType::up25Covered:
+        case TrackElemType::up60Covered:
+        case TrackElemType::flatToUp25Covered:
+        case TrackElemType::up25ToUp60Covered:
+        case TrackElemType::up60ToUp25Covered:
+        case TrackElemType::up25ToFlatCovered:
+        case TrackElemType::down25Covered:
+        case TrackElemType::down60Covered:
+        case TrackElemType::flatToDown25Covered:
+        case TrackElemType::down25ToDown60Covered:
+        case TrackElemType::down60ToDown25Covered:
+        case TrackElemType::down25ToFlatCovered:
+        case TrackElemType::leftQuarterTurn5TilesCovered:
+        case TrackElemType::rightQuarterTurn5TilesCovered:
+        case TrackElemType::sBendLeftCovered:
+        case TrackElemType::sBendRightCovered:
+        case TrackElemType::leftQuarterTurn3TilesCovered:
+        case TrackElemType::rightQuarterTurn3TilesCovered:
             return true;
         default:
             return false;
     }
 }
 
-OpenRCT2::TrackElemType UncoverTrackElement(OpenRCT2::TrackElemType trackElementType)
+TrackElemType UncoverTrackElement(TrackElemType trackElementType)
 {
     switch (trackElementType)
     {
-        case TrackElemType::FlatCovered:
-            return TrackElemType::Flat;
-        case TrackElemType::Up25Covered:
-            return TrackElemType::Up25;
-        case TrackElemType::Up60Covered:
-            return TrackElemType::Up60;
-        case TrackElemType::FlatToUp25Covered:
-            return TrackElemType::FlatToUp25;
-        case TrackElemType::Up25ToUp60Covered:
-            return TrackElemType::Up25ToUp60;
-        case TrackElemType::Up60ToUp25Covered:
-            return TrackElemType::Up60ToUp25;
-        case TrackElemType::Up25ToFlatCovered:
-            return TrackElemType::Up25ToFlat;
-        case TrackElemType::Down25Covered:
-            return TrackElemType::Down25;
-        case TrackElemType::Down60Covered:
-            return TrackElemType::Down60;
-        case TrackElemType::FlatToDown25Covered:
-            return TrackElemType::FlatToDown25;
-        case TrackElemType::Down25ToDown60Covered:
-            return TrackElemType::Down25ToDown60;
-        case TrackElemType::Down60ToDown25Covered:
-            return TrackElemType::Down60ToDown25;
-        case TrackElemType::Down25ToFlatCovered:
-            return TrackElemType::Down25ToFlat;
-        case TrackElemType::LeftQuarterTurn5TilesCovered:
-            return TrackElemType::LeftQuarterTurn5Tiles;
-        case TrackElemType::RightQuarterTurn5TilesCovered:
-            return TrackElemType::RightQuarterTurn5Tiles;
-        case TrackElemType::SBendLeftCovered:
-            return TrackElemType::SBendLeft;
-        case TrackElemType::SBendRightCovered:
-            return TrackElemType::SBendRight;
-        case TrackElemType::LeftQuarterTurn3TilesCovered:
-            return TrackElemType::LeftQuarterTurn3Tiles;
-        case TrackElemType::RightQuarterTurn3TilesCovered:
-            return TrackElemType::RightQuarterTurn3Tiles;
+        case TrackElemType::flatCovered:
+            return TrackElemType::flat;
+        case TrackElemType::up25Covered:
+            return TrackElemType::up25;
+        case TrackElemType::up60Covered:
+            return TrackElemType::up60;
+        case TrackElemType::flatToUp25Covered:
+            return TrackElemType::flatToUp25;
+        case TrackElemType::up25ToUp60Covered:
+            return TrackElemType::up25ToUp60;
+        case TrackElemType::up60ToUp25Covered:
+            return TrackElemType::up60ToUp25;
+        case TrackElemType::up25ToFlatCovered:
+            return TrackElemType::up25ToFlat;
+        case TrackElemType::down25Covered:
+            return TrackElemType::down25;
+        case TrackElemType::down60Covered:
+            return TrackElemType::down60;
+        case TrackElemType::flatToDown25Covered:
+            return TrackElemType::flatToDown25;
+        case TrackElemType::down25ToDown60Covered:
+            return TrackElemType::down25ToDown60;
+        case TrackElemType::down60ToDown25Covered:
+            return TrackElemType::down60ToDown25;
+        case TrackElemType::down25ToFlatCovered:
+            return TrackElemType::down25ToFlat;
+        case TrackElemType::leftQuarterTurn5TilesCovered:
+            return TrackElemType::leftQuarterTurn5Tiles;
+        case TrackElemType::rightQuarterTurn5TilesCovered:
+            return TrackElemType::rightQuarterTurn5Tiles;
+        case TrackElemType::sBendLeftCovered:
+            return TrackElemType::sBendLeft;
+        case TrackElemType::sBendRightCovered:
+            return TrackElemType::sBendRight;
+        case TrackElemType::leftQuarterTurn3TilesCovered:
+            return TrackElemType::leftQuarterTurn3Tiles;
+        case TrackElemType::rightQuarterTurn3TilesCovered:
+            return TrackElemType::rightQuarterTurn3Tiles;
         default:
             return trackElementType;
     }
 }
 
-bool TrackTypeHasSpeedSetting(OpenRCT2::TrackElemType trackType)
+bool TrackTypeHasSpeedSetting(TrackElemType trackType)
 {
     return TrackTypeIsBooster(trackType) || TrackTypeIsBrakes(trackType) || TrackTypeIsBlockBrakes(trackType);
 }
 
-bool TrackTypeIsHelix(OpenRCT2::TrackElemType trackType)
+bool TrackTypeIsHelix(TrackElemType trackType)
 {
-    if (trackType >= TrackElemType::LeftHalfBankedHelixUpSmall && trackType <= TrackElemType::RightHalfBankedHelixDownLarge)
+    if (trackType >= TrackElemType::leftHalfBankedHelixUpSmall && trackType <= TrackElemType::rightHalfBankedHelixDownLarge)
         return true;
 
-    if (trackType >= TrackElemType::LeftQuarterBankedHelixLargeUp && trackType <= TrackElemType::RightQuarterHelixLargeDown)
+    if (trackType >= TrackElemType::leftQuarterBankedHelixLargeUp && trackType <= TrackElemType::rightQuarterHelixLargeDown)
         return true;
 
     return false;
@@ -777,4 +785,41 @@ std::optional<CoordsXYZD> GetTrackSegmentOrigin(const CoordsXYE& posEl)
     coords.z -= trackBlock.z;
 
     return CoordsXYZD(coords, direction);
+}
+
+// Extracted from the calculation in Vehicle::UpdateMeasurements()
+bool TrackGetIsSheltered(const CoordsXYZ& input)
+{
+    // Set tile_element to first element. Since elements aren't always ordered by base height,
+    // we must start at the first element and iterate through each tile element.
+    auto tileElement = MapGetFirstElementAt(input);
+    if (tileElement == nullptr)
+        return false;
+
+    do
+    {
+        // If the tile_element is lower than the vehicle, continue (don't set flag)
+        if (tileElement->GetBaseZ() <= input.z)
+            continue;
+
+        if (tileElement->GetType() == TileElementType::LargeScenery)
+            return true;
+
+        if (tileElement->GetType() == TileElementType::Path)
+            return true;
+
+        if (tileElement->GetType() != TileElementType::SmallScenery)
+            continue;
+
+        auto* sceneryEntry = tileElement->AsSmallScenery()->GetEntry();
+        if (sceneryEntry == nullptr)
+            continue;
+
+        if (sceneryEntry->HasFlag(SMALL_SCENERY_FLAG_FULL_TILE))
+            return true;
+
+        // Iterate through each tile_element.
+    } while (!(tileElement++)->IsLastForTile());
+
+    return false;
 }

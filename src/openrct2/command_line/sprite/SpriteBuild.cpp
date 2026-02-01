@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -53,14 +53,18 @@ namespace OpenRCT2::CommandLine::Sprite
         // keep sprite file entirely in memory until ready to write out a complete,
         // correct file
         SpriteFile spriteFile;
-        spriteFile.Header.num_entries = 0;
-        spriteFile.Header.total_size = 0;
+        spriteFile.Header.numEntries = 0;
+        spriteFile.Header.totalSize = 0;
 
         fprintf(stdout, "Building: %s\n", spriteFilePath);
 
         json_t sprite_description;
 
         uint32_t numSuccessful = 0;
+
+        std::unordered_map<u8string, Image> images{};
+
+        ImageImporter importer;
 
         // Note: jsonSprite is deliberately left non-const: json_t behaviour changes when const
         for (auto& [jsonKey, jsonSprite] : jsonSprites.items())
@@ -71,30 +75,54 @@ namespace OpenRCT2::CommandLine::Sprite
                 return -1;
             }
 
-            json_t path = jsonSprite["path"];
-            if (!path.is_string())
+            json_t colours = jsonSprite["colours"];
+            if (colours.is_array())
             {
-                fprintf(stderr, "Error: no path provided for sprite %s\n", jsonKey.c_str());
-                return -1;
+                auto importResult = importer.importJSONPalette(jsonSprite);
+                spriteFile.addPalette(importResult);
+
+                if (!silent)
+                    fprintf(stdout, "Added palette\n");
             }
-            std::string strPath = Json::GetString(path);
-
-            auto meta = createImageImportMetaFromJson(jsonSprite);
-            meta.importMode = spriteMode;
-
-            auto imagePath = Path::GetAbsolute(Path::Combine(directoryPath, strPath));
-
-            auto importResult = SpriteImageImport(imagePath, meta);
-            if (importResult == std::nullopt)
+            else
             {
-                fprintf(stderr, "Could not import image file: %s\nCanceling\n", imagePath.c_str());
-                return -1;
+                json_t path = jsonSprite["path"];
+                if (!path.is_string())
+                {
+                    fprintf(stderr, "Error: no path provided for sprite %s\n", jsonKey.c_str());
+                    return -1;
+                }
+                std::string strPath = Json::GetString(path);
+
+                auto meta = createImageImportMetaFromJson(jsonSprite);
+                meta.importMode = spriteMode;
+
+                auto imagePath = Path::GetAbsolute(Path::Combine(directoryPath, strPath));
+
+                const auto image_iter = images.find(imagePath);
+                if (image_iter != images.end())
+                {
+                    auto importResult = importer.Import(image_iter->second, meta);
+                    spriteFile.AddImage(importResult);
+                }
+                else
+                {
+                    const auto image = SpriteImageLoad(imagePath, meta);
+                    if (image == std::nullopt)
+                    {
+                        fprintf(stderr, "Could not read image file: %s\nCancelling\n", imagePath.c_str());
+                        return -1;
+                    }
+                    images[imagePath] = image.value();
+
+                    auto importResult = importer.Import(image.value(), meta);
+
+                    spriteFile.AddImage(importResult);
+                }
+
+                if (!silent)
+                    fprintf(stdout, "Added: %s\n", imagePath.c_str());
             }
-
-            spriteFile.AddImage(importResult.value());
-
-            if (!silent)
-                fprintf(stdout, "Added: %s\n", imagePath.c_str());
 
             numSuccessful++;
         }

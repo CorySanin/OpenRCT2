@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -10,12 +10,13 @@
 #include "CheatSetAction.h"
 
 #include "../Cheats.h"
-#include "../Context.h"
 #include "../Diagnostic.h"
 #include "../GameState.h"
 #include "../config/Config.h"
 #include "../core/EnumUtils.hpp"
+#include "../core/Guard.hpp"
 #include "../core/String.hpp"
+#include "../drawing/Colour.h"
 #include "../drawing/Drawing.h"
 #include "../entity/Duck.h"
 #include "../entity/EntityList.h"
@@ -32,13 +33,10 @@
 #include "../ui/WindowManager.h"
 #include "../util/Util.h"
 #include "../windows/Intent.h"
-#include "../world/Banner.h"
 #include "../world/Climate.h"
-#include "../world/Footpath.h"
 #include "../world/Location.hpp"
 #include "../world/Map.h"
 #include "../world/Park.h"
-#include "../world/Scenery.h"
 #include "../world/tile_element/PathElement.h"
 #include "../world/tile_element/SmallSceneryElement.h"
 #include "../world/tile_element/SurfaceElement.h"
@@ -79,7 +77,7 @@ namespace OpenRCT2::GameActions
         if (static_cast<uint32_t>(_cheatType) >= static_cast<uint32_t>(CheatType::count))
         {
             LOG_ERROR("Invalid cheat type %u", _cheatType);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
         ParametersRange validRange = GetParameterRange(static_cast<CheatType>(_cheatType.id));
@@ -89,14 +87,14 @@ namespace OpenRCT2::GameActions
             LOG_ERROR(
                 "The first cheat parameter is out of range. Value = %d, min = %d, max = %d", _param1, validRange.first.first,
                 validRange.first.second);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
         if (_param2 < validRange.second.first || _param2 > validRange.second.second)
         {
             LOG_ERROR(
                 "The second cheat parameter is out of range. Value = %d, min = %d, max = %d", _param2, validRange.second.first,
                 validRange.second.second);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
 
         return Result();
@@ -161,10 +159,10 @@ namespace OpenRCT2::GameActions
                 SetScenarioNoMoney(gameState, _param1 != 0);
                 break;
             case CheatType::addMoney:
-                AddMoney(_param1);
+                AddMoney(gameState, _param1);
                 break;
             case CheatType::setMoney:
-                SetMoney(_param1);
+                SetMoney(gameState, _param1);
                 break;
             case CheatType::clearLoan:
                 ClearLoan(gameState);
@@ -242,7 +240,7 @@ namespace OpenRCT2::GameActions
                 windowMgr->InvalidateByClass(WindowClass::ride);
                 break;
             case CheatType::ownAllLand:
-                OwnAllLand();
+                OwnAllLand(gameState);
                 break;
             case CheatType::disableRideValueAging:
                 gameState.cheats.disableRideValueAging = _param1 != 0;
@@ -274,7 +272,7 @@ namespace OpenRCT2::GameActions
             default:
             {
                 LOG_ERROR("Invalid cheat type %d", _cheatType.id);
-                return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+                return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
             }
         }
 
@@ -529,20 +527,18 @@ namespace OpenRCT2::GameActions
 
                 if (mechanic != nullptr)
                 {
-                    if (ride.mechanicStatus == RIDE_MECHANIC_STATUS_FIXING)
+                    if (ride.mechanicStatus == MechanicStatus::fixing)
                     {
                         mechanic->RideSubState = PeepRideSubState::approachExit;
                     }
-                    else if (
-                        ride.mechanicStatus == RIDE_MECHANIC_STATUS_CALLING
-                        || ride.mechanicStatus == RIDE_MECHANIC_STATUS_HEADING)
+                    else if (ride.mechanicStatus == MechanicStatus::calling || ride.mechanicStatus == MechanicStatus::heading)
                     {
                         mechanic->RemoveFromRide();
                     }
                 }
 
                 RideFixBreakdown(ride, 0);
-                ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+                ride.windowInvalidateFlags.set(RideInvalidateFlag::main, RideInvalidateFlag::list);
             }
         }
     }
@@ -574,7 +570,7 @@ namespace OpenRCT2::GameActions
         for (auto& ride : RideManager(gameState))
         {
             // Set inspection interval to 10 minutes
-            ride.inspectionInterval = RIDE_INSPECTION_EVERY_10_MINUTES;
+            ride.inspectionInterval = RideInspection::every10Minutes;
         }
         auto* windowMgr = Ui::GetWindowManager();
         windowMgr->InvalidateByClass(WindowClass::ride);
@@ -603,19 +599,19 @@ namespace OpenRCT2::GameActions
         windowMgr->InvalidateByClass(WindowClass::cheats);
     }
 
-    void CheatSetAction::SetMoney(money64 amount) const
+    void CheatSetAction::SetMoney(GameState_t& gameState, money64 amount) const
     {
-        getGameState().park.cash = amount;
+        gameState.park.cash = amount;
 
         auto* windowMgr = Ui::GetWindowManager();
         windowMgr->InvalidateByClass(WindowClass::finances);
         windowMgr->InvalidateByClass(WindowClass::bottomToolbar);
     }
 
-    void CheatSetAction::AddMoney(money64 amount) const
+    void CheatSetAction::AddMoney(GameState_t& gameState, money64 amount) const
     {
-        auto& park = getGameState().park;
-        park.cash = AddClamp<money64>(park.cash, amount);
+        auto& park = gameState.park;
+        park.cash = AddClamp(park.cash, amount);
 
         auto* windowMgr = Ui::GetWindowManager();
         windowMgr->InvalidateByClass(WindowClass::finances);
@@ -625,7 +621,7 @@ namespace OpenRCT2::GameActions
     void CheatSetAction::ClearLoan(GameState_t& gameState) const
     {
         // First give money
-        AddMoney(getGameState().park.bankLoan);
+        AddMoney(gameState, gameState.park.bankLoan);
 
         // Then pay the loan
         auto gameAction = ParkSetLoanAction(0.00_GBP);
@@ -701,12 +697,12 @@ namespace OpenRCT2::GameActions
                     break;
                 case OBJECT_BALLOON:
                     peep->GiveItem(ShopItem::balloon);
-                    peep->BalloonColour = ScenarioRandMax(kColourNumNormal);
+                    peep->BalloonColour = static_cast<Drawing::Colour>(ScenarioRandMax(Drawing::kColourNumNormal));
                     peep->UpdateAnimationGroup();
                     break;
                 case OBJECT_UMBRELLA:
                     peep->GiveItem(ShopItem::umbrella);
-                    peep->UmbrellaColour = ScenarioRandMax(kColourNumOriginal);
+                    peep->UmbrellaColour = static_cast<Drawing::Colour>(ScenarioRandMax(Drawing::kColourNumNormal));
                     peep->UpdateAnimationGroup();
                     break;
             }
@@ -731,8 +727,8 @@ namespace OpenRCT2::GameActions
 
             for (auto trainIndex : ride.vehicles)
             {
-                for (Vehicle* vehicle = getGameState().entities.TryGetEntity<Vehicle>(trainIndex); vehicle != nullptr;
-                     vehicle = getGameState().entities.TryGetEntity<Vehicle>(vehicle->next_vehicle_on_train))
+                for (Vehicle* vehicle = gameState.entities.TryGetEntity<Vehicle>(trainIndex); vehicle != nullptr;
+                     vehicle = gameState.entities.TryGetEntity<Vehicle>(vehicle->next_vehicle_on_train))
                 {
                     auto i = 0;
                     for (auto& peepInTrainIndex : vehicle->peep)
@@ -740,7 +736,7 @@ namespace OpenRCT2::GameActions
                         if (i >= vehicle->num_peeps)
                             break;
 
-                        auto peep = getGameState().entities.TryGetEntity<Guest>(peepInTrainIndex);
+                        auto peep = gameState.entities.TryGetEntity<Guest>(peepInTrainIndex);
                         if (peep != nullptr && peep->CurrentRide == ride.id)
                         {
                             if ((peep->State == PeepState::onRide && peep->RideSubState == PeepRideSubState::onRide)
@@ -786,7 +782,7 @@ namespace OpenRCT2::GameActions
         }
     }
 
-    void CheatSetAction::OwnAllLand() const
+    void CheatSetAction::OwnAllLand(GameState_t& gameState) const
     {
         const auto min = CoordsXY{ kCoordsXYStep, kCoordsXYStep };
         const auto max = GetMapSizeUnits() - CoordsXY{ kCoordsXYStep, kCoordsXYStep };
@@ -817,7 +813,7 @@ namespace OpenRCT2::GameActions
         }
 
         // Completely unown peep spawn points
-        for (const auto& spawn : getGameState().peepSpawns)
+        for (const auto& spawn : gameState.peepSpawns)
         {
             auto* surfaceElement = MapGetSurfaceElementAt(spawn);
             if (surfaceElement != nullptr)

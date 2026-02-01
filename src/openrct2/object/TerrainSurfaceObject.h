@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -10,18 +10,21 @@
 #pragma once
 
 #include "../core/Money.hpp"
+#include "../drawing/Colour.h"
+#include "../drawing/PaletteIndex.h"
 #include "Object.h"
 
 struct CoordsXY;
 
 namespace OpenRCT2
 {
-    enum TerrainSurfaceFlags
+    enum class TerrainSurfaceFlag : uint8_t
     {
-        smoothWithSelf = 1 << 0,
-        smoothWithOther = 1 << 1,
-        canGrow = 1 << 2,
+        smoothWithSelf,
+        smoothWithOther,
+        canGrow,
     };
+    using TerrainSurfaceFlags = FlagHolder<uint8_t, TerrainSurfaceFlag>;
 
     class TerrainSurfaceObject final : public Object
     {
@@ -53,17 +56,17 @@ namespace OpenRCT2
         std::vector<SpecialEntry> SpecialEntriesUnderground;
         std::vector<SpecialEntry> SpecialEntriesGrid;
 
-        colour_t Colour{};
+        Drawing::Colour Colour{};
         uint8_t Rotations{};
         money64 Price{};
         TerrainSurfaceFlags Flags{};
-        PaletteIndex MapColours[2]{};
+        Drawing::PaletteIndex MapColours[2]{};
 
         void ReadJson(IReadObjectContext* context, json_t& root) override;
         void Load() override;
         void Unload() override;
 
-        void DrawPreview(RenderTarget& rt, int32_t width, int32_t height) const override;
+        void DrawPreview(Drawing::RenderTarget& rt, int32_t width, int32_t height) const override;
 
         ImageId GetImageId(
             const CoordsXY& position, uint8_t length, uint8_t rotation, uint8_t offset, bool grid, bool underground) const;

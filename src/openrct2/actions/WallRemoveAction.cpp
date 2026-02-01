@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -42,48 +42,48 @@ namespace OpenRCT2::GameActions
     Result WallRemoveAction::Query(GameState_t& gameState) const
     {
         Result res = Result();
-        res.Cost = 0;
-        res.Expenditure = ExpenditureType::landscaping;
+        res.cost = 0;
+        res.expenditure = ExpenditureType::landscaping;
 
         if (!LocationValid(_loc))
         {
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
         }
 
-        const bool isGhost = GetFlags() & GAME_COMMAND_FLAG_GHOST;
-        if (!isGhost && gLegacyScene != LegacyScene::scenarioEditor && !getGameState().cheats.sandboxMode
+        const bool isGhost = GetFlags().has(CommandFlag::ghost);
+        if (!isGhost && gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode
             && !MapIsLocationOwned(_loc))
         {
-            return Result(Status::NotOwned, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
+            return Result(Status::notOwned, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
         }
 
         TileElement* wallElement = GetFirstWallElementAt(_loc, isGhost);
         if (wallElement == nullptr)
         {
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
         }
 
-        res.Cost = 0;
+        res.cost = 0;
         return res;
     }
 
     Result WallRemoveAction::Execute(GameState_t& gameState) const
     {
         Result res = Result();
-        res.Cost = 0;
-        res.Expenditure = ExpenditureType::landscaping;
+        res.cost = 0;
+        res.expenditure = ExpenditureType::landscaping;
 
-        const bool isGhost = GetFlags() & GAME_COMMAND_FLAG_GHOST;
+        const bool isGhost = GetFlags().has(CommandFlag::ghost);
 
         TileElement* wallElement = GetFirstWallElementAt(_loc, isGhost);
         if (wallElement == nullptr)
         {
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
         }
 
-        res.Position.x = _loc.x + 16;
-        res.Position.y = _loc.y + 16;
-        res.Position.z = _loc.z;
+        res.position.x = _loc.x + 16;
+        res.position.y = _loc.y + 16;
+        res.position.z = _loc.z;
 
         wallElement->RemoveBannerEntry();
         MapInvalidateTileZoom1({ _loc, wallElement->GetBaseZ(), (wallElement->GetBaseZ()) + 72 });

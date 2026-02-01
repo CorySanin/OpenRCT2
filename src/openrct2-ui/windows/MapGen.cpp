@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -18,6 +18,7 @@
 #include <openrct2/config/Config.h>
 #include <openrct2/core/FileSystem.hpp>
 #include <openrct2/core/UnitConversion.h>
+#include <openrct2/drawing/ColourMap.h>
 #include <openrct2/drawing/Drawing.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/object/ObjectManager.h>
@@ -28,6 +29,7 @@
 #include <openrct2/world/map_generator/MapGen.h>
 #include <openrct2/world/map_generator/PngTerrainGenerator.h>
 
+using namespace OpenRCT2::Drawing;
 using namespace OpenRCT2::World;
 
 namespace OpenRCT2::Ui::Windows
@@ -461,7 +463,7 @@ namespace OpenRCT2::Ui::Windows
 
                     Widget* ddWidget = &widgets[widgetIndex - 1];
                     WindowDropdownShowTextCustomWidth(
-                        { windowPos.x + ddWidget->left, windowPos.y + ddWidget->top }, ddWidget->height() + 1, colours[1], 0,
+                        { windowPos.x + ddWidget->left, windowPos.y + ddWidget->top }, ddWidget->height(), colours[1], 0,
                         Dropdown::Flag::StayOpen, std::size(items), ddWidget->width() - 3);
 
                     gDropdown.items[EnumValue(_settings.algorithm)].setChecked(true);
@@ -1167,13 +1169,13 @@ namespace OpenRCT2::Ui::Windows
             {
                 // Draw greyed out (light border bottom right shadow)
                 auto colour = colours[widget.colour].colour;
-                colour = ColourMapA[colour].lighter;
-                GfxDrawSpriteSolid(rt, image, pos + ScreenCoordsXY{ 1, 1 }, colour);
+                auto paletteIndex = getColourMap(colour).lighter;
+                GfxDrawSpriteSolid(rt, image, pos + ScreenCoordsXY{ 1, 1 }, paletteIndex);
 
                 // Draw greyed out (dark)
                 colour = colours[widget.colour].colour;
-                colour = ColourMapA[colour].mid_light;
-                GfxDrawSpriteSolid(rt, image, pos, colour);
+                paletteIndex = getColourMap(colour).midLight;
+                GfxDrawSpriteSolid(rt, image, pos, paletteIndex);
             }
             else
             {
@@ -1189,7 +1191,7 @@ namespace OpenRCT2::Ui::Windows
             if (surfaceObj != nullptr)
             {
                 surfaceImage = ImageId(surfaceObj->IconImageId);
-                if (surfaceObj->Colour != TerrainSurfaceObject::kNoValue)
+                if (surfaceObj->Colour != kColourNull)
                 {
                     surfaceImage = surfaceImage.WithPrimary(surfaceObj->Colour);
                 }

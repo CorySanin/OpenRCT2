@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -11,6 +11,7 @@
 
 #include "../Diagnostic.h"
 #include "../GameState.h"
+#include "../drawing/Drawing.h"
 #include "../entity/EntityRegistry.h"
 #include "../entity/PatrolArea.h"
 #include "../entity/Peep.h"
@@ -47,12 +48,12 @@ namespace OpenRCT2::GameActions
 
     Result StaffSetPatrolAreaAction::Query(GameState_t& gameState) const
     {
-        return QueryExecute(false);
+        return QueryExecute(gameState, false);
     }
 
     Result StaffSetPatrolAreaAction::Execute(GameState_t& gameState) const
     {
-        return QueryExecute(true);
+        return QueryExecute(gameState, true);
     }
 
     static void InvalidatePatrolTiles(const MapRange& range)
@@ -60,13 +61,13 @@ namespace OpenRCT2::GameActions
         MapInvalidateRegion(range.Point1, range.Point2);
     }
 
-    Result StaffSetPatrolAreaAction::QueryExecute(bool executing) const
+    Result StaffSetPatrolAreaAction::QueryExecute(GameState_t& gameState, bool executing) const
     {
-        auto staff = getGameState().entities.TryGetEntity<Staff>(_spriteId);
+        auto staff = gameState.entities.TryGetEntity<Staff>(_spriteId);
         if (staff == nullptr)
         {
             LOG_ERROR("Staff entity not found for spriteID %u", _spriteId.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
         }
 
         auto validRange = ClampRangeWithinMap(_range);
@@ -76,7 +77,7 @@ namespace OpenRCT2::GameActions
             {
                 if (!LocationValid({ x, y }))
                 {
-                    return Result(Status::InvalidParameters, STR_SET_PATROL_AREA, STR_OFF_EDGE_OF_MAP);
+                    return Result(Status::invalidParameters, STR_SET_PATROL_AREA, STR_OFF_EDGE_OF_MAP);
                 }
             }
         }

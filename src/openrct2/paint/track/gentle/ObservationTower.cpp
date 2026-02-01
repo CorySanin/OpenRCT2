@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -140,14 +140,14 @@ static void PaintObservationTowerSection(
 /**
  * rct2: 0x0070DC5C
  */
-TrackPaintFunction GetTrackPaintFunctionObservationTower(OpenRCT2::TrackElemType trackType)
+TrackPaintFunction GetTrackPaintFunctionObservationTower(TrackElemType trackType)
 {
     switch (trackType)
     {
-        case TrackElemType::TowerBase:
+        case TrackElemType::towerBase:
             return PaintObservationTowerBase;
 
-        case TrackElemType::TowerSection:
+        case TrackElemType::towerSection:
             return PaintObservationTowerSection;
         default:
             return TrackPaintFunctionDummy;

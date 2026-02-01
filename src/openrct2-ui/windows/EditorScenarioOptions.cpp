@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -22,12 +22,12 @@
 #include <openrct2/actions/ParkSetNameAction.h>
 #include <openrct2/actions/ScenarioSetSettingAction.h>
 #include <openrct2/core/String.hpp>
+#include <openrct2/drawing/ColourMap.h>
 #include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Font.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
 #include <openrct2/entity/Peep.h>
-#include <openrct2/interface/Colour.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/localisation/Language.h>
 #include <openrct2/localisation/Localisation.Date.h>
@@ -584,8 +584,7 @@ namespace OpenRCT2::Ui::Windows
 
         void SetPressedTab()
         {
-            int32_t i;
-            for (i = 0; i < WINDOW_EDITOR_SCENARIO_OPTIONS_PAGE_COUNT; i++)
+            for (int32_t i = 0; i < WINDOW_EDITOR_SCENARIO_OPTIONS_PAGE_COUNT; i++)
                 setWidgetPressed(WIDX_TAB_1 + i, false);
             setWidgetPressed(WIDX_TAB_1 + page, true);
         }
@@ -766,8 +765,8 @@ namespace OpenRCT2::Ui::Windows
 
             Widget* dropdownWidget = &widgets[WIDX_OBJECTIVE];
             WindowDropdownShowTextCustomWidth(
-                { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height() + 1,
-                colours[1], 0, Dropdown::Flag::StayOpen, numItems, dropdownWidget->width() - 4);
+                { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height(), colours[1],
+                0, Dropdown::Flag::StayOpen, numItems, dropdownWidget->width() - 4);
         }
 
         void ShowCategoryDropdown()
@@ -779,8 +778,8 @@ namespace OpenRCT2::Ui::Windows
 
             Widget* dropdownWidget = &widgets[WIDX_CATEGORY];
             WindowDropdownShowTextCustomWidth(
-                { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height() + 1,
-                colours[1], 0, Dropdown::Flag::StayOpen, 5, dropdownWidget->width() - 4);
+                { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height(), colours[1],
+                0, Dropdown::Flag::StayOpen, 5, dropdownWidget->width() - 4);
 
             gDropdown.items[EnumValue(getGameState().scenarioOptions.category)].setChecked(true);
         }
@@ -1561,7 +1560,7 @@ namespace OpenRCT2::Ui::Windows
                     gDropdown.items[2] = Dropdown::MenuLabel(STR_PAID_ENTRY_PAID_RIDES);
 
                     WindowDropdownShowTextCustomWidth(
-                        { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height() - 1,
+                        { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height() - 2,
                         colours[1], 0, Dropdown::Flag::StayOpen, 3, dropdownWidget->width() - 4);
 
                     if (gameState.park.flags & PARK_FLAGS_UNLOCK_ALL_PRICES)
@@ -1577,7 +1576,7 @@ namespace OpenRCT2::Ui::Windows
 
             if (gLegacyScene == LegacyScene::playing)
             {
-                auto* windowMgr = Ui::GetWindowManager();
+                auto* windowMgr = GetWindowManager();
                 windowMgr->InvalidateByClass(WindowClass::finances);
                 windowMgr->InvalidateByClass(WindowClass::bottomToolbar);
             }
@@ -1899,7 +1898,7 @@ namespace OpenRCT2::Ui::Windows
                     gDropdown.items[3] = Dropdown::MenuLabel(STR_GUESTS_PREFER_INTENSITY_MORE_INTENSE_RIDES);
 
                     WindowDropdownShowTextCustomWidth(
-                        { windowPos.x + dropdownWidget.left, windowPos.y + dropdownWidget.top }, dropdownWidget.height() - 1,
+                        { windowPos.x + dropdownWidget.left, windowPos.y + dropdownWidget.top }, dropdownWidget.height() - 2,
                         colours[1], 0, Dropdown::Flag::StayOpen, 4, dropdownWidget.width() - 4);
 
                     const auto preferLess = gameState.park.flags & PARK_FLAGS_PREF_LESS_INTENSE_RIDES;
@@ -2339,7 +2338,7 @@ namespace OpenRCT2::Ui::Windows
          */
         void RidesOnScrollDraw(RenderTarget& rt, int32_t scrollIndex)
         {
-            int32_t colour = ColourMapA[colours[1].colour].mid_light;
+            auto colour = getColourMap(colours[1].colour).midLight;
             Rectangle::fill(rt, { { rt.x, rt.y }, { rt.x + rt.width - 1, rt.y + rt.height - 1 } }, colour);
 
             for (int32_t i = 0; i < static_cast<int32_t>(_rideableRides.size()); i++)

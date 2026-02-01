@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -10,6 +10,7 @@
 #pragma once
 
 #include "../Identifiers.h"
+#include "../actions/CommandFlag.h"
 #include "../core/FlagHolder.hpp"
 #include "../core/Money.hpp"
 #include "../world/Location.hpp"
@@ -138,7 +139,8 @@ void RideSelectPreviousSection();
 bool RideModify(const CoordsXYE& input);
 
 money64 SetOperatingSetting(RideId rideId, OpenRCT2::GameActions::RideSetSetting setting, uint8_t value);
-money64 SetOperatingSettingNested(RideId rideId, OpenRCT2::GameActions::RideSetSetting setting, uint8_t value, uint8_t flags);
+money64 SetOperatingSettingNested(
+    RideId rideId, OpenRCT2::GameActions::RideSetSetting setting, uint8_t value, OpenRCT2::GameActions::CommandFlags flags);
 
 bool RideSelectBackwardsFromFront();
 bool RideSelectForwardsFromBack();

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -14,6 +14,7 @@
 #include "../Diagnostic.h"
 #include "../core/MemoryStream.h"
 #include "../drawing/Drawing.h"
+#include "../drawing/ScrollingText.h"
 #include "../localisation/StringIds.h"
 #include "../ride/Ride.h"
 #include "../ui/WindowManager.h"
@@ -52,12 +53,12 @@ namespace OpenRCT2::GameActions
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_CANT_RENAME_RIDE_ATTRACTION, STR_ERR_RIDE_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_RENAME_RIDE_ATTRACTION, STR_ERR_RIDE_NOT_FOUND);
         }
 
         if (!_name.empty() && Ride::nameExists(_name, ride->id))
         {
-            return Result(Status::InvalidParameters, STR_CANT_RENAME_RIDE_ATTRACTION, STR_ERROR_EXISTING_NAME);
+            return Result(Status::invalidParameters, STR_CANT_RENAME_RIDE_ATTRACTION, STR_ERROR_EXISTING_NAME);
         }
 
         return Result();
@@ -69,7 +70,7 @@ namespace OpenRCT2::GameActions
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            return Result(Status::InvalidParameters, STR_CANT_RENAME_RIDE_ATTRACTION, STR_ERR_RIDE_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_RENAME_RIDE_ATTRACTION, STR_ERR_RIDE_NOT_FOUND);
         }
 
         if (_name.empty())
@@ -81,7 +82,7 @@ namespace OpenRCT2::GameActions
             ride->customName = _name;
         }
 
-        ScrollingTextInvalidate();
+        Drawing::ScrollingText::invalidate();
         GfxInvalidateScreen();
 
         // Refresh windows that display ride name
@@ -92,7 +93,7 @@ namespace OpenRCT2::GameActions
 
         auto res = Result();
         auto location = ride->overallView.ToTileCentre();
-        res.Position = { location, TileElementHeight(location) };
+        res.position = { location, TileElementHeight(location) };
 
         return res;
     }

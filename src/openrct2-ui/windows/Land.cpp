@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -32,6 +32,8 @@
 #include <openrct2/world/MapSelection.h>
 #include <openrct2/world/Park.h>
 
+using OpenRCT2::GameActions::CommandFlag;
+
 namespace OpenRCT2::Ui::Windows
 {
     static constexpr StringId kWindowTitle = STR_LAND;
@@ -49,6 +51,12 @@ namespace OpenRCT2::Ui::Windows
         WIDX_INCREMENT,
         WIDX_FLOOR,
         WIDX_WALL,
+    };
+
+    enum class SelectionMode
+    {
+        query,
+        apply,
     };
 
     // clang-format off
@@ -119,11 +127,11 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_MOUNTAINMODE:
                     _landToolMountainMode ^= 1;
-                    _landToolPaintMode = 0;
+                    _landToolPaintMode = false;
                     invalidate();
                     break;
                 case WIDX_PAINTMODE:
-                    _landToolMountainMode = 0;
+                    _landToolMountainMode = false;
                     _landToolPaintMode ^= 1;
                     invalidate();
                     break;
@@ -251,7 +259,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_PREVIEW].image = ImageId(LandTool::SizeToSpriteIndex(gLandToolSize));
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             ScreenCoordsXY screenCoords;
             int32_t numTiles;
@@ -327,11 +335,26 @@ namespace OpenRCT2::Ui::Windows
         }
 
     private:
+        static money64 executeGameAction(GameState_t& gameState, GameActions::GameAction* action, SelectionMode mode)
+        {
+            GameActions::Result res;
+            if (mode == SelectionMode::apply)
+            {
+                res = GameActions::Execute(action, gameState);
+            }
+            else
+            {
+                action->SetFlags({ CommandFlag::allowDuringPaused });
+                res = GameActions::Query(action, gameState);
+            }
+            return res.error == GameActions::Status::ok ? res.cost : kMoney64Undefined;
+        }
+
         /**
          *
          *  rct2: 0x006644DD
          */
-        money64 SelectionRaiseLand(uint8_t flag)
+        money64 SelectionRaiseLand(const SelectionMode mode)
         {
             int32_t centreX = (gMapSelectPositionA.x + gMapSelectPositionB.x) / 2;
             int32_t centreY = (gMapSelectPositionA.y + gMapSelectPositionB.y) / 2;
@@ -346,25 +369,21 @@ namespace OpenRCT2::Ui::Windows
                     { centreX, centreY },
                     { gMapSelectPositionA.x, gMapSelectPositionA.y, gMapSelectPositionB.x, gMapSelectPositionB.y },
                     gMapSelectType, false);
-                auto res = (flag & GAME_COMMAND_FLAG_APPLY) ? GameActions::Execute(&landSmoothAction, gameState)
-                                                            : GameActions::Query(&landSmoothAction, gameState);
-                return res.Error == GameActions::Status::Ok ? res.Cost : kMoney64Undefined;
+                return executeGameAction(gameState, &landSmoothAction, mode);
             }
 
             auto landRaiseAction = GameActions::LandRaiseAction(
                 { centreX, centreY },
                 { gMapSelectPositionA.x, gMapSelectPositionA.y, gMapSelectPositionB.x, gMapSelectPositionB.y }, gMapSelectType);
-            auto res = (flag & GAME_COMMAND_FLAG_APPLY) ? GameActions::Execute(&landRaiseAction, gameState)
-                                                        : GameActions::Query(&landRaiseAction, gameState);
 
-            return res.Error == GameActions::Status::Ok ? res.Cost : kMoney64Undefined;
+            return executeGameAction(gameState, &landRaiseAction, mode);
         }
 
         /**
          *
          *  rct2: 0x006645B3
          */
-        money64 SelectionLowerLand(uint8_t flag)
+        money64 SelectionLowerLand(const SelectionMode mode)
         {
             int32_t centreX = (gMapSelectPositionA.x + gMapSelectPositionB.x) / 2;
             int32_t centreY = (gMapSelectPositionA.y + gMapSelectPositionB.y) / 2;
@@ -379,18 +398,14 @@ namespace OpenRCT2::Ui::Windows
                     { centreX, centreY },
                     { gMapSelectPositionA.x, gMapSelectPositionA.y, gMapSelectPositionB.x, gMapSelectPositionB.y },
                     gMapSelectType, true);
-                auto res = (flag & GAME_COMMAND_FLAG_APPLY) ? GameActions::Execute(&landSmoothAction, gameState)
-                                                            : GameActions::Query(&landSmoothAction, gameState);
-                return res.Error == GameActions::Status::Ok ? res.Cost : kMoney64Undefined;
+                return executeGameAction(gameState, &landSmoothAction, mode);
             }
 
             auto landLowerAction = GameActions::LandLowerAction(
                 { centreX, centreY },
                 { gMapSelectPositionA.x, gMapSelectPositionA.y, gMapSelectPositionB.x, gMapSelectPositionB.y }, gMapSelectType);
-            auto res = (flag & GAME_COMMAND_FLAG_APPLY) ? GameActions::Execute(&landLowerAction, gameState)
-                                                        : GameActions::Query(&landLowerAction, gameState);
 
-            return res.Error == GameActions::Status::Ok ? res.Cost : kMoney64Undefined;
+            return executeGameAction(gameState, &landLowerAction, mode);
         }
 
         /**
@@ -424,7 +439,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 gInputDragLast.y += tile_height;
 
-                SelectionRaiseLand(GAME_COMMAND_FLAG_APPLY);
+                SelectionRaiseLand(SelectionMode::apply);
 
                 _landToolRaiseCost = kMoney64Undefined;
                 _landToolLowerCost = kMoney64Undefined;
@@ -433,7 +448,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 gInputDragLast.y -= tile_height;
 
-                SelectionLowerLand(GAME_COMMAND_FLAG_APPLY);
+                SelectionLowerLand(SelectionMode::apply);
 
                 _landToolRaiseCost = kMoney64Undefined;
                 _landToolLowerCost = kMoney64Undefined;
@@ -444,7 +459,6 @@ namespace OpenRCT2::Ui::Windows
         {
             uint8_t state_changed = 0;
 
-            MapInvalidateSelectionRect();
             gMapSelectFlags.unset(MapSelectFlag::enable);
 
             auto mapTile = ScreenGetMapXY(screenPos, nullptr);
@@ -454,7 +468,7 @@ namespace OpenRCT2::Ui::Windows
                 return state_changed;
             }
 
-            if (!(gMapSelectFlags.has(MapSelectFlag::enable)))
+            if (!gMapSelectFlags.has(MapSelectFlag::enable))
             {
                 gMapSelectFlags.set(MapSelectFlag::enable);
                 state_changed++;
@@ -501,7 +515,6 @@ namespace OpenRCT2::Ui::Windows
                 state_changed++;
             }
 
-            MapInvalidateSelectionRect();
             return state_changed;
         }
 
@@ -582,7 +595,6 @@ namespace OpenRCT2::Ui::Windows
             switch (widgetIndex)
             {
                 case WIDX_BACKGROUND:
-                    MapInvalidateSelectionRect();
                     gMapSelectFlags.unset(MapSelectFlag::enable);
                     gCurrentToolId = Tool::digDown;
                     break;
@@ -607,17 +619,15 @@ namespace OpenRCT2::Ui::Windows
         void ToolUpdateLand(const ScreenCoordsXY& screenPos)
         {
             const bool mapCtrlPressed = GetInputManager().isModifierKeyPressed(ModifierKey::ctrl);
-            auto* windowMgr = Ui::GetWindowManager();
-
-            MapInvalidateSelectionRect();
+            auto* windowMgr = GetWindowManager();
 
             if (gCurrentToolId == Tool::upDownArrow)
             {
-                if (!(gMapSelectFlags.has(MapSelectFlag::enable)))
+                if (!gMapSelectFlags.has(MapSelectFlag::enable))
                     return;
 
-                money64 lower_cost = SelectionLowerLand(0);
-                money64 raise_cost = SelectionRaiseLand(0);
+                money64 lower_cost = SelectionLowerLand(SelectionMode::query);
+                money64 raise_cost = SelectionRaiseLand(SelectionMode::query);
 
                 if (_landToolRaiseCost != raise_cost || _landToolLowerCost != lower_cost)
                 {
@@ -657,7 +667,7 @@ namespace OpenRCT2::Ui::Windows
 
                 uint8_t state_changed = 0;
 
-                if (!(gMapSelectFlags.has(MapSelectFlag::enable)))
+                if (!gMapSelectFlags.has(MapSelectFlag::enable))
                 {
                     gMapSelectFlags.set(MapSelectFlag::enable);
                     state_changed++;
@@ -700,12 +710,11 @@ namespace OpenRCT2::Ui::Windows
                     state_changed++;
                 }
 
-                MapInvalidateSelectionRect();
                 if (!state_changed)
                     return;
 
-                money64 lower_cost = SelectionLowerLand(0);
-                money64 raise_cost = SelectionRaiseLand(0);
+                money64 lower_cost = SelectionLowerLand(SelectionMode::query);
+                money64 raise_cost = SelectionRaiseLand(SelectionMode::query);
 
                 if (_landToolRaiseCost != raise_cost || _landToolLowerCost != lower_cost)
                 {
@@ -735,7 +744,7 @@ namespace OpenRCT2::Ui::Windows
 
             uint8_t state_changed = 0;
 
-            if (!(gMapSelectFlags.has(MapSelectFlag::enable)))
+            if (!gMapSelectFlags.has(MapSelectFlag::enable))
             {
                 gMapSelectFlags.set(MapSelectFlag::enable);
                 state_changed++;
@@ -827,12 +836,11 @@ namespace OpenRCT2::Ui::Windows
                 state_changed++;
             }
 
-            MapInvalidateSelectionRect();
             if (!state_changed)
                 return;
 
-            money64 lower_cost = SelectionLowerLand(0);
-            money64 raise_cost = SelectionRaiseLand(0);
+            money64 lower_cost = SelectionLowerLand(SelectionMode::query);
+            money64 raise_cost = SelectionRaiseLand(SelectionMode::query);
 
             if (_landToolRaiseCost != raise_cost || _landToolLowerCost != lower_cost)
             {
@@ -842,7 +850,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void DrawDropdownButtons(RenderTarget& rt)
+        void DrawDropdownButtons(Drawing::RenderTarget& rt)
         {
             auto& objManager = GetContext()->GetObjectManager();
             const auto* surfaceObj = objManager.GetLoadedObject<TerrainSurfaceObject>(_selectedFloorTexture);
@@ -850,7 +858,7 @@ namespace OpenRCT2::Ui::Windows
             if (surfaceObj != nullptr)
             {
                 surfaceImage = ImageId(surfaceObj->IconImageId);
-                if (surfaceObj->Colour != TerrainSurfaceObject::kNoValue)
+                if (surfaceObj->Colour != Drawing::kColourNull)
                     surfaceImage = surfaceImage.WithPrimary(surfaceObj->Colour);
             }
 
@@ -865,7 +873,7 @@ namespace OpenRCT2::Ui::Windows
             DrawDropdownButton(rt, WIDX_WALL, edgeImage);
         }
 
-        void DrawDropdownButton(RenderTarget& rt, WidgetIndex widgetIndex, ImageId image)
+        void DrawDropdownButton(Drawing::RenderTarget& rt, WidgetIndex widgetIndex, ImageId image)
         {
             const auto& widget = widgets[widgetIndex];
             GfxDrawSprite(rt, image, { windowPos.x + widget.left, windowPos.y + widget.top });
@@ -894,7 +902,7 @@ namespace OpenRCT2::Ui::Windows
             ShowGridlines();
             auto* toolWindow = ContextOpenWindow(WindowClass::land);
             ToolSet(*toolWindow, WIDX_BACKGROUND, Tool::digDown);
-            gInputFlags.set(InputFlag::unk6);
+            gInputFlags.set(InputFlag::allowRightMouseRemoval);
         }
     }
 } // namespace OpenRCT2::Ui::Windows

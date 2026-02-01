@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -140,16 +140,16 @@ namespace OpenRCT2
         }
     }
 
-    TextColour FormatTokenToTextColour(FormatToken token)
+    Drawing::TextColour FormatTokenToTextColour(FormatToken token)
     {
         uint8_t value = EnumValue(token) - EnumValue(FormatToken::colourBlack);
-        if (value >= kNumTextColours)
-            return TextColour::black;
+        if (value >= Drawing::kNumTextColours)
+            return Drawing::TextColour::black;
 
-        return static_cast<TextColour>(value);
+        return static_cast<Drawing::TextColour>(value);
     }
 
-    FormatToken FormatTokenFromTextColour(TextColour textColour)
+    FormatToken FormatTokenFromTextColour(Drawing::TextColour textColour)
     {
         static constexpr FormatToken tokens[] = {
             FormatToken::colourBlack,        // TextColour::black

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -16,6 +16,7 @@
 #include <openrct2/Version.h>
 #include <openrct2/core/FileSystem.hpp>
 #include <openrct2/core/String.hpp>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Text.h>
 #include <openrct2/localisation/Formatting.h>
 #include <openrct2/platform/Platform.h>
@@ -175,7 +176,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void onScrollDraw(int32_t scrollIndex, RenderTarget& rt) override
+        void onScrollDraw(int32_t scrollIndex, Drawing::RenderTarget& rt) override
         {
             const int32_t lineHeight = FontGetLineHeight(FontStyle::medium);
 

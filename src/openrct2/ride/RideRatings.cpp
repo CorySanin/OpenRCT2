@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -13,6 +13,7 @@
 #include "../Context.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
+#include "../core/Guard.hpp"
 #include "../core/Money.hpp"
 #include "../core/UnitConversion.h"
 #include "../profiling/Profiling.h"
@@ -163,7 +164,7 @@ static void RideRatingsApplyPenaltyLateralGs(RideRating::Tuple& ratings, const R
 
 void RideRating::ResetUpdateStates()
 {
-    RideRating::UpdateState nullState{};
+    UpdateState nullState{};
     nullState.State = RIDE_RATINGS_STATE_FIND_NEXT_RIDE;
 
     auto& updateStates = getGameState().rideRatingUpdateStates;
@@ -178,9 +179,9 @@ void RideRating::ResetUpdateStates()
  */
 void RideRating::UpdateRide(const Ride& ride)
 {
-    RideRating::UpdateState state;
     if (ride.status != RideStatus::closed)
     {
+        UpdateState state;
         state.CurrentRide = ride.id;
         state.State = RIDE_RATINGS_STATE_INITIALISE;
         while (state.State != RIDE_RATINGS_STATE_FIND_NEXT_RIDE)
@@ -341,6 +342,7 @@ static void ride_ratings_update_state_1(RideRating::UpdateState& state)
         state.ProximityScores[i] = 0;
     }
     state.AmountOfBrakes = 0;
+    state.amountOfBoosters = 0;
     state.AmountOfReversers = 0;
     state.State = RIDE_RATINGS_STATE_2;
     state.StationFlags = 0;
@@ -385,10 +387,10 @@ static void ride_ratings_update_state_2(RideRating::UpdateState& state)
                 continue;
         }
 
-        if (trackType == TrackElemType::None
+        if (trackType == TrackElemType::none
             || (tileElement->AsTrack()->GetSequenceIndex() == 0 && trackType == tileElement->AsTrack()->GetTrackType()))
         {
-            if (trackType == TrackElemType::EndStation)
+            if (trackType == TrackElemType::endStation)
             {
                 auto entranceIndex = tileElement->AsTrack()->GetStationIndex();
                 state.StationFlags &= ~RIDE_RATING_STATION_FLAG_NO_ENTRANCE;
@@ -490,7 +492,7 @@ static void ride_ratings_update_state_5(RideRating::UpdateState& state)
                 continue;
         }
 
-        if (trackType == TrackElemType::None || trackType == tileElement->AsTrack()->GetTrackType())
+        if (trackType == TrackElemType::none || trackType == tileElement->AsTrack()->GetTrackType())
         {
             ride_ratings_score_close_proximity(state, tileElement);
 
@@ -550,7 +552,7 @@ static void ride_ratings_begin_proximity_loop(RideRating::UpdateState& state)
 
             auto location = station.GetStart();
             state.Proximity = location;
-            state.ProximityTrackType = TrackElemType::None;
+            state.ProximityTrackType = TrackElemType::none;
             state.ProximityStart = location;
             return;
         }
@@ -659,8 +661,8 @@ static void ride_ratings_score_close_proximity_loops_helper(RideRating::UpdateSt
                 if (zDiff >= 0 && zDiff <= 16)
                 {
                     proximity_score_increment(state, PROXIMITY_TRACK_THROUGH_VERTICAL_LOOP);
-                    if (tileElement->AsTrack()->GetTrackType() == TrackElemType::LeftVerticalLoop
-                        || tileElement->AsTrack()->GetTrackType() == TrackElemType::RightVerticalLoop)
+                    if (tileElement->AsTrack()->GetTrackType() == TrackElemType::leftVerticalLoop
+                        || tileElement->AsTrack()->GetTrackType() == TrackElemType::rightVerticalLoop)
                     {
                         proximity_score_increment(state, PROXIMITY_INTERSECTING_VERTICAL_LOOP);
                     }
@@ -677,7 +679,7 @@ static void ride_ratings_score_close_proximity_loops_helper(RideRating::UpdateSt
 static void ride_ratings_score_close_proximity_loops(RideRating::UpdateState& state, TileElement* inputTileElement)
 {
     auto trackType = inputTileElement->AsTrack()->GetTrackType();
-    if (trackType == TrackElemType::LeftVerticalLoop || trackType == TrackElemType::RightVerticalLoop)
+    if (trackType == TrackElemType::leftVerticalLoop || trackType == TrackElemType::rightVerticalLoop)
     {
         ride_ratings_score_close_proximity_loops_helper(state, { state.Proximity, inputTileElement });
 
@@ -771,7 +773,7 @@ static void ride_ratings_score_close_proximity(RideRating::UpdateState& state, T
             case TileElementType::Track:
             {
                 auto trackType = tileElement->AsTrack()->GetTrackType();
-                if (trackType == TrackElemType::LeftVerticalLoop || trackType == TrackElemType::RightVerticalLoop)
+                if (trackType == TrackElemType::leftVerticalLoop || trackType == TrackElemType::rightVerticalLoop)
                 {
                     int32_t sequence = tileElement->AsTrack()->GetSequenceIndex();
                     if (sequence == 3 || sequence == 6)
@@ -863,18 +865,12 @@ static void ride_ratings_score_close_proximity(RideRating::UpdateState& state, T
     ride_ratings_score_close_proximity_in_direction(state, inputTileElement, (direction - 1) & 3);
     ride_ratings_score_close_proximity_loops(state, inputTileElement);
 
-    switch (state.ProximityTrackType)
-    {
-        case TrackElemType::Brakes:
-            state.AmountOfBrakes++;
-            break;
-        case TrackElemType::LeftReverser:
-        case TrackElemType::RightReverser:
-            state.AmountOfReversers++;
-            break;
-        default:
-            break;
-    }
+    if (TrackTypeIsBrakes(state.ProximityTrackType))
+        state.AmountOfBrakes++;
+    else if (TrackTypeIsBooster(state.ProximityTrackType))
+        state.amountOfBoosters++;
+    else if (TrackTypeIsReverser(state.ProximityTrackType))
+        state.AmountOfReversers++;
 }
 
 static void RideRatingsCalculate(RideRating::UpdateState& state, Ride& ride)
@@ -893,7 +889,7 @@ static void RideRatingsCalculate(RideRating::UpdateState& state, Ride& ride)
             break;
         case RatingsCalculationType::Stall:
             ride.upkeepCost = RideComputeUpkeep(state, ride);
-            ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_INCOME;
+            ride.windowInvalidateFlags.set(RideInvalidateFlag::income);
             // Exit ratings
             return;
     }
@@ -902,7 +898,8 @@ static void RideRatingsCalculate(RideRating::UpdateState& state, Ride& ride)
     SetUnreliabilityFactor(ride);
 
     const auto shelteredEighths = GetNumOfShelteredEighths(ride);
-    ride.shelteredEighths = (rrd.RideShelter == -1) ? shelteredEighths.TotalShelteredEighths : rrd.RideShelter;
+    ride.shelteredEighths = (rrd.RideShelter == kDynamicRideShelterRating) ? shelteredEighths.TotalShelteredEighths
+                                                                           : rrd.RideShelter;
 
     RideRating::Tuple ratings = rrd.BaseRatings;
     // Apply Modifiers
@@ -1056,11 +1053,11 @@ static void RideRatingsCalculate(RideRating::UpdateState& state, Ride& ride)
     if (ride.ratings != ratings)
     {
         ride.ratings = ratings;
-        ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_RATINGS;
+        ride.windowInvalidateFlags.set(RideInvalidateFlag::ratings);
     }
 
     ride.upkeepCost = RideComputeUpkeep(state, ride);
-    ride.windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_INCOME;
+    ride.windowInvalidateFlags.set(RideInvalidateFlag::income);
 
 #ifdef ORIGINAL_RATINGS
     if (!ride.ratings.isNull())
@@ -1211,6 +1208,9 @@ static money64 RideComputeUpkeep(RideRating::UpdateState& state, const Ride& rid
 
     // Add maintenance cost for brake track pieces
     upkeep += 20 * state.AmountOfBrakes;
+
+    // Add maintenance cost for booster track pieces
+    upkeep += 80 * state.amountOfBoosters;
 
     // these seem to be adhoc adjustments to a ride's upkeep/cost, times
     // various variables set on the ride itself.

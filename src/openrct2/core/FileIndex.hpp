@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -144,6 +144,9 @@ private:
         std::vector<std::string> files;
         for (const auto& directory : SearchPaths)
         {
+            if (directory.empty())
+                continue;
+
             auto absoluteDirectory = OpenRCT2::Path::GetAbsolute(directory);
             LOG_VERBOSE("FileIndex:Scanning for %s in '%s'", _pattern.c_str(), absoluteDirectory.c_str());
 

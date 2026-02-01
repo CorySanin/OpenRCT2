@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,7 +20,7 @@ namespace OpenRCT2
 constexpr RideTypeDescriptor RiverRapidsRTD =
 {
     .Category = RideCategory::water,
-    .StartTrackPiece = TrackElemType::EndStation,
+    .StartTrackPiece = TrackElemType::endStation,
     .TrackPaintFunctions = TrackDrawerDescriptor({
         .trackStyle = TrackStyle::riverRapids,
         .supportType = WoodenSupportType::truss,
@@ -39,7 +39,7 @@ constexpr RideTypeDescriptor RiverRapidsRTD =
     .DefaultMode = RideMode::continuousCircuit,
     .Naming = { STR_RIDE_NAME_RIVER_RAPIDS, STR_RIDE_DESCRIPTION_RIVER_RAPIDS },
     .NameConvention = { RideComponentType::Boat, RideComponentType::Track, RideComponentType::Station },
-    .AvailableBreakdowns = (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_CONTROL_FAILURE),
+    .AvailableBreakdowns = (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_BRAKES_FAILURE),
     .Heights = { 9, 32, 14, 15, },
     .MaxMass = 255,
     .LiftData = { Audio::SoundId::liftFlume, 5, 5 },
@@ -51,7 +51,7 @@ constexpr RideTypeDescriptor RiverRapidsRTD =
     .PhotoItem = ShopItem::photo4,
     .BonusValue = 70,
     .ColourPresets = TRACK_COLOUR_PRESETS(
-        { COLOUR_WHITE, COLOUR_BLACK, COLOUR_DARK_BROWN },
+        { Drawing::Colour::white, Drawing::Colour::black, Drawing::Colour::darkBrown },
     ),
     .ColourPreview = { SPR_RIDE_DESIGN_PREVIEW_RIVER_RAPIDS_TRACK, SPR_RIDE_DESIGN_PREVIEW_RIVER_RAPIDS_SUPPORTS },
     .ColourKey = RideColourKey::Ride,
@@ -61,7 +61,7 @@ constexpr RideTypeDescriptor RiverRapidsRTD =
         RatingsCalculationType::Normal,
         { RideRating::make(1, 20), RideRating::make(0, 70), RideRating::make(0, 50) },
         16,
-        -1,
+        kDynamicRideShelterRating,
         false,
         {
             { RatingsModifierType::BonusLength,           2000,             6225, 0, 0 },

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -66,15 +66,15 @@ namespace OpenRCT2::GameActions
 
     Result LandSetRightsAction::Query(GameState_t& gameState) const
     {
-        return QueryExecute(false);
+        return QueryExecute(gameState, false);
     }
 
     Result LandSetRightsAction::Execute(GameState_t& gameState) const
     {
-        return QueryExecute(true);
+        return QueryExecute(gameState, true);
     }
 
-    Result LandSetRightsAction::QueryExecute(bool isExecuting) const
+    Result LandSetRightsAction::QueryExecute(GameState_t& gameState, bool isExecuting) const
     {
         auto res = Result();
 
@@ -83,12 +83,12 @@ namespace OpenRCT2::GameActions
                           (validRange.GetY1() + validRange.GetY2()) / 2 + 16, 0 };
         centre.z = TileElementHeight(centre);
 
-        res.Position = centre;
-        res.Expenditure = ExpenditureType::landPurchase;
+        res.position = centre;
+        res.expenditure = ExpenditureType::landPurchase;
 
-        if (!isInEditorMode() && !getGameState().cheats.sandboxMode)
+        if (!isInEditorMode() && !gameState.cheats.sandboxMode)
         {
-            return Result(Status::NotInEditorMode, kStringIdNone, STR_LAND_NOT_FOR_SALE);
+            return Result(Status::notInEditorMode, kStringIdNone, STR_LAND_NOT_FOR_SALE);
         }
 
         // Game command modified to accept selection size
@@ -98,10 +98,10 @@ namespace OpenRCT2::GameActions
             {
                 if (!LocationValid({ x, y }))
                     continue;
-                auto result = MapBuyLandRightsForTile({ x, y }, isExecuting);
-                if (result.Error == Status::Ok)
+                auto result = MapBuyLandRightsForTile(gameState, { x, y }, isExecuting);
+                if (result.error == Status::ok)
                 {
-                    res.Cost += result.Cost;
+                    res.cost += result.cost;
                 }
             }
         }
@@ -109,18 +109,18 @@ namespace OpenRCT2::GameActions
         if (isExecuting)
         {
             MapCountRemainingLandRights();
-            OpenRCT2::Audio::Play3D(OpenRCT2::Audio::SoundId::placeItem, centre);
+            Audio::Play3D(Audio::SoundId::placeItem, centre);
         }
         return res;
     }
 
-    Result LandSetRightsAction::MapBuyLandRightsForTile(const CoordsXY& loc, bool isExecuting) const
+    Result LandSetRightsAction::MapBuyLandRightsForTile(GameState_t& gameState, const CoordsXY& loc, bool isExecuting) const
     {
         SurfaceElement* surfaceElement = MapGetSurfaceElementAt(loc);
         if (surfaceElement == nullptr)
         {
             LOG_ERROR("No surface at x = %d, y = %d", loc.x, loc.y);
-            return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
         }
 
         auto res = Result();
@@ -187,7 +187,6 @@ namespace OpenRCT2::GameActions
                     }
                 }
 
-                auto& gameState = getGameState();
                 const uint8_t currentOwnership = surfaceElement->GetOwnership();
 
                 // Are land rights or construction rights currently owned?
@@ -195,23 +194,23 @@ namespace OpenRCT2::GameActions
                 {
                     // Buying land
                     if (!(currentOwnership & OWNERSHIP_OWNED) && (_ownership & OWNERSHIP_OWNED))
-                        res.Cost = gameState.scenarioOptions.landPrice;
+                        res.cost = gameState.scenarioOptions.landPrice;
 
                     // Buying construction rights
                     if (!(currentOwnership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED)
                         && (_ownership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED))
-                        res.Cost = gameState.scenarioOptions.constructionRightsPrice;
+                        res.cost = gameState.scenarioOptions.constructionRightsPrice;
                 }
                 else
                 {
                     // Selling land
                     if ((currentOwnership & OWNERSHIP_OWNED) && !(_ownership & OWNERSHIP_OWNED))
-                        res.Cost = -gameState.scenarioOptions.landPrice;
+                        res.cost = -gameState.scenarioOptions.landPrice;
 
                     // Selling construction rights
                     if ((currentOwnership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED)
                         && !(_ownership & OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED))
-                        res.Cost = -gameState.scenarioOptions.constructionRightsPrice;
+                        res.cost = -gameState.scenarioOptions.constructionRightsPrice;
                 }
 
                 if (isExecuting)
@@ -234,7 +233,7 @@ namespace OpenRCT2::GameActions
             }
             default:
                 LOG_ERROR("Invalid setting %u to set land rights", _setting);
-                return Result(Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
+                return Result(Status::invalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
         }
     }
 } // namespace OpenRCT2::GameActions

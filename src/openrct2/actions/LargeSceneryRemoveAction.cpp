@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -53,19 +53,19 @@ namespace OpenRCT2::GameActions
     {
         auto res = Result();
 
-        const uint32_t flags = GetFlags();
+        const auto flags = GetFlags();
 
-        res.Position.x = _loc.x + 16;
-        res.Position.y = _loc.y + 16;
-        res.Position.z = _loc.z;
-        res.Expenditure = ExpenditureType::landscaping;
-        res.Cost = 0;
+        res.position.x = _loc.x + 16;
+        res.position.y = _loc.y + 16;
+        res.position.z = _loc.z;
+        res.expenditure = ExpenditureType::landscaping;
+        res.cost = 0;
 
         TileElement* tileElement = FindLargeSceneryElement(_loc, _tileIndex);
         if (tileElement == nullptr)
         {
             LOG_ERROR("No large scenery element to remove at x = %d, y = %d", _loc.x, _loc.y);
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
         }
 
         auto* sceneryEntry = tileElement->AsLargeScenery()->GetEntry();
@@ -73,7 +73,7 @@ namespace OpenRCT2::GameActions
         if (sceneryEntry == nullptr)
         {
             LOG_WARNING("Scenery entry at x = %d, y = %d not removed because it is an unknown object type", _loc.x, _loc.y);
-            return Result(Status::Unknown, STR_CANT_REMOVE_THIS, STR_UNKNOWN_OBJECT_TYPE);
+            return Result(Status::unknown, STR_CANT_REMOVE_THIS, STR_UNKNOWN_OBJECT_TYPE);
         }
 
         auto rotatedOffsets = CoordsXYZ{ CoordsXY{ sceneryEntry->tiles[_tileIndex].offset }.Rotate(_loc.direction),
@@ -88,32 +88,32 @@ namespace OpenRCT2::GameActions
 
             auto currentTile = CoordsXYZ{ firstTile.x, firstTile.y, firstTile.z } + currentTileRotatedOffset;
 
-            if (gLegacyScene != LegacyScene::scenarioEditor && !getGameState().cheats.sandboxMode)
+            if (gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode)
             {
-                if (getGameState().park.flags & PARK_FLAGS_FORBID_TREE_REMOVAL)
+                if (gameState.park.flags & PARK_FLAGS_FORBID_TREE_REMOVAL)
                 {
                     if (sceneryEntry->HasFlag(LARGE_SCENERY_FLAG_IS_TREE))
                     {
-                        res.Error = Status::NoClearance;
-                        res.ErrorTitle = STR_CANT_REMOVE_THIS;
-                        res.ErrorMessage = STR_FORBIDDEN_BY_THE_LOCAL_AUTHORITY;
+                        res.error = Status::noClearance;
+                        res.errorTitle = STR_CANT_REMOVE_THIS;
+                        res.errorMessage = STR_FORBIDDEN_BY_THE_LOCAL_AUTHORITY;
                         return res;
                     }
                 }
 
                 if (!MapIsLocationOwned({ currentTile.x, currentTile.y, currentTile.z }))
                 {
-                    return Result(Status::NoClearance, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
+                    return Result(Status::noClearance, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
                 }
             }
 
             if (!LocationValid(currentTile))
             {
-                return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
+                return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
             }
             // Prevent duplicate costs when using the clear scenery tool that overlaps multiple large
             // scenery tile elements.
-            if (flags & GAME_COMMAND_FLAG_TRACK_DESIGN)
+            if (flags.has(CommandFlag::trackDesign))
             {
                 if (tileElement->AsLargeScenery()->IsAccounted())
                     calculate_cost = false;
@@ -124,7 +124,7 @@ namespace OpenRCT2::GameActions
         }
 
         if (calculate_cost)
-            res.Cost = sceneryEntry->removal_price;
+            res.cost = sceneryEntry->removal_price;
 
         return res;
     }
@@ -133,17 +133,17 @@ namespace OpenRCT2::GameActions
     {
         auto res = Result();
 
-        res.Position.x = _loc.x + 16;
-        res.Position.y = _loc.y + 16;
-        res.Position.z = _loc.z;
-        res.Expenditure = ExpenditureType::landscaping;
-        res.Cost = 0;
+        res.position.x = _loc.x + 16;
+        res.position.y = _loc.y + 16;
+        res.position.z = _loc.z;
+        res.expenditure = ExpenditureType::landscaping;
+        res.cost = 0;
 
         TileElement* tileElement = FindLargeSceneryElement(_loc, _tileIndex);
         if (tileElement == nullptr)
         {
             LOG_ERROR("No large scenery element to remove at %d, y = %d", _loc.x, _loc.y);
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_INVALID_SELECTION_OF_OBJECTS);
         }
 
         auto* sceneryEntry = tileElement->AsLargeScenery()->GetEntry();
@@ -151,7 +151,7 @@ namespace OpenRCT2::GameActions
         if (sceneryEntry == nullptr)
         {
             LOG_WARNING("Scenery entry at x = %d, y = %d not removed because it is an unknown object type", _loc.x, _loc.y);
-            return Result(Status::Unknown, STR_CANT_REMOVE_THIS, kStringIdNone);
+            return Result(Status::unknown, STR_CANT_REMOVE_THIS, kStringIdNone);
         }
 
         tileElement->RemoveBannerEntry();
@@ -167,11 +167,11 @@ namespace OpenRCT2::GameActions
 
             auto currentTile = CoordsXYZ{ firstTile.x, firstTile.y, firstTile.z } + rotatedCurrentTile;
 
-            if (gLegacyScene != LegacyScene::scenarioEditor && !getGameState().cheats.sandboxMode)
+            if (gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode)
             {
                 if (!MapIsLocationOwned({ currentTile.x, currentTile.y, currentTile.z }))
                 {
-                    return Result(Status::NoClearance, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
+                    return Result(Status::noClearance, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
                 }
             }
 
@@ -187,14 +187,14 @@ namespace OpenRCT2::GameActions
             }
         }
 
-        res.Cost = sceneryEntry->removal_price;
+        res.cost = sceneryEntry->removal_price;
 
         return res;
     }
 
     TileElement* LargeSceneryRemoveAction::FindLargeSceneryElement(const CoordsXYZ& pos, int32_t sequenceIndex) const
     {
-        const bool isGhost = GetFlags() & GAME_COMMAND_FLAG_GHOST;
+        const bool isGhost = GetFlags().has(CommandFlag::ghost);
         for (auto* sceneryElement : TileElementsView<LargeSceneryElement>(pos))
         {
             // If we are removing ghost elements

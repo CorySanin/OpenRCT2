@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -19,6 +19,8 @@
 #include <openrct2/Input.h>
 #include <openrct2/SpriteIds.h>
 #include <openrct2/config/Config.h>
+#include <openrct2/drawing/ColourMap.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
 #include <openrct2/interface/ColourWithFlags.h>
@@ -496,7 +498,7 @@ namespace OpenRCT2::Ui
                 colour.flags.set(ColourFlag::inset, true);
 
             utf8 buffer[512] = { 0 };
-            OpenRCT2::FormatStringLegacy(buffer, sizeof(buffer), stringId, rawFt.Data());
+            FormatStringLegacy(buffer, sizeof(buffer), stringId, rawFt.Data());
 
             auto ft = Formatter();
             ft.Add<utf8*>(buffer);
@@ -511,27 +513,27 @@ namespace OpenRCT2::Ui
         const auto r = w.windowPos.x + widget.right;
         const auto b = w.windowPos.y + widget.bottom;
 
-        uint8_t colour = w.colours[widget.colour].colour;
+        auto colour = w.colours[widget.colour].colour;
 
         // Border left of text
-        Rectangle::fill(rt, { { l, t }, { l + 4, t } }, ColourMapA[colour].mid_dark);
-        Rectangle::fill(rt, { { l + 1, t + 1 }, { l + 4, t + 1 } }, ColourMapA[colour].lighter);
+        Rectangle::fill(rt, { { l, t }, { l + 4, t } }, getColourMap(colour).midDark);
+        Rectangle::fill(rt, { { l + 1, t + 1 }, { l + 4, t + 1 } }, getColourMap(colour).lighter);
 
         // Border right of text
-        Rectangle::fill(rt, { { textRight, t }, { r - 1, t } }, ColourMapA[colour].mid_dark);
-        Rectangle::fill(rt, { { textRight, t + 1 }, { r - 2, t + 1 } }, ColourMapA[colour].lighter);
+        Rectangle::fill(rt, { { textRight, t }, { r - 1, t } }, getColourMap(colour).midDark);
+        Rectangle::fill(rt, { { textRight, t + 1 }, { r - 2, t + 1 } }, getColourMap(colour).lighter);
 
         // Border right
-        Rectangle::fill(rt, { { r - 1, t + 1 }, { r - 1, b - 1 } }, ColourMapA[colour].mid_dark);
-        Rectangle::fill(rt, { { r, t }, { r, b } }, ColourMapA[colour].lighter);
+        Rectangle::fill(rt, { { r - 1, t + 1 }, { r - 1, b - 1 } }, getColourMap(colour).midDark);
+        Rectangle::fill(rt, { { r, t }, { r, b } }, getColourMap(colour).lighter);
 
         // Border bottom
-        Rectangle::fill(rt, { { l, b - 1 }, { r - 2, b - 1 } }, ColourMapA[colour].mid_dark);
-        Rectangle::fill(rt, { { l, b }, { r - 1, b } }, ColourMapA[colour].lighter);
+        Rectangle::fill(rt, { { l, b - 1 }, { r - 2, b - 1 } }, getColourMap(colour).midDark);
+        Rectangle::fill(rt, { { l, b }, { r - 1, b } }, getColourMap(colour).lighter);
 
         // Border left
-        Rectangle::fill(rt, { { l, t + 1 }, { l, b - 2 } }, ColourMapA[colour].mid_dark);
-        Rectangle::fill(rt, { { l + 1, t + 2 }, { l + 1, b - 2 } }, ColourMapA[colour].lighter);
+        Rectangle::fill(rt, { { l, t + 1 }, { l, b - 2 } }, getColourMap(colour).midDark);
+        Rectangle::fill(rt, { { l + 1, t + 2 }, { l + 1, b - 2 } }, getColourMap(colour).lighter);
     }
 
     /**
@@ -558,10 +560,10 @@ namespace OpenRCT2::Ui
             Rectangle::FillMode::dontLightenWhenInset);
 
         // Black caption bars look slightly green, this fixes that
-        if (colour.colour == COLOUR_BLACK)
+        if (colour.colour == Drawing::Colour::black)
             Rectangle::fill(
                 rt, { { topLeft + ScreenCoordsXY{ 1, 1 } }, { bottomRight - ScreenCoordsXY{ 1, 1 } } },
-                ColourMapA[colour.colour].dark);
+                getColourMap(colour.colour).dark);
         else
             Rectangle::filter(
                 rt, { { topLeft + ScreenCoordsXY{ 1, 1 } }, { bottomRight - ScreenCoordsXY{ 1, 1 } } },
@@ -590,7 +592,7 @@ namespace OpenRCT2::Ui
 
         DrawTextEllipsised(
             rt, topLeft, width, widget->text, Formatter::Common(),
-            { ColourWithFlags{ COLOUR_WHITE }.withFlag(ColourFlag::withOutline, true), TextAlignment::centre });
+            { ColourWithFlags{ Drawing::Colour::white }.withFlag(ColourFlag::withOutline, true), TextAlignment::centre });
     }
 
     /**
@@ -622,12 +624,13 @@ namespace OpenRCT2::Ui
         if (widget.string == nullptr)
             return;
 
-        topLeft = w.windowPos + ScreenCoordsXY{ widget.midX() - 1, std::max<int32_t>(widget.top, widget.midY() - 5) };
+        const auto closeButtonTextOffset = Config::Get().interface.enlargedUi ? 5 : 6;
+        auto crossMidPoint = w.windowPos + ScreenCoordsXY{ widget.midX() - 1, widget.midY() - closeButtonTextOffset };
 
         if (widgetIsDisabled(w, widgetIndex))
             colour.flags.set(ColourFlag::inset, true);
 
-        DrawText(rt, topLeft, { colour, TextAlignment::centre }, widget.string);
+        DrawText(rt, crossMidPoint, { colour, TextAlignment::centre }, widget.string);
     }
 
     /**
@@ -709,7 +712,7 @@ namespace OpenRCT2::Ui
         bottomRight.y--;
 
         bool hScrollNeeded = scroll.contentWidth > (widget.width() - 1) && (scroll.flags & HSCROLLBAR_VISIBLE);
-        bool vScrollNeeded = scroll.contentHeight > widget.height() && (scroll.flags & VSCROLLBAR_VISIBLE);
+        bool vScrollNeeded = scroll.contentHeight > widget.height() - 1 && (scroll.flags & VSCROLLBAR_VISIBLE);
 
         // Horizontal scrollbar
         if (hScrollNeeded)
@@ -740,7 +743,7 @@ namespace OpenRCT2::Ui
         // Create a new inner scroll render target
         RenderTarget scrollRT = rt;
 
-        // Clip the scroll dpi against the outer dpi
+        // Clip the scroll RT against the outer RT
         int32_t cl = std::max<int32_t>(rt.x, topLeft.x);
         int32_t ct = std::max<int32_t>(rt.y, topLeft.y);
         int32_t cr = std::min<int32_t>(rt.x + rt.width, bottomRight.x);
@@ -766,17 +769,17 @@ namespace OpenRCT2::Ui
         colour.flags.set(ColourFlag::translucent, false);
 
         // Trough
-        Rectangle::fill(rt, { { l + kScrollBarWidth, t }, { r - kScrollBarWidth, b } }, ColourMapA[colour.colour].lighter);
+        Rectangle::fill(rt, { { l + kScrollBarWidth, t }, { r - kScrollBarWidth, b } }, getColourMap(colour.colour).lighter);
         Rectangle::fill(
-            rt, { { l + kScrollBarWidth, t }, { r - kScrollBarWidth, b } }, 0x1000000 | ColourMapA[colour.colour].mid_dark);
+            rt, { { l + kScrollBarWidth, t }, { r - kScrollBarWidth, b } }, getColourMap(colour.colour).midDark, true);
         Rectangle::fill(
-            rt, { { l + kScrollBarWidth, t + 2 }, { r - kScrollBarWidth, t + 2 } }, ColourMapA[colour.colour].mid_dark);
+            rt, { { l + kScrollBarWidth, t + 2 }, { r - kScrollBarWidth, t + 2 } }, getColourMap(colour.colour).midDark);
         Rectangle::fill(
-            rt, { { l + kScrollBarWidth, t + 3 }, { r - kScrollBarWidth, t + 3 } }, ColourMapA[colour.colour].lighter);
+            rt, { { l + kScrollBarWidth, t + 3 }, { r - kScrollBarWidth, t + 3 } }, getColourMap(colour.colour).lighter);
         Rectangle::fill(
-            rt, { { l + kScrollBarWidth, t + 7 }, { r - kScrollBarWidth, t + 7 } }, ColourMapA[colour.colour].mid_dark);
+            rt, { { l + kScrollBarWidth, t + 7 }, { r - kScrollBarWidth, t + 7 } }, getColourMap(colour.colour).midDark);
         Rectangle::fill(
-            rt, { { l + kScrollBarWidth, t + 8 }, { r - kScrollBarWidth, t + 8 } }, ColourMapA[colour.colour].lighter);
+            rt, { { l + kScrollBarWidth, t + 8 }, { r - kScrollBarWidth, t + 8 } }, getColourMap(colour.colour).lighter);
 
         // Left button
         {
@@ -813,17 +816,17 @@ namespace OpenRCT2::Ui
         colour.flags.set(ColourFlag::translucent, false);
 
         // Trough
-        Rectangle::fill(rt, { { l, t + kScrollBarWidth }, { r, b - kScrollBarWidth } }, ColourMapA[colour.colour].lighter);
+        Rectangle::fill(rt, { { l, t + kScrollBarWidth }, { r, b - kScrollBarWidth } }, getColourMap(colour.colour).lighter);
         Rectangle::fill(
-            rt, { { l, t + kScrollBarWidth }, { r, b - kScrollBarWidth } }, 0x1000000 | ColourMapA[colour.colour].mid_dark);
+            rt, { { l, t + kScrollBarWidth }, { r, b - kScrollBarWidth } }, getColourMap(colour.colour).midDark, true);
         Rectangle::fill(
-            rt, { { l + 2, t + kScrollBarWidth }, { l + 2, b - kScrollBarWidth } }, ColourMapA[colour.colour].mid_dark);
+            rt, { { l + 2, t + kScrollBarWidth }, { l + 2, b - kScrollBarWidth } }, getColourMap(colour.colour).midDark);
         Rectangle::fill(
-            rt, { { l + 3, t + kScrollBarWidth }, { l + 3, b - kScrollBarWidth } }, ColourMapA[colour.colour].lighter);
+            rt, { { l + 3, t + kScrollBarWidth }, { l + 3, b - kScrollBarWidth } }, getColourMap(colour.colour).lighter);
         Rectangle::fill(
-            rt, { { l + 7, t + kScrollBarWidth }, { l + 7, b - kScrollBarWidth } }, ColourMapA[colour.colour].mid_dark);
+            rt, { { l + 7, t + kScrollBarWidth }, { l + 7, b - kScrollBarWidth } }, getColourMap(colour.colour).midDark);
         Rectangle::fill(
-            rt, { { l + 8, t + kScrollBarWidth }, { l + 8, b - kScrollBarWidth } }, ColourMapA[colour.colour].lighter);
+            rt, { { l + 8, t + kScrollBarWidth }, { l + 8, b - kScrollBarWidth } }, getColourMap(colour.colour).lighter);
 
         // Up button
         Rectangle::fillInset(
@@ -856,7 +859,7 @@ namespace OpenRCT2::Ui
         const auto& widget = w.widgets[widgetIndex];
 
         // Get the image
-        if (widget.image.GetIndex() == kSpriteIdNull)
+        if (widget.image.GetIndex() == kImageIndexUndefined)
             return;
         auto image = widget.image;
 
@@ -871,11 +874,11 @@ namespace OpenRCT2::Ui
         if (widgetIsDisabled(w, widgetIndex))
         {
             // Draw greyed out (light border bottom right shadow)
-            auto mappedColour = ColourMapA[colour].lighter;
+            auto mappedColour = getColourMap(colour).lighter;
             GfxDrawSpriteSolid(rt, image, screenCoords + ScreenCoordsXY{ 1, 1 }, mappedColour);
 
             // Draw greyed out (dark)
-            mappedColour = ColourMapA[colour].mid_light;
+            mappedColour = getColourMap(colour).midLight;
             GfxDrawSpriteSolid(rt, image, screenCoords, mappedColour);
         }
         else
@@ -1020,7 +1023,7 @@ namespace OpenRCT2::Ui
             }
         }
         else if (
-            (scroll.flags & VSCROLLBAR_VISIBLE) && scroll.contentHeight > widget->height()
+            (scroll.flags & VSCROLLBAR_VISIBLE) && scroll.contentHeight > widget->height() - 1
             && (screenCoords.x >= w.windowPos.x + widget->right - (kScrollBarWidth + 1)))
         {
             // vertical scrollbar
@@ -1156,7 +1159,7 @@ namespace OpenRCT2::Ui
         ScreenCoordsXY topLeft{ w.windowPos + ScreenCoordsXY{ widget.left, widget.top } };
         ScreenCoordsXY bottomRight{ w.windowPos + ScreenCoordsXY{ widget.right, widget.bottom } };
 
-        auto& tbIdent = OpenRCT2::Ui::Windows::GetCurrentTextBox();
+        auto& tbIdent = Windows::GetCurrentTextBox();
         bool active = w.classification == tbIdent.window.classification && w.number == tbIdent.window.number
             && widgetIndex == tbIdent.widgetIndex;
 
@@ -1168,7 +1171,7 @@ namespace OpenRCT2::Ui
         // Figure out where the text should be positioned vertically.
         topLeft.y = w.windowPos.y + widget.textTop();
 
-        auto* textInput = OpenRCT2::Ui::Windows::GetTextboxSession();
+        auto* textInput = Windows::GetTextboxSession();
         if (!active || textInput == nullptr)
         {
             if (widget.text != 0)
@@ -1205,11 +1208,11 @@ namespace OpenRCT2::Ui
                 4);
         }
 
-        if (OpenRCT2::Ui::Windows::TextBoxCaretIsFlashed())
+        if (Windows::TextBoxCaretIsFlashed())
         {
-            auto colour = ColourMapA[w.colours[1].colour].mid_light;
-            auto y = topLeft.y + 1 + widget.height() - 4;
-            Rectangle::fill(rt, { { curX, y }, { curX + width, y } }, colour + 5);
+            auto colour = getColourMap(w.colours[1].colour).midLight;
+            auto y = topLeft.y + 1 + widget.height() - 5;
+            Rectangle::fill(rt, { { curX, y }, { curX + width, y } }, static_cast<PaletteIndex>(EnumValue(colour) + 5));
         }
     }
 
@@ -1240,9 +1243,10 @@ namespace OpenRCT2::Ui
         const int32_t fillSize = (barWidth * percentage) / 100;
         if (fillSize > 0)
         {
+            // Progress bar widgets have an actual colour saved in them, rather than an index to the window colours.
             Rectangle::fillInset(
-                rt, { topLeft + ScreenCoordsXY{ 1, 1 }, topLeft + ScreenCoordsXY{ fillSize + 1, widget.height() - 1 } },
-                { widget.colour });
+                rt, { topLeft + ScreenCoordsXY{ 1, 1 }, topLeft + ScreenCoordsXY{ fillSize + 1, widget.height() - 2 } },
+                { static_cast<Colour>(widget.colour) });
         }
     }
 
@@ -1254,9 +1258,9 @@ namespace OpenRCT2::Ui
         Rectangle::fillInset(rt, { topLeft, bottomRight }, w.colours[1], Rectangle::BorderStyle::inset);
     }
 
-    ImageId getColourButtonImage(colour_t colour)
+    ImageId getColourButtonImage(Drawing::Colour colour)
     {
-        if (colour == COLOUR_INVISIBLE)
+        if (colour == Drawing::Colour::invisible)
         {
             return ImageId(SPR_G2_ICON_PALETTE_INVISIBLE, colour).WithBlended(false);
         }
@@ -1312,7 +1316,7 @@ namespace OpenRCT2::Ui
 
         if (scroll.flags & VSCROLLBAR_VISIBLE)
         {
-            int32_t view_size = widget.height() - 21;
+            int32_t view_size = widget.height() - 22;
             if (scroll.flags & HSCROLLBAR_VISIBLE)
                 view_size -= 11;
             int32_t y = scroll.contentOffsetY * view_size;
@@ -1320,7 +1324,7 @@ namespace OpenRCT2::Ui
                 y /= scroll.contentHeight;
             scroll.vThumbTop = y + 11;
 
-            y = widget.height() - 2;
+            y = widget.height() - 3;
             if (scroll.flags & HSCROLLBAR_VISIBLE)
                 y -= 11;
             y += scroll.contentOffsetY;

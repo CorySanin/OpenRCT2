@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -24,6 +24,7 @@
 #include <openrct2/actions/StaffSetOrdersAction.h>
 #include <openrct2/actions/StaffSetPatrolAreaAction.h>
 #include <openrct2/config/Config.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/entity/EntityRegistry.h>
 #include <openrct2/entity/PatrolArea.h>
 #include <openrct2/entity/Staff.h>
@@ -38,8 +39,6 @@
 #include <openrct2/world/Footpath.h>
 #include <openrct2/world/MapSelection.h>
 #include <openrct2/world/Park.h>
-
-using namespace OpenRCT2::Numerics;
 
 namespace OpenRCT2::Ui::Windows
 {
@@ -228,7 +227,7 @@ namespace OpenRCT2::Ui::Windows
             CommonPrepareDrawAfter();
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             drawWidgets(rt);
             DrawTabImages(rt);
@@ -388,7 +387,7 @@ namespace OpenRCT2::Ui::Windows
                                                                 Network::GetCurrentPlayerId() };
                     pickupAction.SetCallback(
                         [peepnum = number](const GameActions::GameAction* ga, const GameActions::Result* result) {
-                            if (result->Error != GameActions::Status::Ok)
+                            if (result->error != GameActions::Status::ok)
                                 return;
 
                             auto* windowMgr = GetWindowManager();
@@ -435,7 +434,7 @@ namespace OpenRCT2::Ui::Windows
                     gDropdown.items[1] = Dropdown::PlainMenuLabel(STR_CLEAR_PATROL_AREA);
 
                     auto ddPos = ScreenCoordsXY{ widget->left + windowPos.x, widget->top + windowPos.y };
-                    int32_t extraHeight = widget->height() + 1;
+                    int32_t extraHeight = widget->height();
                     WindowDropdownShowText(ddPos, extraHeight, colours[1], 0, 2);
                     gDropdown.defaultIndex = 0;
 
@@ -482,7 +481,7 @@ namespace OpenRCT2::Ui::Windows
                             return;
                         }
 
-                        auto* windowMgr = Ui::GetWindowManager();
+                        auto* windowMgr = GetWindowManager();
                         windowMgr->CloseByClass(WindowClass::patrolArea);
 
                         auto staffSetPatrolAreaAction = GameActions::StaffSetPatrolAreaAction(
@@ -494,7 +493,7 @@ namespace OpenRCT2::Ui::Windows
                         auto staffId = EntityId::FromUnderlying(number);
                         if (WindowPatrolAreaGetCurrentStaffId() == staffId)
                         {
-                            auto* windowMgr = Ui::GetWindowManager();
+                            auto* windowMgr = GetWindowManager();
                             windowMgr->CloseByClass(WindowClass::patrolArea);
                         }
                         else
@@ -540,7 +539,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_FIRE].right = width - 2;
         }
 
-        void OverviewDraw(RenderTarget& rt)
+        void OverviewDraw(Drawing::RenderTarget& rt)
         {
             // Draw the viewport no sound sprite
             if (viewport != nullptr)
@@ -567,20 +566,20 @@ namespace OpenRCT2::Ui::Windows
             DrawTextEllipsised(rt, screenPos, widgetWidth, STR_BLACK_STRING, ft, { TextAlignment::centre });
         }
 
-        void DrawOverviewTabImage(RenderTarget& rt)
+        void DrawOverviewTabImage(Drawing::RenderTarget& rt)
         {
             if (isWidgetDisabled(WIDX_TAB_1))
                 return;
 
             const auto& widget = widgets[WIDX_TAB_1];
             int32_t widgetWidth = widget.width() - 2;
-            int32_t widgetHeight = widget.height() - 1;
+            int32_t widgetHeight = widget.height() - 2;
             auto screenCoords = windowPos + ScreenCoordsXY{ widget.left + 1, widget.top + 1 };
             if (page == WINDOW_STAFF_OVERVIEW)
                 widgetHeight++;
 
-            RenderTarget clippedRT;
-            if (!ClipDrawPixelInfo(clippedRT, rt, screenCoords, widgetWidth, widgetHeight))
+            Drawing::RenderTarget clippedRT;
+            if (!ClipRenderTarget(clippedRT, rt, screenCoords, widgetWidth, widgetHeight))
             {
                 return;
             }
@@ -616,7 +615,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 const Widget& viewportWidget = widgets[WIDX_VIEWPORT];
                 const auto reqViewportWidth = viewportWidget.width() - 2;
-                const auto reqViewportHeight = viewportWidget.height() - 1;
+                const auto reqViewportHeight = viewportWidget.height() - 2;
 
                 viewport->pos = windowPos + ScreenCoordsXY{ viewportWidget.left + 1, viewportWidget.top + 1 };
                 if (viewport->width != reqViewportWidth || viewport->height != reqViewportHeight)
@@ -668,8 +667,6 @@ namespace OpenRCT2::Ui::Windows
             if (widgetIndex != WIDX_PICKUP)
                 return;
 
-            MapInvalidateSelectionRect();
-
             gMapSelectFlags.unset(MapSelectFlag::enable);
 
             auto mapCoords = FootpathGetCoordinatesFromPos({ screenCoords.x, screenCoords.y + 16 }, nullptr, nullptr);
@@ -679,7 +676,6 @@ namespace OpenRCT2::Ui::Windows
                 gMapSelectType = MapSelectType::full;
                 gMapSelectPositionA = mapCoords;
                 gMapSelectPositionB = mapCoords;
-                MapInvalidateSelectionRect();
             }
 
             gPickupPeepImage = ImageId();
@@ -722,7 +718,7 @@ namespace OpenRCT2::Ui::Windows
                                                         { destCoords, tileElement->GetBaseZ() },
                                                         Network::GetCurrentPlayerId() };
             pickupAction.SetCallback([](const GameActions::GameAction* ga, const GameActions::Result* result) {
-                if (result->Error != GameActions::Status::Ok)
+                if (result->error != GameActions::Status::ok)
                     return;
                 ToolCancel();
                 gPickupPeepImage = ImageId();
@@ -802,7 +798,7 @@ namespace OpenRCT2::Ui::Windows
             }
 
             auto ddPos = ScreenCoordsXY{ ddWidget->left + windowPos.x, ddWidget->top + windowPos.y };
-            int32_t ddHeight = ddWidget->height() + 1;
+            int32_t ddHeight = ddWidget->height();
             int32_t ddWidth = ddWidget->width() - 4;
             WindowDropdownShowTextCustomWidth(ddPos, ddHeight, colours[1], 0, Dropdown::Flag::StayOpen, numCostumes, ddWidth);
 
@@ -931,7 +927,7 @@ namespace OpenRCT2::Ui::Windows
 #pragma endregion
 
 #pragma region Statistics tab events
-        void StatsDraw(RenderTarget& rt)
+        void StatsDraw(Drawing::RenderTarget& rt)
         {
             auto staff = GetStaff();
             if (staff == nullptr)
@@ -1159,7 +1155,7 @@ namespace OpenRCT2::Ui::Windows
 
                     auto screenPos = ScreenCoordsXY{ viewWidget.left + 1 + windowPos.x, viewWidget.top + 1 + windowPos.y };
                     int32_t viewportWidth = viewWidget.width() - 2;
-                    int32_t viewportHeight = viewWidget.height() - 1;
+                    int32_t viewportHeight = viewWidget.height() - 2;
 
                     ViewportCreate(*this, screenPos, viewportWidth, viewportHeight, focus.value());
                     flags |= WindowFlag::noScrolling;
@@ -1178,7 +1174,7 @@ namespace OpenRCT2::Ui::Windows
             gDropdown.items[1] = Dropdown::PlainMenuLabel(STR_FOLLOW_SUBJECT_TIP);
 
             WindowDropdownShowText(
-                { windowPos.x + widget->left, windowPos.y + widget->top }, widget->height() + 1, colours[1], 0, 2);
+                { windowPos.x + widget->left, windowPos.y + widget->top }, widget->height(), colours[1], 0, 2);
             gDropdown.defaultIndex = 0;
         }
 
@@ -1188,14 +1184,14 @@ namespace OpenRCT2::Ui::Windows
             WindowFollowSprite(*main, EntityId::FromUnderlying(number));
         }
 
-        void DrawTabImages(RenderTarget& rt)
+        void DrawTabImages(Drawing::RenderTarget& rt)
         {
             DrawOverviewTabImage(rt);
             DrawTabImage(rt, WINDOW_STAFF_OPTIONS, SPR_TAB_STAFF_OPTIONS_0);
             DrawTabImage(rt, WINDOW_STAFF_STATISTICS, SPR_TAB_STATS_0);
         }
 
-        void DrawTabImage(RenderTarget& rt, int32_t p, int32_t baseImageId)
+        void DrawTabImage(Drawing::RenderTarget& rt, int32_t p, int32_t baseImageId)
         {
             WidgetIndex widgetIndex = WIDX_TAB_1 + p;
             Widget* widget = &widgets[widgetIndex];

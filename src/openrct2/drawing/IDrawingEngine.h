@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -38,8 +38,6 @@ enum DrawingEngineFlag
 };
 using DrawingEngineFlags = FlagHolder<uint8_t, DrawingEngineFlag>;
 
-struct RenderTarget;
-
 namespace OpenRCT2::Ui
 {
     struct IUiContext;
@@ -48,6 +46,7 @@ namespace OpenRCT2::Ui
 namespace OpenRCT2::Drawing
 {
     struct IDrawingContext;
+    struct RenderTarget;
 
     struct IDrawingEngine
     {
@@ -70,7 +69,7 @@ namespace OpenRCT2::Drawing
         virtual std::string Screenshot() = 0;
 
         virtual IDrawingContext* GetDrawingContext() = 0;
-        virtual RenderTarget* GetDrawingPixelInfo() = 0;
+        virtual RenderTarget* getRT() = 0;
 
         virtual DrawingEngineFlags GetFlags() = 0;
 
@@ -82,8 +81,7 @@ namespace OpenRCT2::Drawing
         virtual ~IDrawingEngineFactory()
         {
         }
-        [[nodiscard]] virtual std::unique_ptr<IDrawingEngine> Create(DrawingEngine type, OpenRCT2::Ui::IUiContext& uiContext)
-            = 0;
+        [[nodiscard]] virtual std::unique_ptr<IDrawingEngine> Create(DrawingEngine type, Ui::IUiContext& uiContext) = 0;
     };
 
     struct IWeatherDrawer

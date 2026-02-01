@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -61,10 +61,15 @@ extern CoordsXY gMapSelectPositionB;
 extern CoordsXYZ gMapSelectArrowPosition;
 extern uint8_t gMapSelectArrowDirection;
 
-extern std::vector<CoordsXY> gMapSelectionTiles;
-
-void MapInvalidateMapSelectionTiles();
-void MapInvalidateSelectionRect();
 MapRange getMapSelectRange();
 void setMapSelectRange(const MapRange& range);
-void setMapSelectRange(const CoordsXY coords);
+void setMapSelectRange(CoordsXY coords);
+
+namespace OpenRCT2::MapSelection
+{
+    void clearSelectedTiles();
+    void addSelectedTile(const CoordsXY& coords);
+    const std::vector<CoordsXY>& getSelectedTiles();
+
+    void invalidate();
+} // namespace OpenRCT2::MapSelection

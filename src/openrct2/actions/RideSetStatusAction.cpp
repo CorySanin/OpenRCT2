@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -19,6 +19,7 @@
 #include "../ui/WindowManager.h"
 #include "../world/Map.h"
 #include "../world/Park.h"
+#include "ResultWithMessage.h"
 
 namespace OpenRCT2::GameActions
 {
@@ -61,32 +62,32 @@ namespace OpenRCT2::GameActions
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            res.Error = Status::InvalidParameters;
-            res.ErrorTitle = STR_RIDE_DESCRIPTION_UNKNOWN;
-            res.ErrorMessage = STR_ERR_RIDE_NOT_FOUND;
+            res.error = Status::invalidParameters;
+            res.errorTitle = STR_RIDE_DESCRIPTION_UNKNOWN;
+            res.errorMessage = STR_ERR_RIDE_NOT_FOUND;
             return res;
         }
 
         if (_status >= RideStatus::count)
         {
             LOG_ERROR("Invalid ride status %u for ride %u", EnumValue(_status), _rideIndex.ToUnderlying());
-            res.Error = Status::InvalidParameters;
-            res.ErrorTitle = STR_RIDE_DESCRIPTION_UNKNOWN;
-            res.ErrorMessage = kStringIdNone;
+            res.error = Status::invalidParameters;
+            res.errorTitle = STR_RIDE_DESCRIPTION_UNKNOWN;
+            res.errorMessage = kStringIdNone;
             return res;
         }
 
-        res.ErrorTitle = _StatusErrorTitles[EnumValue(_status)];
+        res.errorTitle = _StatusErrorTitles[EnumValue(_status)];
 
-        Formatter ft(res.ErrorMessageArgs.data());
+        Formatter ft(res.errorMessageArgs.data());
         ride->formatNameTo(ft);
         if (_status != ride->status)
         {
             if (_status == RideStatus::simulating && (ride->lifecycleFlags & RIDE_LIFECYCLE_BROKEN_DOWN))
             {
                 // Simulating will force clear the track, so make sure player can't cheat around a break down
-                res.Error = Status::Disallowed;
-                res.ErrorMessage = STR_HAS_BROKEN_DOWN_AND_REQUIRES_FIXING;
+                res.error = Status::disallowed;
+                res.errorMessage = STR_HAS_BROKEN_DOWN_AND_REQUIRES_FIXING;
                 return res;
             }
 
@@ -108,8 +109,8 @@ namespace OpenRCT2::GameActions
 
             if (!modeSwitchResult.Successful)
             {
-                res.Error = Status::Unknown;
-                res.ErrorMessage = modeSwitchResult.Message;
+                res.error = Status::unknown;
+                res.errorMessage = modeSwitchResult.Message;
                 return res;
             }
         }
@@ -119,27 +120,27 @@ namespace OpenRCT2::GameActions
     Result RideSetStatusAction::Execute(GameState_t& gameState) const
     {
         Result res = Result();
-        res.Expenditure = ExpenditureType::rideRunningCosts;
+        res.expenditure = ExpenditureType::rideRunningCosts;
 
         auto ride = GetRide(_rideIndex);
         if (ride == nullptr)
         {
             LOG_ERROR("Ride not found for rideIndex %u", _rideIndex.ToUnderlying());
-            res.Error = Status::InvalidParameters;
-            res.ErrorTitle = STR_RIDE_DESCRIPTION_UNKNOWN;
-            res.ErrorMessage = STR_ERR_RIDE_NOT_FOUND;
+            res.error = Status::invalidParameters;
+            res.errorTitle = STR_RIDE_DESCRIPTION_UNKNOWN;
+            res.errorMessage = STR_ERR_RIDE_NOT_FOUND;
             return res;
         }
 
-        res.ErrorTitle = _StatusErrorTitles[EnumValue(_status)];
+        res.errorTitle = _StatusErrorTitles[EnumValue(_status)];
 
-        Formatter ft(res.ErrorMessageArgs.data());
+        Formatter ft(res.errorMessageArgs.data());
         ft.Increment(6);
         ride->formatNameTo(ft);
         if (!ride->overallView.IsNull())
         {
             auto location = ride->overallView.ToTileCentre();
-            res.Position = { location, TileElementHeight(location) };
+            res.position = { location, TileElementHeight(location) };
         }
 
         auto* windowMgr = Ui::GetWindowManager();
@@ -160,7 +161,7 @@ namespace OpenRCT2::GameActions
                 ride->status = RideStatus::closed;
                 ride->lifecycleFlags &= ~RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING;
                 ride->raceWinner = EntityId::GetNull();
-                ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+                ride->windowInvalidateFlags.set(RideInvalidateFlag::main, RideInvalidateFlag::list);
                 windowMgr->InvalidateByNumber(WindowClass::ride, _rideIndex.ToUnderlying());
                 break;
             case RideStatus::simulating:
@@ -172,8 +173,8 @@ namespace OpenRCT2::GameActions
                 const auto modeSwitchResult = ride->simulate(true);
                 if (!modeSwitchResult.Successful)
                 {
-                    res.Error = Status::Unknown;
-                    res.ErrorMessage = modeSwitchResult.Message;
+                    res.error = Status::unknown;
+                    res.errorMessage = modeSwitchResult.Message;
                     return res;
                 }
 
@@ -183,7 +184,7 @@ namespace OpenRCT2::GameActions
                 ride->currentIssues = 0;
                 ride->lastIssueTime = 0;
                 ride->getMeasurement();
-                ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+                ride->windowInvalidateFlags.set(RideInvalidateFlag::main, RideInvalidateFlag::list);
                 windowMgr->InvalidateByNumber(WindowClass::ride, _rideIndex.ToUnderlying());
                 break;
             }
@@ -215,8 +216,8 @@ namespace OpenRCT2::GameActions
                     const auto modeSwitchResult = ride->test(true);
                     if (!modeSwitchResult.Successful)
                     {
-                        res.Error = Status::Unknown;
-                        res.ErrorMessage = modeSwitchResult.Message;
+                        res.error = Status::unknown;
+                        res.errorMessage = modeSwitchResult.Message;
                         return res;
                     }
                 }
@@ -225,8 +226,8 @@ namespace OpenRCT2::GameActions
                     const auto modeSwitchResult = ride->open(true);
                     if (!modeSwitchResult.Successful)
                     {
-                        res.Error = Status::Unknown;
-                        res.ErrorMessage = modeSwitchResult.Message;
+                        res.error = Status::unknown;
+                        res.errorMessage = modeSwitchResult.Message;
                         return res;
                     }
                 }
@@ -236,7 +237,7 @@ namespace OpenRCT2::GameActions
                 ride->currentIssues = 0;
                 ride->lastIssueTime = 0;
                 ride->getMeasurement();
-                ride->windowInvalidateFlags |= RIDE_INVALIDATE_RIDE_MAIN | RIDE_INVALIDATE_RIDE_LIST;
+                ride->windowInvalidateFlags.set(RideInvalidateFlag::main, RideInvalidateFlag::list);
                 windowMgr->InvalidateByNumber(WindowClass::ride, _rideIndex.ToUnderlying());
                 break;
             }
@@ -244,7 +245,7 @@ namespace OpenRCT2::GameActions
                 Guard::Assert(false, "Invalid ride status %u", _status);
                 break;
         }
-        auto windowManager = OpenRCT2::Ui::GetWindowManager();
+        auto windowManager = Ui::GetWindowManager();
         windowManager->BroadcastIntent(Intent(INTENT_ACTION_REFRESH_CAMPAIGN_RIDE_LIST));
 
         return res;

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -39,6 +39,7 @@ namespace OpenRCT2
         {   "TWD",  1000,   CurrencyAffix::prefix,    u8"NT$",    CurrencyAffix::prefix,    "NT$",  STR_NEW_TAIWAN_DOLLAR}, // New Taiwan Dollar
         {   "CNY",  100,    CurrencyAffix::prefix,    u8"CN¥",    CurrencyAffix::prefix,    "CNY",  STR_CHINESE_YUAN    },  // Chinese Yuan
         {   "HUF",  1000,   CurrencyAffix::suffix,    u8" Ft",    CurrencyAffix::suffix,    " Ft",  STR_HUNGARIAN_FORINT},  // Hungarian Forint
+        {   "PLN",  100,    CurrencyAffix::suffix,    u8" zł",    CurrencyAffix::suffix,    " zł",  STR_POLISH_ZLOTY},      // Polish Złoty
         {   "CTM",  10,     CurrencyAffix::prefix,    u8"Ctm",    CurrencyAffix::prefix,    "Ctm",  STR_CUSTOM_CURRENCY },  // Customizable currency
     };
     // clang-format on

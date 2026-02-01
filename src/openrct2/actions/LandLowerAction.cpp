@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -76,12 +76,12 @@ namespace OpenRCT2::GameActions
 
         auto validRange = ClampRangeWithinMap(_range);
 
-        res.Position = { _coords.x, _coords.y, TileElementHeight(_coords) };
-        res.Expenditure = ExpenditureType::landscaping;
+        res.position = { _coords.x, _coords.y, TileElementHeight(_coords) };
+        res.expenditure = ExpenditureType::landscaping;
 
         if (isExecuting)
         {
-            OpenRCT2::Audio::Play3D(OpenRCT2::Audio::SoundId::placeItem, { _coords.x, _coords.y, TileElementHeight(_coords) });
+            Audio::Play3D(Audio::SoundId::placeItem, { _coords.x, _coords.y, TileElementHeight(_coords) });
         }
 
         uint8_t maxHeight = MapGetHighestLandHeight(validRange);
@@ -97,7 +97,7 @@ namespace OpenRCT2::GameActions
                 if (surfaceElement == nullptr)
                     continue;
 
-                if (gLegacyScene != LegacyScene::scenarioEditor && !getGameState().cheats.sandboxMode)
+                if (gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode)
                 {
                     if (!MapIsLocationInPark(CoordsXY{ x, y }))
                     {
@@ -127,13 +127,13 @@ namespace OpenRCT2::GameActions
                 landSetHeightAction.SetFlags(GetFlags());
                 auto result = isExecuting ? ExecuteNested(&landSetHeightAction, gameState)
                                           : QueryNested(&landSetHeightAction, gameState);
-                if (result.Error == Status::Ok)
+                if (result.error == Status::ok)
                 {
-                    res.Cost += result.Cost;
+                    res.cost += result.cost;
                 }
                 else
                 {
-                    result.ErrorTitle = STR_CANT_LOWER_LAND_HERE;
+                    result.errorTitle = STR_CANT_LOWER_LAND_HERE;
                     return result;
                 }
             }
@@ -141,7 +141,7 @@ namespace OpenRCT2::GameActions
 
         if (!withinOwnership)
         {
-            return Result(Status::Disallowed, STR_CANT_LOWER_LAND_HERE, STR_LAND_NOT_OWNED_BY_PARK);
+            return Result(Status::disallowed, STR_CANT_LOWER_LAND_HERE, STR_LAND_NOT_OWNED_BY_PARK);
         }
 
         // Force ride construction to recheck area

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -12,12 +12,12 @@
 #include "Window.h"
 
 #include <openrct2-ui/UiStringIds.h>
-#include <openrct2/drawing/Drawing.h>
+#include <openrct2/drawing/FilterPaletteIds.h>
 #include <openrct2/interface/Widget.h>
 
 namespace OpenRCT2::Ui
 {
-    ImageId getColourButtonImage(colour_t colour);
+    ImageId getColourButtonImage(Drawing::Colour colour);
     Widget* getWidgetByIndex(WindowBase& w, WidgetIndex widgetIndex);
 
     constexpr uint32_t kWidgetContentEmpty = 0xFFFFFFFF;
@@ -78,7 +78,7 @@ namespace OpenRCT2::Ui
         const ScreenCoordsXY& origin, const ScreenSize& size, WidgetType type, WindowColour colour, ImageIndex content,
         StringId tooltip = kStringIdNone)
     {
-        return makeWidget(origin, size, type, colour, ImageId(content, FilterPaletteID::paletteNull), tooltip);
+        return makeWidget(origin, size, type, colour, ImageId(content, Drawing::FilterPaletteID::paletteNull), tooltip);
     }
 
     constexpr Widget makeTab(const ScreenCoordsXY& origin, StringId tooltip = kStringIdNone)
@@ -92,7 +92,7 @@ namespace OpenRCT2::Ui
     }
 
     constexpr Widget makeProgressBar(
-        const ScreenCoordsXY& origin, const ScreenSize& size, colour_t colour, uint8_t lowerBlinkBound = 0,
+        const ScreenCoordsXY& origin, const ScreenSize& size, Drawing::Colour colour, uint8_t lowerBlinkBound = 0,
         uint8_t upperBlinkBound = 0)
     {
         Widget out = {};
@@ -101,7 +101,7 @@ namespace OpenRCT2::Ui
         out.top = origin.y;
         out.bottom = origin.y + size.height - 1;
         out.type = WidgetType::progressBar;
-        out.colour = colour;
+        out.colour = EnumValue(colour);
         out.content = 0 | (lowerBlinkBound << 8) | (upperBlinkBound << 16);
         out.tooltip = kStringIdNone;
 
@@ -248,7 +248,7 @@ namespace OpenRCT2::Ui
             makeDropdownButtonWidget(origin, size, type, colour, content, tooltip));
     };
 
-    void widgetDraw(RenderTarget& rt, WindowBase& w, WidgetIndex widgetIndex);
+    void widgetDraw(Drawing::RenderTarget& rt, WindowBase& w, WidgetIndex widgetIndex);
 
     bool widgetIsDisabled(const WindowBase& w, WidgetIndex widgetIndex);
     bool widgetIsHoldable(const WindowBase& w, WidgetIndex widgetIndex);

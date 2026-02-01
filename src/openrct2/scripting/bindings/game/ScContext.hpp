@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -189,7 +189,7 @@ namespace OpenRCT2::Scripting
         DukValue getTrackSegment(uint16_t type)
         {
             auto ctx = GetContext()->GetScriptEngine().GetContext();
-            if (type >= EnumValue(TrackElemType::Count))
+            if (type >= EnumValue(TrackElemType::count))
             {
                 return ToDuk(ctx, nullptr);
             }
@@ -204,7 +204,7 @@ namespace OpenRCT2::Scripting
             auto ctx = GetContext()->GetScriptEngine().GetContext();
 
             std::vector<DukValue> result;
-            for (uint16_t type = 0; type < EnumValue(TrackElemType::Count); type++)
+            for (uint16_t type = 0; type < EnumValue(TrackElemType::count); type++)
             {
                 auto obj = std::make_shared<ScTrackSegment>(static_cast<TrackElemType>(type));
                 if (obj != nullptr)

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -35,7 +35,7 @@ namespace OpenRCT2::CommandLine::Sprite
             return -1;
         }
 
-        if (spriteIndex < 0 || spriteIndex >= static_cast<int32_t>(spriteFile->Header.num_entries))
+        if (spriteIndex < 0 || spriteIndex >= static_cast<int32_t>(spriteFile->Header.numEntries))
         {
             fprintf(stderr, "Sprite #%d does not exist in sprite file.\n", spriteIndex);
             return -1;
@@ -47,7 +47,7 @@ namespace OpenRCT2::CommandLine::Sprite
             fprintf(stderr, "Could not export\n");
             return -1;
         }
-        fprintf(stdout, "{ \"x\": %d, \"y\": %d }\n", spriteHeader.x_offset, spriteHeader.y_offset);
+        fprintf(stdout, "{ \"x\": %d, \"y\": %d }\n", spriteHeader.xOffset, spriteHeader.yOffset);
         return 0;
     }
 } // namespace OpenRCT2::CommandLine::Sprite

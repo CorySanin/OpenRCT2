@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -149,7 +149,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             drawWidgets(rt);
 
@@ -200,7 +200,7 @@ namespace OpenRCT2::Ui::Windows
                 Widget* viewportWidget = &widgets[WIDX_VIEWPORT];
                 viewport->pos = windowPos + ScreenCoordsXY{ viewportWidget->left + 1, viewportWidget->top + 1 };
                 viewport->width = widgets[WIDX_VIEWPORT].width() - 2;
-                viewport->height = widgets[WIDX_VIEWPORT].height() - 1;
+                viewport->height = widgets[WIDX_VIEWPORT].height() - 2;
             }
         }
     };

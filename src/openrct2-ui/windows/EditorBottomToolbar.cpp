@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -19,9 +19,10 @@
 #include <openrct2/Input.h>
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/SpriteIds.h>
+#include <openrct2/actions/ResultWithMessage.h>
 #include <openrct2/audio/Audio.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
-#include <openrct2/entity/EntityList.h>
 #include <openrct2/management/Research.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/scripting/ScriptEngine.h>
@@ -163,7 +164,7 @@ namespace OpenRCT2::Ui::Windows
     private:
         void JumpBackToObjectSelection() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             getGameState().editorStep = EditorStep::ObjectSelection;
@@ -172,7 +173,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpBackToLandscapeEditor() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             SetAllSceneryItemsInvented();
@@ -184,7 +185,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpBackToInventionListSetUp() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             ContextOpenWindow(WindowClass::editorInventionList);
@@ -194,7 +195,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpBackToObjectiveSelection() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             ContextOpenWindow(WindowClass::editorScenarioOptions);
@@ -204,7 +205,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpBackToOptionsSelection() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             ContextOpenWindow(WindowClass::editorScenarioOptions);
@@ -217,7 +218,7 @@ namespace OpenRCT2::Ui::Windows
             if (!EditorObjectSelectionWindowCheck())
                 return;
 
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseByClass(WindowClass::editorObjectSelection);
 
             FinishObjectSelection();
@@ -237,7 +238,7 @@ namespace OpenRCT2::Ui::Windows
             auto [checksPassed, errorString] = Editor::CheckPark();
             if (checksPassed)
             {
-                auto* windowMgr = Ui::GetWindowManager();
+                auto* windowMgr = GetWindowManager();
                 windowMgr->CloseAll();
                 ContextOpenWindow(WindowClass::editorInventionList);
                 getGameState().editorStep = EditorStep::InventionsListSetUp;
@@ -252,7 +253,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpForwardToObjectiveSelection() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             ContextOpenWindow(WindowClass::editorScenarioOptions);
@@ -262,7 +263,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpForwardToOptionsSelection() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             ContextOpenWindow(WindowClass::editorScenarioOptions);
@@ -272,7 +273,7 @@ namespace OpenRCT2::Ui::Windows
 
         void JumpForwardToScenarioDetails() const
         {
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             ContextOpenWindow(WindowClass::editorScenarioOptions);
@@ -311,7 +312,7 @@ namespace OpenRCT2::Ui::Windows
             scriptEngine.ClearParkStorage();
 #endif
 
-            auto* windowMgr = Ui::GetWindowManager();
+            auto* windowMgr = GetWindowManager();
             windowMgr->CloseAll();
 
             auto intent = Intent(WindowClass::loadsave);
@@ -356,11 +357,11 @@ namespace OpenRCT2::Ui::Windows
                 rt, ImageId(SPR_PREVIOUS),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_PREVIOUS_IMAGE].left + 6, widgets[WIDX_PREVIOUS_IMAGE].top + 6 });
 
-            colour_t textColour = colours[1].colour;
+            Drawing::Colour textColour = colours[1].colour;
             if (gHoverWidget.windowClassification == WindowClass::bottomToolbar
                 && gHoverWidget.widgetIndex == WIDX_PREVIOUS_STEP_BUTTON)
             {
-                textColour = COLOUR_WHITE;
+                textColour = Drawing::Colour::white;
             }
 
             int16_t textX = (widgets[WIDX_PREVIOUS_IMAGE].left + 30 + widgets[WIDX_PREVIOUS_IMAGE].right) / 2 + windowPos.x;
@@ -396,12 +397,12 @@ namespace OpenRCT2::Ui::Windows
                 rt, ImageId(SPR_NEXT),
                 windowPos + ScreenCoordsXY{ widgets[WIDX_NEXT_IMAGE].right - 29, widgets[WIDX_NEXT_IMAGE].top + 6 });
 
-            colour_t textColour = colours[1].colour;
+            Drawing::Colour textColour = colours[1].colour;
 
             if (gHoverWidget.windowClassification == WindowClass::bottomToolbar
                 && gHoverWidget.widgetIndex == WIDX_NEXT_STEP_BUTTON)
             {
-                textColour = COLOUR_WHITE;
+                textColour = Drawing::Colour::white;
             }
 
             int16_t textX = (widgets[WIDX_NEXT_IMAGE].left + widgets[WIDX_NEXT_IMAGE].right - 30) / 2 + windowPos.x;

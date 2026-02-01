@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -16,12 +16,11 @@
             __VA_ARGS__                                                                                                        \
         }                                                                                                                      \
     }
-#define kDefaultFlatRideColourPreset TRACK_COLOUR_PRESETS({ COLOUR_BRIGHT_RED, COLOUR_LIGHT_BLUE, COLOUR_YELLOW })
-#define kDefaultStallColourPreset TRACK_COLOUR_PRESETS({ COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED, COLOUR_BRIGHT_RED })
 
 #include "../audio/Audio.h"
 #include "../core/BitSet.hpp"
 #include "../core/EnumUtils.hpp"
+#include "../drawing/Colour.h"
 #include "../drawing/ImageIndexType.h"
 #include "../entity/Guest.h"
 #include "../localisation/StringIds.h"
@@ -46,6 +45,11 @@ constexpr uint8_t kDefaultToiletHeight = 4 * kCoordsZStep;
 constexpr uint8_t kDefaultInformationKioskHeight = 6 * kCoordsZStep;
 constexpr uint8_t kDefaultFirstAidHeight = 6 * kCoordsZStep;
 constexpr uint8_t kDefaultCashMachineHeight = 8 * kCoordsZStep;
+
+constexpr TrackColourPresetList kDefaultFlatRideColourPreset = TRACK_COLOUR_PRESETS(
+    { OpenRCT2::Drawing::Colour::brightRed, OpenRCT2::Drawing::Colour::lightBlue, OpenRCT2::Drawing::Colour::yellow });
+constexpr TrackColourPresetList kDefaultStallColourPreset = TRACK_COLOUR_PRESETS(
+    { OpenRCT2::Drawing::Colour::brightRed, OpenRCT2::Drawing::Colour::brightRed, OpenRCT2::Drawing::Colour::brightRed });
 
 struct RideComponentName
 {
@@ -235,12 +239,14 @@ struct RatingsModifier
     int32_t nausea;
 };
 
+constexpr int8_t kDynamicRideShelterRating = -1;
+
 struct RideRatingsDescriptor
 {
     RatingsCalculationType Type;
     OpenRCT2::RideRating::Tuple BaseRatings;
     uint8_t Unreliability;
-    // Used for rides with a set sheltered 8ths value (-1 = normal calculation)
+    // Used for rides with a set sheltered 8ths value (kDynamicRideShelterRating = normal calculation)
     int8_t RideShelter;
     bool RelaxRequirementsIfInversions;
     RatingsModifier Modifiers[32];
@@ -275,7 +281,7 @@ using StartRideMusicFunction = void (*)(const OpenRCT2::RideAudio::ViewportRideM
 using LightFXAddLightsMagicVehicleFunction = void (*)(const Vehicle* vehicle);
 using RideLocationFunction = CoordsXY (*)(const Vehicle& vehicle, const Ride& ride, const StationIndex& CurrentRideStation);
 using RideUpdateFunction = void (*)(Ride& ride);
-using RideUpdateMeasurementsSpecialElementsFunc = void (*)(Ride& ride, const OpenRCT2::TrackElemType trackType);
+using RideUpdateMeasurementsSpecialElementsFunc = void (*)(Ride& ride, OpenRCT2::TrackElemType trackType);
 using MusicTrackOffsetLengthFunc = std::pair<size_t, size_t> (*)(const Ride& ride);
 using SpecialElementRatingAdjustmentFunc = void (*)(const Ride& ride, int32_t& excitement, int32_t& intensity, int32_t& nausea);
 
@@ -296,11 +302,11 @@ struct TrackDrawerEntry
     // or because they are not realistic for the ride type (e.g. LIM boosters in Mini Roller Coasters).
     RideTrackGroups extraTrackGroups{};
 
-    ImageIndex icon = kSpriteIdNull;
+    ImageIndex icon = kImageIndexUndefined;
     StringId tooltip = kStringIdNone;
 
     void GetAvailableTrackGroups(RideTrackGroups& res) const;
-    bool SupportsTrackGroup(const TrackGroup trackGroup) const;
+    bool SupportsTrackGroup(TrackGroup trackGroup) const;
 };
 
 struct TrackDrawerDescriptor
@@ -545,7 +551,7 @@ struct RideTypeDescriptor
 
     bool HasFlag(RtdFlag flag) const;
     /** @deprecated */
-    bool SupportsTrackGroup(const TrackGroup trackGroup) const;
+    bool SupportsTrackGroup(TrackGroup trackGroup) const;
     ResearchCategory GetResearchCategory() const;
     bool SupportsRideMode(RideMode rideMode) const;
     /**
@@ -618,7 +624,7 @@ extern const StringId kRideModeNames[EnumValue(RideMode::count)];
 constexpr RideTypeDescriptor kDummyRTD =
 {
     .Category = RideCategory::none,
-    .StartTrackPiece = OpenRCT2::TrackElemType::EndStation,
+    .StartTrackPiece = OpenRCT2::TrackElemType::endStation,
     .TrackPaintFunctions = {},
     .InvertedTrackPaintFunctions = {},
     .Flags = 0,
@@ -642,7 +648,7 @@ constexpr RideTypeDescriptor kDummyRTD =
     .PhotoItem = ShopItem::photo,
     .BonusValue = 0,
     .ColourPresets = kDefaultFlatRideColourPreset,
-    .ColourPreview = { kSpriteIdNull, kSpriteIdNull },
+    .ColourPreview = { kImageIndexUndefined, kImageIndexUndefined },
     .ColourKey = RideColourKey::Ride,
     .Name = "invalid",
 	.RatingsData =

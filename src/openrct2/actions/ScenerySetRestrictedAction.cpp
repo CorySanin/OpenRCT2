@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -38,12 +38,12 @@ namespace OpenRCT2::GameActions
     {
         if (!ObjectTypeCanBeRestricted(_objectType))
         {
-            return Result(Status::InvalidParameters, STR_CANT_RESTRICT_OBJECT, STR_OBJECT_TYPE_CANNOT_BE_RESTRICTED);
+            return Result(Status::invalidParameters, STR_CANT_RESTRICT_OBJECT, STR_OBJECT_TYPE_CANNOT_BE_RESTRICTED);
         }
         const auto* loadedObject = ObjectEntryGetObject(_objectType, _objectIndex);
         if (loadedObject == nullptr)
         {
-            return Result(Status::InvalidParameters, STR_CANT_RESTRICT_OBJECT, STR_OBJECT_NOT_FOUND);
+            return Result(Status::invalidParameters, STR_CANT_RESTRICT_OBJECT, STR_OBJECT_NOT_FOUND);
         }
 
         return Result();

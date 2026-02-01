@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,7 +17,7 @@
 #include <openrct2/SpriteIds.h>
 #include <openrct2/actions/PlayerKickAction.h>
 #include <openrct2/actions/PlayerSetGroupAction.h>
-#include <openrct2/drawing/Text.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/network/Network.h>
 #include <openrct2/network/NetworkAction.h>
@@ -52,7 +52,7 @@ namespace OpenRCT2::Ui::Windows
 
     static constexpr ScreenSize kWindowSize = { 192, 157 };
     // clang-format off
-    
+
     static constexpr auto kCommonPlayerWidgets = makeWidgets(
         makeWindowShim(STR_STRING, kWindowSize),
         makeWidget({ 0, 43}, {192, 114}, WidgetType::resize, WindowColour::secondary),
@@ -151,7 +151,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             switch (page)
             {
@@ -251,7 +251,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void DrawTabImages(RenderTarget& rt)
+        void DrawTabImages(Drawing::RenderTarget& rt)
         {
             Widget* widget;
 
@@ -404,7 +404,7 @@ namespace OpenRCT2::Ui::Windows
 
                 viewport->pos = windowPos + ScreenCoordsXY{ viewportWidget->left, viewportWidget->top };
                 viewport->width = viewportWidget->width() - 1;
-                viewport->height = viewportWidget->height();
+                viewport->height = viewportWidget->height() - 1;
             }
 
             // only enable kick button for other players
@@ -415,7 +415,7 @@ namespace OpenRCT2::Ui::Windows
             widgetSetEnabled(*this, WIDX_KICK, canKick && !isOwnWindow && !isServer);
         }
 
-        void onDrawOverview(RenderTarget& rt)
+        void onDrawOverview(Drawing::RenderTarget& rt)
         {
             drawWidgets(rt);
             DrawTabImages(rt);
@@ -533,9 +533,9 @@ namespace OpenRCT2::Ui::Windows
             auto playerSetGroupAction = GameActions::PlayerSetGroupAction(playerId, groupId);
             playerSetGroupAction.SetCallback(
                 [windowHandle](const GameActions::GameAction* ga, const GameActions::Result* result) {
-                    if (result->Error == GameActions::Status::Ok)
+                    if (result->error == GameActions::Status::ok)
                     {
-                        auto* windowMgr = Ui::GetWindowManager();
+                        auto* windowMgr = GetWindowManager();
                         windowMgr->InvalidateByNumber(windowHandle.first, windowHandle.second);
                     }
                 });
@@ -545,7 +545,7 @@ namespace OpenRCT2::Ui::Windows
         void ShowGroupDropdownOverview(Widget* widget)
         {
             Widget* dropdownWidget;
-            int32_t numItems, i;
+            int32_t numItems;
             int32_t player = Network::GetPlayerIndex(static_cast<uint8_t>(number));
             if (player == -1)
             {
@@ -557,10 +557,10 @@ namespace OpenRCT2::Ui::Windows
             numItems = Network::GetNumGroups();
 
             WindowDropdownShowTextCustomWidth(
-                { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height() + 1,
-                colours[1], 0, 0, numItems, widget->right - dropdownWidget->left);
+                { windowPos.x + dropdownWidget->left, windowPos.y + dropdownWidget->top }, dropdownWidget->height(), colours[1],
+                0, 0, numItems, widget->right - dropdownWidget->left);
 
-            for (i = 0; i < Network::GetNumGroups(); i++)
+            for (int32_t i = 0; i < Network::GetNumGroups(); i++)
             {
                 gDropdown.items[i] = Dropdown::MenuLabel(Network::GetGroupName(i));
             }
@@ -599,7 +599,7 @@ namespace OpenRCT2::Ui::Windows
             WindowAlignTabs(this, WIDX_TAB_1, WIDX_TAB_2);
         }
 
-        void onDrawStatistics(RenderTarget& rt)
+        void onDrawStatistics(Drawing::RenderTarget& rt)
         {
             drawWidgets(rt);
             DrawTabImages(rt);

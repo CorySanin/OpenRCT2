@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -236,7 +236,11 @@ namespace OpenRCT2::Http
             WinHttpCloseHandle(hSession);
             WinHttpCloseHandle(hConnect);
             WinHttpCloseHandle(hRequest);
-            throw;
+
+            Response response;
+            response.status = Status::Error;
+            response.error = e.what();
+            return response;
         }
     }
 } // namespace OpenRCT2::Http

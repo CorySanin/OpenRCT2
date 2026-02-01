@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -13,6 +13,7 @@
 #include "../../OpenRCT2.h"
 #include "../../core/Memory.hpp"
 #include "../../core/String.hpp"
+#include "../../drawing/Drawing.h"
 #include "../../object/ObjectFactory.h"
 #include "../CommandLine.hpp"
 
@@ -162,7 +163,7 @@ namespace OpenRCT2::CommandLine::Sprite
         }
     }
 
-    std::optional<ImageImporter::ImportResult> SpriteImageImport(u8string_view path, ImageImportMeta meta)
+    std::optional<Image> SpriteImageLoad(u8string_view path, ImageImportMeta meta)
     {
         try
         {
@@ -171,11 +172,7 @@ namespace OpenRCT2::CommandLine::Sprite
             {
                 format = ImageFormat::png;
             }
-
-            ImageImporter importer;
-            auto image = Imaging::ReadFromFile(path, format);
-
-            return importer.Import(image, meta);
+            return Imaging::ReadFromFile(path, format);
         }
         catch (const std::exception& e)
         {

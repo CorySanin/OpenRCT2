@@ -9,19 +9,17 @@
 
 #include "TestData.h"
 
+#include <exception>
 #include <gtest/gtest.h>
 #include <openrct2/Context.h>
-#include <openrct2/Game.h>
+#include <openrct2/Diagnostic.h>
 #include <openrct2/GameState.h>
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/ReplayManager.h>
-#include <openrct2/audio/AudioContext.h>
-#include <openrct2/core/File.h>
 #include <openrct2/core/FileScanner.h>
 #include <openrct2/core/Path.hpp>
 #include <openrct2/core/String.hpp>
 #include <openrct2/platform/Platform.h>
-#include <openrct2/ride/Ride.h>
 #include <string>
 
 using namespace OpenRCT2;
@@ -58,7 +56,7 @@ static std::vector<ReplayTestData> GetReplayFiles()
     {
         ReplayTestData test;
         test.name = sanitizeTestName(scanner->GetFileInfo().Name);
-        test.filePath = scanner->GetPath();
+        test.filePath = Path::GetAbsolute(scanner->GetPath());
         res.push_back(std::move(test));
     }
     return res;
@@ -84,8 +82,15 @@ TEST_P(ReplayTests, RunReplay)
     IReplayManager* replayManager = context->GetReplayManager();
     ASSERT_NE(replayManager, nullptr);
 
-    bool startedReplay = replayManager->StartPlayback(replayFile);
-    ASSERT_TRUE(startedReplay);
+    try
+    {
+        replayManager->StartPlayback(replayFile);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_WARNING("Can't start replay!. %s", e.what());
+        FAIL();
+    }
 
     while (replayManager->IsReplaying())
     {

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -248,14 +248,12 @@ namespace OpenRCT2::Ui::Windows
             auto mapCoords = ScreenPosToMapPos(screenCoords, &direction);
             if (mapCoords)
             {
-                MapInvalidateSelectionRect();
                 gMapSelectFlags.set(MapSelectFlag::enable);
                 gMapSelectPositionA.x = std::min(_selectionStart.x, mapCoords->x);
                 gMapSelectPositionB.x = std::max(_selectionStart.x, mapCoords->x);
                 gMapSelectPositionA.y = std::min(_selectionStart.y, mapCoords->y);
                 gMapSelectPositionB.y = std::max(_selectionStart.y, mapCoords->y);
                 gMapSelectType = MapSelectType::full;
-                MapInvalidateSelectionRect();
             }
         }
 
@@ -290,7 +288,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             WindowDrawWidgets(*this, rt);
 

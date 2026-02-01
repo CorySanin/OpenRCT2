@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,10 +20,12 @@ namespace OpenRCT2::GameActions
         CoordsXYZD _loc;
         TrackDesign _td;
         bool _placeScenery{ false };
+        RideInspection _inspectionInterval{ RideInspection::every30Minutes };
 
     public:
         TrackDesignAction() = default;
-        TrackDesignAction(const CoordsXYZD& location, const TrackDesign& td, bool placeScenery);
+        TrackDesignAction(
+            const CoordsXYZD& location, const TrackDesign& td, bool placeScenery, RideInspection inspectionInterval);
 
         void AcceptParameters(GameActionParameterVisitor&) final;
 

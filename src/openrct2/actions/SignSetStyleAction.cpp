@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -23,7 +23,8 @@
 
 namespace OpenRCT2::GameActions
 {
-    SignSetStyleAction::SignSetStyleAction(BannerIndex bannerIndex, uint8_t mainColour, uint8_t textColour, bool isLarge)
+    SignSetStyleAction::SignSetStyleAction(
+        BannerIndex bannerIndex, Drawing::Colour mainColour, Drawing::Colour textColour, bool isLarge)
         : _bannerIndex(bannerIndex)
         , _mainColour(mainColour)
         , _textColour(textColour)
@@ -56,7 +57,7 @@ namespace OpenRCT2::GameActions
         if (banner == nullptr)
         {
             LOG_ERROR("Banner not found for bannerIndex %u", _bannerIndex);
-            return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
         }
 
         CoordsXYZ loc;
@@ -67,14 +68,14 @@ namespace OpenRCT2::GameActions
             if (tileElement == nullptr)
             {
                 LOG_ERROR("Banner tile element not found for bannerIndex %u", _bannerIndex);
-                return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
+                return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
             }
             if (tileElement->GetType() != TileElementType::LargeScenery)
             {
                 LOG_ERROR(
                     "Tile element has type %u, expected %d (LargeScenery)", tileElement->GetType(),
                     TileElementType::LargeScenery);
-                return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
+                return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
             }
             loc = { banner->position.ToCoordsXY(), tileElement->GetBaseZ() };
         }
@@ -85,18 +86,18 @@ namespace OpenRCT2::GameActions
             if (wallElement == nullptr)
             {
                 LOG_ERROR("Wall element not found for bannerIndex", _bannerIndex);
-                return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
+                return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
             }
             loc = { banner->position.ToCoordsXY(), wallElement->GetBaseZ() };
         }
 
         if (!LocationValid(loc))
         {
-            return Result(Status::InvalidParameters, STR_CANT_RENAME_BANNER, STR_OFF_EDGE_OF_MAP);
+            return Result(Status::invalidParameters, STR_CANT_RENAME_BANNER, STR_OFF_EDGE_OF_MAP);
         }
         if (!MapCanBuildAt({ loc.x, loc.y, loc.z - 16 }))
         {
-            return Result(Status::NotOwned, STR_CANT_RENAME_BANNER, STR_LAND_NOT_OWNED_BY_PARK);
+            return Result(Status::notOwned, STR_CANT_RENAME_BANNER, STR_LAND_NOT_OWNED_BY_PARK);
         }
 
         return Result();
@@ -108,7 +109,7 @@ namespace OpenRCT2::GameActions
         if (banner == nullptr)
         {
             LOG_ERROR("Invalid banner id %u", _bannerIndex);
-            return Result(Status::InvalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_REPAINT_THIS, kStringIdNone);
         }
 
         CoordsXY coords = banner->position.ToCoordsXY();
@@ -120,7 +121,7 @@ namespace OpenRCT2::GameActions
                     { coords, tileElement->GetBaseZ(), tileElement->GetDirection() },
                     tileElement->AsLargeScenery()->GetSequenceIndex(), _mainColour, _textColour))
             {
-                return Result(Status::Unknown, STR_CANT_REPAINT_THIS, kStringIdNone);
+                return Result(Status::unknown, STR_CANT_REPAINT_THIS, kStringIdNone);
             }
         }
         else

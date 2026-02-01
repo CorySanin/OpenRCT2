@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -39,6 +39,11 @@ namespace OpenRCT2
 namespace OpenRCT2::GameActions
 {
     class Result;
+}
+
+namespace OpenRCT2::Drawing
+{
+    enum class Colour : uint8_t;
 }
 
 enum class PeepState : uint8_t
@@ -318,8 +323,8 @@ struct Peep : EntityBase
     };
     OpenRCT2::ObjectEntryIndex AnimationObjectIndex;
     PeepAnimationGroup AnimationGroup;
-    uint8_t TshirtColour;
-    uint8_t TrousersColour;
+    OpenRCT2::Drawing::Colour TshirtColour;
+    OpenRCT2::Drawing::Colour TrousersColour;
     union
     {
         uint16_t DestinationX;
@@ -421,15 +426,16 @@ public: // Peep
     // TODO: Make these private again when done refactoring
 public: // Peep
     [[nodiscard]] bool CheckForPath();
-    bool ShouldWaitForLevelCrossing() const;
-    bool IsOnLevelCrossing() const;
-    bool IsOnPathBlockedByVehicle() const;
     std::pair<uint8_t, OpenRCT2::TileElement*> PerformNextAction();
     [[nodiscard]] int32_t GetZOnSlope(int32_t tile_x, int32_t tile_y);
     void SwitchNextAnimationType();
     [[nodiscard]] PeepAnimationType GetAnimationType();
 
 protected:
+    bool ShouldWaitForLevelCrossing() const;
+    bool IsOnLevelCrossing() const;
+    bool IsOnPathBlockedByVehicle() const;
+    void UpdateWaitingAtCrossing();
     void UpdateFalling();
     void Update1();
     void UpdatePicked();
@@ -460,7 +466,7 @@ void PeepWindowStateUpdate(Peep* peep);
 void PeepDecrementNumRiders(Peep* peep);
 
 void PeepSetMapTooltip(Peep* peep);
-int32_t PeepCompare(const EntityId sprite_index_a, const EntityId sprite_index_b);
+int32_t PeepCompare(EntityId sprite_index_a, EntityId sprite_index_b);
 
 void PeepUpdateNames();
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../actions/CommandFlag.h"
 #include "../core/Money.hpp"
 #include "Research.h"
 
@@ -38,8 +39,8 @@ constexpr uint8_t kMaxBankLoanInterestRate = 255;
 
 extern const money64 kResearchCosts[RESEARCH_FUNDING_COUNT];
 
-bool FinanceCheckMoneyRequired(uint32_t flags);
-bool FinanceCheckAffordability(money64 cost, uint32_t flags);
+bool FinanceCheckMoneyRequired(OpenRCT2::GameActions::CommandFlags flags);
+bool FinanceCheckAffordability(money64 cost, OpenRCT2::GameActions::CommandFlags flags);
 void FinancePayment(money64 amount, ExpenditureType type);
 void FinancePayWages();
 void FinancePayResearch();

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -17,6 +17,7 @@
 #include <openrct2/Input.h>
 #include <openrct2/SpriteIds.h>
 #include <openrct2/actions/ClearAction.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/ui/WindowManager.h>
 #include <openrct2/world/MapSelection.h>
@@ -171,7 +172,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_PREVIEW].image = ImageId(LandTool::SizeToSpriteIndex(gLandToolSize));
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             drawWidgets(rt);
 
@@ -218,7 +219,6 @@ namespace OpenRCT2::Ui::Windows
         {
             uint8_t state_changed = 0;
 
-            MapInvalidateSelectionRect();
             gMapSelectFlags.unset(MapSelectFlag::enable);
 
             auto mapTile = ScreenGetMapXY(screenPos, nullptr);
@@ -228,7 +228,7 @@ namespace OpenRCT2::Ui::Windows
                 return state_changed;
             }
 
-            if (!(gMapSelectFlags.has(MapSelectFlag::enable)))
+            if (!gMapSelectFlags.has(MapSelectFlag::enable))
             {
                 gMapSelectFlags.set(MapSelectFlag::enable);
                 state_changed++;
@@ -275,7 +275,6 @@ namespace OpenRCT2::Ui::Windows
                 state_changed++;
             }
 
-            MapInvalidateSelectionRect();
             return state_changed;
         }
 
@@ -289,12 +288,13 @@ namespace OpenRCT2::Ui::Windows
                 return;
 
             auto action = GetClearAction();
+            action.SetFlags({ GameActions::CommandFlag::allowDuringPaused });
             auto result = GameActions::Query(&action, getGameState());
-            auto cost = (result.Error == GameActions::Status::Ok ? result.Cost : kMoney64Undefined);
+            auto cost = (result.error == GameActions::Status::ok ? result.cost : kMoney64Undefined);
             if (_clearSceneryCost != cost)
             {
                 _clearSceneryCost = cost;
-                auto* windowMgr = Ui::GetWindowManager();
+                auto* windowMgr = GetWindowManager();
                 windowMgr->InvalidateByClass(WindowClass::clearScenery);
             }
         }
@@ -331,7 +331,7 @@ namespace OpenRCT2::Ui::Windows
                 case WIDX_BACKGROUND:
                 {
                     auto* windowMgr = GetWindowManager();
-                    if (windowMgr->FindByClass(WindowClass::error) == nullptr && (gMapSelectFlags.has(MapSelectFlag::enable)))
+                    if (windowMgr->FindByClass(WindowClass::error) == nullptr && gMapSelectFlags.has(MapSelectFlag::enable))
                     {
                         auto action = GetClearAction();
                         GameActions::Execute(&action, getGameState());
@@ -347,7 +347,6 @@ namespace OpenRCT2::Ui::Windows
             switch (widgetIndex)
             {
                 case WIDX_BACKGROUND:
-                    MapInvalidateSelectionRect();
                     gMapSelectFlags.unset(MapSelectFlag::enable);
                     gCurrentToolId = Tool::bulldozer;
                     break;
@@ -387,7 +386,7 @@ namespace OpenRCT2::Ui::Windows
             ShowGridlines();
             auto* toolWindow = ContextOpenWindow(WindowClass::clearScenery);
             ToolSet(*toolWindow, WIDX_BACKGROUND, Tool::bulldozer);
-            gInputFlags.set(InputFlag::unk6);
+            gInputFlags.set(InputFlag::allowRightMouseRemoval);
         }
     }
 } // namespace OpenRCT2::Ui::Windows

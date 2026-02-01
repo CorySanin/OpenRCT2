@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -36,7 +36,7 @@ Vehicle* CableLiftSegmentCreate(
     {
         ride.cableLift = current->Id;
     }
-    current->SubType = head ? Vehicle::Type::Head : Vehicle::Type::Tail;
+    current->SubType = head ? Vehicle::Type::head : Vehicle::Type::tail;
     current->var_44 = var_44;
     current->remaining_distance = remaining_distance;
     current->SpriteData.Width = 10;
@@ -55,12 +55,12 @@ Vehicle* CableLiftSegmentCreate(
     current->spin_sprite = 0;
     current->spin_speed = 0;
     current->sound2_flags = 0;
-    current->sound1_id = OpenRCT2::Audio::SoundId::null;
-    current->sound2_id = OpenRCT2::Audio::SoundId::null;
+    current->sound1_id = Audio::SoundId::null;
+    current->sound2_id = Audio::SoundId::null;
     current->CollisionDetectionTimer = 0;
     current->animation_frame = 0;
     current->animationState = 0;
-    current->scream_sound_id = OpenRCT2::Audio::SoundId::null;
+    current->scream_sound_id = Audio::SoundId::null;
     current->pitch = VehiclePitch::flat;
     current->roll = VehicleRoll::unbanked;
     for (auto& peep : current->peep)
@@ -75,11 +75,11 @@ Vehicle* CableLiftSegmentCreate(
     z += ride.getRideTypeDescriptor().Heights.VehicleZOffset;
 
     current->MoveTo({ 16, 16, z });
-    current->SetTrackType(TrackElemType::CableLiftHill);
+    current->SetTrackType(TrackElemType::cableLiftHill);
     current->SetTrackDirection(current->Orientation >> 3);
     current->track_progress = 164;
     current->Flags = VehicleFlags::CollisionDisabled;
-    current->SetState(Vehicle::Status::MovingToEndOfStation, 0);
+    current->SetState(Vehicle::Status::movingToEndOfStation, 0);
     current->num_peeps = 0;
     current->next_free_seat = 0;
     current->BoatLocation.SetNull();
@@ -90,22 +90,22 @@ void Vehicle::CableLiftUpdate()
 {
     switch (status)
     {
-        case Vehicle::Status::MovingToEndOfStation:
+        case Status::movingToEndOfStation:
             CableLiftUpdateMovingToEndOfStation();
             break;
-        case Vehicle::Status::WaitingForPassengers:
+        case Status::waitingForPassengers:
             // Stays in this state until a train puts it into next state
             break;
-        case Vehicle::Status::WaitingToDepart:
+        case Status::waitingToDepart:
             CableLiftUpdateWaitingToDepart();
             break;
-        case Vehicle::Status::Departing:
+        case Status::departing:
             CableLiftUpdateDeparting();
             break;
-        case Vehicle::Status::Travelling:
+        case Status::travelling:
             CableLiftUpdateTravelling();
             break;
-        case Vehicle::Status::Arriving:
+        case Status::arriving:
             CableLiftUpdateArriving();
             break;
         default:
@@ -135,7 +135,7 @@ void Vehicle::CableLiftUpdateMovingToEndOfStation()
 
     velocity = 0;
     acceleration = 0;
-    SetState(Vehicle::Status::WaitingForPassengers, sub_state);
+    SetState(Status::waitingForPassengers, sub_state);
 }
 
 /**
@@ -175,7 +175,7 @@ void Vehicle::CableLiftUpdateWaitingToDepart()
 
     velocity = 0;
     acceleration = 0;
-    SetState(Vehicle::Status::Departing, 0);
+    SetState(Status::departing, 0);
 }
 
 /**
@@ -193,8 +193,8 @@ void Vehicle::CableLiftUpdateDeparting()
     {
         return;
     }
-    SetState(Vehicle::Status::Travelling, sub_state);
-    passengerVehicle->SetState(Vehicle::Status::TravellingCableLift, passengerVehicle->sub_state);
+    SetState(Status::travelling, sub_state);
+    passengerVehicle->SetState(Status::travellingCableLift, passengerVehicle->sub_state);
 }
 
 /**
@@ -219,7 +219,7 @@ void Vehicle::CableLiftUpdateTravelling()
 
     velocity = 0;
     acceleration = 0;
-    SetState(Vehicle::Status::Arriving, 0);
+    SetState(Status::arriving, 0);
 }
 
 /**
@@ -230,7 +230,7 @@ void Vehicle::CableLiftUpdateArriving()
 {
     sub_state++;
     if (sub_state >= 64)
-        SetState(Vehicle::Status::MovingToEndOfStation, sub_state);
+        SetState(Status::movingToEndOfStation, sub_state);
 }
 
 bool Vehicle::CableLiftUpdateTrackMotionForwards()
@@ -242,7 +242,7 @@ bool Vehicle::CableLiftUpdateTrackMotionForwards()
     for (; remaining_distance >= 13962; _vehicleUnkF64E10++)
     {
         auto trackType = GetTrackType();
-        if (trackType == TrackElemType::CableLiftHill && track_progress == 160)
+        if (trackType == TrackElemType::cableLiftHill && track_progress == 160)
         {
             _vehicleMotionTrackFlags |= VEHICLE_UPDATE_MOTION_TRACK_FLAG_1;
         }
@@ -281,7 +281,7 @@ bool Vehicle::CableLiftUpdateTrackMotionForwards()
         remaining_distance -= Geometry::getTranslationDistance(nextVehiclePosition - _vehicleCurPosition, false);
         _vehicleCurPosition = nextVehiclePosition;
 
-        Orientation = moveInfo->direction;
+        Orientation = moveInfo->yaw;
         roll = moveInfo->roll;
         pitch = moveInfo->pitch;
 
@@ -323,8 +323,8 @@ bool Vehicle::CableLiftUpdateTrackMotionBackwards()
 
             // Doesn't check for diagonal block brakes because there is no diagonal cable lift piece,
             // no way for a cable lift to start from a diagonal brake.
-            if (output.begin_element->AsTrack()->GetTrackType() == TrackElemType::EndStation
-                || output.begin_element->AsTrack()->GetTrackType() == TrackElemType::BlockBrakes)
+            if (output.begin_element->AsTrack()->GetTrackType() == TrackElemType::endStation
+                || output.begin_element->AsTrack()->GetTrackType() == TrackElemType::blockBrakes)
             {
                 _vehicleMotionTrackFlags = VEHICLE_UPDATE_MOTION_TRACK_FLAG_VEHICLE_AT_STATION;
             }
@@ -341,7 +341,7 @@ bool Vehicle::CableLiftUpdateTrackMotionBackwards()
         remaining_distance += Geometry::getTranslationDistance(nextVehiclePosition - _vehicleCurPosition, false);
 
         _vehicleCurPosition = nextVehiclePosition;
-        Orientation = moveInfo->direction;
+        Orientation = moveInfo->yaw;
         roll = moveInfo->roll;
         pitch = moveInfo->pitch;
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -42,28 +42,28 @@ namespace OpenRCT2::GameActions
 
     Result ParkSetLoanAction::Query(GameState_t& gameState) const
     {
-        auto& park = getGameState().park;
+        auto& park = gameState.park;
         if (_value > park.bankLoan && _value > park.maxBankLoan)
         {
-            return Result(Status::Disallowed, STR_CANT_BORROW_ANY_MORE_MONEY, STR_BANK_REFUSES_TO_INCREASE_LOAN);
+            return Result(Status::disallowed, STR_CANT_BORROW_ANY_MORE_MONEY, STR_BANK_REFUSES_TO_INCREASE_LOAN);
         }
         if (_value < park.bankLoan && _value < 0.00_GBP)
         {
-            return Result(Status::InvalidParameters, STR_CANT_PAY_BACK_LOAN, STR_LOAN_CANT_BE_NEGATIVE);
+            return Result(Status::invalidParameters, STR_CANT_PAY_BACK_LOAN, STR_LOAN_CANT_BE_NEGATIVE);
         }
         // The “isPayingBack” check is needed to allow increasing the loan when the player is in debt.
         const auto isPayingBack = park.bankLoan > _value;
         const auto amountToPayBack = park.bankLoan - _value;
         if (isPayingBack && amountToPayBack > park.cash)
         {
-            return Result(Status::InsufficientFunds, STR_CANT_PAY_BACK_LOAN, STR_NOT_ENOUGH_CASH_AVAILABLE);
+            return Result(Status::insufficientFunds, STR_CANT_PAY_BACK_LOAN, STR_NOT_ENOUGH_CASH_AVAILABLE);
         }
         return Result();
     }
 
     Result ParkSetLoanAction::Execute(GameState_t& gameState) const
     {
-        auto& park = getGameState().park;
+        auto& park = gameState.park;
 
         park.cash -= (park.bankLoan - _value);
         park.bankLoan = _value;

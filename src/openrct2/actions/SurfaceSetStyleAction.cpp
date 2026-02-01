@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -48,20 +48,19 @@ namespace OpenRCT2::GameActions
     Result SurfaceSetStyleAction::Query(GameState_t& gameState) const
     {
         auto res = Result();
-        res.ErrorTitle = STR_CANT_CHANGE_LAND_TYPE;
-        res.Expenditure = ExpenditureType::landscaping;
+        res.errorTitle = STR_CANT_CHANGE_LAND_TYPE;
+        res.expenditure = ExpenditureType::landscaping;
 
         auto validRange = ClampRangeWithinMap(_range.Normalise());
-        auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
+        auto& objManager = GetContext()->GetObjectManager();
         if (_surfaceStyle != kObjectEntryIndexNull)
         {
-            const auto surfaceObj = static_cast<TerrainSurfaceObject*>(
-                objManager.GetLoadedObject<TerrainSurfaceObject>(_surfaceStyle));
+            const auto surfaceObj = objManager.GetLoadedObject<TerrainSurfaceObject>(_surfaceStyle);
 
             if (surfaceObj == nullptr)
             {
                 LOG_ERROR("Invalid surface style %u", _surfaceStyle);
-                return Result(Status::InvalidParameters, STR_CANT_CHANGE_LAND_TYPE, STR_UNKNOWN_OBJECT_TYPE);
+                return Result(Status::invalidParameters, STR_CANT_CHANGE_LAND_TYPE, STR_UNKNOWN_OBJECT_TYPE);
             }
         }
 
@@ -72,7 +71,7 @@ namespace OpenRCT2::GameActions
             if (edgeObj == nullptr)
             {
                 LOG_ERROR("Invalid edge style %u", _edgeStyle);
-                return Result(Status::InvalidParameters, STR_CANT_CHANGE_LAND_TYPE, STR_UNKNOWN_OBJECT_TYPE);
+                return Result(Status::invalidParameters, STR_CANT_CHANGE_LAND_TYPE, STR_UNKNOWN_OBJECT_TYPE);
             }
         }
 
@@ -80,15 +79,15 @@ namespace OpenRCT2::GameActions
         auto yMid = (validRange.GetY1() + validRange.GetY2()) / 2 + 16;
         auto heightMid = TileElementHeight({ xMid, yMid });
 
-        res.Position.x = xMid;
-        res.Position.y = yMid;
-        res.Position.z = heightMid;
+        res.position.x = xMid;
+        res.position.y = yMid;
+        res.position.z = heightMid;
 
         // Do nothing if not in editor, sandbox mode or landscaping is forbidden
         if (gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode
             && (gameState.park.flags & PARK_FLAGS_FORBID_LANDSCAPE_CHANGES))
         {
-            return Result(Status::Disallowed, STR_CANT_CHANGE_LAND_TYPE, STR_FORBIDDEN_BY_THE_LOCAL_AUTHORITY);
+            return Result(Status::disallowed, STR_CANT_CHANGE_LAND_TYPE, STR_FORBIDDEN_BY_THE_LOCAL_AUTHORITY);
         }
 
         money64 surfaceCost = 0;
@@ -138,7 +137,7 @@ namespace OpenRCT2::GameActions
                 }
             }
         }
-        res.Cost = surfaceCost + edgeCost;
+        res.cost = surfaceCost + edgeCost;
 
         return res;
     }
@@ -146,17 +145,17 @@ namespace OpenRCT2::GameActions
     Result SurfaceSetStyleAction::Execute(GameState_t& gameState) const
     {
         auto res = Result();
-        res.ErrorTitle = STR_CANT_CHANGE_LAND_TYPE;
-        res.Expenditure = ExpenditureType::landscaping;
+        res.errorTitle = STR_CANT_CHANGE_LAND_TYPE;
+        res.expenditure = ExpenditureType::landscaping;
 
         auto validRange = ClampRangeWithinMap(_range.Normalise());
         auto xMid = (validRange.GetX1() + validRange.GetX2()) / 2 + 16;
         auto yMid = (validRange.GetY1() + validRange.GetY2()) / 2 + 16;
         auto heightMid = TileElementHeight({ xMid, yMid });
 
-        res.Position.x = xMid;
-        res.Position.y = yMid;
-        res.Position.z = heightMid;
+        res.position.x = xMid;
+        res.position.y = yMid;
+        res.position.z = heightMid;
 
         money64 surfaceCost = 0;
         money64 edgeCost = 0;
@@ -168,7 +167,7 @@ namespace OpenRCT2::GameActions
                 if (!LocationValid(coords))
                     continue;
 
-                if (gLegacyScene != LegacyScene::scenarioEditor && !getGameState().cheats.sandboxMode)
+                if (gLegacyScene != LegacyScene::scenarioEditor && !gameState.cheats.sandboxMode)
                 {
                     if (!MapIsLocationInPark(coords))
                         continue;
@@ -186,7 +185,7 @@ namespace OpenRCT2::GameActions
 
                     if (_surfaceStyle != curSurfaceStyle)
                     {
-                        auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
+                        auto& objManager = GetContext()->GetObjectManager();
                         const auto* surfaceObject = objManager.GetLoadedObject<TerrainSurfaceObject>(_surfaceStyle);
                         if (surfaceObject != nullptr)
                         {
@@ -220,7 +219,7 @@ namespace OpenRCT2::GameActions
                 }
             }
         }
-        res.Cost = surfaceCost + edgeCost;
+        res.cost = surfaceCost + edgeCost;
 
         return res;
     }

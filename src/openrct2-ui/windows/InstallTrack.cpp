@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,6 +20,8 @@
 #include <openrct2/core/File.h>
 #include <openrct2/core/Path.hpp>
 #include <openrct2/core/UnitConversion.h>
+#include <openrct2/drawing/ColourMap.h>
+#include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/object/ObjectManager.h>
@@ -156,14 +158,14 @@ namespace OpenRCT2::Ui::Windows
             // Track preview
             Widget* widget = &widgets[WIDX_TRACK_PREVIEW];
             auto screenPos = windowPos + ScreenCoordsXY{ widget->left + 1, widget->top + 1 };
-            int32_t colour = ColourMapA[colours[0].colour].darkest;
+            auto colour = getColourMap(colours[0].colour).darkest;
             Rectangle::fill(rt, { screenPos, screenPos + ScreenCoordsXY{ 369, 216 } }, colour);
 
             G1Element g1temp = {};
             g1temp.offset = _trackDesignPreviewPixels.data() + (_currentTrackPieceDirection * kTrackPreviewImageSize);
             g1temp.width = 370;
             g1temp.height = 217;
-            g1temp.flags = G1_FLAG_HAS_TRANSPARENCY;
+            g1temp.flags = { G1Flag::hasTransparency };
             GfxSetG1Element(SPR_TEMP, &g1temp);
             DrawingEngineInvalidateImage(SPR_TEMP);
             GfxDrawSprite(rt, ImageId(SPR_TEMP), screenPos);
@@ -364,8 +366,8 @@ namespace OpenRCT2::Ui::Windows
 
         void InstallTrackDesign()
         {
-            auto& env = OpenRCT2::GetContext()->GetPlatformEnvironment();
-            auto destPath = env.GetDirectoryPath(OpenRCT2::DirBase::user, OpenRCT2::DirId::trackDesigns);
+            auto& env = GetContext()->GetPlatformEnvironment();
+            auto destPath = env.GetDirectoryPath(DirBase::user, DirId::trackDesigns);
             if (!Path::CreateDirectory(destPath))
             {
                 LOG_ERROR("Unable to create directory '%s'", destPath.c_str());
@@ -418,7 +420,7 @@ namespace OpenRCT2::Ui::Windows
             return nullptr;
         }
 
-        auto* windowMgr = Ui::GetWindowManager();
+        auto* windowMgr = GetWindowManager();
         windowMgr->ForceClose(WindowClass::editorObjectSelection);
         windowMgr->CloseConstructionWindows();
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -46,8 +46,8 @@ namespace OpenRCT2::GameActions
          *
          *  rct2: 0x00663CB9
          */
-        static int32_t MapSetLandHeightClearFunc(
-            TileElement** tile_element, [[maybe_unused]] const CoordsXY& coords, [[maybe_unused]] uint8_t flags,
+        static bool MapSetLandHeightClearFunc(
+            TileElement** tile_element, [[maybe_unused]] const CoordsXY& coords, [[maybe_unused]] CommandFlags flags,
             [[maybe_unused]] money64* price);
     };
 } // namespace OpenRCT2::GameActions

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -44,24 +44,24 @@ namespace OpenRCT2::GameActions
 
     Result ParkEntranceRemoveAction::Query(GameState_t& gameState) const
     {
-        if (!isInEditorMode() && !getGameState().cheats.sandboxMode)
+        if (!isInEditorMode() && !gameState.cheats.sandboxMode)
         {
-            return Result(Status::NotInEditorMode, STR_CANT_REMOVE_THIS, kStringIdNone);
+            return Result(Status::notInEditorMode, STR_CANT_REMOVE_THIS, kStringIdNone);
         }
 
         auto res = Result();
-        res.Expenditure = ExpenditureType::landPurchase;
-        res.Position = _loc;
-        res.ErrorTitle = STR_CANT_REMOVE_THIS;
+        res.expenditure = ExpenditureType::landPurchase;
+        res.position = _loc;
+        res.errorTitle = STR_CANT_REMOVE_THIS;
 
         if (!LocationValid(_loc))
         {
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
         }
         if (ParkEntranceGetIndex(_loc) == -1)
         {
             LOG_ERROR("No park entrance at x = %d, y = %d, z = %d", _loc.x, _loc.y, _loc.z);
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, kStringIdNone);
         }
         return res;
     }
@@ -69,18 +69,18 @@ namespace OpenRCT2::GameActions
     Result ParkEntranceRemoveAction::Execute(GameState_t& gameState) const
     {
         auto res = Result();
-        res.Expenditure = ExpenditureType::landPurchase;
-        res.Position = _loc;
-        res.ErrorTitle = STR_CANT_REMOVE_THIS;
+        res.expenditure = ExpenditureType::landPurchase;
+        res.position = _loc;
+        res.errorTitle = STR_CANT_REMOVE_THIS;
 
         auto entranceIndex = ParkEntranceGetIndex(_loc);
         if (entranceIndex == -1)
         {
             LOG_ERROR("No park entrance at x = %d, y = %d, z = %d", _loc.x, _loc.y, _loc.z);
-            return Result(Status::InvalidParameters, STR_CANT_REMOVE_THIS, kStringIdNone);
+            return Result(Status::invalidParameters, STR_CANT_REMOVE_THIS, kStringIdNone);
         }
 
-        auto& park = getGameState().park;
+        auto& park = gameState.park;
         auto direction = (park.entrances[entranceIndex].direction - 1) & 3;
 
         // Centre (sign)

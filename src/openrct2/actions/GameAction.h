@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -113,13 +113,13 @@ namespace OpenRCT2::GameActions
     {
     public:
         using Ptr = std::unique_ptr<GameAction>;
-        using Callback_t = std::function<void(const class GameAction*, const OpenRCT2::GameActions::Result*)>;
+        using Callback_t = std::function<void(const class GameAction*, const Result*)>;
 
     private:
         GameCommand const _type;
 
         Network::PlayerId_t _playerId = { -1 }; // Callee
-        uint32_t _flags = 0;                    // GAME_COMMAND_FLAGS
+        CommandFlags _flags = {};
         uint32_t _networkId = 0;
         Callback_t _callback;
 
@@ -139,7 +139,7 @@ namespace OpenRCT2::GameActions
 
         void AcceptFlags(GameActionParameterVisitor& visitor)
         {
-            visitor.Visit("flags", _flags);
+            visitor.Visit("flags", _flags.holder);
         }
 
         Network::PlayerId_t GetPlayer() const
@@ -160,28 +160,25 @@ namespace OpenRCT2::GameActions
             // Make sure we execute some things only on the client.
             uint16_t flags = 0;
 
-            if ((GetFlags() & GAME_COMMAND_FLAG_GHOST) != 0 || (GetFlags() & GAME_COMMAND_FLAG_NO_SPEND) != 0)
+            if (GetFlags().hasAny(CommandFlag::ghost, CommandFlag::noSpend))
             {
-                flags |= OpenRCT2::GameActions::Flags::ClientOnly;
+                flags |= Flags::ClientOnly;
             }
 
-            if (GetFlags() & GAME_COMMAND_FLAG_ALLOW_DURING_PAUSED)
+            if (GetFlags().has(CommandFlag::allowDuringPaused))
             {
-                flags |= OpenRCT2::GameActions::Flags::AllowWhilePaused;
+                flags |= Flags::AllowWhilePaused;
             }
 
             return flags;
         }
 
-        /**
-         * Currently used for GAME_COMMAND_FLAGS, needs refactoring once everything is replaced.
-         */
-        uint32_t GetFlags() const
+        CommandFlags GetFlags() const
         {
             return _flags;
         }
 
-        uint32_t SetFlags(uint32_t flags)
+        CommandFlags SetFlags(CommandFlags flags)
         {
             return _flags = flags;
         }
@@ -213,7 +210,7 @@ namespace OpenRCT2::GameActions
 
         virtual void Serialise(DataSerialiser& stream)
         {
-            stream << DS_TAG(_networkId) << DS_TAG(_flags) << DS_TAG(_playerId);
+            stream << DS_TAG(_networkId) << DS_TAG(_flags.holder) << DS_TAG(_playerId);
         }
 
         // Helper function, allows const Objects to still serialize into DataSerialiser while being const.
@@ -280,7 +277,7 @@ namespace OpenRCT2::GameActions
 
     void Enqueue(const GameAction* ga, uint32_t tick);
     void Enqueue(GameAction::Ptr&& ga, uint32_t tick);
-    void ProcessQueue();
+    void ProcessQueue(GameState_t& gameState);
     void ClearQueue();
 
     GameAction::Ptr Create(GameCommand id);

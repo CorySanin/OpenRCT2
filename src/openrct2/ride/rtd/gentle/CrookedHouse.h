@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -20,7 +20,7 @@ namespace OpenRCT2
 constexpr RideTypeDescriptor CrookedHouseRTD =
 {
     .Category = RideCategory::gentle,
-    .StartTrackPiece = TrackElemType::FlatTrack3x3,
+    .StartTrackPiece = TrackElemType::flatTrack3x3,
     .TrackPaintFunctions = TrackDrawerDescriptor({
         .trackStyle = TrackStyle::crookedHouse,
         .enabledTrackGroups = {},
@@ -48,7 +48,7 @@ constexpr RideTypeDescriptor CrookedHouseRTD =
     .PhotoItem = ShopItem::photo,
     .BonusValue = 22,
     .ColourPresets = TRACK_COLOUR_PRESETS(
-        { COLOUR_BRIGHT_RED, COLOUR_BLACK, COLOUR_GREY },
+        { Drawing::Colour::brightRed, Drawing::Colour::black, Drawing::Colour::grey },
     ),
     .ColourPreview = { 0, 0 },
     .ColourKey = RideColourKey::Ride,

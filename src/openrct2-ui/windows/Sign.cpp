@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -64,8 +64,8 @@ namespace OpenRCT2::Ui::Windows
     private:
         bool _isSmall = false;
         ObjectEntryIndex _sceneryEntry = kObjectEntryIndexNull;
-        colour_t _mainColour = {};
-        colour_t _textColour = {};
+        Drawing::Colour _mainColour = {};
+        Drawing::Colour _textColour = {};
 
         BannerIndex GetBannerIndex() const
         {
@@ -135,7 +135,7 @@ namespace OpenRCT2::Ui::Windows
             Widget& viewportWidget = widgets[WIDX_VIEWPORT];
             ViewportCreate(
                 *this, windowPos + ScreenCoordsXY{ viewportWidget.left + 1, viewportWidget.top + 1 },
-                viewportWidget.width() - 2, viewportWidget.height() - 1, Focus(CoordsXYZ{ signViewPosition, viewZ }));
+                viewportWidget.width() - 2, viewportWidget.height() - 2, Focus(CoordsXYZ{ signViewPosition, viewZ }));
 
             viewport->flags = Config::Get().general.alwaysShowGridlines ? VIEWPORT_FLAG_GRIDLINES : VIEWPORT_FLAG_NONE;
             invalidate();
@@ -292,7 +292,7 @@ namespace OpenRCT2::Ui::Windows
             text_colour_btn->image = getColourButtonImage(_textColour);
         }
 
-        void onDraw(RenderTarget& rt) override
+        void onDraw(Drawing::RenderTarget& rt) override
         {
             drawWidgets(rt);
 
@@ -318,7 +318,7 @@ namespace OpenRCT2::Ui::Windows
             Widget* viewportWidget = &widgets[WIDX_VIEWPORT];
             ViewportCreate(
                 *this, windowPos + ScreenCoordsXY{ viewportWidget->left + 1, viewportWidget->top + 1 },
-                viewportWidget->width() - 2, viewportWidget->height() - 1, Focus(CoordsXYZ{ signViewPos }));
+                viewportWidget->width() - 2, viewportWidget->height() - 2, Focus(CoordsXYZ{ signViewPos }));
             if (viewport != nullptr)
                 viewport->flags = Config::Get().general.alwaysShowGridlines ? VIEWPORT_FLAG_GRIDLINES : VIEWPORT_FLAG_NONE;
             invalidate();

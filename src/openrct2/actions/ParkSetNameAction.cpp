@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2025 OpenRCT2 developers
+ * Copyright (c) 2014-2026 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -48,7 +48,7 @@ namespace OpenRCT2::GameActions
         if (_name.empty())
         {
             LOG_ERROR("Can't set park name to empty string");
-            return Result(Status::InvalidParameters, STR_CANT_RENAME_PARK, STR_INVALID_NAME_FOR_PARK);
+            return Result(Status::invalidParameters, STR_CANT_RENAME_PARK, STR_INVALID_NAME_FOR_PARK);
         }
         return Result();
     }
@@ -56,11 +56,11 @@ namespace OpenRCT2::GameActions
     Result ParkSetNameAction::Execute(GameState_t& gameState) const
     {
         // Do a no-op if new name is the same as the current name is the same
-        auto& park = getGameState().park;
+        auto& park = gameState.park;
         if (_name != park.name)
         {
             park.name = _name;
-            ScrollingTextInvalidate();
+            Drawing::ScrollingText::invalidate();
             GfxInvalidateScreen();
         }
         return Result();
