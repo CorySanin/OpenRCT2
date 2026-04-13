@@ -9,6 +9,7 @@
 
 #include "../Context.h"
 #include "../Game.h"
+#include "../actions/GameActionRunner.h"
 #include "../actions/ResultWithMessage.h"
 #include "../EditorObjectSelectionSession.h"
 #include "../FileClassifier.h"
@@ -185,43 +186,75 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     gameState.lastEntranceStyle = objManager.GetLoadedObjectEntryIndex("rct2.station.plain");
 
-    GameActions::CheatSetAction(CheatType::setGrassLength, GRASS_LENGTH_CLEAR_0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::waterPlants).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::removeLitter).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::removeAllGuests).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::removeDucks).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::clearLoan).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::resetCrashStatus).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::fixRides).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::fixVandalism).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::renewRides).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::haveFun, 1).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableClearanceChecks, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableSupportLimits, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableSupportLimits, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::sandboxMode, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::showAllOperatingModes, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::showVehiclesFromOtherTrackTypes, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableTrainLengthLimit, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::enableChainLiftOnAllTrack, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::fastLiftHill, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableBrakesFailure, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableAllBreakdowns, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::buildInPauseMode, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::ignoreRideIntensity, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableVandalism, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableLittering, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disablePlantAging, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::makeDestructible, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::neverendingMarketing, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::allowArbitraryRideTypeChanges, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::disableRideValueAging, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::ignoreResearchStatus, 0).Execute(gameState);
-    GameActions::CheatSetAction(CheatType::allowTrackPlaceInvalidHeights, 0).Execute(gameState);
+    auto clearGrass = GameActions::CheatSetAction(CheatType::setGrassLength, GRASS_LENGTH_CLEAR_0);
+    GameActions::Execute(&clearGrass, gameState);
+    auto waterPlants = GameActions::CheatSetAction(CheatType::waterPlants);
+    GameActions::Execute(&waterPlants, gameState);
+    auto removeLitter = GameActions::CheatSetAction(CheatType::removeLitter);
+    GameActions::Execute(&removeLitter, gameState);
+    auto removeGuests = GameActions::CheatSetAction(CheatType::removeAllGuests);
+    GameActions::Execute(&removeGuests, gameState);
+    auto removeDucks = GameActions::CheatSetAction(CheatType::removeDucks);
+    GameActions::Execute(&removeDucks, gameState);
+    auto clearLoad = GameActions::CheatSetAction(CheatType::clearLoan);
+    GameActions::Execute(&clearLoad, gameState);
+    auto resetCrash = GameActions::CheatSetAction(CheatType::resetCrashStatus);
+    GameActions::Execute(&resetCrash, gameState);
+    auto fixRides = GameActions::CheatSetAction(CheatType::fixRides);
+    GameActions::Execute(&fixRides, gameState);
+    auto fixVandal = GameActions::CheatSetAction(CheatType::fixVandalism);
+    GameActions::Execute(&fixVandal, gameState);
+    auto renewRides = GameActions::CheatSetAction(CheatType::renewRides);
+    GameActions::Execute(&renewRides, gameState);
+    auto haveFun = GameActions::CheatSetAction(CheatType::haveFun, 1);
+    GameActions::Execute(&haveFun, gameState);
+    auto clearanceChecks = GameActions::CheatSetAction(CheatType::disableClearanceChecks, 0);
+    GameActions::Execute(&clearanceChecks, gameState);
+    auto supportLimits = GameActions::CheatSetAction(CheatType::disableSupportLimits, 0);
+    GameActions::Execute(&supportLimits, gameState);
+    auto sandboxMode = GameActions::CheatSetAction(CheatType::sandboxMode, 0);
+    GameActions::Execute(&sandboxMode, gameState);
+    auto operatingModes = GameActions::CheatSetAction(CheatType::showAllOperatingModes, 0);
+    GameActions::Execute(&operatingModes, gameState);
+    auto otherTrackVehicles = GameActions::CheatSetAction(CheatType::showVehiclesFromOtherTrackTypes, 0);
+    GameActions::Execute(&otherTrackVehicles, gameState);
+    auto trainLengthLimit = GameActions::CheatSetAction(CheatType::disableTrainLengthLimit, 0);
+    GameActions::Execute(&trainLengthLimit, gameState);
+    auto allTrackChainlift = GameActions::CheatSetAction(CheatType::enableChainLiftOnAllTrack, 0);
+    GameActions::Execute(&allTrackChainlift, gameState);
+    auto fastLiftHill = GameActions::CheatSetAction(CheatType::fastLiftHill, 0);
+    GameActions::Execute(&fastLiftHill, gameState);
+    auto brakeFailures = GameActions::CheatSetAction(CheatType::disableBrakesFailure, 0);
+    GameActions::Execute(&brakeFailures, gameState);
+    auto breakdowns = GameActions::CheatSetAction(CheatType::disableAllBreakdowns, 0);
+    GameActions::Execute(&breakdowns, gameState);
+    auto pauseModeBuild = GameActions::CheatSetAction(CheatType::buildInPauseMode, 0);
+    GameActions::Execute(&pauseModeBuild, gameState);
+    auto rideIntensity = GameActions::CheatSetAction(CheatType::ignoreRideIntensity, 0);
+    GameActions::Execute(&rideIntensity, gameState);
+    auto vandalismToggle = GameActions::CheatSetAction(CheatType::disableVandalism, 0);
+    GameActions::Execute(&vandalismToggle, gameState);
+    auto litterToggle = GameActions::CheatSetAction(CheatType::disableLittering, 0);
+    GameActions::Execute(&litterToggle, gameState);
+    auto plantAgeToggle = GameActions::CheatSetAction(CheatType::disablePlantAging, 0);
+    GameActions::Execute(&plantAgeToggle, gameState);
+    auto destructible = GameActions::CheatSetAction(CheatType::makeDestructible, 0);
+    GameActions::Execute(&destructible, gameState);
+    auto marketing = GameActions::CheatSetAction(CheatType::neverendingMarketing, 0);
+    GameActions::Execute(&marketing, gameState);
+    auto rideTypeChanges = GameActions::CheatSetAction(CheatType::allowArbitraryRideTypeChanges, 0);
+    GameActions::Execute(&rideTypeChanges, gameState);
+    auto rideValueAging = GameActions::CheatSetAction(CheatType::disableRideValueAging, 0);
+    GameActions::Execute(&rideValueAging, gameState);
+    auto researchStatus = GameActions::CheatSetAction(CheatType::ignoreResearchStatus, 0);
+    GameActions::Execute(&researchStatus, gameState);
+    auto invalidHeights = GameActions::CheatSetAction(CheatType::allowTrackPlaceInvalidHeights, 0);
+    GameActions::Execute(&invalidHeights, gameState);
 
-    GameActions::ParkSetDateAction(0, 0, 0).Execute(gameState);
-
-    GameActions::ParkSetParameterAction(GameActions::ParkParameter::Open).Execute(gameState);
+    auto setDate = GameActions::ParkSetDateAction(0, 0, 0);
+    GameActions::Execute(&setDate, gameState);
+    auto openPark = GameActions::ParkSetParameterAction(GameActions::ParkParameter::Open);
+    GameActions::Execute(&openPark, gameState);
 
     gGamePaused = 0;
 
@@ -232,7 +265,8 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         const ObjectRepositoryItem* items = ObjectRepositoryGetItems();
         int32_t numObjects = static_cast<int32_t>(ObjectRepositoryGetItemsCount());
         EditorInputFlags inputFlags = { EditorInputFlag::unk1, EditorInputFlag::selectObjectsInSceneryGroup };
-        GameActions::CheatSetAction(CheatType::noMoney, 1).Execute(gameState);
+        auto noMoney = GameActions::CheatSetAction(CheatType::noMoney, 1);
+        GameActions::Execute(&noMoney, gameState);
 
         for (auto& rideRef : RideManager(gameState))
         {
@@ -259,11 +293,16 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     }
     if (prepEcon)
     {
-        GameActions::CheatSetAction(CheatType::noMoney, 0).Execute(gameState);
-        GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::ParkChargeMethod, 0).Execute(gameState);
-        GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::InitialLoan, 0).Execute(gameState);
-        GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::MaximumLoanSize, 0).Execute(gameState);
-        GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::AnnualInterestRate, 0).Execute(gameState);
+        auto yesMoney = GameActions::CheatSetAction(CheatType::noMoney, 0);
+        GameActions::Execute(&yesMoney, gameState);
+        auto parkChargeMethod = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::ParkChargeMethod, 0);
+        GameActions::Execute(&parkChargeMethod, gameState);
+        auto initialLoan = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::InitialLoan, 0);
+        GameActions::Execute(&initialLoan, gameState);
+        auto maxLoanSize = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::MaximumLoanSize, 0);
+        GameActions::Execute(&maxLoanSize, gameState);
+        auto annualInterest = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::AnnualInterestRate, 0);
+        GameActions::Execute(&annualInterest, gameState);
         gameState.park.cash = econBudget;
         gameState.park.flags |= PARK_FLAGS_PARK_FREE_ENTRY;
     }
