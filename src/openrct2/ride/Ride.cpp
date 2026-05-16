@@ -590,11 +590,56 @@ void Ride::formatStatusTo(Formatter& ft) const
     }
 }
 
+int32_t Ride::EstimateTrackLength() const
+{
+    int32_t length = 1;
+    CoordsXYE originTrackElement;
+    if (!RideTryGetOriginElement(*this, &originTrackElement))
+    {
+        return 0;
+    }
+    CoordsXYE trackElement = originTrackElement;
+
+    bool moveSlowIt = true;
+    bool circuit = false;
+    TrackCircuitIterator it = {};
+    trackCircuitIteratorBegin(&it, originTrackElement);
+    TrackCircuitIterator slowIt = it;
+    while (trackCircuitIteratorNext(&it))
+    {
+        length++;
+        if (it.current.element == trackElement.element)
+        {
+            circuit = true;
+            break;
+        }
+
+        moveSlowIt = !moveSlowIt;
+        if (moveSlowIt)
+        {
+            trackCircuitIteratorNext(&slowIt);
+            if (trackCircuitIteratorsMatch(&it, &slowIt))
+            {
+                break;
+            }
+        }
+    }
+    if (!circuit) {
+        trackCircuitIteratorBegin(&it, originTrackElement);
+        while (trackCircuitIteratorPrevious(&it))
+        {
+            length++;
+        }
+    }
+
+    return length * 253650 * (circuit ? 1 : 2);
+}
+
 int32_t Ride::getTotalLength() const
 {
     int32_t totalLength = 0;
     for (int32_t i = 0; i < numStations; i++)
-        totalLength += stations[i].SegmentLength;
+        totalLength += stations[i].SegmentLength + stations[i].Length;
     return totalLength;
 }
 
@@ -3223,7 +3268,7 @@ static bool VehicleCreateTrains(Ride& ride, const CoordsXYZ& trainsPos, TrackEle
         }
         else if (ride.mode == RideMode::inMotionBoarding && ride.status != RideStatus::simulating && numberOfTrains > 1)
         {
-            int32_t total_length = ride.getTotalLength();
+            int32_t total_length = (!ride.flags.has(RideFlag::tested) ? ride.EstimateTrackLength() : ride.getTotalLength());
             remainingDistance = -vehicleIndex * total_length / (ride.numTrains - 1);
         }
         TrainReference train = VehicleCreateTrain(ride, trainsPos, vehicleIndex, &remainingDistance, trackElement);

@@ -168,7 +168,7 @@ static void RideUpdateStationNormal(Ride& ride, StationIndex stationIndex)
     }
     else
     {
-        if (time == 0)
+        if (time == 0 || ride.mode == RideMode::inMotionBoarding)
         {
             station.Depart |= kStationDepartFlag;
             RideInvalidateStationStart(ride, stationIndex, true);

@@ -517,6 +517,7 @@ public:
     void updatePopularity(uint8_t pop_amount);
     void removePeeps();
 
+    int32_t EstimateTrackLength() const;
     int32_t getTotalLength() const;
     int32_t getTotalTime() const;
 
