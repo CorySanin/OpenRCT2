@@ -1,0 +1,180 @@
+name: MultiArchDockerBuild
+
+on:
+  push:
+    branches:
+      - saveprep
+    tags:
+      - 'v*'
+
+env:
+  DH_REGISTRY: docker.io
+  GH_REGISTRY: ghcr.io
+  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+  TAG: sha-${{ github.sha }}
+  ARTIFACT_SUFFIX: -ci-artifacts
+
+jobs:
+  varinit:
+    name: Define workflow variables
+    permissions: {}
+    runs-on: ubuntu-24.04
+    outputs:
+      image_name: ${{ steps.image.outputs.image_name }}
+      image_labels: ${{ steps.labels.outputs.labels }}
+      repo_name: ${{ steps.repo.outputs.repo_name }}
+    steps:
+      - name: Lowercase image name
+        id: image
+        run: |
+          echo "image_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+      - name: Lowercase repo name
+        id: repo
+        run: |
+          echo "repo_name=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+      - name: Define image version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        run: echo "IMG_VERSION=develop" >> $GITHUB_ENV
+      - name: Define image version (release)
+        if: "startsWith(github.ref, 'refs/tags/v')"
+        run: echo "IMG_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+      - name: Define image labels
+        id: labels
+        run: |
+          {
+            echo "labels<<EOF"
+            echo "org.opencontainers.image.title=ffa-tycoon-scenario-prep"
+            echo "org.opencontainers.image.description=prep openrct2 save files for FFA Tycoon"
+            echo "org.opencontainers.image.licenses=GPL-3.0"
+            echo "org.opencontainers.image.version=${{ env.IMG_VERSION }}"
+            echo "org.opencontainers.image.revision=${{ github.sha }}"
+            echo "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%S%:z')"
+            echo "org.opencontainers.image.authors=Cory Sanin <corysanin@outlook.com>"
+            echo "org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}"
+            echo "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}"
+            echo "org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  build_image:
+    name: Build image
+    strategy:
+      matrix:
+        arch:
+          - x86
+          - ARM
+        include:
+          - arch: x86
+            os: ubuntu-24.04
+          - arch: ARM
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    needs:
+      - varinit
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: ${{ needs.varinit.outputs.image_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GH_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        env:
+          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+        with:
+          target: deploy
+          push: true
+          tags: ${{ env.GH_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.ARTIFACT_SUFFIX }}:${{ env.TAG }}-${{ matrix.arch }}
+          labels: ${{ needs.varinit.outputs.image_labels }}
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}
+
+  combine-images:
+    name: Combine Docker images
+    runs-on: ubuntu-24.04
+    needs:
+      - varinit
+      - build_image
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: ${{ needs.varinit.outputs.image_name }}
+      REPOSITORY: ${{ needs.varinit.outputs.repo_name }}
+
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GH_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to DockerHub
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DH_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Define release tag patterns
+        if: "startsWith(github.ref, 'refs/tags/v')"
+        run: |
+          {
+            echo "PIMAGES<<EOF"
+            echo "${{ env.DOCKER_USERNAME }}/${{ env.REPOSITORY }}"
+            echo "${{ env.GH_REGISTRY }}/${{ env.IMAGE_NAME }}"
+            echo "EOF"
+            echo "PTAGS<<EOF"
+            echo "type=raw,value=latest"
+            echo "type=semver,pattern={{version}}"
+            echo "type=semver,pattern={{major}}.{{minor}}"
+            echo "type=semver,pattern={{major}}"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Define develop tag patterns
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        run: |
+          {
+            echo "PIMAGES<<EOF"
+            echo "${{ env.GH_REGISTRY }}/${{ env.IMAGE_NAME }}"
+            echo "EOF"
+            echo "PTAGS<<EOF"
+            echo "type=ref,event=branch"
+            echo "type=ref,event=pr"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Extract metadata for Docker image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.PIMAGES }}
+          tags: ${{ env.PTAGS }}
+          labels: ${{ needs.varinit.outputs.image_labels }}
+
+      - name: Combine JVM images into single manifest
+        uses: int128/docker-manifest-create-action@v2
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          index-annotations: ${{ steps.meta.outputs.labels }}
+          sources: |
+            ${{ env.GH_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.ARTIFACT_SUFFIX }}:${{ env.TAG }}-x86
+            ${{ env.GH_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.ARTIFACT_SUFFIX }}:${{ env.TAG }}-ARM
