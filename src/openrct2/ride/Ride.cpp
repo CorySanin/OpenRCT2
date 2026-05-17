@@ -639,7 +639,7 @@ int32_t Ride::getTotalLength() const
 {
     int32_t totalLength = 0;
     for (int32_t i = 0; i < numStations; i++)
-        totalLength += stations[i].SegmentLength + stations[i].Length;
+        totalLength += stations[i].SegmentLength;
     return totalLength;
 }
 
