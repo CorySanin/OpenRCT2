@@ -153,6 +153,7 @@ jobs:
         run: |
           {
             echo "PIMAGES<<EOF"
+            echo "${{ env.DOCKER_USERNAME }}/${{ env.REPOSITORY }}"
             echo "${{ env.GH_REGISTRY }}/${{ env.IMAGE_NAME }}"
             echo "EOF"
             echo "PTAGS<<EOF"
