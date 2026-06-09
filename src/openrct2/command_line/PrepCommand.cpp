@@ -253,12 +253,12 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 
     auto setDate = GameActions::ParkSetDateAction(0, 0, 0);
     GameActions::Execute(&setDate, gameState);
-    auto openPark = GameActions::ParkSetParameterAction(GameActions::ParkParameter::Open);
+    auto openPark = GameActions::ParkSetParameterAction(GameActions::ParkParameter::open);
     GameActions::Execute(&openPark, gameState);
 
     gGamePaused = 0;
 
-    gameState.newsItems.Clear();
+    gameState.newsItems.clear();
 
     if (prepSandbox)
     {
@@ -295,13 +295,13 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     {
         auto yesMoney = GameActions::CheatSetAction(CheatType::noMoney, 0);
         GameActions::Execute(&yesMoney, gameState);
-        auto parkChargeMethod = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::ParkChargeMethod, 0);
+        auto parkChargeMethod = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::parkChargeMethod, 0);
         GameActions::Execute(&parkChargeMethod, gameState);
-        auto initialLoan = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::InitialLoan, 0);
+        auto initialLoan = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::initialLoan, 0);
         GameActions::Execute(&initialLoan, gameState);
-        auto maxLoanSize = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::MaximumLoanSize, 0);
+        auto maxLoanSize = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::maximumLoanSize, 0);
         GameActions::Execute(&maxLoanSize, gameState);
-        auto annualInterest = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::AnnualInterestRate, 0);
+        auto annualInterest = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::annualInterestRate, 0);
         GameActions::Execute(&annualInterest, gameState);
         gameState.park.cash = econBudget;
         gameState.park.flags |= PARK_FLAGS_PARK_FREE_ENTRY;
@@ -341,17 +341,17 @@ static void UpdateTrackElementsRideType()
                 continue;
             do
             {
-                if (tileElement->GetType() != TileElementType::Track)
+                if (tileElement->getType() != TileElementType::Track)
                     continue;
 
-                auto* trackElement = tileElement->AsTrack();
+                auto* trackElement = tileElement->asTrack();
                 const auto* ride = GetRide(trackElement->GetRideIndex());
                 if (ride != nullptr)
                 {
                     trackElement->SetRideType(ride->type);
                 }
 
-            } while (!(tileElement++)->IsLastForTile());
+            } while (!(tileElement++)->isLastForTile());
         }
     }
 }
@@ -379,7 +379,7 @@ static void DetectProblems(GameState_t& gameState)
     uint32_t hmen = 0;
     for (auto peep : EntityList<Staff>())
     {
-        if (peep->AssignedStaffType == StaffType::handyman)
+        if (peep->assignedStaffType == StaffType::handyman)
         {
             hmen++;
         }
