@@ -136,7 +136,7 @@ enum : StringId
     STR_RIDE_MODE_NORMAL = 1061,
     STR_RIDE_MODE_CONTINUOUS_CIRCUIT = 1062,
     STR_RIDE_MODE_REVERSE_INCLINE_LAUNCHED_SHUTTLE = 1063,
-    STR_RIDE_MODE_POWERED_LAUNCH_PASSTROUGH = 1064,
+    STR_RIDE_MODE_POWERED_LAUNCH_PASSTHROUGH = 1064,
     STR_RIDE_MODE_SHUTTLE = 1065,
     STR_RIDE_MODE_BOAT_HIRE = 1066,
     STR_RIDE_MODE_UPWARD_LAUNCH = 1067,
@@ -1764,6 +1764,8 @@ enum : StringId
 
     STR_QUARTER_HELIX_UP = 7028,
     STR_QUARTER_HELIX_DOWN = 7029,
+
+    STR_CHEAT_DISABLE_GRASS_GROWING = 7031,
 
     // Have to include resource strings (from scenarios and objects) for the time being now that language is partially working
     /* MAX_STR_COUNT = 32768 */ // MAX_STR_COUNT - upper limit for number of strings, not the current count strings

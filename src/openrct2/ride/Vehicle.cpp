@@ -11,7 +11,6 @@
 
 #include "../Context.h"
 #include "../Diagnostic.h"
-#include "../Editor.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../actions/ride/RideSetStatusAction.h"
@@ -251,7 +250,7 @@ void VehicleUpdateAll()
     if (gLegacyScene == LegacyScene::scenarioEditor)
         return;
 
-    if (gLegacyScene == LegacyScene::trackDesigner && getGameState().editorStep != EditorStep::rollerCoasterDesigner)
+    if (gLegacyScene == LegacyScene::trackDesigner && getGameState().editorStep != Editor::Step::rollerCoasterDesigner)
         return;
 
     for (auto vehicle : TrainManager::View())
@@ -1038,7 +1037,7 @@ bool Vehicle::CurrentTowerElementIsTop()
         if (tileElement->isGhost())
             continue;
 
-        if (tileElement->getType() != TileElementType::Track)
+        if (tileElement->getType() != TileElementType::track)
             continue;
 
         const auto* trackElement = tileElement->asTrack();

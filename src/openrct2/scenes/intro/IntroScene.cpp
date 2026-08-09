@@ -17,7 +17,10 @@
 #include "../../audio/AudioChannel.h"
 #include "../../audio/AudioMixer.h"
 #include "../../drawing/Drawing.h"
+#include "../../drawing/NewDrawing.h"
+#include "../../drawing/PaletteIndex.h"
 #include "../../drawing/Rectangle.h"
+#include "../../scenes/SceneManager.h"
 
 #include <cstdint>
 
@@ -239,7 +242,8 @@ namespace OpenRCT2
                 break;
             case IntroState::Finish:
             {
-                sceneContext.SetActiveScene(sceneContext.GetTitleScene());
+                auto* sceneMgr = sceneContext.GetSceneManager();
+                sceneMgr->setActiveScene(sceneMgr->getTitleScene());
                 break;
             }
             default:

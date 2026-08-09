@@ -10,6 +10,7 @@
 #include "StreamBuffer.hpp"
 
 #include "Guard.hpp"
+#include "IStream.hpp"
 #include "Memory.hpp"
 
 namespace OpenRCT2
@@ -57,6 +58,9 @@ namespace OpenRCT2
     {
         if (&other != this)
         {
+            if (_bufferLength > 0)
+                Memory::Free(_buffer);
+
             _buffer = other._buffer;
             _bufferLength = other._bufferLength;
             _remaining = other._remaining;
@@ -125,6 +129,9 @@ namespace OpenRCT2
     {
         if (&other != this)
         {
+            if (_bufferLength > 0)
+                Memory::Free(_buffer);
+
             _buffer = other._buffer;
             _bufferLength = other._bufferLength;
             _remaining = other._remaining;

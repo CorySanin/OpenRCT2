@@ -18,7 +18,6 @@
 #include <openrct2-ui/interface/Widget.h>
 #include <openrct2-ui/windows/Windows.h>
 #include <openrct2/Context.h>
-#include <openrct2/Editor.h>
 #include <openrct2/Game.h>
 #include <openrct2/GameState.h>
 #include <openrct2/Input.h>
@@ -199,7 +198,7 @@ static void ShortcutAdjustLand()
     if (gLegacyScene == LegacyScene::titleSequence)
         return;
 
-    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::landscapeEditor)
+    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != Editor::Step::landscapeEditor)
         return;
 
     if (isInTrackDesignerOrManager())
@@ -213,7 +212,7 @@ static void ShortcutAdjustWater()
     if (gLegacyScene == LegacyScene::titleSequence)
         return;
 
-    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::landscapeEditor)
+    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != Editor::Step::landscapeEditor)
         return;
 
     if (isInTrackDesignerOrManager())
@@ -227,7 +226,7 @@ static void ShortcutBuildScenery()
     if (gLegacyScene == LegacyScene::titleSequence)
         return;
 
-    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::landscapeEditor)
+    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != Editor::Step::landscapeEditor)
         return;
 
     if (isInTrackDesignerOrManager())
@@ -241,7 +240,7 @@ static void ShortcutBuildPaths()
     if (gLegacyScene == LegacyScene::titleSequence)
         return;
 
-    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::landscapeEditor)
+    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != Editor::Step::landscapeEditor)
         return;
 
     if (isInTrackDesignerOrManager())
@@ -343,7 +342,7 @@ static void ShortcutShowMap()
     if (gLegacyScene == LegacyScene::titleSequence)
         return;
 
-    if (gLegacyScene != LegacyScene::scenarioEditor || getGameState().editorStep == EditorStep::landscapeEditor)
+    if (gLegacyScene != LegacyScene::scenarioEditor || getGameState().editorStep == Editor::Step::landscapeEditor)
         if (!(isInTrackDesignerOrManager()))
             ContextOpenWindow(WindowClass::map);
 }
@@ -400,7 +399,7 @@ static void ShortcutClearScenery()
     if (gLegacyScene == LegacyScene::titleSequence)
         return;
 
-    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::landscapeEditor)
+    if (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != Editor::Step::landscapeEditor)
         return;
 
     if (isInTrackDesignerOrManager())
@@ -440,7 +439,7 @@ static void ShortcutOpenSceneryPicker()
 {
     if ((gLegacyScene == LegacyScene::titleSequence || gLegacyScene == LegacyScene::trackDesigner
          || gLegacyScene == LegacyScene::trackDesignsManager)
-        || (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != EditorStep::landscapeEditor))
+        || (gLegacyScene == LegacyScene::scenarioEditor && getGameState().editorStep != Editor::Step::landscapeEditor))
         return;
 
     auto* windowMgr = GetWindowManager();
@@ -509,7 +508,7 @@ static void ShortcutToggleWallSlope()
     const TileElement* tileElement = TileInspector::GetSelectedElement();
 
     // Ensure an element is selected and it's a wall
-    if (tileElement == nullptr || tileElement->getType() != TileElementType::Wall)
+    if (tileElement == nullptr || tileElement->getType() != TileElementType::wall)
     {
         return;
     }
@@ -762,7 +761,7 @@ void ShortcutManager::registerDefaultShortcuts()
         {
             windowMgr->CloseAll();
         }
-        else if (getGameState().editorStep == EditorStep::landscapeEditor)
+        else if (getGameState().editorStep == Editor::Step::landscapeEditor)
         {
             windowMgr->CloseTop();
         }

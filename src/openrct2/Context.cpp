@@ -14,7 +14,7 @@
 
 #include "AssetPackManager.h"
 #include "Context.h"
-#include "Editor.h"
+#include "Diagnostic.h"
 #include "FileClassifier.h"
 #include "Game.h"
 #include "GameState.h"
@@ -29,6 +29,7 @@
 #include "audio/Audio.h"
 #include "audio/AudioContext.h"
 #include "config/Config.h"
+#include "core/BackgroundWorker.hpp"
 #include "core/Console.hpp"
 #include "core/File.h"
 #include "core/FileScanner.h"
@@ -40,7 +41,9 @@
 #include "core/String.hpp"
 #include "core/Timer.hpp"
 #include "drawing/ColourMap.h"
+#include "drawing/Drawing.Sprite.h"
 #include "drawing/Drawing.h"
+#include "drawing/Font.h"
 #include "drawing/IDrawingEngine.h"
 #include "drawing/Image.h"
 #include "drawing/LightFX.h"
@@ -50,7 +53,6 @@
 #include "interface/StdInOutConsole.h"
 #include "interface/Viewport.h"
 #include "localisation/Formatter.h"
-#include "localisation/Localisation.Date.h"
 #include "localisation/LocalisationService.h"
 #include "network/DiscordService.h"
 #include "network/Network.h"
@@ -66,12 +68,10 @@
 #include "ride/TrackDesignRepository.h"
 #include "scenario/Scenario.h"
 #include "scenario/ScenarioRepository.h"
-#include "scenes/game/GameScene.h"
-#include "scenes/intro/IntroScene.h"
+#include "scenes/SceneManager.h"
+#include "scenes/editor/EditorScene.h"
 #include "scenes/preloader/PreloaderScene.h"
-#include "scenes/title/TitleScene.h"
 #include "scenes/title/TitleSequenceManager.h"
-#include "scripting/HookEngine.h"
 #include "scripting/ScriptEngine.h"
 #include "ui/UiContext.h"
 #include "ui/WindowManager.h"
@@ -82,7 +82,6 @@
 #include <cmath>
 #include <exception>
 #include <future>
-#include <iterator>
 #include <memory>
 #include <string>
 
@@ -114,6 +113,7 @@ namespace OpenRCT2
         std::unique_ptr<IObjectManager> _objectManager;
         std::unique_ptr<ITrackDesignRepository> _trackDesignRepository;
         std::unique_ptr<IScenarioRepository> _scenarioRepository;
+        std::unique_ptr<ISceneManager> _sceneManager;
         std::unique_ptr<IReplayManager> _replayManager;
         std::unique_ptr<IGameStateSnapshots> _gameStateSnapshots;
         std::unique_ptr<AssetPackManager> _assetPackManager;
@@ -127,13 +127,6 @@ namespace OpenRCT2
 #ifndef DISABLE_NETWORK
         Network::NetworkBase _network;
 #endif
-
-        // Scenes
-        std::unique_ptr<PreloaderScene> _preloaderScene;
-        std::unique_ptr<IntroScene> _introScene;
-        std::unique_ptr<TitleScene> _titleScene;
-        std::unique_ptr<GameScene> _gameScene;
-        IScene* _activeScene = nullptr;
 
         DrawingEngine _drawingEngineType = DrawingEngine::SoftwareWithHardwareDisplay;
         std::unique_ptr<Drawing::IDrawingEngine> _drawingEngine;
@@ -273,6 +266,11 @@ namespace OpenRCT2
             return _scenarioRepository.get();
         }
 
+        ISceneManager* GetSceneManager() override
+        {
+            return _sceneManager.get();
+        }
+
         IReplayManager* GetReplayManager() override
         {
             return _replayManager.get();
@@ -318,62 +316,6 @@ namespace OpenRCT2
                 return EXIT_SUCCESS;
             }
             return EXIT_FAILURE;
-        }
-
-        IScene* GetPreloaderScene() override
-        {
-            if (auto* scene = _preloaderScene.get())
-                return scene;
-
-            _preloaderScene = std::make_unique<PreloaderScene>(*this);
-            return _preloaderScene.get();
-        }
-
-        IScene* GetIntroScene() override
-        {
-            if (auto* scene = _introScene.get())
-                return scene;
-
-            _introScene = std::make_unique<IntroScene>(*this);
-            return _introScene.get();
-        }
-
-        IScene* GetTitleScene() override
-        {
-            if (auto* scene = _titleScene.get())
-                return scene;
-
-            _titleScene = std::make_unique<TitleScene>(*this);
-            return _titleScene.get();
-        }
-
-        IScene* GetGameScene() override
-        {
-            if (auto* scene = _gameScene.get())
-                return scene;
-
-            _gameScene = std::make_unique<GameScene>(*this);
-            return _gameScene.get();
-        }
-
-        IScene* GetEditorScene() override
-        {
-            // TODO: Implement me.
-            return nullptr;
-        }
-
-        IScene* GetActiveScene() override
-        {
-            return _activeScene;
-        }
-
-        void SetActiveScene(IScene* screen) override
-        {
-            if (_activeScene != nullptr)
-                _activeScene->Stop();
-            _activeScene = screen;
-            if (_activeScene)
-                _activeScene->Load();
         }
 
         void WriteLine(const std::string& s) override
@@ -469,6 +411,7 @@ namespace OpenRCT2
             _objectManager = CreateObjectManager(*_objectRepository);
             _trackDesignRepository = CreateTrackDesignRepository(*_env);
             _scenarioRepository = CreateScenarioRepository(*_env);
+            _sceneManager = createSceneManager(this);
 
             if (!gOpenRCT2Headless)
             {
@@ -541,8 +484,8 @@ namespace OpenRCT2
 
             if (!gOpenRCT2Headless)
             {
-                auto* preloaderScene = static_cast<PreloaderScene*>(GetPreloaderScene());
-                SetActiveScene(preloaderScene);
+                auto* preloaderScene = static_cast<PreloaderScene*>(_sceneManager->getPreloaderScene());
+                _sceneManager->setActiveScene(preloaderScene);
 
                 // TODO: preload the title scene in another (parallel) job.
                 preloaderScene->AddJob([this]() { InitialiseRepositories(); });
@@ -777,7 +720,7 @@ namespace OpenRCT2
                 Console::Error::WriteLine(e.what());
                 if (loadTitleScreenOnFail)
                 {
-                    SetActiveScene(GetTitleScene());
+                    _sceneManager->setActiveScene(_sceneManager->getTitleScene());
                 }
                 auto windowManager = _uiContext->GetWindowManager();
                 windowManager->ShowError(STR_FAILED_TO_LOAD_FILE_CONTAINS_INVALID_DATA, kStringIdNone, {});
@@ -864,7 +807,7 @@ namespace OpenRCT2
                         _network.Close();
                     }
 #endif
-                    GameLoadInit();
+                    GameLoadInit(); // NB: calls `setActiveScene`
 #ifndef DISABLE_NETWORK
                     if (_network.GetMode() == Network::Mode::server)
                     {
@@ -927,7 +870,7 @@ namespace OpenRCT2
                 // If loading the SV6 or SV4 failed return to the title screen if requested.
                 if (loadTitleScreenFirstOnFail)
                 {
-                    SetActiveScene(GetTitleScene());
+                    _sceneManager->setActiveScene(_sceneManager->getTitleScene());
                 }
                 // The path needs to be duplicated as it's a const here
                 // which the window function doesn't like
@@ -946,7 +889,7 @@ namespace OpenRCT2
                 // If loading the SV6 or SV4 failed return to the title screen if requested.
                 if (loadTitleScreenFirstOnFail)
                 {
-                    SetActiveScene(GetTitleScene());
+                    _sceneManager->setActiveScene(_sceneManager->getTitleScene());
                 }
                 auto windowManager = _uiContext->GetWindowManager();
                 windowManager->ShowError(STR_FILE_CONTAINS_UNSUPPORTED_RIDE_TYPES, kStringIdNone, {});
@@ -957,7 +900,7 @@ namespace OpenRCT2
 
                 if (loadTitleScreenFirstOnFail)
                 {
-                    SetActiveScene(GetTitleScene());
+                    _sceneManager->setActiveScene(_sceneManager->getTitleScene());
                 }
                 auto windowManager = _uiContext->GetWindowManager();
                 Formatter ft;
@@ -988,7 +931,7 @@ namespace OpenRCT2
                 // If loading the SV6 or SV4 failed return to the title screen if requested.
                 if (loadTitleScreenFirstOnFail)
                 {
-                    SetActiveScene(GetTitleScene());
+                    _sceneManager->setActiveScene(_sceneManager->getTitleScene());
                 }
                 Console::Error::WriteLine(e.what());
             }
@@ -1081,13 +1024,13 @@ namespace OpenRCT2
             {
                 case StartupAction::intro:
                 {
-                    nextScene = GetIntroScene();
+                    nextScene = _sceneManager->getIntroScene();
                     break;
                 }
 
                 case StartupAction::title:
                 {
-                    nextScene = GetTitleScene();
+                    nextScene = _sceneManager->getTitleScene();
                     break;
                 }
 
@@ -1102,7 +1045,7 @@ namespace OpenRCT2
                         auto data = DownloadPark(gOpenRCT2StartupActionPath);
                         if (data.empty())
                         {
-                            nextScene = GetTitleScene();
+                            nextScene = _sceneManager->getTitleScene();
                             break;
                         }
 
@@ -1110,7 +1053,7 @@ namespace OpenRCT2
                         if (!LoadParkFromStream(&ms, gOpenRCT2StartupActionPath, true))
                         {
                             Console::Error::WriteLine("Failed to load '%s'", gOpenRCT2StartupActionPath);
-                            nextScene = GetTitleScene();
+                            nextScene = _sceneManager->getTitleScene();
                             break;
                         }
 #endif
@@ -1121,7 +1064,7 @@ namespace OpenRCT2
                         {
                             if (!LoadParkFromFile(gOpenRCT2StartupActionPath, true))
                             {
-                                nextScene = GetTitleScene();
+                                nextScene = _sceneManager->getTitleScene();
                                 break;
                             }
                         }
@@ -1129,42 +1072,43 @@ namespace OpenRCT2
                         {
                             Console::Error::WriteLine("Failed to load '%s'", gOpenRCT2StartupActionPath);
                             Console::Error::WriteLine("%s", ex.what());
-                            nextScene = GetTitleScene();
+                            nextScene = _sceneManager->getTitleScene();
                             break;
                         }
                     }
 
                     // Successfully loaded a file
-                    nextScene = GetGameScene();
+                    nextScene = _sceneManager->getGameScene();
                     break;
                 }
 
                 case StartupAction::edit:
                 {
+                    auto* editorScene = static_cast<EditorScene*>(_sceneManager->getScenarioEditorScene());
+                    _sceneManager->setActiveScene(editorScene);
                     if (String::sizeOf(gOpenRCT2StartupActionPath) == 0)
                     {
-                        Editor::Load();
-                        nextScene = GetGameScene();
+                        nextScene = editorScene;
                     }
-                    else if (Editor::LoadLandscape(gOpenRCT2StartupActionPath))
+                    else if (editorScene->LoadLandscape(gOpenRCT2StartupActionPath))
                     {
-                        nextScene = GetGameScene();
+                        nextScene = editorScene;
                     }
                     else
                     {
-                        nextScene = GetTitleScene();
+                        nextScene = _sceneManager->getTitleScene();
                     }
                     break;
                 }
 
                 default:
                 {
-                    nextScene = GetTitleScene();
+                    nextScene = _sceneManager->getTitleScene();
                 }
             }
 
-            SetActiveScene(nextScene);
-            InitNetworkGame(nextScene == GetGameScene());
+            _sceneManager->setActiveScene(nextScene);
+            InitNetworkGame(nextScene == _sceneManager->getGameScene());
         }
 
         void InitNetworkGame(bool isGameScene)
@@ -1232,7 +1176,7 @@ namespace OpenRCT2
 
             if (!gOpenRCT2Headless)
             {
-                GetPreloaderScene()->SetOnComplete([&]() { SwitchToStartUpScene(); });
+                _sceneManager->getPreloaderScene()->SetOnComplete([&]() { SwitchToStartUpScene(); });
             }
             else
             {
@@ -1438,8 +1382,8 @@ namespace OpenRCT2
 
             DateUpdateRealTimeOfDay();
 
-            if (_activeScene)
-                _activeScene->Tick();
+            if (auto* activeScene = _sceneManager->getActiveScene())
+                activeScene->Tick();
 
 #ifdef __ENABLE_DISCORD__
             if (_discordService != nullptr)
@@ -1450,7 +1394,7 @@ namespace OpenRCT2
 
             ChatUpdate();
 #ifdef ENABLE_SCRIPTING
-            if (GetActiveScene() != GetPreloaderScene())
+            if (auto* activeScene = _sceneManager->getActiveScene(); activeScene != _sceneManager->getPreloaderScene())
             {
                 _scriptEngine.Tick();
             }

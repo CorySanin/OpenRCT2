@@ -11,7 +11,7 @@
 #include "../Game.h"
 #include "../actions/GameActionRunner.h"
 #include "../actions/ResultWithMessage.h"
-#include "../EditorObjectSelectionSession.h"
+#include "../scenes/editor/EditorController.h"
 #include "../FileClassifier.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
@@ -33,6 +33,7 @@
 #include "../ui/WindowManager.h"
 #include "CommandLine.hpp"
 #include "../entity/EntityList.h"
+#include "../world/Location.hpp"
 
 #include <memory>
 
@@ -41,10 +42,10 @@ using namespace OpenRCT2;
 static void UpdateTrackElementsRideType();
 static void DetectProblems(GameState_t& gameState);
 
-exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
+OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 {
-    exitcode_t result = CommandLine::HandleCommandDefault();
-    if (result != EXITCODE_CONTINUE)
+    ExitCode result = CommandLine::HandleCommandDefault();
+    if (result != ExitCode::launch)
     {
         return result;
     }
@@ -54,7 +55,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (!enumerator->TryPopString(&rawPrepType))
     {
         Console::Error::WriteLine("Expected a prep type");
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
     const utf8* rawArg;
@@ -71,7 +72,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         if (!enumerator->TryPopString(&rawArg))
         {
             Console::Error::WriteLine("Expected a starting fund value.");
-            return EXITCODE_FAIL;
+            return ExitCode::fail;
         }
         else
         {
@@ -82,14 +83,14 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             catch (...)
             {
                 Console::Error::WriteLine("Expected anumeric value for the starting fund.");
-                return EXITCODE_FAIL;
+                return ExitCode::fail;
             }
         }
     }
     else
     {
         Console::Error::WriteLine("Invalid prep type.");
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
     // Get the source path
@@ -97,7 +98,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (!enumerator->TryPopString(&rawSourcePath))
     {
         Console::Error::WriteLine("Expected a source path.");
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
     const auto sourcePath = Path::GetAbsolute(rawSourcePath);
@@ -108,7 +109,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (!enumerator->TryPopString(&rawDestinationPath))
     {
         Console::Error::WriteLine("Expected a destination path.");
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
     const auto destinationPath = Path::GetAbsolute(rawDestinationPath);
@@ -118,7 +119,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     if (destinationFileType != FileExtension::PARK)
     {
         Console::Error::WriteLine("Only conversion to .PARK is supported.");
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
     // Validate the source type
@@ -132,7 +133,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             break;
         default:
             Console::Error::WriteLine("Only conversion from .SC4, .SV4, .SC6, .SV6, or .PARK is supported.");
-            return EXITCODE_FAIL;
+            return ExitCode::fail;
     }
 
     // Perform preparation
@@ -172,13 +173,13 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
             break;
             default:
                 Console::Error::WriteLine("Only conversion from .SC4, .SV4, .SC6, .SV6, or .PARK is supported.");
-                return EXITCODE_FAIL;
+                return ExitCode::fail;
         }
     }
     catch (const std::exception& ex)
     {
         Console::Error::WriteLine(ex.what());
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
 
@@ -264,7 +265,7 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     {
         const ObjectRepositoryItem* items = ObjectRepositoryGetItems();
         int32_t numObjects = static_cast<int32_t>(ObjectRepositoryGetItemsCount());
-        EditorInputFlags inputFlags = { EditorInputFlag::unk1, EditorInputFlag::selectObjectsInSceneryGroup };
+        Editor::InputFlags inputFlags = { Editor::InputFlag::unk1, Editor::InputFlag::selectObjectsInSceneryGroup };
         auto noMoney = GameActions::CheatSetAction(CheatType::noMoney, 1);
         GameActions::Execute(&noMoney, gameState);
 
@@ -278,18 +279,18 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
         }
         UpdateTrackElementsRideType();
 
-        Sub6AB211();
+        Editor::Sub6AB211();
         for (int32_t i = 0; i < numObjects; i++)
         {
             const ObjectRepositoryItem* item = &items[i];
             if (item->Name == "Cash Machine")
             {
-                WindowEditorObjectSelectionSelectObject(0, inputFlags, item);
+                Editor::ObjectSelectionSelectObject(0, inputFlags, item);
             }
         }
 
-        UnloadUnselectedObjects();
-        EditorObjectFlagsClear();
+        Editor::UnloadUnselectedObjects();
+        Editor::ObjectFlagsClear();
     }
     if (prepEcon)
     {
@@ -322,11 +323,11 @@ exitcode_t CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
     catch (const std::exception& ex)
     {
         Console::Error::WriteLine(ex.what());
-        return EXITCODE_FAIL;
+        return ExitCode::fail;
     }
 
     Console::WriteLine("Execution complete.");
-    return EXITCODE_OK;
+    return ExitCode::ok;
 }
 
 static void UpdateTrackElementsRideType()
@@ -341,7 +342,7 @@ static void UpdateTrackElementsRideType()
                 continue;
             do
             {
-                if (tileElement->getType() != TileElementType::Track)
+                if (tileElement->getType() != TileElementType::track)
                     continue;
 
                 auto* trackElement = tileElement->asTrack();
