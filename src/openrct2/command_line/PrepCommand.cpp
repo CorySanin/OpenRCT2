@@ -207,7 +207,7 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
     GameActions::Execute(&fixVandal, gameState);
     auto renewRides = GameActions::CheatSetAction(CheatType::renewRides);
     GameActions::Execute(&renewRides, gameState);
-    auto haveFun = GameActions::CheatSetAction(CheatType::haveFun, 1);
+    auto haveFun = GameActions::CheatSetAction(CheatType::haveFun);
     GameActions::Execute(&haveFun, gameState);
     auto clearanceChecks = GameActions::CheatSetAction(CheatType::disableClearanceChecks, 0);
     GameActions::Execute(&clearanceChecks, gameState);
