@@ -10,12 +10,14 @@
 #include "../Context.h"
 #include "../Game.h"
 #include "../actions/GameActionRunner.h"
+#include "../actions/cheats/CheatSetAction.h"
 #include "../actions/ResultWithMessage.h"
 #include "../scenes/editor/EditorController.h"
 #include "../FileClassifier.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../ParkImporter.h"
+#include "../park/ParkFile.h"
 #include "../actions/cheats/CheatSetAction.h"
 #include "../actions/park/ParkSetDateAction.h"
 #include "../actions/park/ParkSetParameterAction.h"
@@ -40,7 +42,7 @@
 using namespace OpenRCT2;
 
 static void UpdateTrackElementsRideType();
-static void DetectProblems(GameState_t& gameState);
+static bool DetectProblems(GameState_t& gameState);
 
 OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnumerator* enumerator)
 {
@@ -188,74 +190,74 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
     gameState.lastEntranceStyle = objManager.GetLoadedObjectEntryIndex("rct2.station.plain");
 
     auto clearGrass = GameActions::CheatSetAction(CheatType::setGrassLength, GRASS_LENGTH_CLEAR_0);
-    GameActions::Execute(&clearGrass, gameState);
+    GameActions::ExecuteNested(&clearGrass, gameState);
     auto waterPlants = GameActions::CheatSetAction(CheatType::waterPlants);
-    GameActions::Execute(&waterPlants, gameState);
+    GameActions::ExecuteNested(&waterPlants, gameState);
     auto removeLitter = GameActions::CheatSetAction(CheatType::removeLitter);
-    GameActions::Execute(&removeLitter, gameState);
+    GameActions::ExecuteNested(&removeLitter, gameState);
     auto removeGuests = GameActions::CheatSetAction(CheatType::removeAllGuests);
-    GameActions::Execute(&removeGuests, gameState);
+    GameActions::ExecuteNested(&removeGuests, gameState);
     auto removeDucks = GameActions::CheatSetAction(CheatType::removeDucks);
-    GameActions::Execute(&removeDucks, gameState);
+    GameActions::ExecuteNested(&removeDucks, gameState);
     auto clearLoad = GameActions::CheatSetAction(CheatType::clearLoan);
-    GameActions::Execute(&clearLoad, gameState);
+    GameActions::ExecuteNested(&clearLoad, gameState);
     auto resetCrash = GameActions::CheatSetAction(CheatType::resetCrashStatus);
-    GameActions::Execute(&resetCrash, gameState);
+    GameActions::ExecuteNested(&resetCrash, gameState);
     auto fixRides = GameActions::CheatSetAction(CheatType::fixRides);
-    GameActions::Execute(&fixRides, gameState);
+    GameActions::ExecuteNested(&fixRides, gameState);
     auto fixVandal = GameActions::CheatSetAction(CheatType::fixVandalism);
-    GameActions::Execute(&fixVandal, gameState);
+    GameActions::ExecuteNested(&fixVandal, gameState);
     auto renewRides = GameActions::CheatSetAction(CheatType::renewRides);
-    GameActions::Execute(&renewRides, gameState);
+    GameActions::ExecuteNested(&renewRides, gameState);
     auto haveFun = GameActions::CheatSetAction(CheatType::haveFun);
-    GameActions::Execute(&haveFun, gameState);
+    GameActions::ExecuteNested(&haveFun, gameState);
     auto clearanceChecks = GameActions::CheatSetAction(CheatType::disableClearanceChecks, 0);
-    GameActions::Execute(&clearanceChecks, gameState);
+    GameActions::ExecuteNested(&clearanceChecks, gameState);
     auto supportLimits = GameActions::CheatSetAction(CheatType::disableSupportLimits, 0);
-    GameActions::Execute(&supportLimits, gameState);
+    GameActions::ExecuteNested(&supportLimits, gameState);
     auto sandboxMode = GameActions::CheatSetAction(CheatType::sandboxMode, 0);
-    GameActions::Execute(&sandboxMode, gameState);
+    GameActions::ExecuteNested(&sandboxMode, gameState);
     auto operatingModes = GameActions::CheatSetAction(CheatType::showAllOperatingModes, 0);
-    GameActions::Execute(&operatingModes, gameState);
+    GameActions::ExecuteNested(&operatingModes, gameState);
     auto otherTrackVehicles = GameActions::CheatSetAction(CheatType::showVehiclesFromOtherTrackTypes, 0);
-    GameActions::Execute(&otherTrackVehicles, gameState);
+    GameActions::ExecuteNested(&otherTrackVehicles, gameState);
     auto trainLengthLimit = GameActions::CheatSetAction(CheatType::disableTrainLengthLimit, 0);
-    GameActions::Execute(&trainLengthLimit, gameState);
+    GameActions::ExecuteNested(&trainLengthLimit, gameState);
     auto allTrackChainlift = GameActions::CheatSetAction(CheatType::enableChainLiftOnAllTrack, 0);
-    GameActions::Execute(&allTrackChainlift, gameState);
+    GameActions::ExecuteNested(&allTrackChainlift, gameState);
     auto fastLiftHill = GameActions::CheatSetAction(CheatType::fastLiftHill, 0);
-    GameActions::Execute(&fastLiftHill, gameState);
+    GameActions::ExecuteNested(&fastLiftHill, gameState);
     auto brakeFailures = GameActions::CheatSetAction(CheatType::disableBrakesFailure, 0);
-    GameActions::Execute(&brakeFailures, gameState);
+    GameActions::ExecuteNested(&brakeFailures, gameState);
     auto breakdowns = GameActions::CheatSetAction(CheatType::disableAllBreakdowns, 0);
-    GameActions::Execute(&breakdowns, gameState);
+    GameActions::ExecuteNested(&breakdowns, gameState);
     auto pauseModeBuild = GameActions::CheatSetAction(CheatType::buildInPauseMode, 0);
-    GameActions::Execute(&pauseModeBuild, gameState);
+    GameActions::ExecuteNested(&pauseModeBuild, gameState);
     auto rideIntensity = GameActions::CheatSetAction(CheatType::ignoreRideIntensity, 0);
-    GameActions::Execute(&rideIntensity, gameState);
+    GameActions::ExecuteNested(&rideIntensity, gameState);
     auto vandalismToggle = GameActions::CheatSetAction(CheatType::disableVandalism, 0);
-    GameActions::Execute(&vandalismToggle, gameState);
+    GameActions::ExecuteNested(&vandalismToggle, gameState);
     auto litterToggle = GameActions::CheatSetAction(CheatType::disableLittering, 0);
-    GameActions::Execute(&litterToggle, gameState);
+    GameActions::ExecuteNested(&litterToggle, gameState);
     auto plantAgeToggle = GameActions::CheatSetAction(CheatType::disablePlantAging, 0);
-    GameActions::Execute(&plantAgeToggle, gameState);
+    GameActions::ExecuteNested(&plantAgeToggle, gameState);
     auto destructible = GameActions::CheatSetAction(CheatType::makeDestructible, 0);
-    GameActions::Execute(&destructible, gameState);
+    GameActions::ExecuteNested(&destructible, gameState);
     auto marketing = GameActions::CheatSetAction(CheatType::neverendingMarketing, 0);
-    GameActions::Execute(&marketing, gameState);
+    GameActions::ExecuteNested(&marketing, gameState);
     auto rideTypeChanges = GameActions::CheatSetAction(CheatType::allowArbitraryRideTypeChanges, 0);
-    GameActions::Execute(&rideTypeChanges, gameState);
+    GameActions::ExecuteNested(&rideTypeChanges, gameState);
     auto rideValueAging = GameActions::CheatSetAction(CheatType::disableRideValueAging, 0);
-    GameActions::Execute(&rideValueAging, gameState);
+    GameActions::ExecuteNested(&rideValueAging, gameState);
     auto researchStatus = GameActions::CheatSetAction(CheatType::ignoreResearchStatus, 0);
-    GameActions::Execute(&researchStatus, gameState);
+    GameActions::ExecuteNested(&researchStatus, gameState);
     auto invalidHeights = GameActions::CheatSetAction(CheatType::allowTrackPlaceInvalidHeights, 0);
-    GameActions::Execute(&invalidHeights, gameState);
+    GameActions::ExecuteNested(&invalidHeights, gameState);
 
     auto setDate = GameActions::ParkSetDateAction(0, 0, 0);
-    GameActions::Execute(&setDate, gameState);
+    GameActions::ExecuteNested(&setDate, gameState);
     auto openPark = GameActions::ParkSetParameterAction(GameActions::ParkParameter::open);
-    GameActions::Execute(&openPark, gameState);
+    GameActions::ExecuteNested(&openPark, gameState);
 
     gGamePaused = 0;
 
@@ -267,7 +269,7 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
         int32_t numObjects = static_cast<int32_t>(ObjectRepositoryGetItemsCount());
         Editor::InputFlags inputFlags = { Editor::InputFlag::unk1, Editor::InputFlag::selectObjectsInSceneryGroup };
         auto noMoney = GameActions::CheatSetAction(CheatType::noMoney, 1);
-        GameActions::Execute(&noMoney, gameState);
+        GameActions::ExecuteNested(&noMoney, gameState);
 
         for (auto& rideRef : RideManager(gameState))
         {
@@ -295,30 +297,35 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
     if (prepEcon)
     {
         auto yesMoney = GameActions::CheatSetAction(CheatType::noMoney, 0);
-        GameActions::Execute(&yesMoney, gameState);
+        GameActions::ExecuteNested(&yesMoney, gameState);
         auto parkChargeMethod = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::parkChargeMethod, 0);
-        GameActions::Execute(&parkChargeMethod, gameState);
+        GameActions::ExecuteNested(&parkChargeMethod, gameState);
         auto initialLoan = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::initialLoan, 0);
-        GameActions::Execute(&initialLoan, gameState);
+        GameActions::ExecuteNested(&initialLoan, gameState);
         auto maxLoanSize = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::maximumLoanSize, 0);
-        GameActions::Execute(&maxLoanSize, gameState);
+        GameActions::ExecuteNested(&maxLoanSize, gameState);
         auto annualInterest = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::annualInterestRate, 0);
-        GameActions::Execute(&annualInterest, gameState);
+        GameActions::ExecuteNested(&annualInterest, gameState);
         gameState.park.cash = econBudget;
         gameState.park.flags |= PARK_FLAGS_PARK_FREE_ENTRY;
     }
 
-    DetectProblems(gameState);
+    if (!DetectProblems(gameState))
+    {
+        return ExitCode::fail;
+    }
 
     try
     {
+        auto exporter = std::make_unique<ParkFileExporter>();
+
         // HACK remove the main window so it saves the park with the
         //      correct initial view
         //      taken from ConvertCommand.cpp
         auto* windowMgr = Ui::GetWindowManager();
         windowMgr->CloseByClass(WindowClass::mainWindow);
 
-        SaveGameWithName(destinationPath);
+        exporter->Export(gameState, destinationPath, static_cast<int16_t>(kParkFileSaveCompressionLevel));
     }
     catch (const std::exception& ex)
     {
@@ -357,8 +364,15 @@ static void UpdateTrackElementsRideType()
     }
 }
 
-static void DetectProblems(GameState_t& gameState)
+static bool DetectProblems(GameState_t& gameState)
 {
+
+    if (gameState.cheats.sandboxMode)
+    {
+        Console::Error::WriteLine("sandbox mode is enabled!");
+        return false;
+    }
+
     bool food = false;
     bool drink = false;
     bool restroom = false;
@@ -388,22 +402,23 @@ static void DetectProblems(GameState_t& gameState)
 
     if (hmen < static_cast<uint32_t>(gameState.mapSize.x * gameState.mapSize.y / 800))
     {
-        Console::Error::WriteLine("Consider adding more handymen to the park.");
+        Console::Error::WriteLine("PREP: Consider adding more handymen to the park.");
     }
     if (!food)
     {
-        Console::Error::WriteLine("Consider adding a food stall to the park.");
+        Console::Error::WriteLine("PREP: Consider adding a food stall to the park.");
     }
     if (!drink)
     {
-        Console::Error::WriteLine("Consider adding a drink stall to the park.");
+        Console::Error::WriteLine("PREP: Consider adding a drink stall to the park.");
     }
     if (!restroom)
     {
-        Console::Error::WriteLine("Consider adding a restroom stall to the park.");
+        Console::Error::WriteLine("PREP: Consider adding a restroom stall to the park.");
     }
     if (!ride)
     {
-        Console::Error::WriteLine("Consider adding a ride to the park.");
+        Console::Error::WriteLine("PREP: Consider adding a ride to the park.");
     }
+    return true;
 }
