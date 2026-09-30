@@ -24,6 +24,7 @@
 #include "../actions/general/ScenarioSetSettingAction.h"
 #include "../core/Console.hpp"
 #include "../core/Path.hpp"
+#include "../core/String.hpp"
 #include "../entity/Staff.h"
 #include "../object/ObjectManager.h"
 #include "../object/ObjectRepository.h"
@@ -118,7 +119,7 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
     auto destinationFileType = GetFileExtensionType(destinationPath);
 
     // Validate target type
-    if (destinationFileType != FileExtension::PARK)
+    if (destinationFileType != FileExtension::park)
     {
         Console::Error::WriteLine("Only conversion to .PARK is supported.");
         return ExitCode::fail;
@@ -127,11 +128,11 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
     // Validate the source type
     switch (sourceFileType)
     {
-        case FileExtension::SC4:
-        case FileExtension::SV4:
-        case FileExtension::SC6:
-        case FileExtension::SV6:
-        case FileExtension::PARK:
+        case FileExtension::sc4:
+        case FileExtension::sv4:
+        case FileExtension::sc6:
+        case FileExtension::sv6:
+        case FileExtension::park:
             break;
         default:
             Console::Error::WriteLine("Only conversion from .SC4, .SV4, .SC6, .SV6, or .PARK is supported.");
@@ -150,10 +151,10 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
     {
         switch (sourceFileType)
         {
-            case FileExtension::SC4:
-            case FileExtension::SV4:
-            case FileExtension::SC6:
-            case FileExtension::SV6:
+            case FileExtension::sc4:
+            case FileExtension::sv4:
+            case FileExtension::sc6:
+            case FileExtension::sv6:
             {
                 auto importer = ParkImporter::Create(sourcePath);
                 auto loadResult = importer->Load(sourcePath.c_str(), false);
@@ -163,7 +164,7 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
                 importer->Import(gameState);
             }
             break;
-            case FileExtension::PARK:
+            case FileExtension::park:
             {
                 std::unique_ptr<IParkImporter> importer = ParkImporter::CreateParkFile(context->GetObjectRepository());
                 auto loadResult = importer->Load(sourcePath.c_str(), false);
@@ -307,7 +308,7 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
         auto annualInterest = GameActions::ScenarioSetSettingAction(GameActions::ScenarioSetSetting::annualInterestRate, 0);
         GameActions::ExecuteNested(&annualInterest, gameState);
         gameState.park.cash = econBudget;
-        gameState.park.flags |= PARK_FLAGS_PARK_FREE_ENTRY;
+        gameState.park.flags.set(ParkFlag::freeEntry);
     }
 
     if (!DetectProblems(gameState))
@@ -353,10 +354,10 @@ static void UpdateTrackElementsRideType()
                     continue;
 
                 auto* trackElement = tileElement->asTrack();
-                const auto* ride = GetRide(trackElement->GetRideIndex());
+                const auto* ride = GetRide(trackElement->getRideIndex());
                 if (ride != nullptr)
                 {
-                    trackElement->SetRideType(ride->type);
+                    trackElement->setRideType(ride->type);
                 }
 
             } while (!(tileElement++)->isLastForTile());
