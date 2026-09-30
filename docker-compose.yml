@@ -9,3 +9,7 @@ services:
             dockerfile: ./Dockerfile
         ports:
             - 8080:8080
+        volumes:
+            - $RCT2PATH:/rct2:ro
+            - $RCT1PATH:/rct1:ro
+            - /etc/localtime:/etc/localtime:ro
