@@ -3360,6 +3360,7 @@ namespace OpenRCT2::Ui::Windows
                 case RideMode::upwardLaunch:
                 case RideMode::poweredLaunchBlockSectioned:
                 case RideMode::stationToStation:
+                case RideMode::inMotionBoarding:
                 case RideMode::dodgems:
                     return;
                 default:
@@ -3596,11 +3597,19 @@ namespace OpenRCT2::Ui::Windows
                     caption = STR_LAUNCH_SPEED;
                     tooltip = STR_LAUNCH_SPEED_TIP;
                     break;
+                case RideMode::inMotionBoarding:
                 case RideMode::stationToStation:
-                    tweakValue = ((ride->speed * 9) / 4);
-                    format = STR_VELOCITY;
-                    caption = STR_SPEED;
-                    tooltip = STR_SPEED_TIP;
+                    if (ride->type == RIDE_TYPE_CHAIRLIFT)
+                    {
+                        tweakValue = ((ride->speed * 9) / 4);
+                        format = STR_VELOCITY;
+                        caption = STR_SPEED;
+                        tooltip = STR_SPEED_TIP;
+                    }
+                    else
+                    {
+                        format = kStringIdEmpty;
+                    }
                     break;
                 case RideMode::race:
                     tweakValue = ride->numLaps;
@@ -3682,7 +3691,7 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_LOAD_GROUP].moveTo({ 3, startY });
             startY += 15;
 
-            const bool hasLoadOptions = rtd.flags.has(RtdFlag::hasLoadOptions);
+            const bool hasLoadOptions = rtd.flags.has(RtdFlag::hasLoadOptions) && ride->mode != RideMode::inMotionBoarding;
             widgets[WIDX_LOAD_CHECKBOX].setVisible(hasLoadOptions);
             widgets[WIDX_LOAD].setVisible(hasLoadOptions);
             widgets[WIDX_LOAD_DROPDOWN].setVisible(hasLoadOptions);
@@ -3701,7 +3710,7 @@ namespace OpenRCT2::Ui::Windows
 
             // Leave if another vehicle arrives at station
             if (rtd.flags.has(RtdFlag::hasLeaveWhenAnotherVehicleArrivesAtStation) && ride->numTrains > 1
-                && !ride->isBlockSectioned())
+                && !ride->isBlockSectioned() && ride->mode != RideMode::inMotionBoarding)
             {
                 widgets[WIDX_LEAVE_WHEN_ANOTHER_ARRIVES_CHECKBOX].setVisible();
                 widgets[WIDX_LEAVE_WHEN_ANOTHER_ARRIVES_CHECKBOX].tooltip = STR_LEAVE_IF_ANOTHER_VEHICLE_ARRIVES_TIP;
@@ -3752,7 +3761,8 @@ namespace OpenRCT2::Ui::Windows
             }
 
             // Synchronise with adjacent stations
-            if (rtd.flags.has(RtdFlag::canSynchroniseWithAdjacentStations))
+            if (rtd.flags.has(RtdFlag::canSynchroniseWithAdjacentStations)
+                && ride->mode != RideMode::inMotionBoarding)
             {
                 widgets[WIDX_SYNCHRONISE_WITH_ADJACENT_STATIONS_CHECKBOX].setVisible();
                 widgets[WIDX_SYNCHRONISE_WITH_ADJACENT_STATIONS_CHECKBOX].text = STR_SYNCHRONISE_WITH_ADJACENT_STATIONS;

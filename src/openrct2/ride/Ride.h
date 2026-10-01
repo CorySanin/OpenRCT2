@@ -202,6 +202,7 @@ namespace OpenRCT2
         continuousCircuitBlockSectioned,
         poweredLaunch, // RCT1 style, don't pass through station
         poweredLaunchBlockSectioned,
+        inMotionBoarding,
 
         count,
         nullMode = 255,

@@ -122,6 +122,7 @@ namespace OpenRCT2
             RideMode::continuousCircuitBlockSectioned, // RideMode::continuousCircuitBlockSectioned,
             RideMode::poweredLaunchBlockSectioned,     // RideMode::poweredLaunch,
             RideMode::poweredLaunchBlockSectioned,     // RideMode::poweredLaunchBlockSectioned,
+            RideMode::inMotionBoarding,                // RideMode::inMotionBoarding
         });
     static_assert(kRideModeBlockSectionedCounterpart.size() == EnumValue(RideMode::count));
 
@@ -865,6 +866,13 @@ namespace OpenRCT2
             auto gameAction = GameActions::RideSetStatusAction(id, RideStatus::simulating);
             GameActions::ExecuteNested(&gameAction, getGameState());
         }
+
+        if (mode == RideMode::inMotionBoarding && status != RideStatus::closed
+            && flags.has(RideFlag::tested) && vehicles[numTrains - 1].IsNull())
+        {
+            removeVehicles();
+            open(true);
+        }
     }
 
     /**
@@ -880,8 +888,14 @@ namespace OpenRCT2
             return;
 
         uint16_t oldChairliftBullwheelRotation = ride.chairliftBullwheelRotation >> 14;
-        ride.chairliftBullwheelRotation += ride.speed * 2048;
-        if (oldChairliftBullwheelRotation == ride.speed / 8)
+        uint8_t stationSpeed = ride.speed;
+        if (ride.mode == RideMode::inMotionBoarding)
+        {
+            uint8_t max_station_speed = 2;
+            stationSpeed = std::min(stationSpeed, max_station_speed);
+        }
+        ride.chairliftBullwheelRotation += stationSpeed * 2048;
+        if (oldChairliftBullwheelRotation == stationSpeed / 8)
             return;
 
         auto bullwheelLoc = ride.chairliftBullwheelLocation[0].toCoordsXYZ();
@@ -3219,6 +3233,16 @@ namespace OpenRCT2
             {
                 remainingDistance = 0;
             }
+            else if (ride.mode == RideMode::inMotionBoarding && ride.status != RideStatus::simulating && vehicleIndex > 0)
+            {
+                if (ride.flags.has(RideFlag::tested)) {
+                    remainingDistance = -vehicleIndex * ride.getTotalLength() / (ride.numTrains - 1);
+                }
+                else
+                {
+                    continue;
+                }
+            }
             TrainReference train = VehicleCreateTrain(ride, trainsPos, vehicleIndex, &remainingDistance, trackElement);
             if (train.head == nullptr || train.tail == nullptr)
             {
@@ -3363,7 +3387,7 @@ namespace OpenRCT2
         int32_t direction = trackElement->getDirection();
 
         //
-        if (mode == RideMode::stationToStation)
+        if (type == RIDE_TYPE_CHAIRLIFT)
         {
             vehiclePos -= CoordsXYZ{ CoordsDirectionDelta[direction], 0 };
 
@@ -4910,7 +4934,8 @@ namespace OpenRCT2
                         totalLength += trainLength;
                     } while (totalLength <= stationLength);
 
-                    if ((mode != RideMode::stationToStation && mode != RideMode::continuousCircuit)
+                    if ((mode != RideMode::stationToStation && mode != RideMode::continuousCircuit
+                        && mode != RideMode::inMotionBoarding)
                         || !rtd.flags.has(RtdFlag::allowMoreVehiclesThanStationFits))
                     {
                         maxNumTrains = std::min(maxNumTrains, int32_t(Limits::kMaxTrainsPerRide));
@@ -5709,7 +5734,7 @@ namespace OpenRCT2
             }
         }
 
-        if (mode == RideMode::stationToStation)
+        if (type == RIDE_TYPE_CHAIRLIFT)
         {
             if (!findTrackGap(*this, trackElement, &problematicTrackElement))
             {

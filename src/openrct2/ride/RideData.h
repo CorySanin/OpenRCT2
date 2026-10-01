@@ -620,7 +620,7 @@ namespace OpenRCT2
     constexpr RideModes kAllRideModesAvailable = {
             RideMode::continuousCircuit, RideMode::continuousCircuitBlockSectioned, RideMode::reverseInclineLaunchedShuttle,
             RideMode::poweredLaunchPassthrough, RideMode::shuttle, RideMode::normal, RideMode::boatHire, RideMode::upwardLaunch,
-            RideMode::rotatingLift, RideMode::stationToStation, RideMode::singleRidePerAdmission,
+            RideMode::rotatingLift, RideMode::stationToStation, RideMode::inMotionBoarding, RideMode::singleRidePerAdmission,
             RideMode::unlimitedRidesPerAdmission, RideMode::maze, RideMode::race, RideMode::dodgems, RideMode::swing,
             RideMode::shopStall, RideMode::rotation, RideMode::forwardRotation, RideMode::backwardRotation,
             RideMode::filmAvengingAviators, RideMode::mouseTails3DFilm, RideMode::spaceRings, RideMode::beginners,

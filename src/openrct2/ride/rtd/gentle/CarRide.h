@@ -35,7 +35,7 @@ constexpr RideTypeDescriptor kCarRideRTD =
                      RtdFlag::allowDoorsOnTrack, RtdFlag::allowMusic, RtdFlag::hasEntranceAndExit,
                      RtdFlag::allowMoreVehiclesThanStationFits, RtdFlag::showInTrackDesigner,
                      RtdFlag::slightlyInterestingToLookAt),
-    .rideModes = { RideMode::continuousCircuit },
+    .rideModes = { RideMode::continuousCircuit, RideMode::inMotionBoarding },
     .DefaultMode = RideMode::continuousCircuit,
     .OperatingSettings = { 5, 18 },
     .Naming = { STR_RIDE_NAME_CAR_RIDE, STR_RIDE_DESCRIPTION_CAR_RIDE },

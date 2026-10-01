@@ -167,7 +167,7 @@ namespace OpenRCT2
         }
         else
         {
-            if (time == 0)
+            if (time == 0 || ride.mode == RideMode::inMotionBoarding)
             {
                 station.depart |= kStationDepartFlag;
                 RideInvalidateStationStart(ride, stationIndex, true);
